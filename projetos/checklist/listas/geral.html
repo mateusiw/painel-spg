@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Checklist de Veículos SPG</title>
+    
+    <!-- Ícones Modernos -->
+    <link id="siteFavicon" rel="icon" type="image/png" href="logo-geral.png">
+    <link id="siteAppleTouchIcon" rel="apple-touch-icon" href="logo-geral.png">
+    <link id="siteManifest" rel="manifest" href='data:application/manifest+json,{"name":"Checklist SPG","short_name":"Checklist","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#759587","icons":[{"src":"logo-geral.png","sizes":"192x192","type":"image/png"},{"src":"logo-geral.png","sizes":"512x512","type":"image/png"}]}'>
+    
+    <meta name="theme-color" content="#759587">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Checklist SPG">
+    
+    <!-- Bibliotecas Externas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d' }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="banco.js"></script>
+    <script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
+    
+    <link rel="stylesheet" href="tema-irrigacao.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; background: #f8fafc; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        input, select, textarea { line-height: 1.5; }
+        .animate-fade-in-down { animation: fadeInDown 0.3s ease-out forwards; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        @keyframes pulse-ring { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.25); } }
+        .pulse-dot { animation: pulse-ring 2.5s ease-in-out infinite; }
+
+        .check-radio:checked + div { border-color: currentColor; background-color: currentColor; }
+        .check-radio:checked + div span { color: white; }
+
+        /* Form card */
+        .form-card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+        .form-card-header { background: linear-gradient(to right, #16a34a, #15803d); border-radius: 15px 15px 0 0; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        .form-card-header svg { color: #fff !important; }
+        .form-card-header p { color: #dcfce7 !important; }
+        .form-card-header > div:first-child { background: rgba(255,255,255,0.2) !important; border-color: transparent !important; }
+
+        /* Section label */
+        .section-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .section-label svg { color: #22c55e; width: 14px; height: 14px; }
+
+        /* Fields */
+        select, input[type="date"], input[type="text"], textarea {
+            border: 2px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            background: #f8fafc !important;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            font-size: 14px !important;
+        }
+        select:focus, input[type="date"]:focus, input[type="text"]:focus, textarea:focus {
+            border-color: #16a34a !important;
+            box-shadow: 0 0 0 3px rgba(22,163,74,0.15) !important;
+            background: #fff !important;
+            outline: none !important;
+        }
+
+        /* Category block */
+        .cat-block { border-radius: 14px; overflow: hidden; border: 1.5px solid #e2e8f0; margin-bottom: 10px; }
+        .cat-block:last-child { margin-bottom: 0; }
+        .cat-header { padding: 9px 14px; display: flex; align-items: center; gap: 8px; }
+        .cat-header-kia    { background: linear-gradient(to right, #1e3a5f, #1e40af); }
+        .cat-header-mec    { background: linear-gradient(to right, #7c2d12, #9a3412); }
+        .cat-header-cab    { background: linear-gradient(to right, #14532d, #166534); }
+        .cat-header-seg    { background: linear-gradient(to right, #1e3a5f, #1e40af); }
+        .cat-header-op     { background: linear-gradient(to right, #4a1d96, #6d28d9); }
+        .cat-header-default{ background: linear-gradient(to right, #1e293b, #334155); }
+        /* No formulário as categorias seguem o padrão verde; a imagem enviada mantém as cores próprias */
+        .cat-block > .cat-header { background: linear-gradient(to right, #16a34a, #15803d) !important; }
+
+        /* Check item row */
+        .chk-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 14px; border-bottom: 1px solid #f1f5f9; background: #fff; transition: background 0.12s; }
+        .chk-row:last-child { border-bottom: none; }
+        .chk-row:hover { background: #f8fafc; }
+
+        /* OK / NOK toggle */
+        .chk-btn { display: flex; align-items: center; justify-content: center; gap: 4px; width: 54px; height: 34px; border-radius: 8px; border: 2px solid #e2e8f0; background: #f8fafc; font-size: 11px; font-weight: 900; color: #94a3b8; transition: all 0.15s ease; user-select: none; cursor: pointer; }
+        .chk-btn:hover { transform: scale(1.04); }
+        .chk-btn-ok:hover { border-color: #16a34a; color: #16a34a; background: #f0fdf4; }
+        .chk-btn-nok:hover { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
+        .check-radio.ok-radio:checked + .chk-btn-ok { background: #16a34a; border-color: #16a34a; color: #fff; box-shadow: 0 2px 8px rgba(22,163,74,0.35); }
+        .check-radio.nok-radio:checked + .chk-btn-nok { background: #dc2626; border-color: #dc2626; color: #fff; box-shadow: 0 2px 8px rgba(220,38,38,0.35); }
+
+        /* Progress bar */
+        .progress-track { background: #e2e8f0; border-radius: 99px; height: 6px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(to right, #22c55e, #16a34a); transition: width 0.4s ease; }
+
+        /* Stats pill */
+        .stat-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+
+        /* Preview enhancements */
+        .preview-wrapper { background: #f1f5f9; padding: 16px; border-radius: 16px; border: 1px solid #e2e8f0; }
+        /* A imagem enviada mantém as cores originais */
+        #report-card .text-brand-400 { color: #82a294 !important; }
+        #report-card .border-brand-400\/40 { border-color: rgba(130, 162, 148, 0.4) !important; }
+        #report-card .bg-brand-500\/15 { background-color: rgba(117, 149, 135, 0.15) !important; }
+        #report-card { border-radius: 16px !important; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08) !important; }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen pb-20 select-none">
+
+    <!-- Navbar -->
+    <div class="tema-nav px-4 py-2.5 flex justify-between items-center sticky top-0 z-40">
+        <div class="flex items-center gap-3">
+            <div class="relative shrink-0">
+                <img src="logo-geral.png" alt="Logo SPG" class="w-9 h-9 rounded-xl object-cover shadow-sm ring-1 ring-black/5">
+                <span class="pulse-dot absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white"></span>
+            </div>
+            <div>
+                <h1 class="text-sm sm:text-[15px] font-extrabold text-slate-900 leading-tight tracking-tight">SPG SEDE</h1>
+                <p class="text-[10px] text-slate-400 font-semibold tracking-wide">Frota & Equipamentos</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button id="installAppBtn" type="button" onclick="installApp()" class="tema-btn-claro hidden items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all active:scale-95">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Instalar</span>
+            </button>
+            <button type="button" onclick="confirmBeforeSend()" class="tema-btn-verde flex items-center gap-2 px-4 py-2.5 text-xs font-bold active:scale-95">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Enviar para WhatsApp</span>
+                <span class="sm:hidden">Enviar</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 flex flex-col lg:flex-row gap-6 mt-4">
+
+        <!-- COLUNA DA ESQUERDA: FORMULÁRIO -->
+        <div class="w-full lg:w-1/2 space-y-4">
+
+            <!-- 1. DADOS INICIAIS -->
+            <div class="form-card overflow-hidden">
+                <div class="form-card-header">
+                    <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-brand-500/20 border border-brand-400/30 shrink-0">
+                        <i data-lucide="clipboard-check" class="w-5 h-5 text-brand-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-black text-white leading-tight">Iniciar Checklist</h2>
+                        <p class="text-[11px] text-slate-400 font-medium mt-0.5">Preencha os dados da inspeção</p>
+                    </div>
+                </div>
+
+                <form id="checklistForm" class="space-y-4 p-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="section-label"><i data-lucide="calendar" class="w-3 h-3"></i> Data da Inspeção</label>
+                            <input type="date" id="reportDate" required onchange="updatePreview()" class="w-full p-2.5 border font-bold">
+                        </div>
+                        <div>
+                            <label class="section-label"><i data-lucide="truck" class="w-3 h-3"></i> Veículo / Equipamento</label>
+                            <select id="vehicleSelect" required onchange="handleVehicleChange()" class="w-full p-2.5 border font-bold">
+                                <option value="">Selecione...</option>
+                                <option value="Kia Bongo">Kia Bongo (Caminhão)</option>
+                                <option value="Trator">Trator</option>
+                                <option value="Implementos do Trator">Implementos do Trator</option>
+                                <option value="Roçadeira">Roçadeira</option>
+                                <option value="Máquina de Pulverizar">Máquina de Pulverizar</option>
+                                <option value="Sistema de Fertirrigação">Sistema de Fertirrigação</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="equipmentNumberContainer" class="hidden animate-fade-in-down">
+                        <label id="equipmentLabelText" class="section-label"><i data-lucide="tag" class="w-3 h-3"></i> Identificação do Equipamento</label>
+                        <select id="equipmentNumber" onchange="handleEquipmentChange()" class="w-full p-2.5 border font-bold">
+                            <option value="">Selecione a identificação...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label id="driverLabelText" class="section-label"><i data-lucide="user" class="w-3 h-3"></i> Motorista</label>
+                        <select id="driverSelect" required onchange="handleDriverChange()" class="w-full p-2.5 border font-bold">
+                            <option value="">Selecione o motorista...</option>
+                            <option value="Mateus Paulo">Mateus Paulo</option>
+                            <option value="Silvio Brito">Silvio Brito</option>
+                            <option value="Henrique Soares">Henrique Soares</option>
+                            <option value="Eduardo Souza">Eduardo Souza</option>
+                            <option value="Manoel Messias">Manoel Messias</option>
+                            <option value="Erisvaldo Camelo">Erisvaldo Camelo</option>
+                            <option value="Mateus Lopes">Mateus Lopes</option>
+                            <option value="Isaac de Oliveira">Isaac de Oliveira</option>
+                            <option value="Jucivan Xavier">Jucivan Xavier</option>
+                            <option value="Ribamar Chaves">Ribamar Chaves</option>
+                            <option value="Antonio Alan">Antonio Alan</option>
+                            <option value="Guilherme Ramos">Guilherme Ramos</option>
+                            <option value="Lucas Rodrigues">Lucas Rodrigues</option>
+                            <option value="Hugo Melo">Hugo Melo</option>
+                            <option value="Marcelo Oliveira">Marcelo Oliveira</option>
+                            <option value="Outro">Outro (Digitar manualmente)</option>
+                        </select>
+                        
+                        <div id="customDriverContainer" class="hidden mt-2 animate-fade-in-down">
+                            <input type="text" id="customDriverName" placeholder="Digite seu nome..." oninput="updatePreview()" class="w-full p-2 border border-brand-300 bg-brand-50 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none text-slate-700">
+                        </div>
+                    </div>
+
+                    <!-- CONTAINER DO CHECKLIST DINÂMICO -->
+                    <div id="checklistContainer" class="hidden mt-2 animate-fade-in-down">
+                        <div class="rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-3 mb-2">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="list-checks" class="w-4 h-4 text-brand-600"></i>
+                                    <span class="text-xs font-black text-slate-700 uppercase tracking-wide">Itens de Inspeção</span>
+                                </div>
+                                <div id="checklistProgress" class="flex items-center gap-2">
+                                    <span id="progressLabel" class="text-[11px] font-bold text-slate-500">0 / 0</span>
+                                </div>
+                            </div>
+                            <div class="progress-track mb-3">
+                                <div id="progressFill" class="progress-fill" style="width:0%"></div>
+                            </div>
+                            <p class="text-[11px] text-slate-500 text-center">Marque <b class="text-green-600">OK</b> se OK ou <b class="text-red-500">NOK</b> se houver defeito</p>
+                        </div>
+                        <div id="checklistItemsWrapper" class="space-y-2">
+                            <!-- Os itens serão gerados via JavaScript aqui -->
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <label class="section-label"><i data-lucide="message-square" class="w-3 h-3"></i> Observações / Defeitos</label>
+                        <textarea id="observations" rows="3" placeholder="Descreva lâmpadas queimadas, avisos no painel, pneus furados, avarias na lataria, etc..." oninput="updatePreview()" class="w-full p-2.5 border resize-none text-sm"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="section-label flex justify-between">
+                            <span class="flex items-center gap-1"><i data-lucide="camera" class="w-3 h-3"></i> Fotos em Anexo (Máx. 4)</span>
+                            <span id="photoCounter" class="text-[10px] text-brand-600 font-black bg-brand-100 px-2 py-0.5 rounded-full">0/4</span>
+                        </label>
+                        <input type="file" id="photoUpload" accept="image/*" multiple capture="environment" onchange="handleImageUpload(event)" class="w-full p-2 border border-slate-300 rounded-xl text-sm bg-slate-50 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 transition-colors">
+
+                        <div id="photoPreviewContainer" class="hidden mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 animate-fade-in-down">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- COLUNA DA DIREITA: PREVIEW DO RELATÓRIO -->
+        <div class="w-full lg:w-1/2 flex flex-col preview-wrapper h-max">
+            <div id="report-card" class="w-full h-auto flex flex-col bg-white relative">
+
+                <!-- HEADER DO PREVIEW -->
+                <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white relative overflow-hidden flex flex-col justify-start shrink-0">
+                    <div class="absolute top-0 right-0 w-72 h-72 bg-brand-500/15 rounded-full blur-3xl -mr-24 -mt-24 pointer-events-none"></div>
+                    <div class="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl -ml-16 -mb-16 pointer-events-none"></div>
+                    <i data-lucide="clipboard-check" class="absolute -right-2 top-1/2 -translate-y-1/2 w-28 h-28 opacity-[0.04] text-white -rotate-12 pointer-events-none"></i>
+
+                    <div class="relative z-10 w-full">
+                        <div class="flex items-center gap-3 mb-4">
+                            <img src="logo-geral.png" class="w-9 h-9 rounded-xl border-2 border-brand-400/40 object-cover shadow-lg">
+                            <div>
+                                <h2 class="text-xl font-black text-white leading-tight">Checklist Diário</h2>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            <div class="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/10">
+                                <i data-lucide="calendar" class="w-3.5 h-3.5 text-brand-400"></i>
+                                <span id="previewDateTime" class="text-xs font-bold text-slate-200 tracking-wide">--/--/----</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-white/10">
+                                <i data-lucide="user" class="w-3.5 h-3.5 text-brand-400"></i>
+                                <span id="previewDriver" class="text-xs font-bold text-slate-200 tracking-wide uppercase">Preencha os dados...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DADOS E STATUS -->
+                <div class="bg-white px-5 pt-4 pb-1 shrink-0 border-b border-slate-100">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div id="previewVehicleIconContainer" class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                                <i data-lucide="truck" class="w-5 h-5 text-slate-500"></i>
+                            </div>
+                            <div>
+                                <span id="previewVehicleLabel" class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Veículo</span>
+                                <span id="previewVehicle" class="text-sm font-black text-slate-800 uppercase">---</span>
+                            </div>
+                        </div>
+                        <div id="previewStatus" class="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-400">
+                            Pendente
+                        </div>
+                    </div>
+                    <div id="previewStatsRow" class="hidden flex items-center gap-2 mt-3 pb-3">
+                        <span id="statOk" class="stat-pill bg-green-50 text-green-700"><i data-lucide="check" class="w-3 h-3"></i> 0 OK</span>
+                        <span id="statNok" class="stat-pill bg-red-50 text-red-600"><i data-lucide="x" class="w-3 h-3"></i> 0 NOK</span>
+                        <span id="statPending" class="stat-pill bg-slate-100 text-slate-500"><i data-lucide="minus" class="w-3 h-3"></i> 0 pendentes</span>
+                    </div>
+                </div>
+
+                <!-- CORPO DO CHECKLIST NO PREVIEW -->
+                <div id="previewContent" class="px-6 pb-6 flex flex-col h-auto min-h-[200px] justify-center">
+                    <div class="text-center text-slate-400 text-xs italic py-10 my-auto">
+                        O checklist aparecerá aqui assim que você selecionar um veículo e iniciar o preenchimento.
+                    </div>
+                </div>
+
+                <div class="shrink-0" style="background:linear-gradient(to right,#1e293b,#334155);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:10px;font-weight:800;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.1em;">SPG SEDE</span>
+                    <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;">Frota & Equipamentos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE ENVIO -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/60 z-[60] hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all scale-100">
+            <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-brand-50 mb-4">
+                <i data-lucide="check-square" class="h-8 w-8 text-brand-600"></i>
+            </div>
+            <h3 class="text-xl font-black text-slate-800 text-center">Confirmar Checklist?</h3>
+            <p class="text-sm text-slate-500 mt-3 text-center leading-relaxed font-medium">
+                Você inspecionou todos os itens e registrou eventuais defeitos?<br><br>
+                <span class="text-brand-600 font-bold">Ao enviar, o checklist será salvo como imagem e direcionado para o WhatsApp.</span>
+            </p>
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button onclick="hideConfirmModal()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-sm transition-colors uppercase">
+                    Revisar
+                </button>
+                <button onclick="executeSend()" class="px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-brand-600/20 active:scale-95 uppercase">
+                    Enviar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CARREGAMENTO -->
+    <div id="loadingModal" class="fixed inset-0 bg-black/60 z-[80] hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 w-11/12 max-w-sm transform transition-all scale-100 text-center flex flex-col items-center">
+            <div class="flex items-center justify-center mb-5">
+                <i data-lucide="loader-2" class="h-12 w-12 text-[#0284c7] animate-spin"></i>
+            </div>
+            
+            <h3 class="text-xl font-black text-slate-800 mb-2">Enviando Dados...</h3>
+            <p class="text-sm text-slate-500 leading-relaxed font-medium">
+                Aguarde, processando as informações e salvando no sistema.
+            </p>
+        </div>
+    </div>
+
+    <!-- MODAL DE SUCESSO E COMPARTILHAMENTO -->
+    <div id="successModal" class="fixed inset-0 bg-black/60 z-[70] hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 w-11/12 max-w-sm transform transition-all scale-100 text-center flex flex-col items-center">
+            <div class="flex items-center justify-center h-16 w-16 rounded-full bg-green-50 mb-5">
+                <i data-lucide="check-circle-2" class="h-10 w-10 text-green-500"></i>
+            </div>
+            
+            <h3 class="text-2xl font-black text-slate-800 mb-2">Tudo Pronto!</h3>
+            <p class="text-sm text-slate-500 mb-8 leading-relaxed font-medium">
+                Os dados foram processados e registrados com sucesso.<br><br>
+                Clique abaixo para abrir o WhatsApp.
+            </p>
+            
+            <div class="w-full flex flex-col gap-3">
+                <button onclick="executeShare()" class="w-full flex justify-center items-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-green-600/20 active:scale-95 uppercase">
+                    <i data-lucide="share-2" class="w-4 h-4"></i> Compartilhar
+                </button>
+                <button onclick="hideSuccessModal()" class="w-full px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-sm transition-colors uppercase">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE MENSAGEM -->
+    <div id="messageModal" class="fixed inset-0 bg-black/50 z-50 hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-sm transform transition-all scale-100 text-center">
+            <div id="msgIconContainer" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"></div>
+            <h3 id="msgTitle" class="text-lg font-bold text-slate-800"></h3>
+            <p id="msgText" class="text-sm text-slate-500 mt-2 mb-4"></p>
+            <button onclick="hideMessageModal()" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg text-sm transition-colors">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Dados dos checklists
+        const checklistData = {
+            "Kia Bongo": [
+                { category: "Externa e Segurança", items: ["Pneus, Calibragem e Estepe", "Lataria, Vidros e Retrovisores", "Faróis, Lanternas, Setas e Luz de Ré", "Limpador de Para-brisa e Fluido", "Placas legíveis e Travas da carroceria"] },
+                { category: "Mecânica e Fluidos", items: ["Nível de Óleo do Motor", "Água do Radiador", "Fluido Arla 32", "Fluido de Freio e Embreagem", "Bateria (Cabos e Fixação)", "Sem vazamentos aparentes"] },
+                { category: "Cabine e Acessórios", items: ["Luzes do Painel (Sem alertas de erro)", "Buzina e Cintos de Segurança", "Freios (Pedal e Mão)", "Kit Segurança (Triângulo, Macaco, Chave)", "Documentação do Veículo e Limpeza"] }
+            ],
+            "Trator": [
+                { category: "Estrutura e Segurança", items: ["Pneus / Esteiras (Pressão e Cortes)", "Lataria, Cabine e Retrovisores", "Faróis de Trabalho e Giroflex", "Pinos, Travas e Engates"] },
+                { category: "Mecânica e Manutenção", items: ["Nível de Óleo do Motor", "Nível de Óleo Hidráulico / Transmissão", "Água do Radiador e Limpeza da Tela", "Filtro de Ar Limpo", "Pontos de Graxa / Lubrificação", "Sem vazamentos visíveis"] },
+                { category: "Operação e Cabine", items: ["Painel de Instrumentos (Luzes/Avisos)", "Freios (Pedais e Estacionamento)", "Cinto de Segurança do Operador", "Tomada de Força (TDP) e Braços Hidráulicos"] }
+            ],
+            "Roçadeira": [
+                { category: "Segurança e Estrutura", items: ["Cinto de Sustentação", "Protetor da Lâmina / Fio", "Aperto de Parafusos e Porcas", "EPIs do Operador (Viseira, Perneira, etc)"] },
+                { category: "Mecânica e Motor", items: ["Nível de Combustível / Mistura 2T", "Filtro de Ar Limpo", "Vela de Ignição e Cabos", "Lubrificação da Ponteira / Engrenagem", "Sem vazamentos de combustível"] },
+                { category: "Operação", items: ["Gatilho do Acelerador e Trava", "Botão Corta-Corrente (Desliga)", "Condição da Lâmina ou Fio de Nylon", "Funcionamento na Lenta (Sem girar a lâmina)"] }
+            ],
+            "Máquina de Pulverizar": [
+                { category: "Estrutura e Mobilidade", items: ["Pneus e Câmaras de ar (Calibragem e Cortes)", "Chassi e Estrutura (Sem trincas ou quebras)", "Eixos e Rolamentos (Lubrificação e Folga)"] },
+                { category: "Sistema de Pulverização", items: ["Tanque e Tampa (Sem vazamentos/furos)", "Mangueiras e Conexões (Sem vazamentos)", "Bicos Pulverizadores (Limpos e Vazão uniforme)", "Filtros principal e de linha (Limpos)"] },
+                { category: "Motor e Bomba", items: ["Nível de Óleo e Combustível", "Correias e Polias (Tensão e Desgaste)", "Lança de Pulverização e Gatilho (Funcionamento)", "Sem vazamentos no conjunto da bomba"] }
+            ],
+            "Sistema de Fertirrigação": [
+                { category: "Painel e Controle", items: ["Controlador e Conexão Wi-Fi (Ligado, sem erros e sinal estável)"] },
+                { category: "Sensores e Dosagem", items: ["Sensores de EC/pH (Limpos e calibrados)", "Bombas Dosadoras e Mangueiras (Girando livre, sem obstruções)"] },
+                { category: "Estrutura e Hidráulica", items: ["Filtros de Discos e Registros (Limpos e operantes)", "Válvulas Solenoides (Testadas via celular/painel)", "Tubulações, Caixas e Casa de Adubos (Sem vazamentos)"] }
+            ],
+            "Roçadeira Trator": [
+                { category: "Estrutura e Segurança", items: ["Pinos, travas de engate e correntes estabilizadoras", "Patins laterais (Regulagem de altura e desgaste)", "Saia de proteção (Borracha ou corrente contra pedras)"] },
+                { category: "Transmissão", items: ["Protetor do cardan, correntes de segurança e cruzetas (Lubrificação)", "Caixa multiplicadora (Nível de óleo, vazamentos e respiro desobstruído)"] },
+                { category: "Corte", items: ["Facas/Lâminas (Desgaste, quebras, aperto dos parafusos e giro livre)"] }
+            ],
+            "Grade Arado": [
+                { category: "Estrutura", items: ["Chassi central, seções e engates (Trincas e soldas)", "Limpadores dos discos (Regulagem, tortos ou faltando)", "Mangueiras e cilindros hidráulicos (Vazamentos - se aplicável)"] },
+                { category: "Eixo e Discos", items: ["Discos (Desgaste, trincas ou quebras)", "Parafusos do eixo das seções (Aperto geral)", "Mancais de atrito/rolamento (Folga excessiva e lubrificação)"] }
+            ],
+            "Enxada Rotativa": [
+                { category: "Estrutura e Segurança", items: ["Pinos, travas de engate e tampa traseira niveladora", "Patins niveladores laterais (Regulagem e desgaste)", "Rotor e flanges (Trincas ou empenamentos)"] },
+                { category: "Transmissão", items: ["Cardan com embreagem de fricção ou pino fusível (Protetor e cruzetas)", "Caixa de transmissão central (Nível de óleo e vazamentos)", "Transmissão lateral [corrente/engrenagem] (Tensão, óleo e vazamentos)"] },
+                { category: "Corte", items: ["Lâminas/Enxadas (Desgaste, tortas, quebradas e aperto dos parafusos)"] }
+            ],
+            "Carreta Agrícola": [
+                { category: "Estrutura de Madeira", items: ["Assoalho e tampas laterais (Tábuas quebradas ou soltas)", "Travas e dobradiças das tampas"] },
+                { category: "Chassi e Engate", items: ["Chassi principal (Trincas ou soldas quebradas)", "Cabeçalho, pino de engate e trava de segurança"] },
+                { category: "Rodado", items: ["Pneus e Câmaras (Pressão e cortes)", "Aperto das porcas e folga/lubrificação do eixo"] }
+            ]
+        };
+
+        // Traduz itens com negativa dupla para uma frase clara de defeito
+        function getFriendlyDefectName(item) {
+            const friendlyNames = {
+                // Kia Bongo (Caminhão)
+                "Pneus, Calibragem e Estepe": "Problema nos pneus, calibragem ou estepe",
+                "Lataria, Vidros e Retrovisores": "Avaria na lataria, vidros ou retrovisores",
+                "Faróis, Lanternas, Setas e Luz de Ré": "Lâmpadas queimadas ou lanternas danificadas",
+                "Limpador de Para-brisa e Fluido": "Problema no limpador ou falta de fluido",
+                "Placas legíveis e Travas da carroceria": "Placas ilegíveis ou defeito nas travas da carroceria",
+                "Nível de Óleo do Motor": "Nível de óleo do motor baixo ou irregular",
+                "Água do Radiador": "Nível de água do radiador baixo",
+                "Fluido Arla 32": "Fluido Arla 32 baixo ou necessita completar",
+                "Fluido de Freio e Embreagem": "Fluido de freio/embreagem baixo ou vazando",
+                "Bateria (Cabos e Fixação)": "Problema na bateria (fixação frouxa ou cabos oxidados)",
+                "Sem vazamentos aparentes": "Vazamento de fluido identificado",
+                "Luzes do Painel (Sem alertas de erro)": "Luz de alerta acesa no painel",
+                "Buzina e Cintos de Segurança": "Problema na buzina ou cinto de segurança",
+                "Freios (Pedal e Mão)": "Defeito nos freios (pedal ou freio de mão)",
+                "Kit Segurança (Triângulo, Macaco, Chave)": "Falta de item no Kit de Segurança",
+                "Documentação do Veículo e Limpeza": "Documentação irregular ou veículo sujo",
+
+                // Trator
+                "Pneus / Esteiras (Pressão e Cortes)": "Pneus/Esteiras com baixa pressão ou cortes",
+                "Lataria, Cabine e Retrovisores": "Avaria na lataria, cabine ou retrovisores",
+                "Faróis de Trabalho e Giroflex": "Faróis de trabalho ou giroflex com defeito",
+                "Pinos, Travas e Engates": "Pinos, travas ou engates danificados/faltando",
+                "Nível de Óleo Hidráulico / Transmissão": "Óleo hidráulico/transmissão baixo",
+                "Água do Radiador e Limpeza da Tela": "Água do radiador baixa ou tela suja",
+                "Filtro de Ar Limpo": "Filtro de ar sujo ou obstruído",
+                "Pontos de Graxa / Lubrificação": "Falta de graxa/lubrificação em pontos cruciais",
+                "Sem vazamentos visíveis": "Vazamento identificado no equipamento",
+                "Painel de Instrumentos (Luzes/Avisos)": "Aviso de erro no painel de instrumentos",
+                "Freios (Pedais e Estacionamento)": "Defeito nos freios (pedais ou estacionamento)",
+                "Cinto de Segurança do Operador": "Cinto de segurança do operador com defeito",
+                "Tomada de Força (TDP) e Braços Hidráulicos": "Defeito na Tomada de Força (TDP) ou braços",
+
+                // Roçadeira
+                "Cinto de Sustentação": "Cinto de sustentação rasgado ou quebrado",
+                "Protetor da Lâmina / Fio": "Protetor da lâmina/fio quebrado ou faltando",
+                "Aperto de Parafusos e Porcas": "Parafusos/porcas frouxos ou faltando",
+                "EPIs do Operador (Viseira, Perneira, etc)": "Falta de EPIs ou EPIs com defeito",
+                "Nível de Combustível / Mistura 2T": "Combustível/mistura 2T irregular",
+                "Vela de Ignição e Cabos": "Problema na vela de ignição ou cabos",
+                "Lubrificação da Ponteira / Engrenagem": "Falta de lubrificação na ponteira/engrenagem",
+                "Sem vazamentos de combustível": "Vazamento de combustível identificado",
+                "Gatilho do Acelerador e Trava": "Defeito no gatilho do acelerador ou trava",
+                "Botão Corta-Corrente (Desliga)": "Botão corta-corrente (desliga) com defeito",
+                "Condição da Lâmina ou Fio de Nylon": "Lâmina danificada ou falta de fio de nylon",
+                "Funcionamento na Lenta (Sem girar a lâmina)": "Problema na lenta (lâmina gira ou motor morre)",
+
+                // Máquina de Pulverizar
+                "Pneus e Câmaras de ar (Calibragem e Cortes)": "Pneus/câmaras com baixa pressão ou cortes",
+                "Chassi e Estrutura (Sem trincas ou quebras)": "Trincas ou quebras identificadas no chassi",
+                "Eixos e Rolamentos (Lubrificação e Folga)": "Folga ou falta de lubrificação nos eixos",
+                "Tanque e Tampa (Sem vazamentos/furos)": "Vazamento ou furo no tanque/tampa",
+                "Mangueiras e Conexões (Sem vazamentos)": "Vazamento nas mangueiras ou conexões",
+                "Bicos Pulverizadores (Limpos e Vazão uniforme)": "Bicos entupidos, sujos ou com vazão irregular",
+                "Filtros principal e de linha (Limpos)": "Filtros principal/linha sujos ou obstruídos",
+                "Nível de Óleo e Combustível": "Nível de óleo do motor ou combustível baixo",
+                "Correias e Polias (Tensão e Desgaste)": "Correias/polias frouxas ou desgastadas",
+                "Lança de Pulverização e Gatilho (Funcionamento)": "Defeito na lança ou gatilho de pulverização",
+                "Sem vazamentos no conjunto da bomba": "Vazamento no conjunto da bomba",
+
+                // Sistema de Fertirrigação
+                "Controlador e Conexão Wi-Fi (Ligado, sem erros e sinal estável)": "Problema no Controlador ou falha no sinal Wi-Fi",
+                "Sensores de EC/pH (Limpos e calibrados)": "Sensores de EC/pH sujos ou descalibrados",
+                "Bombas Dosadoras e Mangueiras (Girando livre, sem obstruções)": "Problema nas Bombas Dosadoras ou mangueiras obstruídas/ressecadas",
+                "Filtros de Discos e Registros (Limpos e operantes)": "Filtros de discos sujos ou registros inoperantes",
+                "Válvulas Solenoides (Testadas via celular/painel)": "Falha na abertura/fechamento das Válvulas Solenoides",
+                "Tubulações, Caixas e Casa de Adubos (Sem vazamentos)": "Vazamentos nas tubulações, caixas ou casa de adubos",
+
+                // Equipamentos de Trator - Roçadeira
+                "Pinos, travas de engate e correntes estabilizadoras": "Problema nos pinos, travas ou correntes estabilizadoras",
+                "Patins laterais (Regulagem de altura e desgaste)": "Patins desgastados ou desregulados",
+                "Saia de proteção (Borracha ou corrente contra pedras)": "Saia de proteção danificada ou faltando",
+                "Protetor do cardan, correntes de segurança e cruzetas (Lubrificação)": "Problema no cardan, falta de protetor ou lubrificação",
+                "Caixa multiplicadora (Nível de óleo, vazamentos e respiro desobstruído)": "Problema na caixa multiplicadora (óleo baixo/vazamento)",
+                "Facas/Lâminas (Desgaste, quebras, aperto dos parafusos e giro livre)": "Lâminas danificadas, frouxas ou presas",
+
+                // Equipamentos de Trator - Grade Arado
+                "Chassi central, seções e engates (Trincas e soldas)": "Trincas no chassi ou eixo das seções",
+                "Limpadores dos discos (Regulagem, tortos ou faltando)": "Limpadores desregulados, tortos ou ausentes",
+                "Mangueiras e cilindros hidráulicos (Vazamentos - se aplicável)": "Vazamento em mangueiras/cilindros hidráulicos",
+                "Discos (Desgaste, trincas ou quebras)": "Discos desgastados, trincados ou quebrados",
+                "Parafusos do eixo das seções (Aperto geral)": "Eixo das seções frouxo",
+                "Mancais de atrito/rolamento (Folga excessiva e lubrificação)": "Mancais com folga ou precisando de lubrificação",
+
+                // Equipamentos de Trator - Enxada Rotativa
+                "Pinos, travas de engate e tampa traseira niveladora": "Defeito nos engates ou tampa traseira danificada",
+                "Patins niveladores laterais (Regulagem e desgaste)": "Patins laterais desgastados ou desregulados",
+                "Rotor e flanges (Trincas ou empenamentos)": "Rotor ou flanges com trincas/empenados",
+                "Cardan com embreagem de fricção ou pino fusível (Protetor e cruzetas)": "Problema no cardan, cruzetas ou embreagem de segurança",
+                "Caixa de transmissão central (Nível de óleo e vazamentos)": "Problema na caixa central (óleo baixo/vazamento)",
+                "Transmissão lateral [corrente/engrenagem] (Tensão, óleo e vazamentos)": "Problema na transmissão lateral (óleo/tensão)",
+                "Lâminas/Enxadas (Desgaste, tortas, quebradas e aperto dos parafusos)": "Enxadas desgastadas, tortas, quebradas ou frouxas",
+
+                // Equipamentos de Trator - Carreta Agrícola
+                "Assoalho e tampas laterais (Tábuas quebradas ou soltas)": "Tábuas do assoalho ou tampas avariadas",
+                "Travas e dobradiças das tampas": "Travas ou dobradiças quebradas",
+                "Chassi principal (Trincas ou soldas quebradas)": "Trincas ou soldas quebradas no chassi",
+                "Cabeçalho, pino de engate e trava de segurança": "Defeito no cabeçalho, pino ou trava",
+                "Pneus e Câmaras (Pressão e cortes)": "Pneus murchos ou com cortes",
+                "Aperto das porcas e folga/lubrificação do eixo": "Porcas frouxas ou eixo desregulado/seco"
+            };
+            return friendlyNames[item] || item;
+        }
+
+        let currentPhotos = [];
+
+        // Inicialização
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+            
+            const dateInput = document.getElementById('reportDate');
+            if (!dateInput.value) {
+                const today = new Date();
+                // Ajuste de fuso horário para pegar a data local corretamente (evita adiantar 1 dia à noite)
+                const localDate = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                dateInput.value = localDate;
+            }
+            updatePreview();
+        });
+
+        // Controle da seleção de motorista
+        function handleDriverChange() {
+            const driverSelect = document.getElementById('driverSelect');
+            const customContainer = document.getElementById('customDriverContainer');
+            const customInput = document.getElementById('customDriverName');
+            
+            if (driverSelect.value === 'Outro') {
+                customContainer.classList.remove('hidden');
+                customInput.setAttribute('required', 'required');
+            } else {
+                customContainer.classList.add('hidden');
+                customInput.removeAttribute('required');
+            }
+            updatePreview();
+        }
+
+        function getDriverName() {
+            const selectVal = document.getElementById('driverSelect').value;
+            if (selectVal === 'Outro') {
+                return document.getElementById('customDriverName').value;
+            }
+            return selectVal;
+        }
+
+        function getFullVehicleName() {
+            const baseVehicle = document.getElementById('vehicleSelect').value;
+            const eqValue = document.getElementById('equipmentNumber').value;
+            if (baseVehicle === 'Implementos do Trator') {
+                return eqValue || baseVehicle;
+            } else if (baseVehicle === 'Roçadeira' || baseVehicle === 'Máquina de Pulverizar' || baseVehicle === 'Sistema de Fertirrigação') {
+                return eqValue ? eqValue : baseVehicle;
+            }
+            return baseVehicle;
+        }
+
+        function handleEquipmentChange() {
+            const vehicle = document.getElementById('vehicleSelect').value;
+            const equipment = document.getElementById('equipmentNumber').value;
+            
+            if (vehicle === 'Implementos do Trator') {
+                renderChecklist(equipment);
+            } else {
+                updatePreview();
+            }
+        }
+
+        // SVGs personalizados para cada tipo de veículo/equipamento
+        function getVehicleIconHtml(baseVehicle, fullVehicle) {
+            const s = 'width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+
+            // Kia Bongo → caminhão
+            if (baseVehicle === 'Kia Bongo') {
+                return `<svg xmlns="http://www.w3.org/2000/svg" ${s}><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 4v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`;
+            }
+
+            // Trator
+            if (baseVehicle === 'Trator') {
+                return `<svg xmlns="http://www.w3.org/2000/svg" ${s}><path d="M3 17h3m11 0h2m-8-9V5h5l3 5"/><circle cx="6" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M9 8H3v9"/><rect x="9" y="8" width="7" height="7" rx="1"/></svg>`;
+            }
+
+            // Roçadeira → roçadeira manual (motor + haste + cabeçote)
+            if (baseVehicle === 'Roçadeira' || fullVehicle.startsWith('Roçadeira')) {
+                return `<svg xmlns="http://www.w3.org/2000/svg" ${s}>
+                    <rect x="2" y="2" width="5" height="4" rx="1"/>
+                    <line x1="4.5" y1="6" x2="16" y2="17.5"/>
+                    <circle cx="19" cy="19" r="3"/>
+                    <line x1="16.8" y1="19" x2="21.2" y2="19"/>
+                    <line x1="19" y1="16.8" x2="19" y2="21.2"/>
+                </svg>`;
+            }
+
+            // Máquina de Pulverizar → borrifador
+            if (baseVehicle === 'Máquina de Pulverizar' || fullVehicle.startsWith('Máquina de Pulverizar')) {
+                return `<svg xmlns="http://www.w3.org/2000/svg" ${s}><path d="M3 3h6v6H3z"/><path d="M9 6h3"/><path d="M12 4v4"/><path d="M14 6c2 0 4 1 4 4v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-4"/><line x1="16" y1="10" x2="19" y2="7"/><line x1="19" y1="7" x2="21" y2="9"/><line x1="18" y1="4" x2="20" y2="6"/></svg>`;
+            }
+
+            // Sistema de Fertirrigação → tubulação com gotejadores
+            if (baseVehicle === 'Sistema de Fertirrigação' || fullVehicle.startsWith('Sistema de Fertirrigação')) {
+                return `<svg xmlns="http://www.w3.org/2000/svg" ${s}>
+                    <line x1="2" y1="7" x2="22" y2="7"/>
+                    <line x1="6" y1="7" x2="6" y2="11"/>
+                    <path d="M4 14 a2 2 0 0 0 4 0 l-2-3z"/>
+                    <line x1="12" y1="7" x2="12" y2="11"/>
+                    <path d="M10 14 a2 2 0 0 0 4 0 l-2-3z"/>
+                    <line x1="18" y1="7" x2="18" y2="11"/>
+                    <path d="M16 14 a2 2 0 0 0 4 0 l-2-3z"/>
+                    <rect x="9" y="2" width="6" height="4" rx="1"/>
+                </svg>`;
+            }
+
+            // Implementos individuais
+            if (fullVehicle === 'Carreta Agrícola') {
+                return `<svg xmlns="http://www.w3.org/2000/svg" ${s}>
+                    <rect x="3" y="5" width="18" height="10" rx="1"/>
+                    <line x1="3" y1="10" x2="1" y2="10"/>
+                    <line x1="1" y1="10" x2="1" y2="16"/>
+                    <circle cx="8" cy="18" r="2.5"/>
+                    <circle cx="18" cy="18" r="2.5"/>
+                    <line x1="1" y1="16" x2="3" y2="15"/>
+                </svg>`;
+            }
+
+            if (fullVehicle === 'Grade Arado') {
+                return `<svg xmlns="http://www.w3.org/2000/svg" ${s}>
+                    <line x1="2" y1="7" x2="22" y2="7"/>
+                    <line x1="5" y1="7" x2="5" y2="9"/>
+                    <ellipse cx="5" cy="14" rx="2.5" ry="5"/>
+                    <line x1="11" y1="7" x2="11" y2="9"/>
+                    <ellipse cx="11" cy="14" rx="2.5" ry="5"/>
+                    <line x1="17" y1="7" x2="17" y2="9"/>
+                    <ellipse cx="17" cy="14" rx="2.5" ry="5"/>
+                    <line x1="4" y1="2" x2="12" y2="7"/>
+                    <line x1="12" y1="2" x2="12" y2="7"/>
+                    <line x1="20" y1="2" x2="12" y2="7"/>
+                </svg>`;
+            }
+
+            if (fullVehicle === 'Enxada Rotativa') {
+                return `<svg xmlns="http://www.w3.org/2000/svg" ${s}>
+                    <rect x="3" y="7" width="18" height="5" rx="1"/>
+                    <line x1="12" y1="3" x2="12" y2="7"/>
+                    <line x1="8" y1="4" x2="12" y2="7"/>
+                    <line x1="16" y1="4" x2="12" y2="7"/>
+                    <line x1="6" y1="12" x2="5" y2="18"/>
+                    <line x1="5" y1="18" x2="8" y2="18"/>
+                    <line x1="10" y1="12" x2="9" y2="18"/>
+                    <line x1="9" y1="18" x2="12" y2="18"/>
+                    <line x1="14" y1="12" x2="13" y2="18"/>
+                    <line x1="13" y1="18" x2="16" y2="18"/>
+                    <line x1="18" y1="12" x2="17" y2="18"/>
+                    <line x1="17" y1="18" x2="20" y2="18"/>
+                </svg>`;
+            }
+
+            if (fullVehicle === 'Roçadeira Trator') {
+                return `<svg xmlns="http://www.w3.org/2000/svg" ${s}>
+                    <line x1="8" y1="3" x2="12" y2="9"/>
+                    <line x1="16" y1="3" x2="12" y2="9"/>
+                    <line x1="12" y1="3" x2="12" y2="9"/>
+                    <rect x="2" y="9" width="20" height="4" rx="1"/>
+                    <circle cx="12" cy="18" r="4"/>
+                    <line x1="9" y1="18" x2="15" y2="18"/>
+                    <line x1="12" y1="15" x2="12" y2="21"/>
+                </svg>`;
+            }
+
+            // Implementos do Trator genérico → engate 3 pontos
+            if (baseVehicle === 'Implementos do Trator') {
+                return `<svg xmlns="http://www.w3.org/2000/svg" ${s}>
+                    <circle cx="12" cy="5" r="2"/>
+                    <line x1="12" y1="7" x2="12" y2="13"/>
+                    <line x1="12" y1="13" x2="5" y2="20"/>
+                    <line x1="12" y1="13" x2="19" y2="20"/>
+                    <circle cx="5" cy="21" r="1.5"/>
+                    <circle cx="19" cy="21" r="1.5"/>
+                    <line x1="4" y1="13" x2="20" y2="13"/>
+                </svg>`;
+            }
+
+            // Padrão
+            return `<svg xmlns="http://www.w3.org/2000/svg" ${s}><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 4v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`;
+        }
+
+        const categoryColors = [
+            'cat-header-kia', 'cat-header-mec', 'cat-header-cab',
+            'cat-header-seg', 'cat-header-op', 'cat-header-default'
+        ];
+
+        function renderChecklist(checklistKey) {
+            const container = document.getElementById('checklistContainer');
+            const wrapper = document.getElementById('checklistItemsWrapper');
+            wrapper.innerHTML = '';
+
+            if (checklistKey && checklistData[checklistKey]) {
+                container.classList.remove('hidden');
+
+                checklistData[checklistKey].forEach((group, groupIdx) => {
+                    const colorClass = categoryColors[groupIdx % categoryColors.length];
+                    const totalItems = group.items.length;
+                    let groupHtml = `
+                        <div class="cat-block">
+                            <div class="cat-header ${colorClass}">
+                                <span class="text-white font-black text-[11px] uppercase tracking-widest flex-1">${group.category}</span>
+                                <span class="text-white/60 text-[10px] font-bold">${totalItems} iten${totalItems !== 1 ? 's' : ''}</span>
+                            </div>
+                            <div>
+                    `;
+
+                    group.items.forEach((item, itemIdx) => {
+                        const inputName = `chk_${groupIdx}_${itemIdx}`;
+                        groupHtml += `
+                            <div class="chk-row">
+                                <span class="text-[13px] text-slate-700 font-semibold pr-3 leading-snug">${item}</span>
+                                <div class="flex gap-2 shrink-0">
+                                    <label class="cursor-pointer" title="OK">
+                                        <input type="radio" name="${inputName}" value="OK" class="sr-only check-radio ok-radio" onchange="updatePreview()">
+                                        <div class="chk-btn chk-btn-ok">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            OK
+                                        </div>
+                                    </label>
+                                    <label class="cursor-pointer" title="NOK">
+                                        <input type="radio" name="${inputName}" value="NOK" class="sr-only check-radio nok-radio" onchange="updatePreview()">
+                                        <div class="chk-btn chk-btn-nok">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                            NOK
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    groupHtml += `</div></div>`;
+                    wrapper.innerHTML += groupHtml;
+                });
+
+                // Apply checked styles via JS since CSS peer doesn't work across DOM
+                wrapper.addEventListener('change', () => {
+                    wrapper.querySelectorAll('.check-radio').forEach(radio => {
+                        const btn = radio.nextElementSibling;
+                        if (!btn) return;
+                        if (radio.checked) {
+                            if (radio.value === 'OK') {
+                                btn.style.background = '#16a34a'; btn.style.borderColor = '#16a34a'; btn.style.color = '#fff';
+                                btn.style.boxShadow = '0 2px 8px rgba(22,163,74,0.35)';
+                            } else {
+                                btn.style.background = '#dc2626'; btn.style.borderColor = '#dc2626'; btn.style.color = '#fff';
+                                btn.style.boxShadow = '0 2px 8px rgba(220,38,38,0.35)';
+                            }
+                        } else {
+                            btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = '';
+                            btn.style.boxShadow = '';
+                        }
+                    });
+                });
+            } else {
+                container.classList.add('hidden');
+            }
+            updatePreview();
+        }
+
+        // Quando altera o veículo, gera os campos do checklist
+        function handleVehicleChange() {
+            const vehicle = document.getElementById('vehicleSelect').value;
+            const driverLabel = document.getElementById('driverLabelText');
+            const equipmentNumberContainer = document.getElementById('equipmentNumberContainer');
+            const equipmentNumber = document.getElementById('equipmentNumber');
+            const equipmentLabel = document.getElementById('equipmentLabelText');
+            
+            // Lógica dinâmica para trocar "Motorista" por "Operador"
+            const isEquipment = vehicle === 'Roçadeira' || vehicle === 'Máquina de Pulverizar' || vehicle === 'Sistema de Fertirrigação' || vehicle === 'Implementos do Trator';
+            
+            if (isEquipment) {
+                driverLabel.innerHTML = '<i data-lucide="user" class="w-3 h-3"></i> Operador';
+                document.getElementById('driverSelect').options[0].text = "Selecione o operador...";
+                document.getElementById('previewVehicleLabel').innerText = "Equipamento";
+                
+                equipmentNumberContainer.classList.remove('hidden');
+                equipmentNumber.setAttribute('required', 'required');
+                
+                // Preenche as opções do select com base no equipamento escolhido
+                equipmentNumber.innerHTML = '<option value="">Selecione a identificação...</option>';
+                if (vehicle === 'Roçadeira') {
+                    equipmentLabel.innerHTML = '<i data-lucide="tag" class="w-3 h-3"></i> Identificação da Roçadeira';
+                    equipmentNumber.innerHTML += `
+                        <option value="Roçadeira - Toyama TBC63-1">Roçadeira - Toyama TBC63-1</option>
+                        <option value="Roçadeira - Toyama TBC63-2">Roçadeira - Toyama TBC63-2</option>
+                        <option value="Roçadeira - Toyama RT52LB-3">Roçadeira - Toyama RT52LB-3</option>
+                        <option value="Roçadeira - Toyama TBC43X-4">Roçadeira - Toyama TBC43X-4</option>
+                        <option value="Roçadeira - Vonder RGO330-1">Roçadeira - Vonder RGO330-1</option>
+                    `;
+                } else if (vehicle === 'Máquina de Pulverizar') {
+                    equipmentLabel.innerHTML = '<i data-lucide="tag" class="w-3 h-3"></i> Identificação da Máquina';
+                    equipmentNumber.innerHTML += `
+                        <option value="Máquina de Pulverizar - FOSPG-1">Máquina de Pulverizar - FOSPG-1</option>
+                        <option value="Máquina de Pulverizar - FOSPG-2">Máquina de Pulverizar - FOSPG-2</option>
+                    `;
+                } else if (vehicle === 'Sistema de Fertirrigação') {
+                    equipmentLabel.innerHTML = '<i data-lucide="tag" class="w-3 h-3"></i> Identificação do Sistema';
+                    equipmentNumber.innerHTML += `
+                        <option value="Sistema de Fertirrigação - Iponia">Sistema de Fertirrigação - Iponia</option>
+                    `;
+                } else if (vehicle === 'Implementos do Trator') {
+                    equipmentLabel.innerHTML = '<i data-lucide="tag" class="w-3 h-3"></i> Selecione o Equipamento';
+                    equipmentNumber.innerHTML += `
+                        <option value="Roçadeira Trator">Roçadeira Trator</option>
+                        <option value="Grade Arado">Grade Arado</option>
+                        <option value="Enxada Rotativa">Enxada Rotativa</option>
+                        <option value="Carreta Agrícola">Carreta Agrícola</option>
+                    `;
+                }
+            } else {
+                driverLabel.innerHTML = '<i data-lucide="user" class="w-3 h-3"></i> Motorista';
+                document.getElementById('driverSelect').options[0].text = "Selecione o motorista...";
+                document.getElementById('previewVehicleLabel').innerText = "Veículo";
+                
+                equipmentNumberContainer.classList.add('hidden');
+                equipmentNumber.removeAttribute('required');
+                equipmentNumber.innerHTML = '<option value="">Selecione...</option>';
+                equipmentNumber.value = ''; // Reseta a identificação escolhida
+            }
+            
+            if (vehicle === 'Implementos do Trator') {
+                renderChecklist(null);
+            } else {
+                renderChecklist(vehicle);
+            }
+            lucide.createIcons();
+        }
+
+        // Atualiza a visualização do cartão da direita em tempo real
+        function updatePreview() {
+            const dateVal = document.getElementById('reportDate').value;
+            const baseVehicle = document.getElementById('vehicleSelect').value;
+            const equipmentSelect = document.getElementById('equipmentNumber').value;
+            const vehicle = getFullVehicleName();
+            const driver = getDriverName() || 'Motorista não informado';
+            const obs = document.getElementById('observations').value;
+
+            // Formatar data
+            let displayDate = "--/--/----";
+            if (dateVal) {
+                const parts = dateVal.split('-');
+                displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+
+            document.getElementById('previewDateTime').innerText = displayDate;
+            document.getElementById('previewDriver').innerText = driver;
+            document.getElementById('previewVehicle').innerText = vehicle || '---';
+
+            const iconContainer = document.getElementById('previewVehicleIconContainer');
+            if (iconContainer) iconContainer.innerHTML = getVehicleIconHtml(baseVehicle, vehicle || '');
+
+            const previewContent = document.getElementById('previewContent');
+            const previewStatus = document.getElementById('previewStatus');
+            const previewStatsRow = document.getElementById('previewStatsRow');
+
+            let activeChecklistKey = baseVehicle;
+            if (baseVehicle === 'Implementos do Trator') {
+                activeChecklistKey = equipmentSelect;
+            }
+
+            if (!activeChecklistKey || !checklistData[activeChecklistKey]) {
+                previewContent.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-14 text-center px-6">
+                        <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
+                            <i data-lucide="clipboard" class="w-8 h-8 text-slate-300"></i>
+                        </div>
+                        <p class="text-slate-400 text-sm font-medium">Selecione um veículo para visualizar o checklist aqui.</p>
+                    </div>`;
+                previewStatus.className = "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-slate-100 text-slate-400";
+                previewStatus.innerText = "Pendente";
+                previewStatsRow.classList.add('hidden');
+                return;
+            }
+
+            // Coletar respostas
+            let allAnswered = true;
+            let hasIssues = false;
+            let countOk = 0, countNok = 0, countPending = 0, totalItems = 0;
+
+            checklistData[activeChecklistKey].forEach((group, groupIdx) => {
+                group.items.forEach((item, itemIdx) => {
+                    totalItems++;
+                    const inputName = `chk_${groupIdx}_${itemIdx}`;
+                    const checkedOption = document.querySelector(`input[name="${inputName}"]:checked`);
+                    if (!checkedOption) { allAnswered = false; countPending++; }
+                    else if (checkedOption.value === 'OK') countOk++;
+                    else { hasIssues = true; countNok++; }
+                });
+            });
+
+            // Stats pills
+            previewStatsRow.classList.remove('hidden');
+            document.getElementById('statOk').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ${countOk} OK`;
+            document.getElementById('statNok').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> ${countNok} NOK`;
+            document.getElementById('statPending').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg> ${countPending} pend.`;
+
+            // Progress bar
+            const answered = countOk + countNok;
+            const pct = totalItems > 0 ? Math.round((answered / totalItems) * 100) : 0;
+            const progressFill = document.getElementById('progressFill');
+            const progressLabel = document.getElementById('progressLabel');
+            if (progressFill) { progressFill.style.width = pct + '%'; }
+            if (progressLabel) { progressLabel.innerText = `${answered} / ${totalItems}`; }
+
+            // Build preview HTML
+            let checklistResultsHtml = `<div class="flex flex-col gap-3 w-full">`;
+
+            checklistData[activeChecklistKey].forEach((group, groupIdx) => {
+                const colorClass = categoryColors[groupIdx % categoryColors.length];
+                checklistResultsHtml += `
+                    <div style="border-radius:12px;overflow:hidden;border:1.5px solid #e2e8f0;">
+                        <div class="cat-header ${colorClass}" style="padding:7px 12px;">
+                            <span style="color:white;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.07em;">${group.category}</span>
+                        </div>
+                        <ul style="background:#fff;">`;
+
+                group.items.forEach((item, itemIdx) => {
+                    const inputName = `chk_${groupIdx}_${itemIdx}`;
+                    const checkedOption = document.querySelector(`input[name="${inputName}"]:checked`);
+
+                    if (!checkedOption) {
+                        checklistResultsHtml += `
+                            <li style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #f1f5f9;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                <span style="font-size:12px;color:#94a3b8;font-weight:500;">${item}</span>
+                            </li>`;
+                    } else if (checkedOption.value === 'OK') {
+                        checklistResultsHtml += `
+                            <li style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #f1f5f9;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span style="font-size:12px;color:#1e293b;font-weight:700;">${item}</span>
+                            </li>`;
+                    } else {
+                        checklistResultsHtml += `
+                            <li style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #fee2e2;background:#fef2f2;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                <span style="font-size:12px;color:#b91c1c;font-weight:800;">${getFriendlyDefectName(item)}</span>
+                            </li>`;
+                    }
+                });
+                checklistResultsHtml += `</ul></div>`;
+            });
+            checklistResultsHtml += '</div>';
+
+            // Atualizar Status Badge
+            if (!allAnswered) {
+                previewStatus.className = "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-600";
+                previewStatus.innerText = "Em Preenchimento";
+            } else if (hasIssues) {
+                previewStatus.className = "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-600";
+                previewStatus.innerHTML = '<span style="display:flex;align-items:center;gap:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> Requer Atenção</span>';
+            } else {
+                previewStatus.className = "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider bg-green-100 text-green-700";
+                previewStatus.innerHTML = '<span style="display:flex;align-items:center;gap:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline><polyline points="20 6 9 17 4 12"></polyline></svg> Apto para uso</span>';
+            }
+
+            // Observações
+            if (obs.trim().length > 0) {
+                checklistResultsHtml += `
+                    <div class="shrink-0 bg-amber-50 border border-amber-200 p-4 rounded-xl mt-2 mb-2 shadow-sm">
+                        <h4 class="text-[11px] font-black text-amber-700 uppercase mb-2">Observações / Defeitos Relatados</h4>
+                        <p class="text-sm text-amber-900 whitespace-pre-wrap font-medium">${obs}</p>
+                    </div>
+                `;
+            }
+
+            // Fotos
+            if (currentPhotos.length > 0) {
+                checklistResultsHtml += `<div class="shrink-0 mt-4"><h4 class="text-[11px] font-black text-slate-400 uppercase mb-3">Evidências Fotográficas</h4><div class="grid grid-cols-4 gap-3">`;
+                currentPhotos.forEach(p => {
+                    checklistResultsHtml += `<img src="${p}" class="w-full h-36 object-cover rounded-xl border border-slate-200 shadow-sm">`;
+                });
+                checklistResultsHtml += `</div></div>`;
+            }
+
+            previewContent.innerHTML = checklistResultsHtml;
+            lucide.createIcons();
+        }
+
+        // Lógica de Imagens
+        async function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+            if (currentPhotos.length + files.length > 4) { 
+                showMessageModal('Limite Excedido', 'Você pode enviar no máximo 4 fotos por checklist.', 'error'); 
+                return; 
+            }
+            
+            const uploadBtn = document.getElementById('photoUpload');
+            uploadBtn.disabled = true;
+            
+            for (const file of files) { 
+                if (!file.type.startsWith('image/')) continue; 
+                const base64 = await processImage(file); 
+                currentPhotos.push(base64); 
+            }
+            
+            uploadBtn.value = ''; 
+            uploadBtn.disabled = false;
+            renderPhotoPreviews();
+            updatePreview();
+        }
+
+        function processImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    resolve(e.target.result);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderPhotoPreviews() {
+            const container = document.getElementById('photoPreviewContainer');
+            const counter = document.getElementById('photoCounter');
+            counter.innerText = `${currentPhotos.length}/4`;
+            
+            if (currentPhotos.length === 0) { 
+                container.classList.add('hidden'); 
+                container.innerHTML = ''; 
+                return; 
+            }
+            
+            container.classList.remove('hidden');
+            container.innerHTML = currentPhotos.map((photo, index) => `
+                <div class="relative inline-block w-full">
+                    <img src="${photo}" class="w-full h-16 object-cover rounded-lg border border-slate-200 shadow-sm">
+                    <button type="button" onclick="removePhoto(${index})" class="absolute -top-2 -right-2 bg-white border border-slate-200 text-red-500 rounded-full p-0.5 shadow-md hover:bg-red-50 transition-colors">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function removePhoto(index) { 
+            currentPhotos.splice(index, 1); 
+            renderPhotoPreviews(); 
+            updatePreview();
+        }
+
+        // Envio do Relatório
+        function confirmBeforeSend() {
+            const form = document.getElementById('checklistForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            // Validar se todos os radios foram marcados
+            const vehicle = document.getElementById('vehicleSelect').value;
+            let activeChecklistKey = vehicle;
+            if (vehicle === 'Implementos do Trator') {
+                activeChecklistKey = document.getElementById('equipmentNumber').value;
+            }
+
+            document.getElementById('confirmModal').classList.remove('hidden'); 
+            lucide.createIcons(); 
+        }
+
+        function hideConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
+        
+        function executeSend() { 
+            hideConfirmModal(); 
+            processAndSave(); 
+        }
+
+        let isProcessingShare = false;
+        let preparedShareData = null;
+
+        function showLoadingModal() {
+            document.getElementById('loadingModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function hideLoadingModal() {
+            document.getElementById('loadingModal').classList.add('hidden');
+        }
+
+        async function processAndSave() {
+            if (isProcessingShare) return;
+            isProcessingShare = true;
+
+            const element = document.getElementById('report-card');
+            const btnSpan = document.querySelector('button[onclick="confirmBeforeSend()"] span.hidden.sm\\:inline') || document.querySelector('button[onclick="confirmBeforeSend()"] span');
+            const originalText = btnSpan.innerText; 
+            btnSpan.innerText = "Processando...";
+            
+            // Exibe o modal de carregamento imediatamente
+            showLoadingModal();
+            
+            try {
+                // Preload de imagens
+                const images = element.querySelectorAll('img');
+                await Promise.all(Array.from(images).map(img => { 
+                    if (img.complete) return Promise.resolve(); 
+                    return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; }); 
+                }));
+                
+                let dataUrl = '';
+                const exportWrapper = document.createElement('div');
+                try {
+                    exportWrapper.style.position = 'fixed';
+                    exportWrapper.style.left = '-99999px';
+                    exportWrapper.style.top = '0';
+                    exportWrapper.style.width = '430px';
+                    exportWrapper.style.maxWidth = '430px';
+                    exportWrapper.style.backgroundColor = '#ffffff';
+                    exportWrapper.style.zIndex = '-1';
+
+                    const exportClone = element.cloneNode(true);
+                    exportClone.style.width = '430px';
+                    exportClone.style.maxWidth = '430px';
+                    exportClone.style.height = 'auto';
+                    exportClone.style.margin = '0';
+                    exportClone.style.borderRadius = '0';
+                    exportClone.style.border = 'none';
+
+                    exportWrapper.appendChild(exportClone);
+                    document.body.appendChild(exportWrapper);
+
+                    const clonedImages = exportClone.querySelectorAll('img');
+                    await Promise.all(Array.from(clonedImages).map(img => {
+                        if (img.complete) return Promise.resolve();
+                        return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+                    }));
+
+                    dataUrl = await htmlToImage.toPng(exportClone, {
+                        pixelRatio: 4, // Aumentado para 4 para máxima nitidez
+                        cacheBust: true,
+                        backgroundColor: '#ffffff',
+                        width: 430
+                    });
+                } finally {
+                    if (document.body.contains(exportWrapper)) {
+                        document.body.removeChild(exportWrapper);
+                    }
+                }
+
+                const baseVehicle = document.getElementById('vehicleSelect').value;
+                const vehicle = getFullVehicleName();
+                const driver = getDriverName();
+                const dateVal = document.getElementById('reportDate').value;
+                const obs = document.getElementById('observations').value;
+                
+                const dateObj = new Date(dateVal + "T00:00:00");
+                const dateStr = dateObj.toLocaleDateString('pt-BR').replace(/\//g, '-');
+                
+                const filename = `Checklist - ${vehicle} - ${driver} - ${dateStr}.png`;
+                
+                // Analisar itens separadamente para WhatsApp (com emoji) e Planilha (Array de todos os itens)
+                let checklistTextWhatsApp = "";
+                let allItemsList = []; // Alterado para armazenar TODOS os itens verificados
+                let hasIssues = false;
+                
+                let activeChecklistKey = baseVehicle;
+                if (baseVehicle === 'Implementos do Trator') {
+                    activeChecklistKey = document.getElementById('equipmentNumber').value;
+                }
+                
+                checklistData[activeChecklistKey].forEach((group, groupIdx) => {
+                    let groupNokText = "";
+                    let groupHasNok = false;
+                    
+                    group.items.forEach((item, itemIdx) => {
+                        const inputName = `chk_${groupIdx}_${itemIdx}`;
+                        const checked = document.querySelector(`input[name="${inputName}"]:checked`);
+                        if(checked) {
+                            if (checked.value === 'NOK') {
+                                hasIssues = true;
+                                groupHasNok = true;
+                                const defectText = getFriendlyDefectName(item);
+                                groupNokText += `\n❌ ${defectText}`;
+                                
+                                // Adiciona o item NOK na lista para a planilha
+                                allItemsList.push({
+                                    category: group.category,
+                                    item: item,
+                                    condition: "NOK",
+                                    friendlyName: defectText
+                                });
+                            } else {
+                                // Adiciona o item OK na lista para a planilha
+                                allItemsList.push({
+                                    category: group.category,
+                                    item: item,
+                                    condition: "OK",
+                                    friendlyName: item
+                                });
+                            }
+                        }
+                    });
+                    
+                    // Adiciona ao WhatsApp apenas se a categoria tiver algum item com defeito (NOK)
+                    if (groupHasNok) {
+                        checklistTextWhatsApp += `\n*${group.category.toUpperCase()}*` + groupNokText + `\n`;
+                    }
+                });
+
+                const statusLabel = hasIssues ? "🔴 *REQUER MANUTENÇÃO*" : "🟢 *APTO PARA USO (Tudo OK)*";
+                
+                const roleName = (baseVehicle === 'Roçadeira' || baseVehicle === 'Máquina de Pulverizar' || baseVehicle === 'Sistema de Fertirrigação') ? 'Operador' : 'Motorista';
+                const vehicleTypeName = (baseVehicle === 'Roçadeira' || baseVehicle === 'Máquina de Pulverizar' || baseVehicle === 'Sistema de Fertirrigação') ? 'Equipamento' : 'Veículo';
+                
+                let shareText = `📋 *Checklist de ${vehicleTypeName} SPG*\n\n`;
+                shareText += `*${vehicleTypeName}:* ${vehicle}\n`;
+                shareText += `*${roleName}:* ${driver}\n`;
+                shareText += `*Data:* ${dateObj.toLocaleDateString('pt-BR')}\n`;
+                shareText += `*Status:* ${statusLabel}\n`;
+                
+                if (hasIssues) {
+                    shareText += `\n*⚠️ ITENS COM DEFEITO:*${checklistTextWhatsApp}`;
+                } else {
+                    shareText += `\n*✅ ITENS INSPECIONADOS:*\nTodos os itens verificados estão OK e em conformidade.\n`;
+                }
+
+                if (obs.trim().length > 0) {
+                    shareText += `\n*Observações:* \n${obs.trim()}\n`;
+                }
+
+                // --- ENVIO PARA O GOOGLE SHEETS (MÚLTIPLAS LINHAS - TODOS OS ITENS SEPARADOS) ---
+                let payload = [];
+                
+                // Cria uma linha para cada item inspecionado e separa em colunas específicas
+                allItemsList.forEach((itemData, index) => {
+                    payload.push({
+                        date: dateObj.toLocaleDateString('pt-BR'),
+                        time: new Date().toLocaleTimeString('pt-BR'),
+                        vehicle: vehicle,
+                        driver: driver,
+                        status: itemData.condition === 'NOK' ? "REQUER MANUTENÇÃO" : "APTO PARA USO",
+                        condition: itemData.condition, // "OK" ou "NOK" puros
+                        category: itemData.category,
+                        defectItem: itemData.condition === 'NOK' ? itemData.friendlyName : "-", // Preenche só se for defeito
+                        okItem: itemData.condition === 'OK' ? itemData.item : "-",      // Preenche só se for OK
+                        observations: index === 0 ? (obs.trim() || "Nenhuma") : "-"     // Coloca observação só na 1ª linha
+                    });
+                });
+                
+                // Sem internet, fica guardado no aparelho e é enviado quando houver sinal
+                registrarChecklist(payload);
+
+                const blob = await (await fetch(dataUrl)).blob();
+                const file = new File([blob], filename, { type: 'image/png' });
+
+                // Guarda os dados gerados para usar no clique do "Compartilhar"
+                preparedShareData = {
+                    file: file,
+                    filename: filename,
+                    shareText: shareText,
+                    dataUrl: dataUrl
+                };
+
+                // Esconde o modal de loading e exibe o de sucesso
+                hideLoadingModal();
+                document.getElementById('successModal').classList.remove('hidden');
+                lucide.createIcons();
+
+            } catch (err) { 
+                console.error(err);
+                hideLoadingModal();
+                showMessageModal('Erro', 'Falha ao processar e salvar os dados.', 'error'); 
+            } finally { 
+                if(btnSpan) btnSpan.innerText = originalText; 
+                isProcessingShare = false;
+            }
+        }
+
+        async function executeShare() {
+            if (!preparedShareData) return;
+            const { file, filename, shareText, dataUrl } = preparedShareData;
+            
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) { 
+                try {
+                    await navigator.share({ files: [file], title: filename, text: shareText }); 
+                    hideSuccessModal();
+                } catch (shareErr) {
+                    console.log("Compartilhamento cancelado ou falhou:", shareErr);
+                }
+            } else { 
+                downloadFile(dataUrl, filename); 
+                setTimeout(() => { 
+                    window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank'); 
+                    hideSuccessModal();
+                }, 1500); 
+            }
+        }
+
+        function hideSuccessModal() { document.getElementById('successModal').classList.add('hidden'); }
+
+        function registrarChecklist(payload) {
+            if (!payload.length) return;
+            const primeiro = payload[0];
+            const [dia, mes, ano] = primeiro.date.split('/');
+            window.SPG_VEICULOS.salvar({
+                id: crypto.randomUUID(),
+                data: `${ano}-${mes}-${dia}`,
+                hora: primeiro.time,
+                veiculo: primeiro.vehicle,
+                motorista: primeiro.driver,
+                requer_manutencao: payload.some(i => i.condition === 'NOK'),
+                observacoes: primeiro.observations === 'Nenhuma' ? '' : primeiro.observations,
+                itens: payload.map(i => ({ categoria: i.category, item: i.condition === 'OK' ? i.okItem : i.defectItem, condicao: i.condition }))
+            });
+        }
+
+        function downloadFile(uri, name) { 
+            const link = document.createElement('a'); 
+            link.href = uri; link.download = name; 
+            document.body.appendChild(link); link.click(); document.body.removeChild(link); 
+        }
+
+        function showMessageModal(title, message, type) {
+            const modal = document.getElementById('messageModal'); 
+            const iconContainer = document.getElementById('msgIconContainer');
+            const titleEl = document.getElementById('msgTitle'); 
+            const textEl = document.getElementById('msgText');
+            titleEl.innerText = title; textEl.innerText = message;
+            if (type === 'error') { iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4"; iconContainer.innerHTML = '<i data-lucide="alert-circle" class="h-6 w-6 text-red-600"></i>'; } 
+            else if (type === 'success') { iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4"; iconContainer.innerHTML = '<i data-lucide="check-circle" class="h-6 w-6 text-green-600"></i>'; }
+            else { iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4"; iconContainer.innerHTML = '<i data-lucide="info" class="h-6 w-6 text-blue-600"></i>'; }
+            modal.classList.remove('hidden'); lucide.createIcons();
+        }
+        
+        function hideMessageModal() { document.getElementById('messageModal').classList.add('hidden'); }
+
+        // PWA Install
+        let deferredInstallPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            const btn = document.getElementById('installAppBtn');
+            btn.classList.remove('hidden');
+            btn.classList.add('flex');
+        });
+
+        async function installApp() {
+            if (!deferredInstallPrompt) return;
+            deferredInstallPrompt.prompt();
+            const { outcome } = await deferredInstallPrompt.userChoice;
+            if (outcome === 'accepted') {
+                const btn = document.getElementById('installAppBtn');
+                btn.classList.add('hidden');
+                btn.classList.remove('flex');
+            }
+            deferredInstallPrompt = null;
+        }
+
+        window.addEventListener('appinstalled', () => {
+            const btn = document.getElementById('installAppBtn');
+            btn.classList.add('hidden');
+            btn.classList.remove('flex');
+            deferredInstallPrompt = null;
+        });
+
+        function getBrandLogoDataUri() {
+            return 'logo-geral.png';
+        }
+
+        function applyBrandAssets() {
+            const logoUri = getBrandLogoDataUri();
+            const favicon = document.getElementById('siteFavicon');
+            const appleTouchIcon = document.getElementById('siteAppleTouchIcon');
+            const manifestLink = document.getElementById('siteManifest');
+
+            if (favicon) favicon.href = logoUri;
+            if (appleTouchIcon) appleTouchIcon.href = logoUri;
+            if (manifestLink) {
+                const manifest = {
+                    name: 'Checklist SPG',
+                    short_name: 'SPG',
+                    start_url: '.',
+                    display: 'standalone',
+                    background_color: '#ffffff',
+                    theme_color: '#759587',
+                    icons: [
+                        { src: logoUri, sizes: '192x192', type: 'image/png' },
+                        { src: logoUri, sizes: '512x512', type: 'image/png' }
+                    ]
+                };
+                manifestLink.href = `data:application/manifest+json,${encodeURIComponent(JSON.stringify(manifest))}`;
+            }
+        }
+
+        applyBrandAssets();
+    </script>
+</body>
+</html>

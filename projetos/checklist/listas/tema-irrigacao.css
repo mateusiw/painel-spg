@@ -1,0 +1,58 @@
+/* Padrão visual da Irrigação aplicado aos check-lists.
+   Só vale na tela: relatórios impressos e folhas A4 não são afetados. */
+@media screen {
+    .tema-nav {
+        background: rgba(255, 255, 255, 0.78);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        backdrop-filter: blur(18px) saturate(180%);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 6px 24px -18px rgba(15, 23, 42, 0.35);
+    }
+
+    .tema-btn-verde {
+        background-image: linear-gradient(to bottom, #10b981, #059669) !important;
+        background-color: #059669 !important;
+        color: #fff !important;
+        border: 0 !important;
+        border-radius: 0.75rem !important;
+        box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.25), 0 0 0 1px rgba(4, 120, 87, 0.2) !important;
+        transition: all 0.15s ease;
+    }
+    .tema-btn-verde:hover { background-image: linear-gradient(to bottom, #059669, #047857) !important; }
+
+    .tema-btn-claro {
+        background: #fff !important;
+        color: #475569 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 0.75rem !important;
+    }
+    .tema-btn-claro:hover { background: #f1f5f9 !important; }
+
+    /* Título do cartão como faixa verde, igual a "Novo Registro" da Irrigação */
+    .tema-titulo-verde {
+        margin: -1.25rem -1.25rem 1.25rem !important;
+        padding: 1rem 1.25rem !important;
+        background: linear-gradient(to right, #16a34a, #15803d) !important;
+        color: #fff !important;
+        border: 0 !important;
+    }
+    .tema-titulo-verde svg { color: #fff !important; }
+
+    .tema-form label.uppercase, .tema-form .tema-rotulo {
+        color: #94a3b8 !important;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+    }
+    .tema-form input:not([type=checkbox]):not([type=radio]):not([type=file]), .tema-form select, .tema-form textarea {
+        background-color: #f8fafc !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 0.75rem !important;
+        outline: none;
+        transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+    }
+    .tema-form input:not([type=checkbox]):not([type=radio]):not([type=file]):focus, .tema-form select:focus, .tema-form textarea:focus {
+        background-color: #fff !important;
+        border-color: #16a34a !important;
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
+    }
+}

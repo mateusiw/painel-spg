@@ -1,0 +1,19 @@
+{
+  "name": "Painel SPG",
+  "short_name": "Painel SPG",
+  "description": "Painel SPG: irrigação, colheita e demais projetos",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#15803d",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icone-app.png",
+      "sizes": "567x567",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
