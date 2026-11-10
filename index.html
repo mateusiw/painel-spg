@@ -92,6 +92,23 @@
         .item-lateral .aberto-ponto { width: .4rem; height: .4rem; border-radius: 999px; background: var(--limao); margin-left: auto; flex: none; }
         #lateral.recolhida .item-lateral .aberto-ponto { position: absolute; bottom: 6px; right: 10px; margin: 0; }
 
+        /* Estrela de favorito nos cartões */
+        .estrela { width: 2rem; height: 2rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #94a3b8; transition: transform .2s ease, background-color .15s, color .15s; }
+        .estrela:hover { background: #fef3c7; color: #d97706; }
+        .estrela[aria-pressed="true"] { color: #f59e0b; }
+        .estrela[aria-pressed="true"] svg { fill: #fbbf24; }
+        .cartao-favoritavel:hover .estrela-cartao { transform: translateY(-3px); }
+        @media (prefers-reduced-motion: reduce) { .cartao-favoritavel:hover .estrela-cartao { transform: none; } }
+
+        /* Sino de alertas: chama atenção enquanto houver alerta que a pessoa ainda não viu */
+        @keyframes balanca-sino { 0%, 55%, 100% { transform: rotate(0); } 8%, 24% { transform: rotate(16deg); } 16%, 32% { transform: rotate(-16deg); } 40% { transform: rotate(6deg); } }
+        @keyframes brilho-sino { 0%, 100% { box-shadow: 0 0 0 0 rgba(251,191,36,.55); } 50% { box-shadow: 0 0 0 7px rgba(251,191,36,0); } }
+        button[data-alertas].alerta-novo { background: #fbbf24 !important; color: #78350f !important; border-color: #f59e0b !important; animation: brilho-sino 1.8s ease-out infinite; }
+        button[data-alertas].alerta-novo svg { animation: balanca-sino 1.8s ease-in-out infinite; transform-origin: 50% 15%; }
+        button[data-alertas].alerta-visto { color: #f59e0b; }
+        [data-selo-alertas].selo-proximos { background: #f59e0b; }
+        @media (prefers-reduced-motion: reduce) { button[data-alertas].alerta-novo, button[data-alertas].alerta-novo svg { animation: none; } }
+
         .cartao-projeto { position: relative; display: flex; flex-direction: column; min-height: 11.5rem; padding: 1.25rem; background: #fff; border: 1px solid rgb(226 232 240 / .9); border-radius: 1.25rem; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
         .cartao-projeto:hover { transform: translateY(-3px); border-color: rgb(203 213 225); box-shadow: 0 18px 40px -22px rgba(18,42,30,.45); }
         .cartao-projeto:focus-visible { outline: 2px solid #4a7c3a; outline-offset: 2px; }
@@ -105,6 +122,7 @@
     </style>
     <script src="./lista-moderna.js"></script>
     <script src="./trava-fundo.js"></script>
+    <script src="./cartao-aniversario.js"></script>
 </head>
 <body class="bg-[#f5f7f2] text-slate-900 min-h-screen">
 
@@ -197,6 +215,7 @@
                         <button type="button" data-gaveta title="Abrir menu" aria-label="Abrir menu" class="foco p-2 rounded-lg hover:bg-white/10"><i data-lucide="menu" class="w-5 h-5"></i></button>
                         <img src="./logo.png" alt="" class="w-8 h-8 object-cover rounded-full">
                         <p id="tituloMobile" class="flex-1 min-w-0 text-[15px] font-extrabold truncate">Painel SPG</p>
+                        <button type="button" data-alertas title="Alertas" aria-label="Alertas" aria-haspopup="dialog" class="foco relative p-2 rounded-lg hover:bg-white/10 text-white [&_[data-selo-alertas]]:ring-[#1b3a2a]"><i data-lucide="bell" class="w-5 h-5"></i><span data-selo-alertas class="hidden absolute -top-1 -right-1 min-w-[1.15rem] h-[1.15rem] px-1 rounded-full bg-rose-500 text-white text-[10px] font-black leading-none flex items-center justify-center ring-2"></span></button>
                     </div>
                 </header>
 
@@ -218,11 +237,14 @@
                             <p id="menuData" class="text-xs font-bold text-[#4a7c3a] first-letter:uppercase"></p>
                             <h1 id="menuSaudacao" class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1"></h1>
                         </div>
+                        <div class="flex items-center gap-2 w-full md:w-auto shrink-0">
+                        <button type="button" data-alertas title="Alertas" aria-label="Alertas" aria-haspopup="dialog" class="foco relative hidden lg:flex items-center justify-center w-11 h-11 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-[#1b3a2a] hover:border-slate-300 hover:shadow-sm transition [&_[data-selo-alertas]]:ring-white"><i data-lucide="bell" class="w-5 h-5"></i><span data-selo-alertas class="hidden absolute -top-1 -right-1 min-w-[1.15rem] h-[1.15rem] px-1 rounded-full bg-rose-500 text-white text-[10px] font-black leading-none flex items-center justify-center ring-2"></span></button>
                         <div class="relative w-full md:w-80 shrink-0">
                             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                             <input id="buscaProjetos" type="search" placeholder="Buscar projeto ou tela" aria-label="Buscar projeto ou tela"
                                 class="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#4a7c3a] focus:border-[#4a7c3a]">
                             <kbd class="hidden lg:block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 border border-slate-200 rounded px-1.5 py-0.5">/</kbd>
+                        </div>
                         </div>
                     </div>
 
@@ -244,6 +266,18 @@
                             <p class="flex items-center gap-2 mt-2 min-w-0"><span id="statusPonto" class="w-2.5 h-2.5 rounded-full shrink-0 bg-slate-300"></span><span id="statusTexto" class="text-base font-extrabold truncate"></span></p>
                         </div>
                     </section>
+
+                    <button type="button" id="faixaAniversario" data-cartao-hoje="0" class="hidden mt-6 w-full text-left foco items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200/70 hover:shadow-md transition">
+                        <span class="w-10 h-10 rounded-xl bg-white text-rose-500 flex items-center justify-center shadow-sm shrink-0"><i data-lucide="cake" class="w-5 h-5"></i></span>
+                        <span class="min-w-0 flex-1"><span id="faixaAniversarioTitulo" class="block text-sm font-extrabold text-slate-800"></span><span id="faixaAniversarioTexto" class="block text-xs text-slate-600 truncate"></span></span>
+                        <span class="text-xs font-bold text-rose-600 shrink-0">Ver cartão</span>
+                    </button>
+
+                    <section id="blocoFavoritos" class="hidden mt-8" aria-labelledby="tituloFavoritos">
+                        <h2 id="tituloFavoritos" class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><i data-lucide="star" class="w-3.5 h-3.5 text-amber-500 fill-amber-400"></i>Favoritos</h2>
+                        <div id="listaFavoritos" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                    </section>
+                    <p id="dicaFavoritos" class="hidden mt-6 text-xs font-medium text-slate-500 flex items-center gap-1.5"><i data-lucide="star" class="w-3.5 h-3.5 text-amber-500"></i>Toque na estrela de um projeto para fixá-lo aqui nos favoritos.</p>
 
                     <section id="blocoRecentes" class="hidden mt-8" aria-labelledby="tituloRecentes">
                         <h2 id="tituloRecentes" class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3">Continuar de onde parou</h2>
@@ -327,7 +361,8 @@
             const visiveis = opcoes.slice(0, Math.max(0, 2 - locaisCartao.length));
             const resto = opcoes.length - visiveis.length;
             const busca = semAcento([p.nome, p.descricao, p.grupo, ...opcoes].join(' '));
-            return `<a href="#/${esc(p.id)}" data-projeto="${esc(p.id)}" data-busca="${esc(busca)}" data-locais="${esc((doProjeto || []).join(','))}" class="cartao-projeto">
+            return `<div class="cartao-favoritavel relative" data-busca="${esc(busca)}" data-locais="${esc((doProjeto || []).join(','))}">
+            <a href="#/${esc(p.id)}" data-projeto="${esc(p.id)}" class="cartao-projeto h-full">
                 <div class="flex items-start justify-between gap-3">
                     ${iconeProjeto(p, 'w-12 h-12')}
                     <span class="seta w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><i data-lucide="arrow-up-right" class="w-4 h-4"></i></span>
@@ -339,7 +374,63 @@
                     ${visiveis.map(o => `<span class="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">${esc(o)}</span>`).join('')}
                     ${resto > 0 ? `<span class="text-[11px] font-bold text-slate-500 px-1">+${resto}</span>` : ''}
                 </div>
-            </a>`;
+            </a>
+            ${botaoEstrela(p, 'estrela-cartao absolute top-5 right-[3.75rem]')}
+            </div>`;
+        }
+
+        // --- FAVORITOS (por usuário, neste aparelho) ---
+        const chaveFavoritos = () => 'spg_favoritos_' + ((API.usuarioAtual() || {}).id || '');
+        function lerFavoritos() {
+            try { return JSON.parse(localStorage.getItem(chaveFavoritos())) || []; } catch (e) { return []; }
+        }
+        function alternarFavorito(id) {
+            const lista = lerFavoritos();
+            const nova = lista.includes(id) ? lista.filter(x => x !== id) : [...lista, id];
+            try { localStorage.setItem(chaveFavoritos(), JSON.stringify(nova)); } catch (e) { /* sem espaço: não guarda */ }
+            atualizarFavoritos();
+        }
+        const tituloEstrela = (p, fav) => fav ? `Tirar ${p.nome} dos favoritos` : `Adicionar ${p.nome} aos favoritos`;
+        function botaoEstrela(p, classe) {
+            const fav = lerFavoritos().includes(p.id);
+            const titulo = tituloEstrela(p, fav);
+            return `<button type="button" data-favorito="${esc(p.id)}" aria-pressed="${fav}" title="${esc(titulo)}" aria-label="${esc(titulo)}" class="foco estrela ${classe}"><i data-lucide="star" class="w-4 h-4"></i></button>`;
+        }
+        const favoritosDe = projetos => lerFavoritos().map(id => projetos.find(p => p.id === id)).filter(Boolean);
+
+        function renderFavoritos(projetos) {
+            const favs = favoritosDe(projetos);
+            el('blocoFavoritos').classList.toggle('hidden', !favs.length);
+            el('dicaFavoritos').classList.toggle('hidden', !!favs.length || projetos.length < 2);
+            el('listaFavoritos').innerHTML = favs.map(p => `<div class="relative">
+                <a href="#/${esc(p.id)}" data-projeto="${esc(p.id)}" class="foco flex items-center gap-3 p-3 pr-12 bg-white border border-slate-200/90 rounded-2xl hover:border-slate-300 hover:shadow-md transition">
+                    ${iconeProjeto(p, 'w-10 h-10')}
+                    <span class="min-w-0 flex-1"><span class="block text-sm font-bold text-slate-800 truncate">${esc(p.nome)}</span><span class="block text-xs text-slate-500 truncate">${esc(p.descricao)}</span></span>
+                </a>
+                ${botaoEstrela(p, 'absolute right-2 top-1/2 -translate-y-1/2')}
+            </div>`).join('');
+        }
+
+        // Favoritou ou tirou: atualiza o Início, as estrelas dos cartões e o menu lateral
+        function atualizarFavoritos() {
+            const projetos = API.projetosDoUsuario();
+            const favs = lerFavoritos();
+            renderFavoritos(projetos);
+            renderRecentes(projetos);
+            document.querySelectorAll('#listaProjetos [data-favorito]').forEach(b => {
+                const p = projetos.find(x => x.id === b.dataset.favorito);
+                if (!p) return;
+                const fav = favs.includes(p.id);
+                b.setAttribute('aria-pressed', String(fav));
+                b.title = tituloEstrela(p, fav);
+                b.setAttribute('aria-label', b.title);
+            });
+            montarLateral(projetos);
+            marcarAtual(projetoAberto || '');
+            renderAbas();
+            atualizarContadorOnline();
+            filtrar();
+            icones();
         }
 
         function grupos(projetos) {
@@ -351,13 +442,26 @@
         function renderRecentes(projetos) {
             const recentes = lerRecentes()
                 .map(r => ({ p: projetos.find(x => x.id === r.id), em: r.em }))
-                .filter(r => r.p).slice(0, MAX_RECENTES);
+                .filter(r => r.p && !lerFavoritos().includes(r.p.id)).slice(0, MAX_RECENTES);
             el('blocoRecentes').classList.toggle('hidden', !recentes.length);
             el('listaRecentes').innerHTML = recentes.map(({ p, em }) => `<a href="#/${esc(p.id)}" data-projeto="${esc(p.id)}" class="foco flex items-center gap-3 p-3 bg-white border border-slate-200/90 rounded-2xl hover:border-slate-300 hover:shadow-md transition">
                 ${iconeProjeto(p, 'w-10 h-10')}
                 <span class="min-w-0 flex-1"><span class="block text-sm font-bold text-slate-800 truncate">${esc(p.nome)}</span><span class="block text-xs text-slate-500">${quandoFoi(em)}</span></span>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
             </a>`).join('');
+        }
+
+        function montarLateral(projetos) {
+            const item = p => `<a href="#/${esc(p.id)}" title="${esc(p.nome)}" data-projeto="${esc(p.id)}" class="item-lateral"><i data-lucide="${p.icone}" class="w-4 h-4 shrink-0"></i><span class="rotulo truncate">${esc(p.nome)}</span></a>`;
+            const titulo = t => `<p class="rotulo px-3 text-[10px] font-extrabold uppercase tracking-widest text-emerald-100/40">${t}</p>`;
+            const favs = favoritosDe(projetos);
+            el('navLateral').innerHTML = `<div class="space-y-1"><a href="#/" title="Início" data-projeto="" class="item-lateral"><i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i><span class="rotulo">Início</span></a></div>` +
+                (favs.length ? `<div class="space-y-1">${titulo('<span class="inline-flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-current"></i>Favoritos</span>')}${favs.map(item).join('')}</div>` : '') +
+                grupos(projetos).map(([g, lista]) => `<div class="space-y-1">
+                    ${titulo(esc(g))}
+                    ${lista.map(item).join('')}
+                    ${g === 'Administração' && API.isAdmin() ? `<button type="button" data-atualizar-todos title="Atualizar todos os aparelhos" class="item-lateral w-full text-left"><i data-lucide="radio-tower" class="w-4 h-4 shrink-0"></i><span class="rotulo truncate">Atualizar aparelhos</span></button>` : ''}
+                </div>`).join('');
         }
 
         function preencherCabecalho(projetos) {
@@ -388,12 +492,8 @@
             el('semResultado').classList.add('hidden');
 
             const porGrupo = grupos(projetos);
-            el('navLateral').innerHTML = `<div class="space-y-1"><a href="#/" title="Início" data-projeto="" class="item-lateral"><i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i><span class="rotulo">Início</span></a></div>` +
-                porGrupo.map(([g, lista]) => `<div class="space-y-1">
-                    <p class="rotulo px-3 text-[10px] font-extrabold uppercase tracking-widest text-emerald-100/40">${esc(g)}</p>
-                    ${lista.map(p => `<a href="#/${esc(p.id)}" title="${esc(p.nome)}" data-projeto="${esc(p.id)}" class="item-lateral"><i data-lucide="${p.icone}" class="w-4 h-4 shrink-0"></i><span class="rotulo truncate">${esc(p.nome)}</span></a>`).join('')}
-                    ${g === 'Administração' && API.isAdmin() ? `<button type="button" data-atualizar-todos title="Atualizar todos os aparelhos" class="item-lateral w-full text-left"><i data-lucide="radio-tower" class="w-4 h-4 shrink-0"></i><span class="rotulo truncate">Atualizar aparelhos</span></button>` : ''}
-                </div>`).join('');
+            montarLateral(projetos);
+            renderFavoritos(projetos);
 
             const larguraGrupo = n => n >= 3 ? ['sm:col-span-2 xl:col-span-3', 'sm:grid-cols-2 xl:grid-cols-3'] : n === 2 ? ['sm:col-span-2', 'sm:grid-cols-2'] : ['', ''];
             el('listaProjetos').innerHTML = porGrupo.map(([g, lista]) => {
@@ -405,10 +505,230 @@
             }).join('');
 
             restaurarAbas();
+            carregarAlertas();
             mostrarTela('telaMenu');
             rotear();
             atualizarContadorOnline();
         }
+
+        // --- ALERTAS: aniversários do Organograma ---
+        // Hoje aparece no sino (com número), numa faixa no Início e na janela; os próximos 15 dias só na janela.
+        const DIAS_PROXIMOS = 15;
+        let aniversarios = [];
+        let alertasErro = '';
+        const chaveAlertaVisto = () => 'spg_alertas_vistos_' + ((API.usuarioAtual() || {}).id || '');
+        const diaHoje = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+        const isoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+        // Próxima data do aniversário (hoje conta); 29/02 vira 28/02 nos anos que não são bissextos
+        function proximoAniversario(a) {
+            const hoje = diaHoje();
+            const naData = ano => {
+                const bissexto = (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0;
+                return new Date(ano, a.mes - 1, a.mes === 2 && a.dia === 29 && !bissexto ? 28 : a.dia);
+            };
+            let d = naData(hoje.getFullYear());
+            if (d < hoje) d = naData(hoje.getFullYear() + 1);
+            return d;
+        }
+        const DIAS_RECENTES = 30;
+        function listaAniversarios() {
+            const hoje = diaHoje().getTime();
+            return aniversarios.map(a => {
+                const data = proximoAniversario(a);
+                const emDias = Math.round((data.getTime() - hoje) / 86400000);
+                // Último aniversário: o próximo menos um ano (ou hoje)
+                const ultimo = emDias === 0 ? data : new Date(data.getFullYear() - 1, data.getMonth(), data.getDate());
+                return Object.assign({}, a, { data, emDias, ultimo, haDias: Math.round((hoje - ultimo.getTime()) / 86400000) });
+            }).sort((x, y) => x.emDias - y.emDias || String(x.nome).localeCompare(String(y.nome), 'pt-BR'));
+        }
+
+        async function carregarAlertas(forcar) {
+            if (!API.usuarioAtual() || !API.aniversariosOrganograma) return;
+            try { aniversarios = await API.aniversariosOrganograma(forcar) || []; alertasErro = ''; }
+            catch (e) { alertasErro = /organograma_aniversarios|could not find|does not exist/i.test(e.message || '') ? 'Os alertas ainda não foram ativados no banco (rode supabase/organograma_aniversarios.sql).' : (e.message || 'Sem conexão.'); }
+            if (document.getElementById('janelaAlertas')) {
+                try { localStorage.setItem(chaveAlertaVisto(), assinaturaAlertas()); } catch (e) { /* segue */ }
+            }
+            renderSeloAlertas();
+            if (document.getElementById('janelaAlertas')) renderJanelaAlertas();
+            else cartaoAutomatico();
+        }
+
+        // Alertas que contam no sino: aniversário hoje e nos próximos dias
+        const alertasAtivos = () => listaAniversarios().filter(a => a.emDias <= DIAS_PROXIMOS);
+        // Assinatura do que há para ver hoje: muda quando entra alguém novo ou vira o dia
+        const assinaturaAlertas = () => isoDia(diaHoje()) + '|' + alertasAtivos().map(a => a.id).join(',');
+
+        function renderSeloAlertas() {
+            const lista = alertasAtivos();
+            const hoje = lista.filter(a => a.emDias === 0);
+            let visto = '';
+            try { visto = localStorage.getItem(chaveAlertaVisto()) || ''; } catch (e) { /* segue sem lembrar */ }
+            const novo = lista.length > 0 && visto !== assinaturaAlertas();
+            document.querySelectorAll('[data-selo-alertas]').forEach(s => {
+                s.textContent = lista.length > 9 ? '9+' : lista.length;
+                s.classList.toggle('hidden', !lista.length);
+                s.classList.toggle('selo-proximos', !hoje.length);   // só próximos dias: âmbar; tem hoje: vermelho
+            });
+            document.querySelectorAll('button[data-alertas][title]').forEach(b => {
+                b.classList.toggle('alerta-novo', novo);
+                b.classList.toggle('alerta-visto', !novo && lista.length > 0);
+                const texto = !lista.length ? 'Alertas'
+                    : hoje.length ? `Alertas: ${hoje.length} aniversário${hoje.length > 1 ? 's' : ''} hoje${novo ? ' (novo)' : ''}`
+                    : `Alertas: ${lista.length} aniversário${lista.length > 1 ? 's' : ''} nos próximos dias${novo ? ' (novo)' : ''}`;
+                b.title = texto; b.setAttribute('aria-label', texto);
+            });
+            // Faixa no Início
+            const faixa = el('faixaAniversario');
+            faixa.classList.toggle('hidden', !hoje.length);
+            faixa.classList.toggle('flex', !!hoje.length);
+            if (hoje.length) {
+                const primeiros = hoje.slice(0, 2).map(a => String(a.nome).split(/\s+/).slice(0, 2).join(' '));
+                el('faixaAniversarioTitulo').textContent = hoje.length === 1 ? 'Hoje é aniversário de ' + primeiros[0] + '! 🎉' : `Hoje tem ${hoje.length} aniversariantes! 🎉`;
+                el('faixaAniversarioTexto').textContent = hoje.length === 1
+                    ? [hoje[0].cargo, hoje[0].empresa].filter(Boolean).join(' · ') + ' — não esqueça de dar os parabéns'
+                    : primeiros.join(', ') + (hoje.length > 2 ? ` e mais ${hoje.length - 2}` : '') + ' — não esqueça de dar os parabéns';
+            }
+        }
+
+        const CORES_ALERTA = ['bg-rose-100 text-rose-700', 'bg-amber-100 text-amber-800', 'bg-sky-100 text-sky-700', 'bg-violet-100 text-violet-700', 'bg-emerald-100 text-emerald-700'];
+        function linhaAniversario(a, modo) {
+            const iniciais = String(a.nome || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+            const cor = CORES_ALERTA[Number(a.id) % CORES_ALERTA.length];
+            const dataCurta = d => d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.', '');
+            const quando = modo === 'busca' ? `<span class="text-slate-500 font-bold">${String(a.dia).padStart(2, '0')}/${String(a.mes).padStart(2, '0')}</span>`
+                : a.emDias === 0 ? '<span class="text-rose-600 font-black">Hoje 🎂</span>'
+                : modo === 'recente' ? `<span class="text-slate-500 font-bold">${dataCurta(a.ultimo)}</span><span class="block text-[10px] text-slate-400">${a.haDias === 1 ? 'ontem' : 'há ' + a.haDias + ' dias'}</span>`
+                : a.emDias === 1 ? '<span class="text-amber-700 font-bold">Amanhã</span>'
+                : `<span class="text-slate-500 font-bold">${a.data.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.', '')}</span><span class="block text-[10px] text-slate-400">em ${a.emDias} dias</span>`;
+            return `<li class="flex items-center gap-3 py-2.5">
+                <span class="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${cor}">${esc(iniciais)}</span>
+                <span class="min-w-0 flex-1"><span class="block text-sm font-bold text-slate-800 truncate">${esc(a.nome)}</span><span class="block text-xs text-slate-500 truncate">${esc([a.cargo, a.empresa].filter(Boolean).join(' · '))}</span></span>
+                <span class="text-xs text-right shrink-0">${quando}</span>
+                <button type="button" data-cartao-id="${esc(a.id)}" title="Gerar o cartão de parabéns de ${esc(a.nome)}" class="foco shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold ${a.emDias === 0 && modo !== 'busca' ? 'bg-rose-500 hover:bg-rose-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:border-rose-300 hover:text-rose-600'}"><i data-lucide="image" class="w-3.5 h-3.5"></i>Cartão</button>
+            </li>`;
+        }
+
+        function renderJanelaAlertas() {
+            const corpo = document.querySelector('#janelaAlertas [data-corpo]');
+            if (!corpo) return;
+            const lista = listaAniversarios();
+            const hoje = lista.filter(a => a.emDias === 0);
+            const proximos = lista.filter(a => a.emDias > 0 && a.emDias <= DIAS_PROXIMOS);
+            const digitando = !!(document.activeElement && document.activeElement.matches && document.activeElement.matches('[data-busca-aniversario]'));
+            const recentes = lista.filter(a => a.emDias > 0 && a.haDias >= 1 && a.haDias <= DIAS_RECENTES).sort((x, y) => x.haDias - y.haDias);
+            const titulo = t => `<p class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider mt-4 mb-1">${t}</p>`;
+            corpo.innerHTML = alertasErro && !aniversarios.length
+                ? `<p class="text-sm text-slate-500 py-8 text-center">${esc(alertasErro)}</p>`
+                : (hoje.length
+                    ? `<div class="rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200/70 px-4 pt-3 pb-1 mt-2">
+                        <p class="text-sm font-extrabold text-rose-700 flex items-center gap-1.5"><i data-lucide="cake" class="w-4 h-4"></i>Aniversário hoje</p>
+                        <ul class="divide-y divide-rose-100">${hoje.map(x => linhaAniversario(x, 'hoje')).join('')}</ul></div>`
+                    : '<p class="text-sm text-slate-500 mt-2 flex items-center gap-2"><i data-lucide="party-popper" class="w-4 h-4 text-slate-400"></i>Nenhum aniversário hoje.</p>')
+                + titulo(`Próximos ${DIAS_PROXIMOS} dias`)
+                + (proximos.length ? `<ul class="divide-y divide-slate-100">${proximos.map(x => linhaAniversario(x, 'proximo')).join('')}</ul>` : '<p class="text-sm text-slate-400 py-2">Nenhum aniversário nos próximos dias.</p>')
+                + titulo(`Já passaram (últimos ${DIAS_RECENTES} dias)`)
+                + (recentes.length ? `<ul class="divide-y divide-slate-100">${recentes.map(x => linhaAniversario(x, 'recente')).join('')}</ul>` : '<p class="text-sm text-slate-400 py-2">Nenhum aniversário nos últimos dias.</p>')
+                + (aniversarios.length ? `${titulo('Gerar cartão de qualquer pessoa')}
+                    <div class="relative mt-1">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        <input type="search" data-busca-aniversario value="${esc(buscaAniversario)}" placeholder="Digite o nome..." aria-label="Buscar pessoa para gerar o cartão" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#4a7c3a] focus:border-[#4a7c3a]">
+                    </div>
+                    <ul data-resultado-aniversario class="divide-y divide-slate-100"></ul>` : '');
+            renderBuscaAniversario();
+            if (digitando) {
+                const campo = corpo.querySelector('[data-busca-aniversario]');
+                if (campo) { campo.focus(); campo.setSelectionRange(campo.value.length, campo.value.length); }
+            }
+            icones();
+        }
+
+        // Busca por nome (sem acento); vazio = não lista ninguém
+        let buscaAniversario = '';
+        function renderBuscaAniversario() {
+            const alvo = document.querySelector('#janelaAlertas [data-resultado-aniversario]');
+            if (!alvo) return;
+            const termo = semAcento(buscaAniversario.trim());
+            const achados = !termo ? [] : listaAniversarios()
+                .filter(a => semAcento([a.nome, a.cargo, a.empresa].join(' ')).includes(termo))
+                .sort((x, y) => String(x.nome).localeCompare(String(y.nome), 'pt-BR')).slice(0, 8);
+            alvo.innerHTML = !termo ? ''
+                : achados.length ? achados.map(x => linhaAniversario(x, 'busca')).join('')
+                : '<li class="text-sm text-slate-400 py-3">Ninguém com esse nome tem data de nascimento no Organograma.</li>';
+            icones();
+        }
+
+        // Cartão de parabéns (cartao-aniversario.js) de quem faz aniversário hoje
+        const aniversariantesHoje = () => listaAniversarios().filter(a => a.emDias === 0);
+        function abrirCartaoHoje(i) {
+            const hoje = aniversariantesHoje();
+            if (!hoje.length || !window.CartaoAniversario) return;
+            const janela = document.getElementById('janelaAlertas');
+            if (janela) janela.remove();
+            alternarGaveta(false);
+            CartaoAniversario.abrir(hoje, i);
+        }
+        function abrirCartaoPessoa(id) {
+            const hoje = aniversariantesHoje();
+            const i = hoje.findIndex(a => String(a.id) === String(id));
+            if (i >= 0) { abrirCartaoHoje(i); return; }
+            const pessoa = listaAniversarios().find(a => String(a.id) === String(id));
+            if (!pessoa || !window.CartaoAniversario) return;
+            const janela = document.getElementById('janelaAlertas');
+            if (janela) janela.remove();
+            alternarGaveta(false);
+            CartaoAniversario.abrir([pessoa], 0);
+        }
+        // No primeiro acesso do dia, o cartão abre sozinho (uma vez por pessoa e por dia)
+        const chaveCartaoVisto = () => 'spg_cartao_visto_' + ((API.usuarioAtual() || {}).id || '');
+        function cartaoAutomatico() {
+            const hoje = aniversariantesHoje();
+            if (!hoje.length || document.getElementById('telaMenu').classList.contains('hidden')) return;
+            const marca = isoDia(diaHoje()) + '|' + hoje.map(a => a.id).join(',');
+            let visto = '';
+            try { visto = localStorage.getItem(chaveCartaoVisto()) || ''; } catch (e) { /* segue */ }
+            if (visto === marca) return;
+            try { localStorage.setItem(chaveCartaoVisto(), marca); } catch (e) { /* segue */ }
+            abrirCartaoHoje(0);
+        }
+
+        function abrirAlertas() {
+            if (document.getElementById('janelaAlertas')) return;
+            alternarGaveta(false);
+            try { localStorage.setItem(chaveAlertaVisto(), assinaturaAlertas()); } catch (e) { /* segue */ }
+            renderSeloAlertas();
+            const caixa = document.createElement('div');
+            caixa.id = 'janelaAlertas';
+            caixa.className = 'fixed inset-0 z-[80] bg-slate-950/50 flex items-end sm:items-start justify-center sm:pt-20 p-0 sm:p-5';
+            caixa.setAttribute('role', 'dialog');
+            caixa.setAttribute('aria-modal', 'true');
+            caixa.setAttribute('aria-labelledby', 'tituloAlertas');
+            caixa.innerHTML = `<div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85vh] flex flex-col">
+                <div class="flex items-center gap-3 px-5 pt-5 pb-3 border-b border-slate-100">
+                    <span class="w-10 h-10 rounded-xl fundo-mata text-white flex items-center justify-center shrink-0"><i data-lucide="bell" class="w-5 h-5"></i></span>
+                    <div class="min-w-0 flex-1"><h3 id="tituloAlertas" class="text-base font-extrabold text-slate-900">Alertas</h3><p class="text-xs text-slate-500">Aniversários da equipe (Organograma)</p></div>
+                    <button type="button" data-fechar-alertas title="Fechar" aria-label="Fechar" class="foco p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div data-corpo class="overflow-y-auto px-5 pb-5"></div>
+            </div>`;
+            document.body.appendChild(caixa);
+            renderJanelaAlertas();
+            const fechar = () => caixa.remove();
+            caixa.addEventListener('click', e => { if (e.target === caixa || e.target.closest('[data-fechar-alertas]')) fechar(); });
+            caixa.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });
+            caixa.querySelector('[data-fechar-alertas]').focus();
+            caixa.addEventListener('input', e => {
+                if (!e.target.matches('[data-busca-aniversario]')) return;
+                buscaAniversario = e.target.value;
+                renderBuscaAniversario();
+            });
+            carregarAlertas(true);
+        }
+
+        // Atualiza ao voltar para o app e a cada 30 min (o dia pode virar com o Painel aberto)
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && API.usuarioAtual()) carregarAlertas(); });
+        setInterval(() => { if (API.usuarioAtual()) carregarAlertas(); }, 30 * 60 * 1000);
 
         // --- QUANTAS PESSOAS ESTÃO ONLINE (só o administrador vê) ---
         const ONLINE_MS = 2 * 60 * 1000;   // mesmo critério da tela Usuários online
@@ -420,15 +740,15 @@
             try {
                 const lista = await API.listarSessoes(new Date(Date.now() - ONLINE_MS).toISOString());
                 const n = new Set(lista.filter(s => !s.fim && Date.now() - new Date(s.ultimo_sinal).getTime() < ONLINE_MS).map(s => s.usuario_id)).size;
-                const alvo = document.querySelector('#navLateral a[data-projeto="online"]');
-                if (!alvo) return;
-                let selo = alvo.querySelector('.contador-online');
-                if (!selo) { selo = document.createElement('span'); selo.className = 'contador-online'; alvo.appendChild(selo); }
-                selo.textContent = n;
-                selo.toggleAttribute('data-zero', n === 0);
                 const texto = n === 1 ? '1 pessoa online agora' : n + ' pessoas online agora';
-                selo.title = texto;
-                selo.setAttribute('aria-label', texto);
+                document.querySelectorAll('#navLateral a[data-projeto="online"]').forEach(alvo => {
+                    let selo = alvo.querySelector('.contador-online');
+                    if (!selo) { selo = document.createElement('span'); selo.className = 'contador-online'; alvo.appendChild(selo); }
+                    selo.textContent = n;
+                    selo.toggleAttribute('data-zero', n === 0);
+                    selo.title = texto;
+                    selo.setAttribute('aria-label', texto);
+                });
             } catch (e) { /* sem internet ou sem permissão: fica o último número */ }
             finally { contandoOnline = false; }
         }
@@ -665,6 +985,8 @@
                 achou += noGrupo;
             });
             el('blocoRecentes').classList.toggle('hidden', !!termo || !el('listaRecentes').children.length);
+            el('blocoFavoritos').classList.toggle('hidden', !!termo || !el('listaFavoritos').children.length);
+            if (termo) el('dicaFavoritos').classList.add('hidden');
             el('semResultado').classList.toggle('hidden', achou > 0 || API.projetosDoUsuario().length === 0);
         }
 
@@ -726,6 +1048,13 @@
         });
 
         document.addEventListener('click', async e => {
+            const cartaoPessoa = e.target.closest('[data-cartao-id]');
+            if (cartaoPessoa) { abrirCartaoPessoa(cartaoPessoa.dataset.cartaoId); return; }
+            const cartao = e.target.closest('[data-cartao-hoje]');
+            if (cartao) { abrirCartaoHoje(Number(cartao.dataset.cartaoHoje) || 0); return; }
+            if (e.target.closest('[data-alertas]')) { abrirAlertas(); return; }
+            const estrela = e.target.closest('[data-favorito]');
+            if (estrela) { e.preventDefault(); alternarFavorito(estrela.dataset.favorito); return; }
             const fechar = e.target.closest('[data-fechar-aba]');
             if (fechar) { e.preventDefault(); fecharAba(fechar.dataset.fecharAba); return; }
             const projeto = e.target.closest('[data-projeto]');

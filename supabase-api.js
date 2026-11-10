@@ -371,8 +371,15 @@
         { id: 'aplicacoes-fitossanitarias', nome: 'Aplicações Fitossanitárias', descricao: 'Defensivos, laboratório, adubação e dashboard', icone: 'spray-can', grupo: 'Operação', gradiente: 'from-green-500 to-emerald-700',
           cor: 'bg-green-50 text-green-700', caminho: 'projetos/aplicacoes-fitossanitarias/index.html',
           areas: [{ modulo: 'aplicacoes_fitossanitarias', nome: 'Acesso às Aplicações', recursos: recursos('aplicacoes', [['registro', 'Registro', 'clipboard-pen'], ['dashboard', 'Dashboard', 'layout-dashboard']]) }] },
+        { id: 'organograma', nome: 'Organograma', descricao: 'Equipe, cargos, líderes, aniversários e tempo de casa', icone: 'network', grupo: 'Pessoas', gradiente: 'from-indigo-500 to-violet-700',
+          cor: 'bg-indigo-50 text-indigo-700', caminho: 'projetos/organograma/index.html',
+          areas: [{ modulo: 'organograma', nome: 'Acesso ao Organograma', recursos: [] },
+              // Permissão extra, desligada por padrão: adicionar, editar e remover pessoas (substitui a senha antiga)
+              { modulo: 'organograma_edicao', nome: 'Editar o organograma', extra: true, requer: 'organograma', recursos: [] }] },
         { id: 'online', nome: 'Usuários online', descricao: 'Quem está usando agora, em qual página e há quanto tempo', icone: 'radio', grupo: 'Administração', gradiente: 'from-emerald-500 to-teal-700',
           cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/online/index.html', soAdmin: true, areas: [] },
+        { id: 'log', nome: 'Log de atividades', descricao: 'O que cada pessoa registrou, alterou ou excluiu em todos os projetos', icone: 'scroll-text', grupo: 'Administração', gradiente: 'from-slate-500 to-slate-700',
+          cor: 'bg-slate-100 text-slate-700', caminho: 'projetos/log/index.html', soAdmin: true, areas: [] },
         { id: 'usuarios', nome: 'Cadastro de Usuários', descricao: 'Pessoas, locais e o que cada um pode acessar', icone: 'users', grupo: 'Administração', gradiente: 'from-slate-600 to-slate-800',
           cor: 'bg-slate-100 text-slate-700', caminho: 'projetos/usuarios/index.html', soAdmin: true, areas: [] }
     ];
@@ -669,6 +676,12 @@
         }
         if (cache) return cache.dados;
         throw new Error("Sem conexão e sem dados salvos no aparelho.");
+    }
+
+    // Aniversários do Organograma (alertas do Início): [{ id, nome, cargo, empresa, dia, mes }].
+    // Qualquer pessoa ativa pode ver; guarda no aparelho por 6 h e funciona sem internet com a última cópia.
+    async function aniversariosOrganograma(forcarAtualizacao) {
+        return buscarComCache('aniversarios', () => sb.rpc('organograma_aniversarios'), forcarAtualizacao ? 0 : 6 * 3600 * 1000);
     }
 
     async function listarPerfis(forcarAtualizacao) {
@@ -1648,6 +1661,16 @@
         return resp.data;
     }
 
+    // Log de todos os projetos e locais num período (tela Log de atividades do Painel).
+    // O banco só devolve o que a pessoa pode ver (locais a que tem acesso). Precisa de internet.
+    async function listarAuditoriaGeral(inicioIso, fimIso) {
+        if (!navigator.onLine) throw new Error("Sem conexão com a internet.");
+        const resp = await sb.from('auditoria').select('*').gte('criado_em', inicioIso).lt('criado_em', fimIso)
+            .order('criado_em', { ascending: false }).limit(3000);
+        if (resp.error) throw erroSupabase(resp);
+        return resp.data;
+    }
+
     // Backup: volta o item ao valor que tinha antes da ação registrada no log
     // (ou desfaz um registro novo). Somente gestor, precisa de internet.
     async function restaurarAuditoria(idAuditoria) {
@@ -1993,7 +2016,7 @@
 
     window.IrrigacaoAPI = {
         // login
-        login, logout, usuarioAtual, isGestor, isAdmin, nomeUsuario, atualizarPerfil, listarPerfis, sessaoValida,
+        login, logout, usuarioAtual, isGestor, isAdmin, nomeUsuario, atualizarPerfil, listarPerfis, aniversariosOrganograma, sessaoValida,
         // cliente do banco e fila offline, para os projetos com backend próprio (respeitam as regras de acesso)
         cliente: sb, enfileirar,
         // projetos e módulos
@@ -2023,6 +2046,6 @@
         // atualizar o app de todos
         versaoForcada, forcarAtualizacaoTodos, assinarVersaoApp, atualizarAplicativo, atualizarTodosAparelhos, informarPagina, encerrarSessao,
         // auditoria e sessões
-        listarAuditoria, listarAuditoriaPeriodo, restaurarAuditoria, iniciarSessao, informarAbaSessao, encerrarSessao, listarSessoes, atividadesDaSessao, autoresAuditoriaPeriodo
+        listarAuditoria, listarAuditoriaPeriodo, listarAuditoriaGeral, restaurarAuditoria, iniciarSessao, informarAbaSessao, encerrarSessao, listarSessoes, atividadesDaSessao, autoresAuditoriaPeriodo
     };
 })();

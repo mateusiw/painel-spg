@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Log de atividades | Painel SPG</title>
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" type="image/png" href="../../favicon.png">
+    <link rel="apple-touch-icon" href="../../icone-app.png">
+    <link rel="manifest" href="../../manifest.json">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../../supabase-config.js"></script>
+    <script src="../../supabase-api.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        #topo {
+            background: rgba(255,255,255,0.78);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            backdrop-filter: blur(18px) saturate(180%);
+            border-bottom: 1px solid rgba(226,232,240,0.9);
+        }
+        #topo::before {
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none;
+            background: linear-gradient(90deg, #10b981, #14b8a6 35%, #0ea5e9 70%, #6366f1);
+        }
+        .faixa-chips { scrollbar-width: none; }
+        .faixa-chips::-webkit-scrollbar { display: none; }
+    </style>
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <header id="topo" class="sticky top-0 z-30 px-4 py-2.5 flex items-center gap-3">
+        <a href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>
+        <img src="../../icone-app.png" alt="" class="w-9 h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight truncate">Log de atividades</h1>
+            <p id="subtitulo" class="text-[10px] font-semibold text-slate-400 truncate" aria-live="polite">Carregando...</p>
+        </div>
+        <button type="button" id="btnAtualizar" title="Atualizar agora" class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-slate-100/80 ring-1 ring-slate-200/70 text-slate-600 hover:bg-white shrink-0"><i data-lucide="refresh-cw" class="w-4 h-4"></i><span class="hidden sm:inline">Atualizar</span></button>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 space-y-4 pb-16">
+        <!-- Dia: setas e calendário -->
+        <div class="flex items-center gap-1.5 max-w-md">
+            <button type="button" id="diaAnterior" title="Dia anterior" aria-label="Dia anterior" class="w-10 h-10 flex items-center justify-center rounded-full bg-white ring-1 ring-slate-200 hover:bg-slate-100 text-slate-600 shrink-0"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+            <button type="button" id="diaCalendario" class="relative flex-1 h-10 flex items-center justify-center gap-2 rounded-full bg-white ring-1 ring-slate-200 hover:bg-slate-100 text-sm font-bold text-slate-700">
+                <i data-lucide="calendar-days" class="w-4 h-4 text-slate-500"></i>
+                <span id="diaRotulo">Hoje</span>
+                <input type="date" id="diaFiltro" aria-label="Dia" tabindex="-1" class="absolute inset-0 w-full h-full opacity-0 pointer-events-none">
+            </button>
+            <button type="button" id="diaProximo" title="Próximo dia" aria-label="Próximo dia" class="w-10 h-10 flex items-center justify-center rounded-full bg-white ring-1 ring-slate-200 hover:bg-slate-100 text-slate-600 shrink-0 disabled:opacity-30 disabled:hover:bg-white"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        </div>
+
+        <!-- Filtros: projeto e pessoa (só aparecem os que tiveram atividade no dia) -->
+        <div class="space-y-2">
+            <div id="filtroProjetos" role="group" aria-label="Filtrar por projeto" class="faixa-chips flex gap-1.5 overflow-x-auto pb-0.5"></div>
+            <div id="filtroPessoas" role="group" aria-label="Filtrar por pessoa" class="faixa-chips flex gap-1.5 overflow-x-auto pb-0.5"></div>
+        </div>
+
+        <section aria-labelledby="tituloLista">
+            <h2 id="tituloLista" class="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2"></h2>
+            <div id="lista" class="space-y-2"></div>
+            <p class="text-[11px] text-slate-400 mt-3">Toque numa pessoa para ver as atividades e numa atividade para ver o <b>antes e depois</b>. Itens da Irrigação podem ser <b>restaurados</b> ao valor daquela hora.</p>
+        </section>
+    </main>
+
+    <script src="log.js"></script>
+</body>
+</html>

@@ -362,10 +362,6 @@
                     <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-slate-300"></span>
                     <span id="syncStatusText">—</span>
                 </button>
-                <button type="button" id="auditBtn" onclick="window.openAuditModal()" title="Log de atividades"
-                    class="hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100">
-                    <i data-lucide="scroll-text" class="w-4 h-4"></i>
-                </button>
                 <button type="button" id="instalarAppBtn" onclick="window.abrirInstalacao()" title="Instalar aplicativo"
                     class="hidden items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full bg-green-600 text-white hover:bg-green-700">
                     <i data-lucide="download" class="w-3 h-3"></i> Instalar
@@ -1895,41 +1891,6 @@
                     <div id="fichaManutencoes" class="divide-y divide-slate-100"></div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- MODAL DO LOG DE ATIVIDADES (SOMENTE GESTOR) -->
-    <!-- z-[45]: fica abaixo das janelas de confirmação e alerta (restaurar backup) -->
-    <div id="auditModal" class="fixed inset-0 bg-slate-900/60 z-[45] hidden items-center justify-center p-5 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
-            <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-5 py-4 flex items-center justify-between shrink-0">
-                <h3 class="text-base font-bold text-white flex items-center gap-2"><i data-lucide="scroll-text" class="w-5 h-5"></i> Log de Atividades</h3>
-                <div class="flex items-center gap-1">
-                    <button type="button" onclick="window.openAuditModal()" title="Atualizar" class="p-1.5 text-white/80 hover:text-white"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
-                    <button type="button" onclick="window.closeAuditModal()" class="p-1.5 text-white/80 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
-                </div>
-            </div>
-            <!-- FILTROS: dia (setas + calendário) e pessoas que alteraram algo no dia (chips) -->
-            <div class="shrink-0 px-5 pt-3 pb-3 border-b border-slate-100 space-y-2.5">
-                <div class="flex items-center gap-1.5">
-                    <button type="button" onclick="window.mudarDiaAudit(-1)" title="Dia anterior"
-                        class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 shrink-0"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-                    <button type="button" onclick="window.abrirCalendarioAudit()"
-                        class="relative flex-1 h-9 flex items-center justify-center gap-2 rounded-full bg-slate-100 hover:bg-slate-200 text-sm font-bold text-slate-700">
-                        <i data-lucide="calendar-days" class="w-4 h-4 text-slate-500"></i>
-                        <span id="auditDiaRotulo">Hoje</span>
-                        <input type="date" id="auditFiltroData" onchange="window.carregarAudit()" aria-label="Dia" tabindex="-1"
-                            class="absolute inset-0 w-full h-full opacity-0 pointer-events-none">
-                    </button>
-                    <button type="button" id="auditDiaProximo" onclick="window.mudarDiaAudit(1)" title="Próximo dia"
-                        class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 shrink-0 disabled:opacity-30 disabled:hover:bg-slate-100"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
-                </div>
-                <div id="auditFiltroPessoas" class="flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1" style="scrollbar-width:none"></div>
-            </div>
-            <div id="auditBody" class="overflow-y-auto px-5 py-4 space-y-2"></div>
-            <p class="shrink-0 px-5 py-2.5 border-t border-slate-100 text-[10px] text-slate-400 leading-relaxed">
-                Toque em uma atividade para ver o <b>antes e depois</b>. Use <b>Restaurar</b> para voltar ao valor que estava naquela hora.
-            </p>
         </div>
     </div>
 
@@ -10885,7 +10846,7 @@
             }
         }
 
-        // --- LOG DE ATIVIDADES (GESTOR) ---
+        // --- NOMES DAS TABELAS (avisos de sincronização) ---
 
         const ROTULOS_TABELA = {
             registros_irrigacao: 'registro de irrigação', programacoes: 'item da programação', motor_diario: 'hora do motor',
@@ -10895,365 +10856,7 @@
             horas_poco_dia: 'horas ligado do poço', culturas_bloco: 'cultura do bloco', configuracoes: 'configuração'
         };
 
-        function resumoAuditoria(linha) {
-            const d = linha.dados_depois || linha.dados_antes || {};
-            const partes = [];
-            if (linha.tabela === 'envios_relatorio') partes.push(`Relatório de ${d.tipo === 'programacao' ? 'programação' : 'irrigação'} · ${d.qtd_registros ?? 0} itens`);
-            if (d.bloco) partes.push(`Bloco ${d.bloco}`);
-            if (d.dia) partes.push(d.dia);
-            if (d.minutos != null && linha.tabela !== 'envios_relatorio') partes.push(`${d.minutos} min`);
-            if (d.motor_ligado || d.motor_desligado) partes.push(`Motor ${d.motor_ligado ? d.motor_ligado.slice(0, 5) : '--:--'} → ${d.motor_desligado ? d.motor_desligado.slice(0, 5) : '--:--'}`);
-            if (d.numero) partes.push(`Nº ${d.numero}`);
-            if (linha.tabela === 'manutencoes_poco') {
-                const poco = pocosCache.find(p => p.id === d.poco_id);
-                if (poco) partes.push(`Poço ${poco.numero}`);
-                if (d.data) partes.push(formatDate(d.data));
-                if (d.tipo) partes.push(d.tipo);
-                if (d.executado_por) partes.push(`por ${d.executado_por}`);
-            }
-            if (linha.tabela === 'leituras_poco' && d.status) partes.push(d.status === 'desligado' ? `Desligado${d.motivo ? ' (' + d.motivo + ')' : ''}` : d.status === 'religado' ? 'Religado' : 'Ligado');
-            if (Number(d.segundos_15l) > 0) partes.push(`${fmtNum(d.segundos_15l, 2)} s/15 L = ${fmtLh(vazaoDe15L(Number(d.segundos_15l)))} L/h`);
-            if (linha.tabela === 'leituras_poco' && d.horas_ligado != null) partes.push(`ligado ${fmtNum(d.horas_ligado, d.horas_ligado % 1 ? 1 : 0)} h/dia`);
-            if (linha.tabela === 'pocos' && linha.acao === 'UPDATE' && linha.dados_antes && linha.dados_depois
-                && Number(linha.dados_antes.horas_padrao) !== Number(linha.dados_depois.horas_padrao)) {
-                partes.push(`horas ligado: ${fmtNum(linha.dados_antes.horas_padrao, 1)} → ${fmtNum(linha.dados_depois.horas_padrao, 1)} h/dia`);
-            }
-            if (d.vazao_m3h != null) partes.push(`${fmtNum(d.vazao_m3h, 2)} m³/h`);
-            if (d.leitura_hidrometro_m3 != null) partes.push(`${fmtNum(d.leitura_hidrometro_m3, 3)} m³`);
-            if (d.nivel_m != null) partes.push(`${fmtNum(d.nivel_m, 2)} m`);
-            if (d.nome && ['reservatorios', 'perfis', 'pocos'].includes(linha.tabela)) partes.push(d.nome);
-            if (d.usuario && ['perfis', 'usuarios_login'].includes(linha.tabela)) partes.push('@' + d.usuario);
-            if (linha.tabela === 'perfis' && linha.acao === 'UPDATE' && linha.dados_antes && linha.dados_depois) {
-                if (linha.dados_antes.papel !== linha.dados_depois.papel) partes.push(`papel: ${linha.dados_depois.papel}`);
-                if (linha.dados_antes.ativo !== linha.dados_depois.ativo) partes.push(linha.dados_depois.ativo ? 'reativado' : 'desativado');
-            }
-            return partes.join(' · ');
-        }
-
-        // ----- Antes e depois de cada atividade -----
-
-        const ROTULOS_CAMPO = {
-            data: 'Data', bloco: 'Bloco', minutos: 'Tempo', turno: 'Turno', observacao: 'Observação', responsavel: 'Responsável',
-            dia: 'Dia', litros_estimados: 'Litros estimados (mil)', tipo_aspersor: 'Aspersores', qtd_aspersores: 'Qtd. aspersores',
-            motor_ligado: 'Motor ligado', motor_desligado: 'Motor desligado', numero: 'Número', nome: 'Nome', ativo: 'Ativo',
-            poco_id: 'Poço', reservatorio_id: 'Reservatório', data_hora: 'Data e hora', status: 'Status', segundos_15l: 'Segundos (15 L)',
-            motivo: 'Motivo', data_parada: 'Data da parada', horas_ligado: 'Horas ligado/dia', horas: 'Horas ligado', horas_padrao: 'Bombeia (h/dia)',
-            nivel_m: 'Nível (m)', altura_maxima_m: 'Altura máx. (m)', capacidade_m3: 'Capacidade (m³)', tipo: 'Tipo', descricao: 'Descrição',
-            executado_por: 'Feito por', custo: 'Custo (R$)', cultura: 'Cultura', valvulas: 'Válvulas', data_atualizacao: 'Atualizado em',
-            papel: 'Papel', nome_curto: 'Nome curto', excluido_em: 'Excluído em', minutos_sistema: 'Tempo por sistema', litros_por_min: 'Vazão do bloco'
-        };
-        // Campos internos que não interessam no antes/depois
-        const CAMPOS_OCULTOS = ['id', 'created_at', 'updated_at', 'criado_por', 'atualizado_por', 'vazao_lh', 'litros_por_min', 'data_envio', 'registrado_em', 'itens'];
-        // Itens que o gestor pode restaurar pelo log (mesma lista do banco)
-        const TABELAS_RESTAURAVEIS = ['registros_irrigacao', 'programacoes', 'motor_diario', 'pocos', 'leituras_poco', 'reservatorios',
-            'leituras_reservatorio', 'manutencoes_poco', 'horas_poco_dia', 'culturas_bloco', 'dados_bloco'];
-
-        let auditoriaCache = {};   // id do log -> linha (para restaurar)
-
-        function fmtValorAuditoria(campo, v) {
-            if (v === null || v === undefined || v === '') return '—';
-            if (typeof v === 'boolean') return v ? 'Sim' : 'Não';
-            if (campo === 'minutos') return formatDuration(Number(v));
-            if (campo === 'litros_por_min') return `${fmtNum(Number(v) * 60, 0)} L/h`;
-            if (campo === 'minutos_sistema') return textoSistemas(Array.isArray(v) ? v : []) || '—';
-            if (campo === 'poco_id') { const p = pocosCache.find(x => x.id === v); return p ? `Poço ${p.numero}` : 'Poço'; }
-            if (campo === 'reservatorio_id') { const r = reservCache.find(x => x.id === v); return r ? r.nome : 'Reservatório'; }
-            if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return formatDate(v);
-            if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return fmtDataHora(v);
-            if (typeof v === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(v)) return v.slice(0, 5);
-            if (typeof v === 'object') return JSON.stringify(v);
-            return String(v);
-        }
-
-        // Litros de um registro de irrigação no log (vazão gravada × minutos); null sem a vazão
-        function litrosAuditoria(d) {
-            return d && d.litros_por_min != null && d.minutos != null ? Number(d.litros_por_min) * Number(d.minutos) : null;
-        }
-
-        // Campos que mudaram numa alteração (os internos não contam; a vazão gravada conta)
-        function camposMudadosAuditoria(l) {
-            const a = l.dados_antes || {}, d = l.dados_depois || {};
-            return [...new Set([...Object.keys(a), ...Object.keys(d)])]
-                .filter(c => !CAMPOS_OCULTOS.includes(c) || c === 'litros_por_min')
-                .filter(c => JSON.stringify(a[c] ?? null) !== JSON.stringify(d[c] ?? null));
-        }
-
-        function ehExclusao(l) {
-            return l.acao === 'DELETE' || (l.acao === 'UPDATE' && l.dados_depois && l.dados_depois.excluido_em && !(l.dados_antes || {}).excluido_em);
-        }
-
-        // Frase principal, ex.: "Fulano registrou que irrigou o Bloco 12 por 15min (Manhã) no dia 09/10"
-        function fraseAuditoria(l) {
-            // Nome atual do perfil (se a pessoa trocou o nome, o log antigo também mostra o novo)
-            const quem = `<span class="font-black">${escapeHtml(l.usuario_id ? nomeDoUsuario(l.usuario_id, l.usuario_nome) : (l.usuario_nome || 'Sistema'))}</span>`;
-            const d = l.dados_depois || l.dados_antes || {};
-            const a = acaoDaAuditoria(l);
-            if (l.tabela === 'registros_irrigacao') {
-                const bloco = `<b>Bloco ${escapeHtml(d.bloco || '?')}</b>`;
-                const detalhe = `por <b>${formatDuration(Number(d.minutos) || 0)}</b>${d.turno ? ` (${escapeHtml(d.turno)})` : ''}${d.data ? ` no dia ${formatDate(d.data)}` : ''}`;
-                if (l.acao === 'INSERT') return `${quem} registrou que irrigou o ${bloco} ${detalhe}`;
-                if (ehExclusao(l)) return `${quem} excluiu a irrigação do ${bloco} ${detalhe}`;
-                // Alteração: já mostra na frase o que mudou (de → para)
-                const antes = l.dados_antes || {};
-                const mudou = camposMudadosAuditoria(l);
-                const qual = `${d.data ? ` de ${formatDate(d.data)}` : ''}${d.turno || d.minutos != null
-                    ? ` <span class="text-slate-500">(${[d.turno, formatDuration(Number(d.minutos) || 0)].filter(Boolean).map(escapeHtml).join(', ')})</span>` : ''}`;
-                const de = t => `<span class="text-red-600 line-through">${t}</span>`, para = t => `<b class="text-green-700">${t}</b>`;
-                const la = litrosAuditoria(antes), ld = litrosAuditoria(d);
-                if (mudou.length === 1 && mudou[0] === 'litros_por_min') {
-                    // Só a vazão mudou: correção do volume pelo sistema do bloco
-                    return `${quem} corrigiu o volume da irrigação do ${bloco}${qual}: ` +
-                        (la != null && ld != null ? `${de(fmtLh(la) + ' L')} → ${para(fmtLh(ld) + ' L')}` : 'vazão do bloco recalculada');
-                }
-                const partes = mudou.filter(c => c !== 'litros_por_min').map(c =>
-                    `${escapeHtml(ROTULOS_CAMPO[c] || c.replace(/_/g, ' '))} ${de(escapeHtml(fmtValorAuditoria(c, antes[c])))} → ${para(escapeHtml(fmtValorAuditoria(c, d[c])))}`);
-                if (la != null && ld != null && Math.round(la) !== Math.round(ld)) partes.push(`Volume ${de(fmtLh(la) + ' L')} → ${para(fmtLh(ld) + ' L')}`);
-                return `${quem} alterou a irrigação do ${bloco}${qual}${partes.length ? `: ${partes.join(' · ')}` : ''}`;
-            }
-            const resumo = resumoAuditoria(l);
-            return `${quem} ${a.verbo} ${ROTULOS_TABELA[l.tabela] || l.tabela}${resumo ? `<span class="text-slate-500"> · ${escapeHtml(resumo)}</span>` : ''}`;
-        }
-
-        // Quadro "antes → depois" (alteração) ou lista dos valores (registro novo / exclusão)
-        function detalhesAuditoriaHtml(l) {
-            const antes = l.dados_antes || {}, depois = l.dados_depois || {};
-            // Na alteração, a vazão gravada aparece (correção de volume de dias anteriores)
-            const campos = [...new Set([...Object.keys(antes), ...Object.keys(depois)])]
-                .filter(c => !CAMPOS_OCULTOS.includes(c) || (c === 'litros_por_min' && l.acao === 'UPDATE'));
-            const rotulo = c => ROTULOS_CAMPO[c] || c.replace(/_/g, ' ');
-            let linhas;
-            if (l.acao === 'UPDATE') {
-                const mudou = campos.filter(c => JSON.stringify(antes[c] ?? null) !== JSON.stringify(depois[c] ?? null));
-                const linhaDePara = (nome, de, para, extra) => `
-                    <div class="flex flex-wrap items-baseline gap-x-1.5 py-1">
-                        <span class="font-bold text-slate-500 w-28 shrink-0">${escapeHtml(nome)}</span>
-                        <span class="text-red-600 line-through">${escapeHtml(de)}</span>
-                        <span class="text-slate-400">→</span>
-                        <span class="text-green-700 font-bold">${escapeHtml(para)}</span>
-                        ${extra ? `<span class="text-[10px] font-bold text-slate-500">${escapeHtml(extra)}</span>` : ''}
-                    </div>`;
-                linhas = mudou.length === 0 ? `<p class="text-slate-400">Nenhum campo visível mudou.</p>`
-                    : mudou.map(c => linhaDePara(rotulo(c), fmtValorAuditoria(c, antes[c]), fmtValorAuditoria(c, depois[c]))).join('');
-                if (l.tabela === 'registros_irrigacao') {
-                    // Volume da irrigação antes e depois (vazão × tempo), com a diferença
-                    const la = litrosAuditoria(antes), ld = litrosAuditoria(depois);
-                    if (la != null && ld != null && Math.round(la) !== Math.round(ld)) {
-                        const dif = ld - la;
-                        linhas = linhaDePara('Volume da irrigação', `${fmtLh(la)} L`, `${fmtLh(ld)} L`,
-                            `(${dif > 0 ? '+' : '−'}${fmtLh(Math.abs(dif))} L)`) + linhas;
-                    }
-                    // Qual irrigação foi (o que não mudou)
-                    const qual = [depois.data ? formatDate(depois.data) : '', depois.turno, depois.minutos != null ? formatDuration(Number(depois.minutos)) : '',
-                        textoSistemas(depois.minutos_sistema), depois.responsavel ? `lançada por ${depois.responsavel}` : ''].filter(Boolean).join(' · ');
-                    if (qual) linhas = `<p class="text-slate-600 pb-1 mb-1 border-b border-slate-200">Irrigação de <b>${escapeHtml(qual)}</b></p>` + linhas;
-                    if (mudou.length === 1 && mudou[0] === 'litros_por_min') {
-                        linhas += `<p class="text-[10px] text-slate-500 mt-1">Correção de volume: o sistema do bloco foi atualizado e esta irrigação passou a usar a vazão nova. O tempo irrigado não mudou.</p>`;
-                    }
-                }
-            } else {
-                const fonte = l.acao === 'DELETE' ? antes : depois;
-                linhas = campos.filter(c => fonte[c] !== null && fonte[c] !== undefined && fonte[c] !== '').map(c => `
-                    <div class="flex gap-1.5 py-1">
-                        <span class="font-bold text-slate-500 w-28 shrink-0">${escapeHtml(rotulo(c))}</span>
-                        <span class="${l.acao === 'DELETE' ? 'text-red-600' : 'text-slate-700'} break-words min-w-0">${escapeHtml(fmtValorAuditoria(c, fonte[c]))}</span>
-                    </div>`).join('') || `<p class="text-slate-400">Sem detalhes.</p>`;
-            }
-            const titulo = l.acao === 'UPDATE' ? 'Antes → Depois' : l.acao === 'DELETE' ? 'Como estava antes de excluir' : 'Valores registrados';
-            const regAparelho = (depois.registrado_em || antes.registrado_em)
-                ? `<p class="text-[10px] text-slate-400 mt-1">Registrado no aparelho em ${fmtDataHora(depois.registrado_em || antes.registrado_em)} · gravado no banco em ${fmtDataHora(l.criado_em)}</p>` : '';
-
-            let botao = '';
-            if (API.isGestor() && TABELAS_RESTAURAVEIS.includes(l.tabela) && ['INSERT', 'UPDATE', 'DELETE'].includes(l.acao)) {
-                const texto = l.acao === 'INSERT' ? 'Desfazer este registro' : `Restaurar como estava às ${fmtHora(l.criado_em)}`;
-                botao = `<button type="button" onclick="event.stopPropagation(); window.restaurarDoLog(${Number(l.id)})"
-                    class="mt-2 w-full flex items-center justify-center gap-1.5 text-[11px] font-black uppercase tracking-wider py-2 rounded-lg ${l.acao === 'INSERT' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-sky-50 text-sky-700 hover:bg-sky-100'}">
-                    <i data-lucide="${l.acao === 'INSERT' ? 'undo-2' : 'history'}" class="w-3.5 h-3.5"></i> ${texto}</button>`;
-            }
-            return `
-                <div class="mt-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[11px]">
-                    <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">${titulo}</p>
-                    ${linhas}
-                    ${regAparelho}
-                    ${botao}
-                </div>`;
-        }
-
-        // Uma linha do log; toque para abrir o antes/depois
-        function itemAuditoriaHtml(l, prefixo, compacto) {
-            auditoriaCache[l.id] = l;
-            const a = acaoDaAuditoria(l);
-            const idDet = `${prefixo}_${l.id}`;
-            return `
-            <div class="flex items-start gap-${compacto ? 2 : 3} ${compacto ? 'py-2' : 'px-4 py-3'} cursor-pointer hover:bg-slate-50/70" onclick="window.alternarDetalheAuditoria('${idDet}')">
-                <div class="${compacto ? 'w-6 h-6' : 'w-7 h-7'} rounded-full ${a.cor} flex items-center justify-center shrink-0"><i data-lucide="${a.icone}" class="${compacto ? 'w-3 h-3' : 'w-3.5 h-3.5'}"></i></div>
-                <div class="min-w-0 flex-1">
-                    <p class="${compacto ? 'text-[11px]' : 'text-xs'} text-slate-700 leading-snug">${fraseAuditoria(l)}</p>
-                    <p class="text-[10px] font-bold text-slate-400 mt-0.5 flex items-center gap-1">${compacto ? fmtHora(l.criado_em) : fmtDataHora(l.criado_em)}
-                        <i data-lucide="chevron-down" class="w-3 h-3"></i></p>
-                    <div id="${idDet}" class="hidden">${detalhesAuditoriaHtml(l)}</div>
-                </div>
-            </div>`;
-        }
-
-        window.alternarDetalheAuditoria = function(id) {
-            const el = document.getElementById(id);
-            if (el) el.classList.toggle('hidden');
-        }
-
-        window.restaurarDoLog = function(idLog) {
-            const l = auditoriaCache[idLog];
-            if (!l || !API.isGestor()) return;
-            const d = l.dados_depois || l.dados_antes || {};
-            const item = l.tabela === 'registros_irrigacao' ? `a irrigação do Bloco ${d.bloco || '?'}` : (ROTULOS_TABELA[l.tabela] || l.tabela);
-            const texto = l.acao === 'INSERT'
-                ? `Isso apaga ${item} registrada por ${l.usuario_nome || 'alguém'} em ${fmtDataHora(l.criado_em)}.`
-                : `${item.charAt(0).toUpperCase() + item.slice(1)} volta a ficar como estava antes da ação de ${l.usuario_nome || 'alguém'} em ${fmtDataHora(l.criado_em)}${l.acao === 'DELETE' ? ' (será criada de novo)' : ''}. A restauração também fica registrada no log.`;
-            pendingConfirmCallback = async () => {
-                try {
-                    await API.restaurarAuditoria(idLog);
-                    window.showAlert(l.acao === 'INSERT' ? "Registro desfeito" : "Restaurado", "Pronto. O valor anterior já está no banco de dados.");
-                    carregarRegistrosEquipe();
-                    if (!document.getElementById('tabAgua').classList.contains('hidden')) window.carregarAgua();
-                    if (!document.getElementById('tabProgramacao').classList.contains('hidden') && !progUnlocked) window.syncProgramacaoFromSheet();
-                    if (!document.getElementById('auditModal').classList.contains('hidden')) window.openAuditModal();
-                } catch (err) {
-                    window.showAlert("Não foi possível restaurar", err.message);
-                }
-            };
-            window.showConfirmModal(l.acao === 'INSERT' ? "Desfazer registro?" : "Restaurar valor anterior?", texto,
-                l.acao === 'INSERT' ? "DESFAZER" : "RESTAURAR", l.acao === 'INSERT' ? 'undo-2' : 'history');
-        }
-
-        // Log do dia escolhido, agrupado por pessoa (mesmos filtros da janela Usuários Online)
-        let auditDiaCache = [];
-        let filtroPessoaAudit = '';     // id escolhido nos chips ('' = todos)
-        let pessoaAbertaAudit = null;   // cartão aberto quando está em "Todos"
-
-        window.openAuditModal = function() {
-            const modal = document.getElementById('auditModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            const filtroData = document.getElementById('auditFiltroData');
-            filtroData.max = dataLocalIso();
-            if (!filtroData.value) filtroData.value = dataLocalIso();
-            window.carregarAudit();
-        }
-
-        window.carregarAudit = async function() {
-            const body = document.getElementById('auditBody');
-            const dia = document.getElementById('auditFiltroData').value || dataLocalIso();
-            document.getElementById('auditDiaRotulo').innerText = rotuloDiaFiltro(dia);
-            document.getElementById('auditDiaProximo').disabled = dia >= dataLocalIso();
-            body.innerHTML = `<div class="flex items-center justify-center gap-2 text-xs font-medium text-slate-400 py-10"><i data-lucide="loader-circle" class="w-4 h-4 animate-spin"></i> Carregando...</div>`;
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-
-            const inicio = new Date(dia + 'T00:00:00');
-            const fim = new Date(inicio.getTime() + 24 * 3600 * 1000);
-            let linhas;
-            try {
-                linhas = await API.listarAuditoriaPeriodo(inicio.toISOString(), fim.toISOString());
-            } catch (err) {
-                body.innerHTML = `<p class="text-xs font-medium text-red-500 text-center py-10 px-4">Não foi possível carregar: ${escapeHtml(err.message)}</p>`;
-                return;
-            }
-            // Trocou o dia enquanto carregava: a resposta mais nova é que vale
-            if ((document.getElementById('auditFiltroData').value || dataLocalIso()) !== dia) return;
-            auditDiaCache = linhas;
-            renderAudit();
-        }
-
-        // [{ id, nome, papel, linhas, qtd, primeira, ultima }] — mais recente primeiro
-        function pessoasDoLog() {
-            const porUsuario = {};
-            auditDiaCache.forEach(l => {
-                const id = l.usuario_id || 'sistema';
-                const perfil = perfisCache.find(p => p.id === l.usuario_id);
-                const g = porUsuario[id] = porUsuario[id] || {
-                    id, nome: l.usuario_id ? nomeDoUsuario(l.usuario_id, l.usuario_nome) : 'Sistema',
-                    papel: perfil ? (perfil.papel === 'gestor' ? 'Gestor' : 'Irrigador') : '', linhas: []
-                };
-                g.linhas.push(l);
-            });
-            return Object.values(porUsuario).map(g => Object.assign(g, {
-                qtd: g.linhas.length,
-                ultima: g.linhas[0].criado_em,                    // a lista já vem do mais novo para o mais antigo
-                primeira: g.linhas[g.linhas.length - 1].criado_em
-            })).sort((a, b) => String(b.ultima).localeCompare(String(a.ultima)));
-        }
-
-        function renderAudit() {
-            const pessoas = pessoasDoLog();
-            if (!pessoas.some(g => g.id === filtroPessoaAudit)) filtroPessoaAudit = '';
-            document.getElementById('auditFiltroPessoas').innerHTML = chipsPessoasHtml(
-                pessoas.slice().sort((a, b) => b.qtd - a.qtd || a.nome.localeCompare(b.nome)), filtroPessoaAudit, 'filtrarAudit');
-
-            const body = document.getElementById('auditBody');
-            const dia = document.getElementById('auditFiltroData').value || dataLocalIso();
-            const titulo = txt => `<p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">${txt}</p>`;
-            const total = auditDiaCache.length;
-            if (!total) {
-                body.innerHTML = `<p class="text-xs text-slate-400 text-center py-10">Nenhuma atividade ${dia === dataLocalIso() ? 'hoje' : 'neste dia'}.</p>`;
-            } else {
-                const lista = filtroPessoaAudit ? pessoas.filter(g => g.id === filtroPessoaAudit) : pessoas;
-                body.innerHTML = titulo(filtroPessoaAudit
-                        ? `${lista[0].qtd} atividade${lista[0].qtd === 1 ? '' : 's'} de ${escapeHtml(lista[0].nome)}`
-                        : `${total} atividade${total === 1 ? '' : 's'} · ${pessoas.length} pessoa${pessoas.length === 1 ? '' : 's'}`) +
-                    lista.map(g => cartaoPessoaAudit(g, filtroPessoaAudit === g.id || pessoaAbertaAudit === g.id)).join('');
-            }
-            if(typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        function cartaoPessoaAudit(g, aberto) {
-            const id = escapeHtml(g.id);
-            const periodo = g.primeira === g.ultima ? fmtHora(g.ultima) : `${fmtHora(g.primeira)} – ${fmtHora(g.ultima)}`;
-            return `
-            <div class="border border-slate-200 rounded-xl overflow-hidden">
-                <button type="button" onclick="window.abrirPessoaAudit('${id}')" class="w-full text-left px-3 py-2.5 flex items-center gap-2.5 hover:bg-slate-50">
-                    ${avatarOnline(g.id, g.nome, 32)}
-                    <div class="min-w-0 flex-1">
-                        <p class="text-sm font-bold text-slate-700 truncate">${escapeHtml(g.nome)}</p>
-                        <p class="text-[10px] text-slate-400 mt-0.5">${g.papel ? `<span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 mr-1">${g.papel}</span>` : ''}<b class="text-slate-500">${g.qtd} alteraç${g.qtd === 1 ? 'ão' : 'ões'}</b> · ${periodo}</p>
-                    </div>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 shrink-0 transition-transform ${aberto ? 'rotate-180' : ''}"></i>
-                </button>
-                ${aberto ? `<div class="border-t border-slate-100 bg-slate-50/60 px-3 divide-y divide-slate-100">${g.linhas.map(l => itemAuditoriaHtml(l, 'auditDet', true)).join('')}</div>` : ''}
-            </div>`;
-        }
-
-        window.filtrarAudit = function(id) {
-            filtroPessoaAudit = id || '';
-            pessoaAbertaAudit = null;
-            renderAudit();
-        }
-
-        window.abrirPessoaAudit = function(id) {
-            if (filtroPessoaAudit) return; // com uma pessoa escolhida, o cartão fica sempre aberto
-            pessoaAbertaAudit = pessoaAbertaAudit === id ? null : id;
-            renderAudit();
-        }
-
-        window.mudarDiaAudit = function(delta) {
-            if (mudarDiaFiltro(document.getElementById('auditFiltroData'), delta)) window.carregarAudit();
-        }
-
-        window.abrirCalendarioAudit = function() { abrirCalendario(document.getElementById('auditFiltroData')); }
-
-        window.closeAuditModal = function() {
-            const modal = document.getElementById('auditModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        // --- PESSOAS E FILTROS DE DIA (usados no Log de atividades e na Programação) ---
-
-        function acaoDaAuditoria(l) {
-            const excluiu = l.acao === 'DELETE' || (l.acao === 'UPDATE' && l.dados_depois && l.dados_depois.excluido_em && !(l.dados_antes || {}).excluido_em);
-            return l.acao === 'CRIAR_LOGIN' ? { verbo: 'criou', icone: 'user-plus', cor: 'text-sky-600 bg-sky-50' }
-                 : l.acao === 'REDEFINIR_SENHA' ? { verbo: 'redefiniu a senha de um', icone: 'key-round', cor: 'text-amber-600 bg-amber-50' }
-                 : excluiu ? { verbo: 'excluiu', icone: 'trash-2', cor: 'text-red-500 bg-red-50' }
-                 : l.acao === 'INSERT' ? { verbo: 'registrou', icone: 'plus', cor: 'text-green-600 bg-green-50' }
-                 : { verbo: 'alterou', icone: 'pencil', cor: 'text-amber-600 bg-amber-50' };
-        }
+        // --- PESSOAS (nome atual do perfil e bolinha com a inicial) ---
 
         function nomeDoUsuario(id, reserva) {
             const perfil = perfisCache.find(p => p.id === id);
@@ -11266,39 +10869,6 @@
             const soma = String(id).split('').reduce((s, c) => s + c.charCodeAt(0), 0);
             const [fundo, tinta] = CORES_AVATAR[soma % CORES_AVATAR.length].split(':');
             return `<span class="inline-flex items-center justify-center rounded-full font-black shrink-0" style="width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.45)}px;background:${fundo};color:${tinta}">${escapeHtml((nome || '?').trim().charAt(0).toUpperCase())}</span>`;
-        }
-
-        // Chips "Todos" + uma pessoa por chip (inicial colorida, nome e quantidade); fn = função window.fn(id)
-        function chipsPessoasHtml(pessoas, selecionado, fn) {
-            const chip = (id, conteudo, ativo) => `
-                <button type="button" onclick="window.${fn}('${escapeHtml(id)}')"
-                    class="inline-flex items-center gap-1.5 shrink-0 h-8 pl-1 pr-3 rounded-full border text-xs font-bold transition-colors
-                    ${ativo ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}">${conteudo}</button>`;
-            return chip('', `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full ${!selecionado ? 'bg-white/15' : 'bg-slate-100'}"><i data-lucide="users" class="w-3.5 h-3.5"></i></span>Todos`, !selecionado) +
-                pessoas.map(a => chip(a.id, `${avatarOnline(a.id, a.nome, 24)}${escapeHtml(a.nome)}
-                    <span class="text-[10px] font-black px-1.5 rounded-full ${selecionado === a.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">${a.qtd}</span>`, selecionado === a.id)).join('') +
-                (pessoas.length ? '' : '<span class="self-center text-[11px] text-slate-400 pl-1">Ninguém alterou nada neste dia</span>');
-        }
-
-        // "Hoje · 25/10", "Ontem · 24/10" ou "qui, 23/10/2026"
-        function rotuloDiaFiltro(dia) {
-            const hoje = dataLocalIso(), ontem = dataLocalIso(new Date(Date.now() - 86400000));
-            const semana = new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
-            return dia === hoje ? `Hoje · ${formatDate(dia).slice(0, 5)}`
-                : dia === ontem ? `Ontem · ${formatDate(dia).slice(0, 5)}` : `${semana}, ${formatDate(dia)}`;
-        }
-
-        // Setas do dia: volta/avança (nunca passa de hoje)
-        function mudarDiaFiltro(input, delta) {
-            const base = new Date((input.value || dataLocalIso()) + 'T12:00:00');
-            const novo = dataLocalIso(new Date(base.getTime() + delta * 86400000));
-            if (novo > dataLocalIso()) return false;
-            input.value = novo;
-            return true;
-        }
-
-        function abrirCalendario(input) {
-            try { input.showPicker(); } catch (e) { input.focus(); input.click(); }
         }
 
         // --- LOGIN E SINCRONIZAÇÃO ---
@@ -11656,7 +11226,6 @@
             badge.innerText = API.isAdmin() ? 'Admin' : gestor ? 'Gestor' : 'Irrigador';
             badge.className = `text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${gestor ? 'bg-sky-100 text-sky-700' : 'bg-green-100 text-green-700'}`;
             document.getElementById('collaborator').value = u.nome;
-            document.getElementById('auditBtn').classList.toggle('hidden', !gestor);
             aplicarVisibilidadeGestor();
             document.getElementById('dadosBlocosCard').classList.toggle('hidden', !gestor);
             const naProgramacao = !document.getElementById('tabProgramacao').classList.contains('hidden');
@@ -11839,7 +11408,7 @@
             if(typeof lucide !== 'undefined') lucide.createIcons();
 
             // Trava a rolagem da página enquanto qualquer janela (pop-up) estiver aberta
-            const JANELAS = ['pocoModal', 'auditModal', 'confirmModal', 'alertModal', 'instalarModal',
+            const JANELAS = ['pocoModal', 'confirmModal', 'alertModal', 'instalarModal',
                              'flowModal', 'flowModalProg', 'loginScreen', 'syncOverlay'];
             const atualizarTravaRolagem = () => {
                 const aberta = JANELAS.some(id => { const el = document.getElementById(id); return el && !el.classList.contains('hidden'); });
