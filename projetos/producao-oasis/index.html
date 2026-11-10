@@ -349,7 +349,6 @@
                 <button type="button" onclick="openWidgetCustomizer()" title="Escolher quais gráficos e tabelas aparecem para você" class="acao-topo"><i data-lucide="layout-grid"></i>Personalizar</button>
                 <button type="button" onclick="toggleChartLabels()" id="toggleLabelsBtn" title="Mostrar/ocultar os rótulos numéricos dos gráficos" class="acao-topo"><i data-lucide="eye" id="toggleLabelsIcon"></i><span id="toggleLabelsText">Rótulos</span></button>
                 <button type="button" onclick="prepareAndPrint()" title="Imprimir relatório" class="acao-topo"><i data-lucide="printer"></i>Imprimir</button>
-                <button type="button" onclick="logout()" title="Sair" aria-label="Sair" class="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"><i data-lucide="log-out" class="w-4 h-4"></i></button>
             </div>
             <div class="relative lg:hidden shrink-0">
                 <button type="button" id="btnAcoesCel" aria-haspopup="menu" aria-expanded="false" aria-controls="menuAcoesCel" title="Mais opções" class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-600 bg-slate-100/80 ring-1 ring-slate-200/70"><i data-lucide="ellipsis" class="w-5 h-5"></i></button>
@@ -359,7 +358,6 @@
                     <button type="button" role="menuitem" data-acao-cel="toggleChartLabels" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50"><i data-lucide="tag" class="w-4 h-4 text-slate-400"></i><span data-rotulos-cel>Números nos gráficos</span></button>
                     <button type="button" role="menuitem" data-acao-cel="prepareAndPrint" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50"><i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>Imprimir relatório</button>
                     <div class="my-1 border-t border-slate-100"></div>
-                    <button type="button" role="menuitem" data-acao-cel="logout" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50"><i data-lucide="log-out" class="w-4 h-4"></i>Sair</button>
                 </div>
             </div>
         </div>
@@ -1524,11 +1522,6 @@
             });
             const menu = document.getElementById('menu-' + id);
             if (menu) menu.classList.toggle('hidden'); 
-        }
-
-        async function logout() {
-            try { await SPG_API.logout(); } catch (e) {}
-            location.replace(SPG_MENU_URL);
         }
 
         function showApp() {

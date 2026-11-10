@@ -121,9 +121,6 @@
                 <span class="hidden sm:inline">Enviar para o WhatsApp</span>
                 <span class="sm:hidden">Enviar</span>
             </button>
-            <button id="btnSairSistema" onclick="sairDoSistema()" title="Sair" aria-label="Sair" style="display:none" class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 shrink-0">
-                <i data-lucide="log-out" class="w-4 h-4"></i>
-            </button>
         </div>
     </div>
 
@@ -748,7 +745,6 @@
             const fora = window.top === window.self;
             const varios = SPG_API.projetosDoUsuario().length > 1;
             document.getElementById('btnMenuProjetos').style.display = fora && varios ? 'flex' : 'none';
-            document.getElementById('btnSairSistema').style.display = fora ? 'flex' : 'none';
             document.getElementById('btnAbrirDashboard').style.display = spg_podeDashboard() ? '' : 'none';
             if (!spg_podeRegistrar()) {
                 document.getElementById('btnEnviarRelatorio').style.display = 'none';
@@ -771,11 +767,6 @@
             try { perfil = await SPG_API.atualizarPerfil(); } catch (e) { return; }
             if (!perfil || !spg_temAcesso()) location.replace(SPG_MENU_URL);
             else if (JSON.stringify(perfil.bloqueios || []) !== spg_bloqueiosIniciais) location.reload();
-        }
-
-        async function sairDoSistema() {
-            try { await SPG_API.logout(); } catch (e) { /* sai mesmo assim */ }
-            location.replace(SPG_MENU_URL);
         }
 
         spg_preencherLocais();

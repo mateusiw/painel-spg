@@ -519,7 +519,6 @@
                 <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">SPG Sede · equipes, serviços e produtividade</p>
             </div>
             <span id="topoUsuario" class="hidden sm:block text-xs font-bold text-slate-500 truncate max-w-[12rem]"></span>
-            <button type="button" onclick="sairDoSistema()" title="Sair" aria-label="Sair" class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 shrink-0"><i data-lucide="log-out" class="w-4 h-4"></i></button>
         </div>
         <div id="abasProgLinha" class="px-4 sm:px-6 pb-2.5">
             <div id="abasProg" role="tablist" aria-label="Abas da Programação" class="flex gap-1 overflow-x-auto p-1 bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70"></div>
@@ -570,9 +569,6 @@
                 <a id="btnMenuProjetos" href="../../index.html" class="dash-nav-item md:mt-3 md:border-t md:border-slate-100 md:rounded-none md:pt-3" style="display:none" title="Menu de projetos">
                     <i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i><span class="dash-sidebar-label">Menu de projetos</span>
                 </a>
-                <button type="button" id="btnSair" class="dash-nav-item" onclick="sairDoSistema()" title="Sair">
-                    <i data-lucide="log-out" class="w-4 h-4 shrink-0"></i><span class="dash-sidebar-label"><span id="usuarioAtualNome"></span><span class="hidden md:block text-[10px] font-bold text-slate-400">Sair</span></span>
-                </button>
             </nav>
         </aside>
 
@@ -5143,7 +5139,6 @@
 
         function initUsuarioAtual() {
             usuarioAtual = { nome: SPG_API.nomeUsuario(), abas: SPG_ABAS.filter(v => SPG_API.recursoLiberado('programacao.' + v)) };
-            document.getElementById('usuarioAtualNome').textContent = usuarioAtual.nome.split(' ')[0];
             // style.display (e não a classe hidden) porque .dash-nav-item já define display.
             document.querySelectorAll('.dash-nav-item[data-view]').forEach(btn => {
                 btn.style.display = usuarioPodeVer(btn.dataset.view) ? '' : 'none';
@@ -5163,11 +5158,6 @@
             try { perfil = await SPG_API.atualizarPerfil(); } catch (e) { return; }
             if (!perfil || !spg_temAcesso()) location.replace(SPG_MENU_URL);
             else if (JSON.stringify(perfil.bloqueios || []) !== spg_bloqueiosIniciais) location.reload();
-        }
-
-        async function sairDoSistema() {
-            try { await SPG_API.logout(); } catch (e) { /* sai mesmo assim */ }
-            location.replace(SPG_MENU_URL);
         }
 
         function switchDashboardView(view) {

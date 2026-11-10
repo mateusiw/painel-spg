@@ -20,7 +20,7 @@
     };
 
     const paraLinha = r => [r.pop, r.titulo, r.data, r.responsavel, r.setor, r.aprovado_por, r.assinatura, r.grupo, r.questao_id,
-        r.questao_texto, r.resposta, r.observacao, r.id, r.status, r.registrado_em, r.envio_id, r.data_resolucao, r.obs_resolucao];
+        r.questao_texto, r.resposta, r.observacao, r.id, r.status, r.registrado_em, r.envio_id, r.data_resolucao, r.obs_resolucao, r.enviado_por];
 
     // Devolve { success, error } nos erros recusados pelo servidor; sem conexão, lança exceção
     async function comResultado(fazer) {
@@ -46,10 +46,18 @@
         },
 
         salvar: (rows, envioId) => comResultado(async () => {
-            conferir(await sb.from('checklist_pop_respostas').insert(rows.map(r => ({
+            const enviadoPor = API.nomeUsuario() || '';
+            const linhas = rows.map(r => ({
                 pop: r[0], titulo: r[1], data: r[2], responsavel: r[3], setor: r[4], aprovado_por: r[5], assinatura: r[6], grupo: r[7],
-                questao_id: r[8], questao_texto: r[9], resposta: r[10], observacao: r[11], id: r[12], status: r[13], envio_id: envioId
-            }))));
+                questao_id: r[8], questao_texto: r[9], resposta: r[10], observacao: r[11], id: r[12], status: r[13], envio_id: envioId,
+                enviado_por: enviadoPor
+            }));
+            let res = await sb.from('checklist_pop_respostas').insert(linhas);
+            // Banco ainda sem a coluna (pop_enviado_por.sql não rodado): grava sem o nome, o envio não para
+            if (res.error && /enviado_por/.test(res.error.message || '')) {
+                res = await sb.from('checklist_pop_respostas').insert(linhas.map(({ enviado_por, ...resto }) => resto));
+            }
+            conferir(res);
         }),
 
         atualizarNC: (id, status, dataResolucao, obsResolucao) => comResultado(async () => {

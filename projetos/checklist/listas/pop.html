@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestão de Qualidade - POPs</title>
+    <title>POP | Painel SPG</title>
     
-    <meta name="theme-color" content="#059669">
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="icon" type="image/png" href="../../../favicon.png">
@@ -113,34 +113,20 @@
         }
 
         :root {
-            --surface: #ffffff;
-            --page: #f6f7fb;
-            --ink: #111827;
-            --muted: #64748b;
-            --line: #e2e8f0;
             --primary: #16a34a;
             --primary-dark: #15803d;
-            --nav: #111827;
-            --nav-soft: #1f2937;
-            --accent-soft: #f0fdf4;
         }
 
-        body {
-            background: #f8fafc;
-        }
-
-        .app-shell {
-            background: rgba(255, 255, 255, 0.94);
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            border-radius: 16px;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-        }
-
-        .control-panel {
-            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 25px rgba(15, 23, 42, 0.04);
+        /* Impressão do check-list: moldura original da folha */
+        @media print {
+            .app-shell {
+                background: rgba(255, 255, 255, 0.94);
+                border: 1px solid rgba(226, 232, 240, 0.9);
+                border-radius: 16px;
+            }
+            h3.bg-green-50 { background-color: #f0fdf4 !important; }
+            ::placeholder { color: transparent !important; }
+            .rotulo-tela { display: none !important; }
         }
 
         .modern-input {
@@ -167,104 +153,187 @@
         .radio-label.answer-nc { background-color: #dc2626 !important; }
         .radio-label.answer-na { background-color: #64748b !important; }
 
-        .bg-emerald-50, .bg-green-50, .bg-teal-50, .bg-yellow-50 { background-color: var(--accent-soft) !important; }
-        .bg-emerald-100, .bg-green-100, .bg-teal-100, .bg-yellow-100 { background-color: #dcfce7 !important; }
-        .bg-emerald-200, .bg-green-200, .bg-teal-200, .bg-yellow-200 { background-color: #bbf7d0 !important; }
-        .bg-emerald-500, .bg-emerald-600, .bg-emerald-700, .bg-emerald-800, .bg-emerald-900,
-        .bg-green-400, .bg-green-500, .bg-teal-600, .bg-yellow-500, .bg-yellow-600 {
-            background-color: var(--primary) !important;
-        }
-        .hover\:bg-emerald-50:hover, .hover\:bg-green-50:hover, .hover\:bg-yellow-50:hover { background-color: #f0fdf4 !important; }
-        .hover\:bg-emerald-700:hover, .hover\:bg-emerald-800:hover, .hover\:bg-emerald-900:hover,
-        .hover\:bg-yellow-600:hover { background-color: var(--primary-dark) !important; }
-        .text-emerald-100, .text-emerald-600, .text-emerald-700, .text-emerald-800, .text-emerald-900,
-        .text-green-400, .text-green-500, .text-teal-600, .text-yellow-600, .text-yellow-800 {
-            color: var(--primary) !important;
-        }
-        .text-emerald-100 { color: #dcfce7 !important; }
-        .text-emerald-900 { color: #ffffff !important; }
-        .border-emerald-100, .border-emerald-200, .border-emerald-300,
-        .border-emerald-500, .border-emerald-600, .border-green-400, .border-yellow-500 {
-            border-color: #bbf7d0 !important;
-        }
-        
-        .focus\:ring-emerald-500:focus, .focus\:ring-yellow-500:focus { --tw-ring-color: rgba(22, 163, 74, 0.35) !important; }
-        .focus\:border-emerald-500:focus, .focus\:border-emerald-600:focus { border-color: var(--primary) !important; }
-        .from-emerald-500 { --tw-gradient-from: #16a34a var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(22 163 74 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-        .to-teal-600 { --tw-gradient-to: #15803d var(--tw-gradient-to-position) !important; }
+        .oculto { display: none !important; }
+
         .status-select {
             font-size: 12px;
             font-weight: 700;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
             padding: 6px 10px;
-            background: #fff;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+            background: #f8fafc;
             outline: none;
             cursor: pointer;
         }
-        
+
         .question-help {
-            position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 18px;
-            height: 18px;
+            width: 22px;
+            height: 22px;
             border-radius: 9999px;
             font-size: 11px;
-            font-weight: 700;
-            color: #15803d;
-            background: #dcfce7;
-            border: 1px solid #86efac;
-            cursor: help;
+            font-weight: 800;
+            color: #94a3b8;
+            background: #f1f5f9;
             flex-shrink: 0;
-            margin-top: 2px;
+            cursor: pointer;
+            transition: color .15s, background-color .15s;
         }
-        .question-help-tooltip {
-            position: absolute;
-            left: 50%;
-            top: calc(100% + 8px);
-            transform: translateX(-50%);
-            width: min(320px, 75vw);
-            background: #0f172a;
-            color: #f8fafc;
-            border-radius: 8px;
-            font-size: 12px;
-            line-height: 1.35;
-            padding: 8px 10px;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
-            z-index: 60;
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transition: opacity .12s ease;
-        }
-        .question-help:hover .question-help-tooltip {
-            opacity: 1;
-            visibility: visible;
-        }
-        
+        .question-help:hover, .question-help[aria-expanded="true"] { color: #15803d; background: #dcfce7; }
+
+        .planilha-lancamentos { width: 100%; min-width: 1240px; border-collapse: separate; border-spacing: 0; font-size: 12px; color: #334155; }
+        .planilha-lancamentos th { position: sticky; top: 0; z-index: 1; background: #f8fafc; text-align: left; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; white-space: nowrap; }
+        .planilha-lancamentos th, .planilha-lancamentos td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+        .planilha-lancamentos th { border-bottom-color: #e2e8f0; }
+        .planilha-lancamentos tbody tr:hover td { background: #f0fdf4; }
+        .planilha-lancamentos .nowrap { white-space: nowrap; }
+
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px;}
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px;}
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* ===== PADRÃO VISUAL DA IRRIGAÇÃO (só na tela: a folha impressa não muda) ===== */
+        @media screen {
+            body.font-sans { font-family: 'Segoe UI', system-ui, -apple-system, Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+            input, select, textarea { user-select: text; }
+            input[type=date].w-full { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; min-height: 2.75rem; }
+
+            .rotulo-impressao { display: none; }
+            .legenda-pop { display: none; }
+            .botao-ativo { background: #ecfdf5 !important; color: #047857 !important; border-color: #a7f3d0 !important; }
+
+            /* Cartões */
+            .cartao, div.tela-cartao, section.tela-secao {
+                background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem;
+                box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+            }
+            .cartao { overflow: hidden; }
+            .cartao-topo { display: flex; align-items: center; gap: .5rem; padding: .625rem 1rem; background: #f0fdf4; border-bottom: 1px solid #dcfce7; }
+            .cartao-icone { display: flex; padding: .375rem; border-radius: .5rem; background: #dcfce7; color: #15803d; flex-shrink: 0; }
+            .cartao-rotulo { font-size: .75rem; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: .05em; }
+            .cartao-corpo { padding: 1rem; }
+
+            /* Escolha do POP */
+            .pop-tile { display: flex; flex-direction: column; gap: .125rem; width: 100%; min-height: 4.75rem; padding: .625rem .75rem; text-align: left; border: 2px solid #e2e8f0; border-radius: .875rem; background: #f8fafc; transition: all .15s; }
+            .pop-tile:hover { border-color: #bbf7d0; background: #fff; }
+            .pop-tile.ativo { border-color: #16a34a; background: #f0fdf4; box-shadow: 0 0 0 3px rgba(22, 163, 74, .12); }
+            .pop-tile-topo { display: flex; align-items: center; justify-content: space-between; gap: .25rem; color: #64748b; }
+            .pop-tile.ativo .pop-tile-topo { color: #15803d; }
+            .pop-tile-numero { font-size: 10px; font-weight: 900; letter-spacing: .06em; }
+            .pop-tile-nome { font-size: .8125rem; font-weight: 700; line-height: 1.2; color: #1e293b; }
+            .pop-tile-progresso { font-size: 10px; font-weight: 700; color: #94a3b8; }
+            .pop-tile-progresso.tem-rascunho { color: #b45309; }
+
+            /* Grupos a avaliar */
+            .grupo-chip { cursor: pointer; user-select: none; }
+            .grupo-chip span { display: inline-flex; align-items: center; gap: .375rem; padding: .5rem .75rem; min-height: 2.5rem; font-size: .8125rem; font-weight: 700; color: #475569; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: .75rem; transition: all .15s; }
+            .grupo-chip input:checked + span { color: #166534; background: #f0fdf4; border-color: #16a34a; }
+            .grupo-chip input:focus-visible + span { outline: 2px solid #16a34a; outline-offset: 2px; }
+
+            /* Identificação: faixa verde igual a "Novo Registro" da Irrigação */
+            div.header-container.tela-cartao { overflow: hidden; margin-bottom: 1rem; padding: 0; border: 1px solid #e2e8f0; }
+            .header-titulo { margin: 0 !important; padding: 1rem 1.25rem; background: linear-gradient(to right, #16a34a, #15803d); }
+            .header-titulo h2 { color: #fff; font-size: 1rem; line-height: 1.3; font-weight: 800; }
+            .header-titulo p { color: rgba(255, 255, 255, .8); font-size: .75rem; margin-top: .125rem; }
+            .header-container .screen-only-grid { margin: 0; padding: 1rem; gap: .75rem; }
+            .campo-rotulo { display: block; margin-bottom: .25rem; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+            .campo-faltando { border-color: #e11d48 !important; box-shadow: 0 0 0 3px rgba(225, 29, 72, .15) !important; }
+
+            /* Perguntas */
+            section.grupo-pop { margin-bottom: 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 1px 2px rgba(15, 23, 42, .05); overflow: hidden; }
+            section.grupo-pop > h3 { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin: 0; padding: .625rem 1rem; background: #f0fdf4; border: 0; border-bottom: 1px solid #dcfce7; border-radius: 0; font-size: .75rem; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: .05em; }
+            .grupo-contador { flex-shrink: 0; padding: .125rem .5rem; border-radius: 999px; font-size: 11px; font-weight: 800; color: #15803d; background: #dcfce7; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+            .grupo-contador.completo { color: #fff; background: #16a34a; }
+
+            section.grupo-pop .question-container { padding: .875rem 1rem; background: #fff; border: 0; border-left: 3px solid transparent; border-bottom: 1px solid #f1f5f9; border-radius: 0; transition: background-color .2s, border-color .2s; }
+            section.grupo-pop .question-container:last-child { border-bottom: 0; }
+            section.grupo-pop .question-container[data-estado="c"] { border-left-color: #16a34a; }
+            section.grupo-pop .question-container[data-estado="nc"] { border-left-color: #dc2626; background: #fff7f7; }
+            section.grupo-pop .question-container[data-estado="na"] { border-left-color: #94a3b8; }
+            section.grupo-pop .question-container.destaque { animation: destaquePergunta 1.4s ease-out; }
+            @keyframes destaquePergunta { 0%, 40% { background: #fef3c7; } 100% { background: #fff; } }
+            .q-num { flex-shrink: 0; min-width: 1.375rem; height: 1.375rem; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; border-radius: .4rem; font-size: 11px; font-weight: 800; color: #64748b; background: #f1f5f9; font-variant-numeric: tabular-nums; }
+            .q-ajuda { margin: 0 0 .625rem; padding: .5rem .75rem; font-size: .75rem; line-height: 1.4; color: #334155; background: #f1f5f9; border-radius: .625rem; }
+
+            .q-opcoes { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin-bottom: .25rem !important; }
+            label.radio-label { justify-content: center; min-height: 2.75rem; padding: .375rem .25rem; font-size: .75rem; line-height: 1.1; text-align: center; color: #475569; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: .75rem; transition: transform .1s, background-color .15s, border-color .15s; }
+            label.radio-label:hover { border-color: #cbd5e1; background: #fff; }
+            label.radio-label:active { transform: scale(.97); }
+            label.radio-label:has(:focus-visible) { outline: 2px solid #16a34a; outline-offset: 2px; }
+            .radio-label.answer-selected { box-shadow: 0 4px 10px -2px rgba(15, 23, 42, .25); }
+
+            .q-obs-abrir { display: inline-flex; align-items: center; gap: .25rem; margin-top: .375rem; padding: .25rem 0; font-size: .75rem; font-weight: 700; color: #94a3b8; }
+            .q-obs-abrir:hover { color: #15803d; }
+            .q-obs.fechada { display: none; }
+            .q-sugestao { display: flex; align-items: flex-start; gap: .5rem; margin-top: .5rem; padding: .5rem .75rem; font-size: .75rem; line-height: 1.4; color: #3730a3; background: #eef2ff; border-radius: .625rem; }
+
+            /* Observações e assinaturas */
+            section.tela-secao { margin-top: 1rem; padding: 1rem; border: 1px solid #e2e8f0; }
+            section.tela-secao h3 { font-size: .75rem; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: .05em; }
+            section.tela-secao .grid { gap: .75rem; }
+
+            /* Barra inferior do preenchimento */
+            #barra-envio { padding-bottom: env(safe-area-inset-bottom); background: rgba(255, 255, 255, .85); -webkit-backdrop-filter: blur(18px) saturate(180%); backdrop-filter: blur(18px) saturate(180%); border-top: 1px solid rgba(226, 232, 240, .9); box-shadow: 0 -10px 30px -20px rgba(15, 23, 42, .45); transition: transform .25s ease; }
+            #barra-envio.teclado { transform: translateY(110%); }
+            .contador-bolha { display: inline-flex; align-items: center; gap: .25rem; padding: .25rem .625rem; border-radius: 999px; font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+            /* Dashboard */
+            .dash-barra { position: sticky; top: 58px; z-index: 30; margin: 0 -1rem; padding: .625rem 1rem; background: rgba(248, 250, 252, .9); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+            .dash-abas { display: flex; gap: .25rem; padding: .25rem; background: rgba(241, 245, 249, .8); border-radius: 1rem; box-shadow: inset 0 0 0 1px rgba(226, 232, 240, .7); overflow-x: auto; scrollbar-width: none; }
+            .dash-abas::-webkit-scrollbar { display: none; }
+            .dash-aba { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: .375rem; padding: .625rem .75rem; border-radius: .75rem; font-size: .75rem; font-weight: 700; color: #64748b; white-space: nowrap; transition: all .15s; }
+            .dash-aba:hover { color: #1e293b; }
+            .dash-aba.ativa { color: #047857; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .08), 0 0 0 1px rgba(226, 232, 240, .8); }
+            .dash-aba-selo { min-width: 1.125rem; padding: 0 .3rem; border-radius: 999px; font-size: 10px; font-weight: 800; line-height: 1.125rem; text-align: center; color: #fff; background: #e11d48; }
+
+            @media (max-width: 639px) { .dash-aba { padding: .625rem .375rem; gap: .25rem; font-size: 11px; } .dash-aba svg { display: none; } }
+
+            .dash-filtros { display: grid; grid-template-columns: 1fr; gap: .75rem; padding: .875rem 1rem; }
+            @media (min-width: 768px) { .dash-filtros { grid-template-columns: repeat(2, 1fr); } }
+            @media (min-width: 1280px) { .dash-filtros { grid-template-columns: repeat(4, 1fr); } }
+            @media (max-width: 1023px) { .dash-filtros-caixa:not(.aberta) { display: none; } }
+            .dash-campo { width: 100%; padding: .5rem .75rem; font-size: .8125rem; font-weight: 600; color: #334155; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: .75rem; outline: none; }
+            .dash-calendario { display: flex; align-items: center; gap: .375rem; padding: .3125rem .5rem; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: .75rem; }
+            .dash-calendario:focus-within { border-color: #16a34a; background: #fff; }
+            .dash-calendario input { min-width: 0; flex: 1; padding: .125rem 0; font-size: .75rem; font-weight: 600; color: #334155; background: transparent; outline: none; border: 0; box-shadow: none !important; }
+
+            .dash-tile { display: flex; flex-direction: column; padding: .875rem 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 1px 2px rgba(15, 23, 42, .05); }
+            .dash-tile-topo { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+            .dash-tile-rotulo { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+            .dash-tile-icone { display: flex; padding: .3125rem; border-radius: .5rem; flex-shrink: 0; }
+            .dash-tile-valor { margin-top: .25rem; font-size: 1.875rem; font-weight: 900; line-height: 1.1; letter-spacing: -.02em; color: #0f172a; font-variant-numeric: tabular-nums; }
+            .dash-tile-nota { margin-top: .125rem; font-size: 11px; font-weight: 600; color: #94a3b8; }
+
+            .dash-medidor { position: relative; height: .625rem; margin-top: .75rem; border-radius: 999px; background: #f1f5f9; }
+            .dash-medidor-valor { height: 100%; border-radius: 999px; transition: width .4s ease, background-color .2s; }
+            .dash-medidor-meta { position: absolute; top: -.1875rem; bottom: -.1875rem; left: 95%; width: 2px; border-radius: 1px; background: #0f172a; }
+
+            .dash-status { display: flex; gap: 2px; height: .625rem; border-radius: 999px; overflow: hidden; background: #f1f5f9; }
+            .dash-status div { transition: width .4s ease; }
+
+            .dash-grafico-titulo { font-size: .875rem; font-weight: 800; color: #1e293b; }
+            .dash-grafico-sub { font-size: 11px; font-weight: 600; color: #94a3b8; }
+        }
+
     </style>
     <script src="../../../lista-moderna.js"></script>
     <script src="../../../trava-fundo.js"></script>
 </head>
-<body class="bg-slate-50 text-gray-800 font-sans min-h-screen pb-24">
+<body class="bg-slate-50 text-gray-800 font-sans min-h-screen pb-28 print:pb-0">
 
     <!-- MODAL CUSTOMIZADO (Substitui os window.alert) -->
     <div id="custom-alert" class="fixed inset-0 bg-black/60 z-[200] hidden flex items-center justify-center p-4 transition-opacity opacity-0">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 text-center transform scale-95 transition-all" id="custom-alert-box">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center transform scale-95 transition-all" id="custom-alert-box">
             <div id="custom-alert-icon-container" class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-emerald-100 mb-4">
                 <i data-lucide="info" id="custom-alert-icon" class="w-8 h-8 text-emerald-600"></i>
             </div>
             <h3 id="custom-alert-title" class="text-xl font-bold text-gray-800 mb-2">Aviso</h3>
             <p id="custom-alert-message" class="text-sm text-gray-600 mb-6 font-medium"></p>
             <div class="flex gap-3 justify-center" id="custom-alert-buttons">
-                <button onclick="closeCustomAlert()" class="w-full px-4 py-2.5 bg-emerald-600 text-white font-bold rounded-md hover:bg-emerald-700 transition">OK</button>
+                <button onclick="closeCustomAlert()" class="w-full px-4 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition">OK</button>
             </div>
         </div>
     </div>
@@ -276,7 +345,7 @@
 
     <!-- MODAL DE RESOLUÇÃO DE OCORRÊNCIA -->
     <div id="resolve-modal" class="fixed inset-0 bg-black/60 z-[90] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 transform transition-all">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
@@ -289,15 +358,15 @@
             <p class="text-sm text-gray-500 mb-4">Informe como a ocorrência foi solucionada.</p>
             <div class="mb-4">
                 <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Data de Resolução <span class="text-red-500">*</span></label>
-                <input type="date" id="resolve-date" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" />
+                <input type="date" id="resolve-date" class="modern-input w-full p-2.5 border rounded-xl focus:ring-2 focus:outline-none text-sm" />
             </div>
             <div class="mb-5">
                 <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Como foi solucionado <span class="text-red-500">*</span></label>
-                <textarea id="resolve-obs" rows="3" placeholder="Descreva como a ocorrência foi resolvida..." class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm resize-none"></textarea>
+                <textarea id="resolve-obs" rows="3" placeholder="Descreva como a ocorrência foi resolvida..." class="modern-input w-full p-2.5 border rounded-xl focus:ring-2 focus:outline-none text-sm resize-none"></textarea>
             </div>
             <div class="flex justify-end gap-2">
-                <button onclick="cancelarResolucao()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition text-sm font-medium">Cancelar</button>
-                <button onclick="confirmarResolucao()" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition text-sm font-bold flex items-center gap-2">
+                <button onclick="cancelarResolucao()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition text-sm font-medium">Cancelar</button>
+                <button onclick="confirmarResolucao()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition text-sm font-bold flex items-center gap-2">
                     <i data-lucide="check" class="w-4 h-4"></i>
                     Confirmar Resolução
                 </button>
@@ -307,7 +376,7 @@
 
     <!-- MODAL DE DADOS DO RELATÓRIO OFICIAL (CABEÇALHO PARA IMPRESSÃO A4) -->
     <div id="report-header-modal" class="fixed inset-0 bg-black/60 z-[90] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 transform transition-all max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 transform transition-all max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <i data-lucide="file-text" class="w-5 h-5 text-green-600"></i>
@@ -321,23 +390,23 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Empresa / Razão Social</label>
-                    <input type="text" id="report-empresa" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" placeholder="Ex: Packing House Ltda">
+                    <input type="text" id="report-empresa" class="modern-input w-full p-2.5 border rounded-xl focus:ring-2 focus:outline-none text-sm" placeholder="Ex: Packing House Ltda">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">CNPJ</label>
-                    <input type="text" id="report-cnpj" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" placeholder="00.000.000/0000-00">
+                    <input type="text" id="report-cnpj" class="modern-input w-full p-2.5 border rounded-xl focus:ring-2 focus:outline-none text-sm" placeholder="00.000.000/0000-00">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Cargo do Responsável</label>
-                    <input type="text" id="report-cargo" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" placeholder="Ex: Responsável Técnico">
+                    <input type="text" id="report-cargo" class="modern-input w-full p-2.5 border rounded-xl focus:ring-2 focus:outline-none text-sm" placeholder="Ex: Responsável Técnico">
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Endereço / Unidade</label>
-                    <input type="text" id="report-endereco" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" placeholder="Endereço completo da unidade">
+                    <input type="text" id="report-endereco" class="modern-input w-full p-2.5 border rounded-xl focus:ring-2 focus:outline-none text-sm" placeholder="Endereço completo da unidade">
                 </div>
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Responsável Técnico / Elaborado por</label>
-                    <input type="text" id="report-responsavel" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" placeholder="Nome completo">
+                    <input type="text" id="report-responsavel" class="modern-input w-full p-2.5 border rounded-xl focus:ring-2 focus:outline-none text-sm" placeholder="Nome completo">
                 </div>
             </div>
 
@@ -348,7 +417,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Período</label>
-                        <select id="report-periodo" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" onchange="clearReportCustomDates()">
+                        <select id="report-periodo" class="modern-input w-full p-2.5 border rounded-xl focus:ring-2 focus:outline-none text-sm" onchange="clearReportCustomDates()">
                             <option value="all">Todo o Histórico</option>
                             <option value="today">Apenas Hoje</option>
                             <option value="7d">Últimos 7 dias (Semana)</option>
@@ -358,9 +427,9 @@
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Ou período personalizado</label>
                         <div class="flex items-center gap-1">
-                            <input type="date" id="report-data-inicio" class="modern-input w-full p-2 border rounded-md text-xs" title="Data inicial" onchange="handleReportCustomDateChange()">
+                            <input type="date" id="report-data-inicio" class="modern-input w-full p-2 border rounded-xl text-xs" title="Data inicial" onchange="handleReportCustomDateChange()">
                             <span class="text-xs text-gray-400">até</span>
-                            <input type="date" id="report-data-fim" class="modern-input w-full p-2 border rounded-md text-xs" title="Data final" onchange="handleReportCustomDateChange()">
+                            <input type="date" id="report-data-fim" class="modern-input w-full p-2 border rounded-xl text-xs" title="Data final" onchange="handleReportCustomDateChange()">
                         </div>
                     </div>
                 </div>
@@ -368,14 +437,14 @@
                     <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide">Procedimentos (POPs)</label>
                     <button type="button" onclick="toggleAllReportPops()" class="text-xs font-bold text-green-600 hover:underline">Marcar/Desmarcar todos</button>
                 </div>
-                <div id="report-pop-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-36 overflow-y-auto border border-gray-200 rounded-md p-2 bg-gray-50">
+                <div id="report-pop-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-36 overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50">
                     <!-- Injetado via JS -->
                 </div>
             </div>
 
             <div class="flex justify-end gap-2">
-                <button onclick="closeReportHeaderModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition text-sm font-medium">Cancelar</button>
-                <button onclick="confirmReportHeaderAndPrint()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm font-bold flex items-center gap-2">
+                <button onclick="closeReportHeaderModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition text-sm font-medium">Cancelar</button>
+                <button onclick="confirmReportHeaderAndPrint()" class="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition text-sm font-bold flex items-center gap-2">
                     <i data-lucide="printer" class="w-4 h-4"></i>
                     Gerar e Imprimir Relatório
                 </button>
@@ -387,40 +456,55 @@
             <div class="barra-lista-marca">
                 <img src="../../../icone-app.png" alt="">
                 <div class="barra-lista-textos">
-                    <h1 class="barra-lista-titulo">Gestão de POPs</h1>
-                    <p class="barra-lista-sub">Procedimentos operacionais</p>
+                    <h1 class="barra-lista-titulo" id="barra-titulo">Gestão de POPs</h1>
+                    <p class="barra-lista-sub" id="barra-sub">Procedimentos operacionais</p>
                 </div>
                 <div id="header-loader" class="hidden items-center gap-2 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 transition-opacity shrink-0">
-                    <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-emerald-400"></i>
+                    <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-emerald-500"></i>
                     <span class="text-[10px] text-slate-600 tracking-wider font-bold"><span id="sync-percent">0</span>%</span>
                 </div>
             </div>
-            <div class="barra-lista-acoes">
-                <button id="btnDashboardPop" onclick="abrirDashboardPop()" class="tema-btn-claro p-2 transition font-bold flex items-center gap-1" title="Dashboard de Métricas">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <div class="barra-lista-acoes" id="acoes-form">
+                <button id="btnDashboardPop" onclick="abrirDashboardPop()" class="tema-btn-claro p-2 transition font-bold text-sm flex items-center gap-1.5" title="Dashboard de métricas">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
                     <span class="hidden sm:inline">Dashboard</span>
                 </button>
-                <button onclick="promptResetForm()" class="tema-btn-claro p-2 transition" title="Limpar Formulário Atual">
+                <button onclick="promptResetForm()" class="tema-btn-claro p-2 transition" title="Limpar formulário atual" aria-label="Limpar formulário atual">
                     <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
                 </button>
-                <button id="btn-enviar" onclick="enviarDados()" class="tema-btn-verde p-2 font-bold flex items-center gap-1" title="Enviar dados">
-                    <i data-lucide="send" class="w-5 h-5"></i>
-                    <span class="hidden sm:inline">Enviar Dados</span>
-                </button>
-                <button onclick="printChecklistBlankFields()" class="tema-btn-claro p-2 transition font-bold flex items-center gap-1">
+                <button onclick="printChecklistBlankFields()" class="tema-btn-claro p-2 transition" title="Imprimir" aria-label="Imprimir">
                     <i data-lucide="printer" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="barra-lista-acoes oculto" id="acoes-dash">
+                <button id="btn-sync-dash" onclick="handleManualSync()" class="tema-btn-claro p-2 transition font-bold text-sm flex items-center gap-1.5" title="Puxar os dados mais recentes">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="hidden lg:inline">Atualizar</span>
+                </button>
+                <button id="btn-toggle-chart-labels" onclick="toggleChartLabels()" class="tema-btn-claro p-2 transition font-bold text-sm flex items-center gap-1.5" title="Mostrar ou ocultar valores nos gráficos">
+                    <i data-lucide="tags" class="w-5 h-5"></i>
+                    <span class="hidden lg:inline">Rótulos</span>
+                </button>
+                <button id="btn-report-a4" onclick="openReportHeaderModal()" class="tema-btn-claro p-2 transition font-bold text-sm flex items-center gap-1.5" title="Gerar relatório oficial em A4 para fiscalização">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="hidden lg:inline">Relatório A4</span>
+                </button>
+                <button onclick="closeDashboard()" class="tema-btn-verde p-2 font-bold text-sm flex items-center gap-1.5" title="Voltar ao preenchimento">
+                    <i data-lucide="clipboard-pen-line" class="w-5 h-5"></i>
+                    <span class="hidden lg:inline">Preencher</span>
                 </button>
             </div>
     </header>
 
     <div id="app-view" class="block">
-        <main class="app-shell max-w-4xl mx-auto p-4 md:p-8 mt-4 mb-8 print:shadow-none print:mt-0 print:w-full">
-            <div class="control-panel p-4 mb-8 no-print">
-                <div class="mb-4">
-                    <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
-                        <i data-lucide="library" class="inline w-4 h-4 mr-1"></i> Selecione o Procedimento (POP)
-                    </label>
-                    <select id="popSelect" onchange="changePOP()" class="modern-input w-full p-3 border-2 rounded-md focus:ring-2 focus:outline-none text-lg font-medium">
+        <main class="app-shell max-w-3xl mx-auto p-4 md:p-6 mb-8 print:shadow-none print:mt-0 print:w-full">
+            <div class="cartao mb-4 no-print">
+                <div class="cartao-topo">
+                    <span class="cartao-icone"><i data-lucide="library" class="w-4 h-4"></i></span>
+                    <span class="cartao-rotulo">Procedimento</span>
+                </div>
+                <div class="cartao-corpo">
+                    <select id="popSelect" onchange="changePOP()" class="oculto" data-nativo tabindex="-1" aria-hidden="true">
                         <option value="pop01">POP 01 - HIGIENE E SAÚDE DOS MANIPULADORES</option>
                         <option value="pop02">POP 02 - HIGIENIZAÇÃO DE INSTALAÇÕES E EQUIPAMENTOS</option>
                         <option value="pop03">POP 03 - MANEJO DE RESÍDUOS</option>
@@ -429,18 +513,20 @@
                         <option value="pop06">POP 06 - SELEÇÃO DE MATÉRIAS-PRIMAS E EMBALAGENS</option>
                         <option value="pop07">POP 07 - MANUTENÇÃO PREVENTIVA E CALIBRAÇÃO</option>
                     </select>
-                </div>
-                <div id="sub-selection-container" class="border-t border-slate-200 pt-4 hidden">
-                    <p class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-                        <i data-lucide="list-checks" class="w-4 h-4"></i>
-                        Selecione os grupos para avaliar/imprimir:
-                    </p>
-                    <div id="sub-selection-list" class="flex flex-wrap gap-3"></div>
+                    <div id="pop-tiles" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"></div>
+
+                    <div id="sub-selection-container" class="border-t border-slate-100 mt-4 pt-3 hidden">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <p class="campo-rotulo" style="margin:0">Grupos a avaliar</p>
+                            <button type="button" id="btn-todos-grupos" onclick="alternarTodosGrupos()" class="text-xs font-bold text-green-700 hover:underline">Marcar todos</button>
+                        </div>
+                        <div id="sub-selection-list" class="flex flex-wrap gap-2"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="print:block header-container border-b-2 border-gray-200 pb-4 mb-4 print:mb-1 print:pb-1">
-                <div class="flex justify-between items-start mb-4 print:mb-1">
+            <div class="print:block header-container tela-cartao border-b-2 border-gray-200 pb-4 mb-4 print:mb-1 print:pb-1">
+                <div class="header-titulo flex justify-between items-start mb-4 print:mb-1">
                     <div class="flex items-center gap-4">
                         <img src="logo-pop.png" alt="Logo" class="h-20 w-auto hidden print:block logo-print">
                         <div>
@@ -456,29 +542,18 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 screen-only-grid">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-600 mb-1">Responsável pela Avaliação:</label>
-                        <select id="responsavel-screen" class="modern-input w-full p-2 border rounded focus:ring-2 focus:outline-none" onchange="checkOutro('responsavel-screen', 'responsavel-outro', 'responsavel')">
-                            <option value="">Selecione...</option>
-                            <option value="João Victor Gonçalves Barbosa">João Victor Gonçalves Barbosa</option>
-                            <option value="Francisco Fagner Isaias">Francisco Fagner Isaias</option>
-                            <option value="Alessandra Leitão da Silva">Alessandra Leitão da Silva</option>
-                            <option value="Regilene Isaias">Regilene Isaias</option>
-                            <option value="Thaynara Rodrigues">Thaynara Rodrigues</option>
-                            <option value="Maria Conceição">Maria Conceição</option>
-                            <option value="Daiany Rodrigues">Daiany Rodrigues</option>
-                            <option value="Ana Paula Rodrigues da Silva">Ana Paula Rodrigues da Silva</option>
-                            <option value="Myrla Ferreira">Myrla Ferreira</option>
-                            <option value="outra">Outra (Digitar manualmente)</option>
-                        </select>
-                        <input type="text" id="responsavel-outro" class="hidden modern-input w-full p-2 border rounded mt-2 focus:ring-2 focus:outline-none" placeholder="Digite o nome do responsável..." oninput="document.getElementById('responsavel-print').value = this.value; saveProgress()">
+                        <label class="campo-rotulo" for="responsavel-screen">Responsável pela avaliação</label>
+                        <select id="responsavel-screen" class="lista-pessoas modern-input w-full p-2.5 text-sm font-semibold focus:outline-none" onchange="checkOutro('responsavel-screen', 'responsavel-outro', 'responsavel')"></select>
+                        <input type="text" id="responsavel-outro" class="hidden modern-input w-full p-2.5 text-sm mt-2 focus:outline-none" placeholder="Digite o nome do responsável..." oninput="document.getElementById('responsavel-print').value = this.value; saveProgress()">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-gray-600 mb-1">Data da Avaliação:</label>
-                        <input type="date" id="data-screen" class="modern-input w-full p-2 border rounded focus:ring-2 focus:outline-none" oninput="syncInputs('data', this.value)">
+                        <label class="campo-rotulo" for="data-screen">Data da avaliação</label>
+                        <input type="date" id="data-screen" class="modern-input w-full p-2.5 text-sm font-semibold focus:outline-none" oninput="syncInputs('data', this.value)">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-semibold text-gray-600 mb-1">Setor Avaliado:</label>
-                        <input type="text" id="setor-screen" class="modern-input w-full p-2 border rounded focus:ring-2 focus:outline-none" oninput="syncInputs('setor', this.value)">
+                        <label class="campo-rotulo" for="setor-screen">Setor avaliado</label>
+                        <input type="text" id="setor-screen" list="setores-sugeridos" autocomplete="off" class="modern-input w-full p-2.5 text-sm font-semibold focus:outline-none" placeholder="Ex.: Packing House" oninput="syncInputs('setor', this.value)">
+                        <datalist id="setores-sugeridos"></datalist>
                     </div>
                 </div>
 
@@ -489,8 +564,8 @@
                 </div>
             </div>
 
-            <form id="checklistForm" class="space-y-8 print:space-y-0">
-                <div class="bg-slate-50 border-l-4 border-green-600 p-3 mb-4 rounded-lg text-sm text-slate-700 print:bg-white print:border print:border-gray-300 print:text-gray-600 print:text-xs print:mb-2 print:p-1 print:border-l-2">
+            <form id="checklistForm" class="print:space-y-0" onsubmit="return false">
+                <div class="legenda-pop bg-slate-50 border-l-4 border-green-600 p-3 mb-4 rounded-lg text-sm text-slate-700 print:bg-white print:border print:border-gray-300 print:text-gray-600 print:text-xs print:mb-2 print:p-1 print:border-l-2">
                     <span class="font-bold mr-2">Legenda:</span>
                     <span class="mr-4"><strong>C</strong> = Conforme</span>
                     <span class="mr-4"><strong>NC</strong> = Não Conforme</span>
@@ -499,307 +574,292 @@
 
                 <div id="dynamic-content"></div>
 
-                <section class="mt-8 border-t pt-4 print:mt-2 print:pt-1">
+                <section class="tela-secao mt-8 border-t pt-4 print:mt-2 print:pt-1">
                     <h3 class="text-lg font-bold text-gray-700 mb-2 print:text-sm print:mb-1 print:bg-transparent print:p-0 print:border-none">Observações Gerais / Ações Corretivas</h3>
-                    <textarea id="obs-geral" rows="4" class="modern-input w-full p-3 border rounded focus:ring-2 focus:outline-none" oninput="saveProgress()"></textarea>
+                    <textarea id="obs-geral" rows="4" class="modern-input w-full p-3 focus:outline-none" oninput="saveProgress()"></textarea>
                 </section>
 
-                <section class="mt-12 pt-6 border-t-2 border-gray-300 print:mt-2 print:pt-2 print:border-t footer-section">
+                <section class="tela-secao mt-12 pt-6 border-t-2 border-gray-300 print:mt-2 print:pt-2 print:border-t footer-section">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-12 print:gap-4 print:grid-cols-2">
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1 print:text-xs footer-label">Aprovado por:</label>
-                            <select id="aprovado-por" class="w-full p-2 border-b-2 border-slate-300 bg-gray-50 focus:bg-white focus:border-green-600 transition-colors outline-none font-medium print:hidden footer-input" onchange="checkOutro('aprovado-por', 'aprovado-por-outro')">
-                                <option value="">Selecione...</option>
-                                <option value="João Victor Gonçalves Barbosa">João Victor Gonçalves Barbosa</option>
-                                <option value="Francisco Fagner Isaias">Francisco Fagner Isaias</option>
-                                <option value="Alessandra Leitão da Silva">Alessandra Leitão da Silva</option>
-                                <option value="Regilene Isaias">Regilene Isaias</option>
-                                <option value="Thaynara Rodrigues">Thaynara Rodrigues</option>
-                                <option value="Maria Conceição">Maria Conceição</option>
-                                <option value="Daiany Rodrigues">Daiany Rodrigues</option>
-                                <option value="Ana Paula Rodrigues da Silva">Ana Paula Rodrigues da Silva</option>
-                                <option value="Myrla Ferreira">Myrla Ferreira</option>
-                                <option value="outra">Outra (Digitar manualmente)</option>
-                            </select>
-                            <input type="text" id="aprovado-por-outro" class="hidden w-full p-2 border-b-2 border-slate-300 bg-gray-50 focus:bg-white focus:border-green-600 transition-colors outline-none font-medium print:hidden mt-2 footer-input" placeholder="Digite o nome..." oninput="saveProgress()">
+                            <label class="campo-rotulo block text-sm font-bold text-gray-700 mb-1 print:text-xs footer-label">Aprovado por:</label>
+                            <select id="aprovado-por" class="lista-pessoas modern-input w-full p-2.5 text-sm font-semibold outline-none print:hidden footer-input" onchange="checkOutro('aprovado-por', 'aprovado-por-outro')"></select>
+                            <input type="text" id="aprovado-por-outro" class="hidden modern-input w-full p-2.5 text-sm outline-none print:hidden mt-2 footer-input" placeholder="Digite o nome..." oninput="saveProgress()">
                             <input type="text" id="aprovado-print" class="hidden print:block w-full border-b border-black bg-transparent p-0 h-8 footer-input" value="">
                         </div>
                         <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1 print:text-xs footer-label">Assinatura:</label>
-                            <select id="assinatura-digital" class="w-full p-2 border-b-2 border-slate-300 bg-gray-50 focus:bg-white focus:border-green-600 transition-colors outline-none font-medium print:hidden footer-input" onchange="checkOutro('assinatura-digital', 'assinatura-digital-outro')">
-                                <option value="">Selecione...</option>
-                                <option value="João Victor Gonçalves Barbosa">João Victor Gonçalves Barbosa</option>
-                                <option value="Francisco Fagner Isaias">Francisco Fagner Isaias</option>
-                                <option value="Alessandra Leitão da Silva">Alessandra Leitão da Silva</option>
-                                <option value="Regilene Isaias">Regilene Isaias</option>
-                                <option value="Thaynara Rodrigues">Thaynara Rodrigues</option>
-                                <option value="Maria Conceição">Maria Conceição</option>
-                                <option value="Daiany Rodrigues">Daiany Rodrigues</option>
-                                <option value="Ana Paula Rodrigues da Silva">Ana Paula Rodrigues da Silva</option>
-                                <option value="Myrla Ferreira">Myrla Ferreira</option>
-                                <option value="outra">Outra (Digitar manualmente)</option>
-                            </select>
-                            <input type="text" id="assinatura-digital-outro" class="hidden w-full p-2 border-b-2 border-slate-300 bg-gray-50 focus:bg-white focus:border-green-600 transition-colors outline-none font-medium print:hidden mt-2 footer-input" placeholder="Digite o nome..." oninput="saveProgress()">
+                            <label class="campo-rotulo block text-sm font-bold text-gray-700 mb-1 print:text-xs footer-label">Assinatura:</label>
+                            <select id="assinatura-digital" class="lista-pessoas modern-input w-full p-2.5 text-sm font-semibold outline-none print:hidden footer-input" onchange="checkOutro('assinatura-digital', 'assinatura-digital-outro')"></select>
+                            <input type="text" id="assinatura-digital-outro" class="hidden modern-input w-full p-2.5 text-sm outline-none print:hidden mt-2 footer-input" placeholder="Digite o nome..." oninput="saveProgress()">
                             <input type="text" id="assinatura-print" class="hidden print:block w-full border-b border-black bg-transparent p-0 h-8 footer-input" value="">
                         </div>
                     </div>
                 </section>
             </form>
         </main>
-        
-        <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_30px_-20px_rgba(15,23,42,0.45)] p-4 no-print z-40">
-            <div class="max-w-4xl mx-auto flex justify-between items-center">
-                <div>
-                    <span class="text-sm text-gray-500">Conformidade (<span id="current-pop-label">POP --</span>):</span>
-                    <div class="text-2xl font-bold text-green-600" id="score-display">0%</div>
+
+        <div id="barra-envio" class="fixed bottom-0 left-0 right-0 no-print z-40">
+            <div class="h-1 bg-slate-100"><div id="barra-progresso" class="h-full bg-green-600 transition-all duration-300" style="width:0%"></div></div>
+            <div class="max-w-3xl mx-auto px-4 py-2.5 flex items-center gap-3">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-baseline gap-1.5">
+                        <span id="score-display" class="text-xl font-black leading-none text-slate-400">—</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400 truncate">conformidade · <span id="current-pop-label">POP --</span></span>
+                    </div>
+                    <p id="progresso-texto" class="text-[11px] font-semibold text-slate-500 truncate mt-0.5">Marque os grupos a avaliar</p>
                 </div>
-                <div class="text-right text-xs text-gray-400">
-                    Itens Conformes: <span id="count-c">0</span> | Não Conformes: <span id="count-nc">0</span>
+                <div class="hidden sm:flex items-center gap-1.5 shrink-0">
+                    <span class="contador-bolha bg-green-50 text-green-700" title="Conformes">C <span id="count-c">0</span></span>
+                    <span class="contador-bolha bg-red-50 text-red-700" title="Não conformes">NC <span id="count-nc">0</span></span>
                 </div>
+                <button type="button" id="btn-proxima" onclick="irParaPendente()" class="oculto tema-btn-claro px-3 py-2.5 text-xs font-bold shrink-0 flex items-center gap-1" title="Ir para a próxima pergunta sem resposta">
+                    <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Próxima</span>
+                </button>
+                <button id="btn-enviar" onclick="enviarDados()" class="tema-btn-verde px-4 py-2.5 text-sm font-bold flex items-center gap-1.5 shrink-0 disabled:opacity-60" title="Enviar dados">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Enviar</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <div id="dashboard-view" class="hidden no-print bg-gray-50 min-h-screen pb-12">
-        <div class="max-w-[1920px] mx-auto p-4 md:p-8 xl:p-10" id="dashboard-export-area">
-            
-            <!-- Dashboard Header & Controls -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4" data-html2canvas-ignore>
-                <div>
-                    <h2 class="text-3xl font-bold text-gray-800">Dashboard de Comando</h2>
-                    <p class="text-gray-500 text-sm mt-1">Gestão à Vista - Packing House</p>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <button id="btn-sync-dash" onclick="handleManualSync()" class="px-4 py-2 bg-green-50 text-green-600 font-bold rounded shadow border border-green-600 hover:bg-green-100 transition flex items-center gap-2" title="Puxar dados mais recentes da nuvem">
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Atualizar dados
-                    </button>
-                    <button onclick="clearDashboardFilters()" class="px-4 py-2 bg-white text-gray-700 font-bold rounded shadow border border-gray-200 hover:bg-gray-50 transition flex items-center gap-2" title="Limpar todos os filtros do dashboard">
-                        <i data-lucide="filter-x" class="w-4 h-4"></i> Limpar filtros
-                    </button>
-                    <button id="btn-toggle-chart-labels" onclick="toggleChartLabels()" class="px-4 py-2 bg-white text-gray-700 font-bold rounded shadow border border-gray-200 hover:bg-gray-50 transition flex items-center gap-2" title="Mostrar ou ocultar valores nos gráficos">
-                        <i data-lucide="tags" class="w-4 h-4"></i> Mostrar rótulos dos gráficos
-                    </button>
-                    <button id="btn-report-a4" onclick="openReportHeaderModal()" class="px-4 py-2 bg-slate-800 text-white font-bold rounded shadow hover:bg-slate-900 transition flex items-center gap-2" title="Gerar relatório oficial em A4 para fiscalização (Ministério do Trabalho)">
-                        <i data-lucide="file-text" class="w-4 h-4"></i> Relatório A4 (Oficial)
-                    </button>
-                    <button onclick="closeDashboard()" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded shadow hover:bg-gray-300 transition flex items-center gap-2">
-                        <i data-lucide="x" class="w-4 h-4"></i> Fechar
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Barra de Filtros Inteligentes -->
-            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6" data-html2canvas-ignore>
-                <div>
-                    <label class="text-xs text-gray-500 font-bold uppercase mb-1 block">Período de Avaliação</label>
-                    <select id="filter-periodo" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium bg-gray-50" onchange="applyFilters()">
-                        <option value="all">Todo o Histórico</option>
-                        <option value="today">Apenas Hoje</option>
-                        <option value="7d">Últimos 7 dias (Semana)</option>
-                        <option value="30d">Últimos 30 dias (Mês)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs text-gray-500 font-bold uppercase mb-1 block">Calendário</label>
-                    <div class="flex items-center gap-2 rounded border border-gray-300 bg-gray-50 p-1.5 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
-                        <i data-lucide="calendar-range" class="w-4 h-4 text-emerald-600 shrink-0"></i>
-                        <input type="date" id="filter-data-inicio" class="min-w-0 flex-1 bg-transparent text-sm font-medium text-gray-700 outline-none" title="Data inicial" onchange="handleCalendarFilterChange()">
-                        <span class="text-xs font-bold text-gray-400">até</span>
-                        <input type="date" id="filter-data-fim" class="min-w-0 flex-1 bg-transparent text-sm font-medium text-gray-700 outline-none" title="Data final" onchange="handleCalendarFilterChange()">
-                        <button type="button" onclick="clearCalendarFilter()" class="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition" title="Limpar calendário">
-                            <i data-lucide="x" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-                <div>
-                    <label class="text-xs text-gray-500 font-bold uppercase mb-1 block">Procedimento (POP)</label>
-                    <select id="filter-pop" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium bg-gray-50" onchange="updateQuestionFilter(); applyFilters()">
-                        <option value="all">Todos os POPs</option>
-                        <!-- Injetado via JS -->
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs text-gray-500 font-bold uppercase mb-1 block">Pergunta Específica</label>
-                    <select id="filter-pergunta" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium bg-gray-50" onchange="applyFilters()">
-                        <option value="all">Todas as Perguntas</option>
-                        <!-- Injetado via JS -->
-                    </select>
+    <div id="dashboard-view" class="hidden no-print bg-slate-50 min-h-screen pb-12">
+        <div class="max-w-[1600px] mx-auto px-4 md:px-6 pb-4" id="dashboard-export-area">
+
+            <div class="dash-barra">
+                <div class="dash-abas" role="tablist" aria-label="Seções do dashboard">
+                    <button type="button" class="dash-aba ativa" data-aba="resumo" role="tab" onclick="abrirAbaDash('resumo')"><i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> Resumo</button>
+                    <button type="button" class="dash-aba" data-aba="lancamentos" role="tab" onclick="abrirAbaDash('lancamentos')"><i data-lucide="table" class="w-3.5 h-3.5"></i> Lançamentos</button>
+                    <button type="button" class="dash-aba" data-aba="ocorrencias" role="tab" onclick="abrirAbaDash('ocorrencias')"><i data-lucide="triangle-alert" class="w-3.5 h-3.5"></i> Ocorrências <span id="aba-selo-ocorrencias" class="dash-aba-selo oculto">0</span></button>
+                    <button type="button" class="dash-aba" data-aba="analises" role="tab" onclick="abrirAbaDash('analises')"><i data-lucide="chart-column" class="w-3.5 h-3.5"></i> Análises</button>
                 </div>
             </div>
 
-            <!-- Container de Alertas IA (Reincidência) -->
-            <div id="ai-alerts-container" class="mb-6 space-y-2"></div>
-
-            <!-- Cards Resumo & KPIs -->
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 xl:gap-6 mb-6">
-                <!-- Gauge Meta -->
-                <div class="bg-white p-4 xl:p-6 rounded-lg shadow-sm border-t-4 border-emerald-500 col-span-2 md:col-span-1 flex flex-col justify-between items-center relative overflow-hidden">
-                    <p class="text-[10px] xl:text-xs text-gray-500 font-bold uppercase text-center w-full mb-2">Conformidade Geral</p>
-                    <div class="relative w-full h-[100px] xl:h-[130px] flex items-end justify-center">
-                        <canvas id="chartGauge"></canvas>
-                        <div class="absolute bottom-0 text-center flex flex-col items-center">
-                            <span id="dash-conformidade" class="text-2xl xl:text-3xl font-black text-gray-800 leading-none">0%</span>
-                            <span class="text-[9px] xl:text-[10px] text-gray-400 font-bold uppercase tracking-wider">Meta: 95%</span>
+            <!-- Filtros: no celular ficam recolhidos -->
+            <div class="cartao mb-4">
+                <button type="button" onclick="alternarFiltrosDash()" class="lg:hidden w-full flex items-center justify-between gap-2 px-4 py-3" aria-controls="dash-filtros-caixa">
+                    <span class="flex items-center gap-2 text-xs font-bold text-slate-600"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-green-700"></i> Filtros <span id="filtros-resumo" class="font-semibold text-slate-400"></span></span>
+                    <i data-lucide="chevron-down" id="filtros-seta" class="w-4 h-4 text-slate-400 transition-transform"></i>
+                </button>
+                <div id="dash-filtros-caixa" class="dash-filtros-caixa border-t border-slate-100 lg:border-0">
+                    <div class="dash-filtros">
+                        <div>
+                            <label class="campo-rotulo" for="filter-periodo">Período</label>
+                            <select id="filter-periodo" class="dash-campo" onchange="applyFilters()">
+                                <option value="all">Todo o histórico</option>
+                                <option value="today">Apenas hoje</option>
+                                <option value="7d">Últimos 7 dias</option>
+                                <option value="30d">Últimos 30 dias</option>
+                            </select>
                         </div>
-                    </div>
-                </div>
-                <div class="bg-white p-4 xl:p-6 rounded-lg shadow-sm border-l-4 border-green-600 flex flex-col justify-center">
-                    <p class="text-xs xl:text-sm text-gray-500 font-bold uppercase">Total Avaliações</p>
-                    <p class="text-3xl xl:text-4xl font-black text-gray-800 mt-1" id="dash-total-av">0</p>
-                </div>
-                <div class="bg-white p-4 xl:p-6 rounded-lg shadow-sm border-l-4 border-green-400 flex flex-col justify-center">
-                    <p class="text-xs xl:text-sm text-gray-500 font-bold uppercase">Perguntas Conformes (C)</p>
-                    <p class="text-[10px] xl:text-xs text-gray-400 font-medium leading-tight mt-0.5">Qtd. de perguntas respondidas em conformidade</p>
-                    <p class="text-3xl xl:text-4xl font-black text-gray-800 mt-1" id="dash-total-c">0</p>
-                </div>
-                <div class="bg-white p-4 xl:p-6 rounded-lg shadow-sm border-l-4 border-red-500 flex flex-col justify-center">
-                    <p class="text-xs xl:text-sm text-gray-500 font-bold uppercase">Perguntas Não Conformes</p>
-                    <p class="text-[10px] xl:text-xs text-gray-400 font-medium leading-tight mt-0.5">Qtd. de perguntas com não conformidade</p>
-                    <p class="text-3xl xl:text-4xl font-black text-gray-800 mt-1" id="dash-total-nc">0</p>
-                </div>
-                <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 xl:p-6 rounded-lg shadow-sm flex flex-col justify-center text-white col-span-2 md:col-span-1">
-                    <p class="text-xs xl:text-sm text-emerald-100 font-bold uppercase flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Dias Limpos</p>
-                    <div class="flex items-baseline gap-1 mt-1">
-                        <p class="text-3xl xl:text-4xl font-black" id="dash-streak">0</p>
-                        <span class="text-xs xl:text-sm text-emerald-100 font-medium">dias seguidos sem falhas</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- KPI Gerencial de Ocorrências -->
-            <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100 mb-6">
-                <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-1 flex items-center gap-2"><i data-lucide="clipboard-list" class="w-4 h-4 text-green-600"></i> KPI Principal de Ocorrências</h3>
-                <p class="text-[10px] xl:text-xs text-gray-400 mb-4">Visão rápida do que precisa de ação imediata no período filtrado.</p>
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 xl:gap-4 mb-4">
-                    <div class="rounded-lg border border-red-200 bg-red-50 p-3 xl:p-4">
-                        <p class="text-[10px] xl:text-xs uppercase font-bold text-red-700">Ocorrências a Corrigir</p>
-                        <p class="text-2xl xl:text-3xl font-black text-red-700 mt-1" id="kpi-ocorrencias-corrigir">0</p>
-                    </div>
-                    <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 xl:p-4">
-                        <p class="text-[10px] xl:text-xs uppercase font-bold text-amber-700">Pendentes</p>
-                        <p class="text-2xl xl:text-3xl font-black text-amber-700 mt-1" id="kpi-ocorrencias-pendente">0</p>
-                    </div>
-                    <div class="rounded-lg border border-green-600 bg-green-50 p-3 xl:p-4">
-                        <p class="text-[10px] xl:text-xs uppercase font-bold text-blue-700">Em Andamento</p>
-                        <p class="text-2xl xl:text-3xl font-black text-blue-700 mt-1" id="kpi-ocorrencias-andamento">0</p>
-                    </div>
-                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 xl:p-4">
-                        <p class="text-[10px] xl:text-xs uppercase font-bold text-emerald-700">Resolvidas</p>
-                        <p class="text-2xl xl:text-3xl font-black text-emerald-700 mt-1" id="kpi-ocorrencias-resolvidas">0</p>
-                    </div>
-                </div>
-                <div class="w-full h-[220px] xl:h-[300px]">
-                    <canvas id="chartStatusOverview"></canvas>
-                </div>
-            </div>
-
-            <!-- Gráficos de Inteligência Temporal & Setores -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:gap-8 mb-6">
-                <!-- Heatmap Dias da Semana -->
-                <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100">
-                    <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-1 flex items-center gap-2"><i data-lucide="calendar-days" class="w-4 h-4 text-green-600"></i> Mapa de Calor de Falhas (Dias da Semana)</h3>
-                    <p class="text-[10px] xl:text-xs text-gray-400 mb-4">Volume histórico de Não Conformidades baseado no dia de operação.</p>
-                    <div class="w-full h-[220px] xl:h-[300px]">
-                        <canvas id="chartHeatmap"></canvas>
-                    </div>
-                </div>
-
-                <!-- Tendência no Tempo (Linha) -->
-                <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100">
-                    <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-1 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-green-600"></i> Tendência de Auditoria</h3>
-                    <p class="text-[10px] xl:text-xs text-gray-400 mb-4">Acompanhe se a operação está melhorando ou piorando dia após dia.</p>
-                    <div class="w-full h-[220px] xl:h-[300px]">
-                        <canvas id="chartTrend"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Ranking Setores e Auditores -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-8 mb-6">
-                <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100 lg:col-span-2">
-                    <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-4 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-emerald-500"></i> Desempenho por Setor (Conformes vs NCs)</h3>
-                    <div class="w-full h-[250px] xl:h-[340px]">
-                        <canvas id="chartSector"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100 flex flex-col">
-                    <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-2 flex items-center gap-2 border-b pb-2"><i data-lucide="users" class="w-4 h-4 text-emerald-500"></i> Auditores Ativos</h3>
-                    <p class="text-[10px] xl:text-xs text-gray-400 mb-3">Ranking de volume de avaliações realizadas.</p>
-                    <div id="auditor-list" class="flex-1 flex flex-col gap-2 overflow-y-auto xl:min-h-[300px]">
-                        <!-- Injetado via JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pontos Fortes de Conformidade -->
-            <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100 mb-6">
-                <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-1 flex items-center gap-2"><i data-lucide="badge-check" class="w-4 h-4 text-green-600"></i> Onde Estamos Acertando (Conformidades)</h3>
-                <p class="text-[10px] xl:text-xs text-gray-400 mb-4">Quantidade de perguntas respondidas em conformidade por procedimento, considerando os filtros atuais.</p>
-                <div class="w-full h-[280px] xl:h-[360px]">
-                    <canvas id="chartConformityWins"></canvas>
-                </div>
-            </div>
-
-            <!-- Análise de Foco (Pizzas) -->
-            <div class="bg-red-50 border border-red-100 p-5 xl:p-7 rounded-lg shadow-sm mb-6 print:break-inside-avoid">
-                <h3 class="text-lg xl:text-xl font-bold text-red-800 mb-1 flex items-center gap-2">
-                    <i data-lucide="target" class="w-5 h-5"></i> Origem dos Problemas (Foco das NCs)
-                </h3>
-                <p class="text-[11px] xl:text-xs text-red-600 mb-4 font-medium">Gráficos compostos por dados de Não Conformidade (Se 100% OK, exibe barra verde).</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="bg-white p-4 xl:p-6 rounded shadow-sm flex flex-col items-center">
-                        <h4 class="text-xs xl:text-sm font-bold text-gray-500 mb-3 uppercase">Volume de Falhas por POP</h4>
-                        <div class="w-full max-w-[220px] xl:max-w-[280px] h-[220px] xl:h-[280px]">
-                            <canvas id="chartPiePopNC"></canvas>
-                        </div>
-                    </div>
-                    <div class="bg-white p-4 xl:p-6 rounded shadow-sm flex flex-col items-center">
-                        <h4 class="text-xs xl:text-sm font-bold text-gray-500 mb-3 uppercase">Perguntas Recorrentes (Top Erros)</h4>
-                        <div class="w-full max-w-[220px] xl:max-w-[280px] h-[220px] xl:h-[280px]">
-                            <canvas id="chartPieQuestionNC"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pareto e Plano de Ação -->
-            <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100 mb-2 print:break-inside-avoid">
-                <h3 class="text-lg xl:text-xl font-bold text-gray-800 mb-1">Top Ofensores & Plano de Ação</h3>
-                <p class="text-xs xl:text-sm text-gray-500 mb-6">Gráfico de Pareto e histórico de ações tomadas pelas equipes de campo.</p>
-
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <!-- Pareto -->
-                    <div class="w-full h-[450px] xl:h-[520px]">
-                        <canvas id="chartPareto"></canvas>
-                    </div>
-
-                    <!-- Lista Expansível com IA -->
-                    <div class="flex flex-col h-[450px] xl:h-[520px] overflow-y-auto pr-2 custom-scrollbar">
-                        <div class="sticky top-0 z-40 bg-white pt-2 pb-3 border-b shadow-sm">
-                            <h4 class="text-sm font-bold text-gray-700 mb-3">Detalhamento e Sugestões do Sistema</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div>
-                                    <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Ordem das Ocorrências</label>
-                                    <select id="detail-sort" class="w-full p-2 border border-gray-300 rounded text-xs font-semibold bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500" onchange="applyFilters()">
-                                        <option value="recentes">Mais Recentes</option>
-                                        <option value="antigas">Mais Antigas</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Status</label>
-                                    <select id="detail-status" class="w-full p-2 border border-gray-300 rounded text-xs font-semibold bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500" onchange="applyFilters()">
-                                        <option value="all">Todos</option>
-                                        <option value="PENDENTE" selected>Pendentes</option>
-                                        <option value="EM_ANDAMENTO">Em Andamento</option>
-                                        <option value="RESOLVIDO">Resolvidos</option>
-                                    </select>
-                                </div>
+                        <div>
+                            <span class="campo-rotulo">Calendário</span>
+                            <div class="dash-calendario">
+                                <i data-lucide="calendar-range" class="w-4 h-4 text-green-700 shrink-0"></i>
+                                <input type="date" id="filter-data-inicio" title="Data inicial" aria-label="Data inicial" onchange="handleCalendarFilterChange()">
+                                <span class="text-[11px] font-bold text-slate-400">até</span>
+                                <input type="date" id="filter-data-fim" title="Data final" aria-label="Data final" onchange="handleCalendarFilterChange()">
+                                <button type="button" onclick="clearCalendarFilter()" class="p-0.5 rounded text-slate-400 hover:text-red-600 transition" title="Limpar calendário" aria-label="Limpar calendário"><i data-lucide="x" class="w-4 h-4"></i></button>
                             </div>
                         </div>
-                        <div id="ncs-accordion-list" class="space-y-3 pt-3 pb-4">
-                            <!-- Injetado via JS -->
+                        <div>
+                            <label class="campo-rotulo" for="filter-pop">Procedimento (POP)</label>
+                            <select id="filter-pop" class="dash-campo" onchange="updateQuestionFilter(); applyFilters()">
+                                <option value="all">Todos os POPs</option>
+                            </select>
+                        </div>
+                        <div class="relative">
+                            <label class="campo-rotulo" for="filter-pergunta">Pergunta</label>
+                            <button type="button" onclick="clearDashboardFilters()" class="absolute right-0 top-0 text-[11px] leading-none font-bold text-slate-400 hover:text-red-600 flex items-center gap-1"><i data-lucide="filter-x" class="w-3 h-3"></i> Limpar filtros</button>
+                            <select id="filter-pergunta" class="dash-campo" onchange="applyFilters()">
+                                <option value="all">Todas as perguntas</option>
+                            </select>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- ABA RESUMO -->
+            <div class="dash-painel space-y-4" data-painel="resumo">
+                <div id="ai-alerts-container" class="space-y-2 empty:hidden"></div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-6 gap-3">
+                    <div class="dash-tile col-span-2">
+                        <div class="dash-tile-topo">
+                            <p class="dash-tile-rotulo">Conformidade geral</p>
+                            <span id="dash-meta-status" class="text-[11px] font-bold text-slate-400">Meta: 95%</span>
+                        </div>
+                        <p class="dash-tile-valor" style="font-size:2.5rem" id="dash-conformidade">0%</p>
+                        <div class="dash-medidor" role="img" aria-label="Conformidade em relação à meta de 95%">
+                            <div id="dash-medidor-valor" class="dash-medidor-valor" style="width:0%"></div>
+                            <span class="dash-medidor-meta" title="Meta: 95%"></span>
+                        </div>
+                    </div>
+                    <div class="dash-tile">
+                        <div class="dash-tile-topo"><p class="dash-tile-rotulo">Avaliações</p><span class="dash-tile-icone bg-sky-50 text-sky-600"><i data-lucide="clipboard-check" class="w-4 h-4"></i></span></div>
+                        <p class="dash-tile-valor" id="dash-total-av">0</p>
+                        <p class="dash-tile-nota">no período</p>
+                    </div>
+                    <div class="dash-tile">
+                        <div class="dash-tile-topo"><p class="dash-tile-rotulo">Conformes</p><span class="dash-tile-icone bg-teal-50 text-teal-600"><i data-lucide="check" class="w-4 h-4"></i></span></div>
+                        <p class="dash-tile-valor" id="dash-total-c">0</p>
+                        <p class="dash-tile-nota">perguntas</p>
+                    </div>
+                    <div class="dash-tile">
+                        <div class="dash-tile-topo"><p class="dash-tile-rotulo">Não conformes</p><span class="dash-tile-icone bg-rose-50 text-rose-600"><i data-lucide="x" class="w-4 h-4"></i></span></div>
+                        <p class="dash-tile-valor" id="dash-total-nc">0</p>
+                        <p class="dash-tile-nota">perguntas</p>
+                    </div>
+                    <div class="dash-tile">
+                        <div class="dash-tile-topo"><p class="dash-tile-rotulo">Dias limpos</p><span class="dash-tile-icone bg-amber-50 text-amber-600"><i data-lucide="zap" class="w-4 h-4"></i></span></div>
+                        <p class="dash-tile-valor" id="dash-streak">0</p>
+                        <p class="dash-tile-nota">seguidos sem falhas</p>
+                    </div>
+                </div>
+
+                <div class="cartao">
+                    <div class="cartao-topo justify-between">
+                        <span class="flex items-center gap-2"><span class="cartao-icone"><i data-lucide="clipboard-list" class="w-4 h-4"></i></span><span class="cartao-rotulo">Ocorrências</span></span>
+                        <button type="button" onclick="abrirAbaDash('ocorrencias')" class="text-xs font-bold text-green-700 hover:underline flex items-center gap-0.5">Tratar <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                    <div class="cartao-corpo">
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3 mb-3">
+                            <div><p class="dash-tile-rotulo flex items-center gap-1.5"><i data-lucide="alert-circle" class="w-3.5 h-3.5 text-rose-600"></i> A corrigir</p><p class="dash-tile-valor" id="kpi-ocorrencias-corrigir">0</p></div>
+                            <div><p class="dash-tile-rotulo flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:#f59e0b"></span> Pendentes</p><p class="dash-tile-valor" id="kpi-ocorrencias-pendente">0</p></div>
+                            <div><p class="dash-tile-rotulo flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:#0ea5e9"></span> Em andamento</p><p class="dash-tile-valor" id="kpi-ocorrencias-andamento">0</p></div>
+                            <div><p class="dash-tile-rotulo flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm" style="background:#0d9488"></span> Resolvidas</p><p class="dash-tile-valor" id="kpi-ocorrencias-resolvidas">0</p></div>
+                        </div>
+                        <div class="dash-status" id="dash-status-barra" role="img" aria-label="Distribuição das ocorrências por status">
+                            <div id="dash-status-pendente" style="background:#f59e0b;width:0"></div>
+                            <div id="dash-status-andamento" style="background:#0ea5e9;width:0"></div>
+                            <div id="dash-status-resolvido" style="background:#0d9488;width:0"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="cartao cartao-corpo">
+                        <h3 class="dash-grafico-titulo">Tendência das auditorias</h3>
+                        <p class="dash-grafico-sub mb-3">Respostas conformes e não conformes por dia.</p>
+                        <div class="w-full h-[240px] xl:h-[300px]"><canvas id="chartTrend"></canvas></div>
+                    </div>
+                    <div class="cartao cartao-corpo">
+                        <h3 class="dash-grafico-titulo">Falhas por dia da semana</h3>
+                        <p class="dash-grafico-sub mb-3">Quantidade de não conformidades em cada dia.</p>
+                        <div class="w-full h-[240px] xl:h-[300px]"><canvas id="chartHeatmap"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA LANÇAMENTOS -->
+            <div class="dash-painel oculto" data-painel="lancamentos">
+                <div class="cartao">
+                    <div class="cartao-topo">
+                        <span class="cartao-icone"><i data-lucide="table" class="w-4 h-4"></i></span>
+                        <span class="cartao-rotulo">Últimos lançamentos</span>
+                        <span id="ultimos-contagem" class="ml-auto text-[11px] font-bold text-green-800/70 whitespace-nowrap"></span>
+                    </div>
+                    <div class="grid grid-cols-2 lg:grid-cols-[1fr_220px_160px] gap-2 p-3 border-b border-slate-100">
+                        <div class="col-span-2 lg:col-span-1">
+                            <label class="campo-rotulo" for="ultimos-busca">Buscar</label>
+                            <input id="ultimos-busca" type="search" class="dash-campo" placeholder="Pergunta, observação, setor, responsável ou quem enviou" oninput="renderUltimosLancamentos(getFilteredDashboardData())">
+                        </div>
+                        <div>
+                            <label class="campo-rotulo" for="ultimos-filtro">Mostrar</label>
+                            <select id="ultimos-filtro" class="dash-campo" onchange="renderUltimosLancamentos(getFilteredDashboardData())">
+                                <option value="all">Todos os lançamentos</option>
+                                <option value="nc">Somente não conformes</option>
+                                <option value="obs">Somente com observação</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="campo-rotulo" for="ultimos-limite">Quantidade</label>
+                            <select id="ultimos-limite" class="dash-campo" onchange="renderUltimosLancamentos(getFilteredDashboardData())">
+                                <option value="50">Últimos 50</option>
+                                <option value="100">Últimos 100</option>
+                                <option value="200">Últimos 200</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-auto max-h-[calc(100vh-300px)] min-h-[320px]">
+                        <table class="planilha-lancamentos">
+                            <thead>
+                                <tr>
+                                    <th>Lançado em</th>
+                                    <th>Data</th>
+                                    <th>POP</th>
+                                    <th>Setor</th>
+                                    <th>Responsável</th>
+                                    <th>Enviado por</th>
+                                    <th>Pergunta</th>
+                                    <th>Resposta</th>
+                                    <th>Observação</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ultimos-lancamentos-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA OCORRÊNCIAS -->
+            <div class="dash-painel oculto" data-painel="ocorrencias">
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+                    <div class="cartao">
+                        <div class="cartao-topo">
+                            <span class="cartao-icone"><i data-lucide="list-checks" class="w-4 h-4"></i></span>
+                            <span class="cartao-rotulo">Tratar ocorrências</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 p-3 border-b border-slate-100">
+                            <div>
+                                <label class="campo-rotulo" for="detail-status">Status</label>
+                                <select id="detail-status" class="dash-campo" onchange="applyFilters()">
+                                    <option value="all">Todos</option>
+                                    <option value="PENDENTE" selected>Pendentes</option>
+                                    <option value="EM_ANDAMENTO">Em andamento</option>
+                                    <option value="RESOLVIDO">Resolvidos</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="campo-rotulo" for="detail-sort">Ordem</label>
+                                <select id="detail-sort" class="dash-campo" onchange="applyFilters()">
+                                    <option value="recentes">Mais recentes</option>
+                                    <option value="antigas">Mais antigas</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="ncs-accordion-list" class="space-y-2 p-3 max-h-[calc(100vh-260px)] min-h-[320px] overflow-y-auto custom-scrollbar"></div>
+                    </div>
+                    <div class="cartao cartao-corpo">
+                        <h3 class="dash-grafico-titulo">Maiores causas de falha</h3>
+                        <p class="dash-grafico-sub mb-3">As 10 perguntas com mais não conformidades no período.</p>
+                        <div class="w-full h-[420px] xl:h-[520px]"><canvas id="chartPareto"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA ANÁLISES -->
+            <div class="dash-painel oculto space-y-4" data-painel="analises">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="cartao cartao-corpo">
+                        <h3 class="dash-grafico-titulo">Desempenho por POP</h3>
+                        <p class="dash-grafico-sub mb-3">Respostas conformes e não conformes em cada procedimento.</p>
+                        <div class="w-full h-[280px] xl:h-[340px]"><canvas id="chartPop"></canvas></div>
+                    </div>
+                    <div class="cartao cartao-corpo">
+                        <h3 class="dash-grafico-titulo">Desempenho por setor</h3>
+                        <p class="dash-grafico-sub mb-3">Os 8 setores com mais respostas.</p>
+                        <div class="w-full h-[280px] xl:h-[340px]"><canvas id="chartSector"></canvas></div>
+                    </div>
+                </div>
+                <div class="cartao">
+                    <div class="cartao-topo">
+                        <span class="cartao-icone"><i data-lucide="users" class="w-4 h-4"></i></span>
+                        <span class="cartao-rotulo">Auditores ativos</span>
+                    </div>
+                    <div id="auditor-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-6 p-3"></div>
                 </div>
             </div>
         </div>
@@ -820,16 +880,14 @@
         let currentVisibleGroups = []; 
 
         // Instâncias de Gráficos
-        let chartGaugeInstance = null;
         let chartTrendInstance = null;
         let chartHeatmapInstance = null;
         let chartSectorInstance = null;
-        let chartStatusOverviewInstance = null;
-        let chartConformityWinsInstance = null;
-        let chartPiePopNCInstance = null;
-        let chartPieQuestionNCInstance = null;
+        let chartPopInstance = null;
         let chartParetoInstance = null;
         let printFieldBackup = null;
+        let alertaTimer = null;
+        const acordeoesAbertos = new Set();
 
         const chartValueLabelsPlugin = {
             id: 'chartValueLabels',
@@ -876,7 +934,13 @@
             }
         };
 
-        if (window.Chart) Chart.register(chartValueLabelsPlugin);
+        if (window.Chart) {
+            Chart.register(chartValueLabelsPlugin);
+            Chart.defaults.font.family = "'Segoe UI', system-ui, -apple-system, sans-serif";
+            Chart.defaults.font.size = 11;
+            Chart.defaults.color = '#64748b';
+            Object.assign(Chart.defaults.plugins.tooltip, { backgroundColor: '#0f172a', padding: 10, cornerRadius: 10, boxPadding: 4, titleFont: { weight: '700' }, footerFont: { weight: '600' } });
+        }
 
         // ==========================================
         // MOTOR DE IA OFFLINE (Base de Conhecimento)
@@ -978,6 +1042,7 @@
         };
 
         function showAlert(message, type = 'info', title = 'Aviso') {
+            clearTimeout(alertaTimer);
             const modal = document.getElementById('custom-alert');
             const box = document.getElementById('custom-alert-box');
             const icon = document.getElementById('custom-alert-icon');
@@ -996,11 +1061,11 @@
             // Configurar cores baseado no tipo
             if(type === 'error') {
                 iconContainer.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4';
-                icon.className = 'w-8 h-8 text-red-600';
+                icon.setAttribute('class', 'w-8 h-8 text-red-600');
                 icon.setAttribute('data-lucide', 'x-circle');
             } else if(type === 'success') {
                 iconContainer.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-emerald-100 mb-4';
-                icon.className = 'w-8 h-8 text-emerald-600';
+                icon.setAttribute('class', 'w-8 h-8 text-emerald-600');
                 icon.setAttribute('data-lucide', 'check-circle');
                 titleEl.style.color = '#1f2937';
                 messageEl.style.color = '#1f2937';
@@ -1008,15 +1073,15 @@
                 iconContainer.style.backgroundColor = '#dcfce7';
             } else if(type === 'warning') {
                 iconContainer.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4';
-                icon.className = 'w-8 h-8 text-yellow-600';
+                icon.setAttribute('class', 'w-8 h-8 text-yellow-600');
                 icon.setAttribute('data-lucide', 'alert-triangle');
             } else {
                 iconContainer.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4';
-                icon.className = 'w-8 h-8 text-blue-600';
+                icon.setAttribute('class', 'w-8 h-8 text-blue-600');
                 icon.setAttribute('data-lucide', 'info');
             }
 
-            buttonsEl.innerHTML = `<button onclick="closeCustomAlert()" class="w-full px-4 py-2.5 bg-emerald-600 text-white font-bold rounded-md hover:bg-emerald-700 transition">OK</button>`;
+            buttonsEl.innerHTML = `<button onclick="closeCustomAlert()" class="w-full px-4 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition">OK</button>`;
             
             lucide.createIcons();
             modal.classList.remove('hidden');
@@ -1026,7 +1091,8 @@
             }, 10);
         }
 
-        function showConfirmAlert(message, onConfirm, title = 'Confirmação') {
+        function showConfirmAlert(message, onConfirm, title = 'Confirmação', opcoes = {}) {
+            clearTimeout(alertaTimer);
             const modal = document.getElementById('custom-alert');
             const box = document.getElementById('custom-alert-box');
             const icon = document.getElementById('custom-alert-icon');
@@ -1034,16 +1100,22 @@
             const titleEl = document.getElementById('custom-alert-title');
             const messageEl = document.getElementById('custom-alert-message');
             const buttonsEl = document.getElementById('custom-alert-buttons');
+            const sucesso = opcoes.tipo === 'success';
 
             titleEl.innerText = title;
             messageEl.innerText = message;
-            iconContainer.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-100 mb-4';
-            icon.className = 'w-8 h-8 text-amber-600';
-            icon.setAttribute('data-lucide', 'alert-triangle');
+            titleEl.style.color = '';
+            messageEl.style.color = '';
+            icon.style.color = '';
+            iconContainer.style.backgroundColor = '';
+            iconContainer.className = `mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4 ${sucesso ? 'bg-emerald-100' : 'bg-amber-100'}`;
+            icon.setAttribute('class', `w-8 h-8 ${sucesso ? 'text-emerald-600' : 'text-amber-600'}`);
+            icon.setAttribute('data-lucide', sucesso ? 'check-circle' : 'alert-triangle');
 
+            const corConfirmar = opcoes.confirmar ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700';
             buttonsEl.innerHTML = `
-                <button onclick="closeCustomAlert()" class="w-full px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-md hover:bg-gray-200 transition border border-gray-200">Cancelar</button>
-                <button id="btn-confirm-reset" class="w-full px-4 py-2.5 bg-red-600 text-white font-bold rounded-md hover:bg-red-700 transition">Limpar</button>
+                <button onclick="closeCustomAlert()" class="w-full px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition border border-gray-200">${escapeHtml(opcoes.cancelar || 'Cancelar')}</button>
+                <button id="btn-confirm-reset" class="w-full px-4 py-2.5 text-white font-bold rounded-xl transition ${corConfirmar}">${escapeHtml(opcoes.confirmar || 'Limpar')}</button>
             `;
 
             const confirmBtn = document.getElementById('btn-confirm-reset');
@@ -1065,10 +1137,11 @@
             const box = document.getElementById('custom-alert-box');
             modal.classList.add('opacity-0');
             box.classList.add('scale-95');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            clearTimeout(alertaTimer);
+            alertaTimer = setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        function preparePrintBlankFields() {
+function preparePrintBlankFields() {
             if (printFieldBackup) return;
             const idsToBlank = [
                 'responsavel-print',
@@ -1117,15 +1190,25 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            preencherListasPessoas();
+            montarTilesPOP();
+            atualizarSugestoesSetor();
             lucide.createIcons();
             const lastPOP = localStorage.getItem('last_selected_pop');
             if (lastPOP && popsData[lastPOP]) document.getElementById('popSelect').value = lastPOP;
             changePOP();
             document.getElementById('btnDashboardPop').classList.toggle('hidden', !window.SPG_POP.podeVerDashboard());
             syncDashboardData();
+
+            // Celular: com o teclado aberto a barra de envio sai da frente do campo
+            const ehCampoTexto = el => /^(INPUT|TEXTAREA)$/.test(el.tagName) && !/^(checkbox|radio|button|file)$/.test(el.type);
+            document.addEventListener('focusin', e => {
+                if (window.innerWidth < 1024 && ehCampoTexto(e.target)) document.getElementById('barra-envio').classList.add('teclado');
+            });
+            document.addEventListener('focusout', () => document.getElementById('barra-envio').classList.remove('teclado'));
         });
 
-        let syncInterval;
+let syncInterval;
         async function syncDashboardData() {
             if (!window.SPG_POP.podeVerDashboard()) return;
 
@@ -1154,10 +1237,15 @@
 
             try {
                 dashboardData = await window.SPG_POP.listar();
+                // Observação geral é só um comentário: não conta como Não Conforme (inclui as já gravadas)
+                dashboardData.forEach(row => { if (row[8] === 'OBS_GERAL') row[10] = 'OBS'; });
                 progress = 100;
             } catch (error) {
                 console.error("Erro ao sincronizar dados:", error);
                 progress = 100;
+                if (!document.getElementById('dashboard-view').classList.contains('hidden')) {
+                    showAlert('Não foi possível atualizar agora. O dashboard continua com os últimos dados carregados.', 'warning', 'Sem atualização');
+                }
             } finally {
                 clearInterval(syncInterval);
                 percentText.innerText = '100';
@@ -1170,42 +1258,100 @@
                     loaderUi.classList.add('hidden');
                     setTimeout(() => topBarContainer.classList.add('hidden'), 300);
                 }, 800);
+
+                atualizarSugestoesSetor();
+                if (!document.getElementById('dashboard-view').classList.contains('hidden')) {
+                    initFilters();
+                    applyFilters();
+                }
             }
         }
 
-        async function enviarDados() {
+        function enviarDados() {
             const dataStr = localStorage.getItem(`data_${currentPOP}`);
             if(!dataStr) {
                 showAlert("Nenhum dado salvo no formulário atual para enviar.", "warning"); return;
             }
-            
+
+            const data = JSON.parse(dataStr);
+            data.meta.data = data.meta.data || document.getElementById('data-screen').value;
+            const popInfo = popsData[currentPOP];
+
+            const campos = [
+                { valor: data.meta.responsavel, nome: 'responsável', id: document.getElementById('responsavel-screen').value === 'outra' ? 'responsavel-outro' : 'responsavel-screen' },
+                { valor: data.meta.data, nome: 'data', id: 'data-screen' },
+                { valor: String(data.meta.setor || '').trim(), nome: 'setor', id: 'setor-screen' }
+            ];
+            document.querySelectorAll('.campo-faltando').forEach(el => el.classList.remove('campo-faltando'));
+            const faltando = campos.filter(c => !c.valor);
+            if (faltando.length) {
+                faltando.forEach(c => document.getElementById(c.id).classList.add('campo-faltando'));
+                document.getElementById(faltando[0].id).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                showAlert(`Preencha antes de enviar: ${faltando.map(c => c.nome).join(', ')}.`, 'warning', 'Faltam dados');
+                return;
+            }
+
+            let semResposta = 0, ncSemObs = 0, comConteudo = 0;
+            popInfo.groups.forEach((group, i) => {
+                if (!currentVisibleGroups.includes(i)) return;
+                group.questions.forEach(q => {
+                    const ans = data.answers && data.answers[q.id];
+                    if (ans) comConteudo++;
+                    if (!ans || !ans.val) semResposta++;
+                    else if (ans.val === 'NC' && !String(ans.obs || '').trim()) ncSemObs++;
+                });
+            });
+
+            if (comConteudo === 0 && !data.meta.obsGeral) {
+                showAlert("Preencha ao menos uma resposta antes de enviar.", "warning");
+                return;
+            }
+
+            const avisos = [];
+            if (data.meta.enviadoEm) {
+                const quando = new Date(data.meta.enviadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                avisos.push(`Este formulário já foi enviado em ${quando}; enviar de novo duplica os registros.`);
+            }
+            if (semResposta) avisos.push(`${semResposta} ${semResposta === 1 ? 'pergunta está' : 'perguntas estão'} sem resposta.`);
+            if (ncSemObs) avisos.push(`${ncSemObs} não ${ncSemObs === 1 ? 'conformidade está' : 'conformidades estão'} sem observação.`);
+
+            if (avisos.length) {
+                showConfirmAlert(avisos.join(' '), () => executarEnvio(data), 'Revisar antes de enviar', { confirmar: 'Enviar assim', cancelar: 'Revisar' });
+            } else {
+                executarEnvio(data);
+            }
+        }
+
+        async function executarEnvio(data) {
             const btn = document.getElementById('btn-enviar');
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Enviando...`;
+            btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> <span>Enviando...</span>`;
             btn.disabled = true; lucide.createIcons();
-            
-            const data = JSON.parse(dataStr);
+
             const popInfo = popsData[currentPOP];
+            const popEnviado = currentPOP;
             const rows = [];
-            
+
             const metaBase = [
-                currentPOP.toUpperCase(), popInfo.title, data.meta.data || '', 
+                currentPOP.toUpperCase(), popInfo.title, data.meta.data || '',
                 data.meta.responsavel || '', normalizeSetorValue(data.meta.setor), data.meta.aprovadoPor || '', data.meta.assinaturaDigital || ''
             ];
 
+            // Só entram os grupos marcados: respostas de grupos desmarcados ficam guardadas, mas não são enviadas
             if(data.answers) {
-                popInfo.groups.forEach(group => {
+                popInfo.groups.forEach((group, i) => {
+                    if (!currentVisibleGroups.includes(i)) return;
                     group.questions.forEach(q => {
                         const ans = data.answers[q.id];
                         if(ans) rows.push([...metaBase, group.title, q.id, q.text, ans.val || '', ans.obs || '', crypto.randomUUID(), 'PENDENTE']);
                     });
                 });
             }
-            if(data.meta.obsGeral) rows.push([...metaBase, 'Geral', 'OBS_GERAL', 'Observações Gerais', 'NC', data.meta.obsGeral, crypto.randomUUID(), 'PENDENTE']);
+            if(data.meta.obsGeral) rows.push([...metaBase, 'Geral', 'OBS_GERAL', 'Observações Gerais', 'OBS', data.meta.obsGeral, crypto.randomUUID(), 'PENDENTE']);
 
             if(rows.length === 0) {
                 showAlert("Preencha ao menos uma resposta antes de enviar.", "warning");
-                btn.innerHTML = originalHtml; btn.disabled = false; return;
+                btn.innerHTML = originalHtml; btn.disabled = false; lucide.createIcons(); return;
             }
 
             const submissionId = crypto.randomUUID();
@@ -1213,19 +1359,25 @@
             try {
                 const result = await window.SPG_POP.salvar(rows, submissionId);
                 if(result.success) {
-                    showAlert("Dados enviados com sucesso", "success", "Concluído");
+                    data.meta.enviadoEm = new Date().toISOString();
+                    localStorage.setItem(`data_${popEnviado}`, JSON.stringify(data));
+                    atualizarTilesPOP();
+                    showConfirmAlert(`O ${popEnviado.toUpperCase()} foi registrado. Quer limpar o formulário para uma nova avaliação?`, () => {
+                        localStorage.removeItem(`data_${popEnviado}`);
+                        changePOP();
+                    }, 'Dados enviados', { tipo: 'success', confirmar: 'Nova avaliação', cancelar: 'Manter na tela' });
                     syncDashboardData();
                 } else {
                     showAlert("Erro ao enviar: " + result.error, "error", "Falha no Envio");
                 }
             } catch (error) {
-                showAlert("Erro de conexão ao enviar os dados. Verifique sua internet.", "error", "Falha de Conexão");
+                showAlert("Erro de conexão ao enviar os dados. Suas respostas continuam salvas neste aparelho.", "error", "Falha de Conexão");
             } finally {
                 btn.innerHTML = originalHtml; btn.disabled = false; lucide.createIcons();
             }
         }
 
-        // O acesso ao dashboard é definido em Cadastro de Usuários
+// O acesso ao dashboard é definido em Cadastro de Usuários
         function abrirDashboardPop() {
             if (!window.SPG_POP.podeVerDashboard()) {
                 showAlert("Seu usuário não tem acesso ao Dashboard. Fale com o administrador.", "warning");
@@ -1237,15 +1389,54 @@
         function showDashboard() {
             document.getElementById('app-view').classList.add('hidden');
             document.getElementById('dashboard-view').classList.remove('hidden');
-            initFilters(); applyFilters(); 
+            document.getElementById('acoes-form').classList.add('oculto');
+            document.getElementById('acoes-dash').classList.remove('oculto');
+            document.getElementById('barra-titulo').innerText = 'Dashboard POP';
+            document.getElementById('barra-sub').innerText = 'Gestão à vista · Packing House';
+            window.scrollTo(0, 0);
+            initFilters();
+            abrirAbaDash(localStorage.getItem('pop_dash_aba') || 'resumo');
+            applyFilters();
         }
 
         function closeDashboard() {
             document.getElementById('dashboard-view').classList.add('hidden');
             document.getElementById('app-view').classList.remove('hidden');
+            document.getElementById('acoes-dash').classList.add('oculto');
+            document.getElementById('acoes-form').classList.remove('oculto');
+            document.getElementById('barra-titulo').innerText = 'Gestão de POPs';
+            document.getElementById('barra-sub').innerText = 'Procedimentos operacionais';
+            window.scrollTo(0, 0);
         }
 
-        // ==========================================
+        function abrirAbaDash(aba) {
+            if (!document.querySelector(`.dash-painel[data-painel="${aba}"]`)) aba = 'resumo';
+            document.querySelectorAll('.dash-painel').forEach(p => p.classList.toggle('oculto', p.dataset.painel !== aba));
+            document.querySelectorAll('.dash-aba').forEach(b => {
+                const ativa = b.dataset.aba === aba;
+                b.classList.toggle('ativa', ativa);
+                b.setAttribute('aria-selected', ativa ? 'true' : 'false');
+            });
+            localStorage.setItem('pop_dash_aba', aba);
+        }
+
+        function alternarFiltrosDash() {
+            const caixa = document.getElementById('dash-filtros-caixa');
+            const aberta = caixa.classList.toggle('aberta');
+            document.getElementById('filtros-seta').style.transform = aberta ? 'rotate(180deg)' : '';
+        }
+
+        function atualizarResumoFiltros() {
+            const ativos = [];
+            const texto = id => { const s = document.getElementById(id); return s.options[s.selectedIndex]?.text || ''; };
+            if (document.getElementById('filter-periodo').value !== 'all') ativos.push(texto('filter-periodo'));
+            if (document.getElementById('filter-data-inicio').value || document.getElementById('filter-data-fim').value) ativos.push('Calendário');
+            if (document.getElementById('filter-pop').value !== 'all') ativos.push(document.getElementById('filter-pop').value);
+            if (document.getElementById('filter-pergunta').value !== 'all') ativos.push('1 pergunta');
+            document.getElementById('filtros-resumo').innerText = ativos.length ? `· ${ativos.join(' · ')}` : '· todos os dados';
+        }
+
+// ==========================================
         // RELATÓRIO OFICIAL A4 (IMPRESSÃO PARA FISCALIZAÇÃO)
         // ==========================================
         function fillReportHeaderForm(cfg) {
@@ -1300,7 +1491,7 @@
 
             return dashboardData.filter(row => {
                 const rowPop = row[0]; const rowDateRaw = row[2];
-                if (!allPopsSelected && !sel.selectedPops.includes(rowPop)) return false;
+                if (!allPopsSelected && !sel.selectedPops.includes(String(rowPop).toLowerCase())) return false;
                 const rowDate = parseDashboardDate(rowDateRaw);
                 if ((fStartDate || fEndDate) && !rowDate) return false;
                 if (fStartDate && rowDate < fStartDate) return false;
@@ -1329,7 +1520,7 @@
             document.getElementById('report-data-inicio').value = document.getElementById('filter-data-inicio').value;
             document.getElementById('report-data-fim').value = document.getElementById('filter-data-fim').value;
             const currentFilterPop = document.getElementById('filter-pop').value;
-            const initialSelectedPops = currentFilterPop === 'all' ? Object.keys(popsData) : [currentFilterPop];
+            const initialSelectedPops = currentFilterPop === 'all' ? Object.keys(popsData) : [currentFilterPop.toLowerCase()];
             renderReportPopCheckboxes(initialSelectedPops);
 
             document.getElementById('report-header-modal').classList.remove('hidden');
@@ -1338,7 +1529,7 @@
 
             const btn = document.getElementById('btn-report-a4');
             const originalHtml = btn ? btn.innerHTML : null;
-            if (btn) { btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Carregando dados...`; btn.disabled = true; lucide.createIcons(); }
+            if (btn) { btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> <span class="hidden lg:inline">Carregando...</span>`; btn.disabled = true; lucide.createIcons(); }
 
             try {
                 const config = await window.SPG_POP.lerConfig();
@@ -1470,7 +1661,8 @@
             const popRows = Object.entries(stats.popStats).map(([pop, s]) => {
                 const total = s.c + s.nc;
                 const pct = total === 0 ? '-' : `${Math.round((s.c / total) * 100)}%`;
-                const title = popsData[pop] ? popsData[pop].title : '';
+                const infoPop = popsData[String(pop).toLowerCase()];
+                const title = infoPop ? infoPop.title : '';
                 return `<tr><td>${escapeHtml(pop ? pop.toUpperCase() : 'N/A')}</td><td>${escapeHtml(title)}</td><td class="text-center">${s.c}</td><td class="text-center">${s.nc}</td><td class="text-center">${s.na}</td><td class="text-center">${pct}</td></tr>`;
             }).join('') || '<tr><td colspan="6" class="text-center">Sem dados no período selecionado.</td></tr>';
 
@@ -1588,12 +1780,11 @@
         async function handleManualSync() {
             const btn = document.getElementById('btn-sync-dash');
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Atualizando...`;
+            btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> <span class="hidden lg:inline">Atualizando...</span>`;
             btn.disabled = true;
             lucide.createIcons();
 
             await syncDashboardData();
-            applyFilters();
 
             btn.innerHTML = originalHtml;
             btn.disabled = false;
@@ -1601,31 +1792,41 @@
         }
 
         function initFilters() {
-            const popsList = [...new Set(dashboardData.map(r => r[0]).filter(Boolean))];
+            const popsList = [...new Set(dashboardData.map(r => r[0]).filter(Boolean))].sort();
             const popSelect = document.getElementById('filter-pop');
-            popSelect.innerHTML = '<option value="all">Todos os POPs</option>' + popsList.map(p => `<option value="${p}">${p.toUpperCase()}</option>`).join('');
+            const qSelect = document.getElementById('filter-pergunta');
+            const popAtual = popSelect.value;
+            const perguntaAtual = qSelect.value;
+            popSelect.innerHTML = '<option value="all">Todos os POPs</option>' + popsList.map(p => {
+                const curto = POP_INFO[String(p).toLowerCase()];
+                return `<option value="${escapeHtml(p)}">${escapeHtml(String(p).toUpperCase())}${curto ? ' - ' + escapeHtml(curto.nome) : ''}</option>`;
+            }).join('');
+            popSelect.value = popsList.includes(popAtual) ? popAtual : 'all';
             updateQuestionFilter();
+            if ([...qSelect.options].some(o => o.value === perguntaAtual)) qSelect.value = perguntaAtual;
+            atualizarSugestoesSetor();
         }
 
         function updateQuestionFilter() {
             const selectedPop = document.getElementById('filter-pop').value;
             const qSelect = document.getElementById('filter-pergunta');
-            const questionsMap = new Map(); 
-            
+            const questionsMap = new Map();
+
             dashboardData.forEach(row => {
                 const rPop = row[0]; const rId = row[8]; const rText = row[9];
                 if (rId && rId !== 'OBS_GERAL') {
                     if (selectedPop === 'all' || rPop === selectedPop) questionsMap.set(rId, rText);
                 }
             });
-            qSelect.innerHTML = '<option value="all">Todas as Perguntas</option>';
+            let opcoes = '<option value="all">Todas as perguntas</option>';
             questionsMap.forEach((text, id) => {
                 const shortText = text.length > 50 ? text.substring(0, 50) + '...' : text;
-                qSelect.innerHTML += `<option value="${id}">${shortText}</option>`;
+                opcoes += `<option value="${escapeHtml(id)}">${escapeHtml(shortText)}</option>`;
             });
+            qSelect.innerHTML = opcoes;
         }
 
-        function parseDashboardDate(value) {
+function parseDashboardDate(value) {
             if (!value) return null;
             if (value instanceof Date && !isNaN(value.getTime())) {
                 const parsedDate = new Date(value);
@@ -1671,35 +1872,27 @@
             document.getElementById('filter-pop').value = 'all';
             updateQuestionFilter();
             document.getElementById('filter-pergunta').value = 'all';
-            const detailStatus = document.getElementById('detail-status');
-            if (detailStatus) detailStatus.value = 'PENDENTE';
+            document.getElementById('detail-status').value = 'PENDENTE';
+            document.getElementById('ultimos-filtro').value = 'all';
+            document.getElementById('ultimos-busca').value = '';
             applyFilters();
         }
 
         function updateChartLabelsButton() {
             const button = document.getElementById('btn-toggle-chart-labels');
             if (!button) return;
-
-            button.classList.toggle('bg-emerald-600', showChartLabels);
-            button.classList.toggle('text-white', showChartLabels);
-            button.classList.toggle('border-emerald-600', showChartLabels);
-            button.classList.toggle('bg-white', !showChartLabels);
-            button.classList.toggle('text-gray-700', !showChartLabels);
-            button.classList.toggle('border-gray-200', !showChartLabels);
-            button.innerHTML = showChartLabels
-                ? '<i data-lucide="tags" class="w-4 h-4"></i> Ocultar rótulos dos gráficos'
-                : '<i data-lucide="tags" class="w-4 h-4"></i> Mostrar rótulos dos gráficos';
-            lucide.createIcons();
+            button.classList.toggle('botao-ativo', showChartLabels);
+            button.title = showChartLabels ? 'Ocultar valores nos gráficos' : 'Mostrar valores nos gráficos';
         }
 
         function toggleChartLabels() {
             showChartLabels = !showChartLabels;
             updateChartLabelsButton();
-            [chartGaugeInstance, chartTrendInstance, chartHeatmapInstance, chartSectorInstance, chartStatusOverviewInstance, chartConformityWinsInstance, chartPiePopNCInstance, chartPieQuestionNCInstance, chartParetoInstance]
+            [chartTrendInstance, chartHeatmapInstance, chartSectorInstance, chartPopInstance, chartParetoInstance]
                 .forEach(chart => { if (chart) chart.update(); });
         }
 
-        function getFilteredDashboardData() {
+function getFilteredDashboardData() {
             const fPeriod = document.getElementById('filter-periodo').value;
             const fPop = document.getElementById('filter-pop').value;
             const fQuestion = document.getElementById('filter-pergunta').value;
@@ -1727,10 +1920,73 @@
         }
 
         function applyFilters() {
-            renderDashboardCardsAndCharts(getFilteredDashboardData());
+            const dados = getFilteredDashboardData();
+            atualizarResumoFiltros();
+            renderUltimosLancamentos(dados);
+            renderDashboardCardsAndCharts(dados);
         }
 
-        function renderDashboardCardsAndCharts(dataToRender) {
+        function formatarLancadoEm(valor) {
+            const d = valor ? new Date(valor) : null;
+            if (!d || isNaN(d.getTime())) return '—';
+            return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderUltimosLancamentos(dados) {
+            const filtro = document.getElementById('ultimos-filtro').value;
+            const limite = Number(document.getElementById('ultimos-limite').value);
+            const busca = document.getElementById('ultimos-busca').value.trim().toLowerCase();
+            const corpo = document.getElementById('ultimos-lancamentos-body');
+
+            const selecionadas = dados.filter(row => {
+                if (filtro === 'nc' && row[10] !== 'NC') return false;
+                if (filtro === 'obs' && String(row[11] || '').trim() === '') return false;
+                if (busca && ![row[0], row[3], row[4], row[9], row[11], row[18]].some(v => String(v || '').toLowerCase().includes(busca))) return false;
+                return true;
+            });
+            // dashboardData vem em ordem de gravação: os últimos do array são os mais recentes
+            const linhas = selecionadas.slice(-limite).reverse();
+
+            document.getElementById('ultimos-contagem').innerText = `Exibindo ${linhas.length} de ${selecionadas.length}`;
+
+            if (linhas.length === 0) {
+                corpo.innerHTML = '<tr><td colspan="10" class="text-center text-gray-400" style="padding: 24px;">Nenhum lançamento encontrado.</td></tr>';
+                return;
+            }
+
+            const estiloResposta = { C: 'bg-teal-50 text-teal-700', NC: 'bg-rose-50 text-rose-700', NA: 'bg-slate-100 text-slate-600' };
+            const estiloStatus = { PENDENTE: 'text-amber-700', EM_ANDAMENTO: 'text-sky-700', RESOLVIDO: 'text-teal-700' };
+
+            corpo.innerHTML = linhas.map(row => {
+                const dataAv = parseDashboardDate(row[2]);
+                const resposta = String(row[10] || '');
+                const obs = String(row[11] || '').trim();
+                const statusRaw = String(row[13] || 'PENDENTE').toUpperCase();
+                const status = estiloStatus[statusRaw] ? statusRaw : 'PENDENTE';
+
+                const respostaHtml = resposta
+                    ? `<span class="font-bold rounded-md px-2 py-0.5 ${estiloResposta[resposta] || estiloResposta.NA}">${escapeHtml(resposta)}</span>`
+                    : '—';
+                const statusHtml = resposta === 'NC'
+                    ? `<span class="font-bold ${estiloStatus[status]}">${status.replace('_', ' ')}</span>`
+                    : '<span class="text-slate-300">—</span>';
+
+                return `<tr>
+                    <td class="nowrap">${formatarLancadoEm(row[14])}</td>
+                    <td class="nowrap">${dataAv ? dataAv.toLocaleDateString('pt-BR') : '—'}</td>
+                    <td class="nowrap font-bold">${escapeHtml(row[0])}</td>
+                    <td class="nowrap">${escapeHtml(normalizeSetorValue(row[4])) || '—'}</td>
+                    <td class="nowrap">${escapeHtml(row[3]) || '—'}</td>
+                    <td class="nowrap">${escapeHtml(row[18]) || '<span class="text-slate-300">—</span>'}</td>
+                    <td style="min-width: 260px;">${escapeHtml(row[9])}</td>
+                    <td class="nowrap text-center">${respostaHtml}</td>
+                    <td style="min-width: 260px;">${obs ? escapeHtml(obs) : '<span class="text-slate-300">—</span>'}</td>
+                    <td class="nowrap">${statusHtml}</td>
+                </tr>`;
+            }).join('');
+        }
+
+function renderDashboardCardsAndCharts(dataToRender) {
             let totalC = 0; let totalNC = 0; let totalNA = 0;
             const avaliacoesSet = new Set(); 
             const popConformidade = {}; 
@@ -1753,15 +2009,13 @@
                 const observacaoLimpa = observacao ? String(observacao).trim() : '';
 
                 let dateStr = 'Sem Data'; let dayOfWeek = -1;
-                if(dataAv) {
-                    const d = new Date(dataAv);
-                    if(!isNaN(d.getTime())) {
-                        dateStr = d.toISOString().split('T')[0];
-                        dayOfWeek = d.getDay(); // 0(Dom) a 6(Sáb)
-                    }
+                const dataLocal = parseDashboardDate(dataAv);
+                if (dataLocal) {
+                    dateStr = `${dataLocal.getFullYear()}-${String(dataLocal.getMonth() + 1).padStart(2, '0')}-${String(dataLocal.getDate()).padStart(2, '0')}`;
+                    dayOfWeek = dataLocal.getDay(); // 0(Dom) a 6(Sáb)
                 }
 
-                if(pop && dataAv && resp) {
+if(pop && dataAv && resp) {
                     const avKey = `${pop}_${dateStr}_${resp}_${setor}`;
                     if(!avaliacoesSet.has(avKey)) {
                         avaliacoesSet.add(avKey);
@@ -1784,6 +2038,7 @@
                             setor: setor,
                             obs: observacaoLimpa,
                             responsavel: resp,
+                            enviadoPor: row[18] || '',
                             idUnico: row[12],
                             status: row[13] || 'PENDENTE',
                             dataResolucao: row[16] || '',
@@ -1841,116 +2096,102 @@
             }
             document.getElementById('dash-streak').innerText = streak;
 
-            [chartGaugeInstance, chartTrendInstance, chartHeatmapInstance, chartSectorInstance, chartStatusOverviewInstance, chartConformityWinsInstance, chartPiePopNCInstance, chartPieQuestionNCInstance, chartParetoInstance].forEach(c => { if(c) c.destroy(); });
+            // Conformidade em relação à meta (número + medidor; a cor sempre vem com o texto do status)
+            const statusMeta = totalRespondidas === 0
+                ? { texto: 'Sem dados · Meta: 95%', cor: '#cbd5e1', classe: 'text-slate-400' }
+                : porcentagemGeral >= 95 ? { texto: 'Dentro da meta de 95%', cor: '#0d9488', classe: 'text-teal-700' }
+                : porcentagemGeral >= 80 ? { texto: 'Atenção · Meta: 95%', cor: '#f59e0b', classe: 'text-amber-700' }
+                : { texto: 'Abaixo da meta de 95%', cor: '#e11d48', classe: 'text-rose-700' };
+            const metaStatusEl = document.getElementById('dash-meta-status');
+            metaStatusEl.innerText = statusMeta.texto;
+            metaStatusEl.className = `text-[11px] font-bold ${statusMeta.classe}`;
+            const medidor = document.getElementById('dash-medidor-valor');
+            medidor.style.width = `${porcentagemGeral}%`;
+            medidor.style.backgroundColor = statusMeta.cor;
 
-            chartGaugeInstance = new Chart(document.getElementById('chartGauge').getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Conformidade Atual', 'Falta p/ 100%'],
-                    datasets: [{ data: [porcentagemGeral, 100 - porcentagemGeral], backgroundColor: [porcentagemGeral >= 95 ? '#10b981' : (porcentagemGeral >= 80 ? '#f59e0b' : '#ef4444'), '#e5e7eb'], borderWidth: 0, borderRadius: [4, 0] }]
-                },
-                options: { rotation: -90, circumference: 180, cutout: '75%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false }, chartValueLabels: { display: false } } }
-            });
+            // Ocorrências por status (barra única)
+            const totalOcorrencias = qtdPendente + qtdAndamento + qtdResolvido;
+            const larguraStatus = v => totalOcorrencias ? `${(v / totalOcorrencias) * 100}%` : '0';
+            document.getElementById('dash-status-pendente').style.width = larguraStatus(qtdPendente);
+            document.getElementById('dash-status-andamento').style.width = larguraStatus(qtdAndamento);
+            document.getElementById('dash-status-resolvido').style.width = larguraStatus(qtdResolvido);
+            const seloOcorrencias = document.getElementById('aba-selo-ocorrencias');
+            seloOcorrencias.innerText = qtdCorrigir;
+            seloOcorrencias.classList.toggle('oculto', qtdCorrigir === 0);
+
+            [chartTrendInstance, chartHeatmapInstance, chartSectorInstance, chartPopInstance, chartParetoInstance].forEach(c => { if(c) c.destroy(); });
+
+            const COR_C = '#0d9488';
+            const COR_NC = '#e11d48';
+            const eixoCategoria = { grid: { display: false }, border: { display: false } };
+            const eixoValor = { beginAtZero: true, grid: { color: 'rgba(226, 232, 240, 0.7)' }, border: { display: false }, ticks: { precision: 0, color: '#94a3b8' } };
+            const legendaCima = { position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, borderRadius: 2, useBorderRadius: true, color: '#475569', font: { weight: '600' } } };
+            const barra = (label, data, cor) => ({ label, data, backgroundColor: cor, borderColor: '#fff', borderWidth: 1, borderSkipped: false, borderRadius: 4, maxBarThickness: 24 });
 
             chartHeatmapInstance = new Chart(document.getElementById('chartHeatmap').getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
-                    datasets: [{ label: 'Não Conformidades', data: Object.values(dayOfWeekNCs), backgroundColor: '#3b82f6', borderRadius: 4 }]
+                    datasets: [{ ...barra('Não conformidades', Object.values(dayOfWeekNCs), COR_NC), maxBarThickness: 40 }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: eixoValor, x: eixoCategoria }, plugins: { legend: { display: false } } }
             });
 
-            const trendLabels = sortedDates.reverse().map(d => { const p = d.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}` : d; });
-            const trendDataC = sortedDates.map(d => trendStats[d].c);
-            const trendDataNC = sortedDates.map(d => trendStats[d].nc);
-            
-            const ctxTrend = document.getElementById('chartTrend').getContext('2d');
-            const gradientC = ctxTrend.createLinearGradient(0, 0, 0, 220);
-            gradientC.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); 
-            gradientC.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+            const trendDates = [...sortedDates].reverse();
+            const trendLabels = trendDates.map(d => { const p = d.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}` : d; });
+            const pontoTrend = trendDates.length <= 12 ? 3 : 0;
 
-            const gradientNC = ctxTrend.createLinearGradient(0, 0, 0, 220);
-            gradientNC.addColorStop(0, 'rgba(239, 68, 68, 0.4)'); 
-            gradientNC.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
-
-            chartTrendInstance = new Chart(ctxTrend, {
+            chartTrendInstance = new Chart(document.getElementById('chartTrend').getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: trendLabels,
                     datasets: [
-                        { label: 'Conformes', data: trendDataC, borderColor: '#10b981', backgroundColor: gradientC, tension: 0.4, borderWidth: 3, fill: true, pointRadius: 0, pointHoverRadius: 6 },
-                        { label: 'Não Conformes', data: trendDataNC, borderColor: '#ef4444', backgroundColor: gradientNC, tension: 0.4, borderWidth: 3, fill: true, pointRadius: 0, pointHoverRadius: 6 }
+                        { label: 'Conformes', data: trendDates.map(d => trendStats[d].c), borderColor: COR_C, backgroundColor: COR_C, cubicInterpolationMode: 'monotone', borderWidth: 2, pointRadius: pontoTrend, pointHoverRadius: 5 },
+                        { label: 'Não conformes', data: trendDates.map(d => trendStats[d].nc), borderColor: COR_NC, backgroundColor: COR_NC, cubicInterpolationMode: 'monotone', borderWidth: 2, pointRadius: pontoTrend, pointHoverRadius: 5 }
                     ]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, 
-                    plugins: { legend: { position: 'top', labels: { usePointStyle: false, boxWidth: 16, boxHeight: 3 } }, tooltip: { backgroundColor: 'rgba(17, 24, 39, 0.9)', titleFont: { size: 13, family: 'Inter, sans-serif' }, bodyFont: { size: 12, family: 'Inter, sans-serif' }, padding: 10, cornerRadius: 8, displayColors: true } },
-                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(226, 232, 240, 0.6)', drawBorder: false }, ticks: { color: '#64748b' } }, x: { grid: { display: false, drawBorder: false }, ticks: { color: '#64748b' } } } 
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: legendaCima },
+                    scales: { y: eixoValor, x: { ...eixoCategoria, ticks: { maxRotation: 0, autoSkipPadding: 16 } } }
                 }
             });
 
-            const sortedSectors = Object.entries(sectorStats).map(([s, counts]) => {
-                const total = counts.c + counts.nc;
-                return { setor: s, c: counts.c, nc: counts.nc, total: total };
-            }).sort((a, b) => b.total - a.total).slice(0, 8); 
-
-            chartSectorInstance = new Chart(document.getElementById('chartSector').getContext('2d'), {
+            const barrasEmpilhadas = (canvasId, itens, porcentagemNoTooltip) => new Chart(document.getElementById(canvasId).getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: sortedSectors.map(s => s.setor),
-                    datasets: [
-                        { label: 'Conformes', data: sortedSectors.map(s => s.c), backgroundColor: '#10b981', borderRadius: 4 },
-                        { label: 'Não Conformes', data: sortedSectors.map(s => s.nc), backgroundColor: '#ef4444', borderRadius: 4 }
-                    ]
+                    labels: itens.length ? itens.map(i => i.nome) : ['Sem dados'],
+                    datasets: [barra('Conformes', itens.map(i => i.c), COR_C), barra('Não conformes', itens.map(i => i.nc), COR_NC)]
                 },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }, y: { stacked: true } } }
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    scales: { x: { ...eixoValor, stacked: true }, y: { ...eixoCategoria, stacked: true } },
+                    plugins: {
+                        legend: legendaCima,
+                        tooltip: { callbacks: { footer: ctx => {
+                            const item = itens[ctx[0].dataIndex];
+                            if (!item || !porcentagemNoTooltip) return '';
+                            return `Conformidade: ${Math.round((item.c / ((item.c + item.nc) || 1)) * 100)}%`;
+                        } } }
+                    }
+                }
             });
 
-            chartStatusOverviewInstance = new Chart(document.getElementById('chartStatusOverview').getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Pendente', 'Em Andamento', 'Resolvido'],
-                    datasets: [{ data: [qtdPendente, qtdAndamento, qtdResolvido], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981'], borderWidth: 0 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
-            });
+            const itensSetor = Object.entries(sectorStats)
+                .map(([s, counts]) => ({ nome: s, c: counts.c, nc: counts.nc, total: counts.c + counts.nc }))
+                .filter(i => i.total > 0).sort((a, b) => b.total - a.total).slice(0, 8);
+            chartSectorInstance = barrasEmpilhadas('chartSector', itensSetor, true);
+
+            const itensPop = Object.entries(popConformidade)
+                .filter(([pop, counts]) => pop && pop !== 'undefined' && (counts.c + counts.nc) > 0)
+                .map(([pop, counts]) => ({ nome: String(pop).toUpperCase(), c: counts.c, nc: counts.nc }))
+                .sort((a, b) => a.nome.localeCompare(b.nome));
+            chartPopInstance = barrasEmpilhadas('chartPop', itensPop, true);
 
             const sortedAuditors = Object.entries(auditorStats).sort((a,b) => b[1] - a[1]);
-            let auditorHtml = '';
-            sortedAuditors.slice(0, 6).forEach((aud, idx) => {
-                const medal = idx === 0 ? '🏆' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : ''));
-                auditorHtml += `<div class="flex justify-between items-center p-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition"><span class="text-sm text-gray-700 font-medium flex items-center gap-2">${medal} ${aud[0]}</span><span class="font-bold text-xs text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full shadow-sm">${aud[1]} val.</span></div>`;
-            });
-            document.getElementById('auditor-list').innerHTML = auditorHtml || '<p class="text-sm text-gray-400 p-2">Nenhum dado.</p>';
-
-            const conformityWins = Object.entries(popConformidade).map(([pop, counts]) => ({ pop: pop ? pop.toUpperCase() : 'N/A', conformes: counts.c || 0 })).filter(item => item.conformes > 0).sort((a, b) => b.conformes - a.conformes).slice(0, 8);
-
-            chartConformityWinsInstance = new Chart(document.getElementById('chartConformityWins').getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: conformityWins.length ? conformityWins.map(item => item.pop) : ['Sem dados'],
-                    datasets: [{ label: 'Perguntas Conformes', data: conformityWins.length ? conformityWins.map(item => item.conformes) : [0], backgroundColor: '#2563eb', borderRadius: 6 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
-            });
-
-            const paletaCoresFoco = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#06b6d4', '#3b82f6', '#8b5cf6'];
-            
-            let piePopLabels = Object.keys(ncByPopCount).map(p => p.toUpperCase());
-            let piePopData = Object.values(ncByPopCount);
-            let piePopBg = paletaCoresFoco;
-            if (piePopData.length === 0) { piePopLabels = ['100% Conforme (Sem Falhas)']; piePopData = [1]; piePopBg = ['#10b981']; }
-
-            chartPiePopNCInstance = new Chart(document.getElementById('chartPiePopNC').getContext('2d'), { type: 'pie', data: { labels: piePopLabels, datasets: [{ data: piePopData, backgroundColor: piePopBg }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } } } } });
-            
-            const topQForPie = Object.entries(ncByQuestionCount).sort((a,b) => b[1] - a[1]).slice(0,6);
-            let pieQLabels = topQForPie.map(i => i[0]);
-            let pieQData = topQForPie.map(i => i[1]);
-            let pieQBg = paletaCoresFoco;
-            if (pieQData.length === 0) { pieQLabels = ['Nenhuma pergunta com falha']; pieQData = [1]; pieQBg = ['#10b981']; }
-
-            chartPieQuestionNCInstance = new Chart(document.getElementById('chartPieQuestionNC').getContext('2d'), { type: 'pie', data: { labels: pieQLabels, datasets: [{ data: pieQData, backgroundColor: pieQBg }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } } } } });
+            document.getElementById('auditor-list').innerHTML = sortedAuditors.slice(0, 9).map((aud, idx) =>
+                `<div class="flex justify-between items-center gap-3 py-2 border-b border-slate-100"><span class="text-sm text-slate-700 font-semibold flex items-center gap-2 min-w-0"><span class="text-[11px] font-black text-slate-400 w-4 shrink-0">${idx + 1}</span><span class="truncate">${escapeHtml(aud[0])}</span></span><span class="font-bold text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full shrink-0">${aud[1]} ${aud[1] === 1 ? 'avaliação' : 'avaliações'}</span></div>`
+            ).join('') || '<p class="text-sm text-slate-400 p-2">Nenhum dado.</p>';
 
             const alertsContainer = document.getElementById('ai-alerts-container');
             let alertsHtml = '';
@@ -1958,10 +2199,10 @@
             if(last3Dates.length === 3) {
                 const d1 = daysWithData[last3Dates[0]].ncs; const d2 = daysWithData[last3Dates[1]].ncs; const d3 = daysWithData[last3Dates[2]].ncs;
                 const uniqueRecurring = [...new Set(d1.filter(value => d2.includes(value) && d3.includes(value)))];
-                
+
                 uniqueRecurring.forEach(qId => {
                      const qText = questionStats[qId] ? questionStats[qId].text : qId;
-                     alertsHtml += `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg shadow-sm text-sm text-yellow-800 flex items-start gap-3 print:break-inside-avoid"><i data-lucide="bot" class="w-5 h-5 text-yellow-600 mt-0.5 shrink-0"></i> <div><strong class="block uppercase tracking-wider text-xs mb-1">Alerta da IA de Reincidência Crítica</strong>A falha <i>"${qText}"</i> ocorreu em 3 dias distintos recentes. Necessário plano de ação imediato para quebra de rotina errada.</div></div>`;
+                     alertsHtml += `<div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-sm text-amber-900 flex items-start gap-3"><span class="bg-amber-100 p-1.5 rounded-lg shrink-0"><i data-lucide="bot" class="w-4 h-4 text-amber-700"></i></span><div><strong class="block uppercase tracking-wide text-[11px] mb-0.5">Alerta de reincidência crítica</strong>A falha <i>"${escapeHtml(qText)}"</i> ocorreu nos 3 últimos dias com avaliação. Necessário plano de ação imediato.</div></div>`;
                 });
             }
             alertsContainer.innerHTML = alertsHtml;
@@ -1970,21 +2211,26 @@
             rankingNcs.sort((a, b) => { if (b.nc !== a.nc) return b.nc - a.nc; return b.taxaErro - a.taxaErro; });
 
             const topOfensores = rankingNcs.slice(0, 10);
-            
-            let paretoLabels = topOfensores.map(q => q.text.length > 35 ? q.text.substring(0, 35) + '...' : q.text);
-            let paretoData = topOfensores.map(q => q.nc);
-            let paretoBg = '#ef4444';
-
-            if (paretoData.length === 0) { paretoLabels = ['Tudo Conforme no período selecionado!']; paretoData = [1]; paretoBg = '#10b981'; }
+            const limiteRotulo = window.innerWidth < 640 ? 24 : 42;
 
             chartParetoInstance = new Chart(document.getElementById('chartPareto').getContext('2d'), {
                 type: 'bar',
-                data: { labels: paretoLabels, datasets: [{ label: 'Qtd Não Conformidades', data: paretoData, backgroundColor: paretoBg, borderRadius: 4 }] },
-                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { tooltip: { callbacks: { title: function(ctx) { return topOfensores.length ? topOfensores[ctx[0].dataIndex].text : 'Nenhum erro reportado'; } } } } }
+                data: {
+                    labels: topOfensores.length ? topOfensores.map(q => q.text.length > limiteRotulo ? q.text.substring(0, limiteRotulo) + '...' : q.text) : ['Nenhuma falha no período'],
+                    datasets: [barra('Não conformidades', topOfensores.map(q => q.nc), COR_NC)]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    scales: { x: eixoValor, y: eixoCategoria },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { title: ctx => topOfensores.length ? topOfensores[ctx[0].dataIndex].text : 'Nenhum erro reportado' } }
+                    }
+                }
             });
             updateChartLabelsButton();
 
-            const accordionContainer = document.getElementById('ncs-accordion-list');
+const accordionContainer = document.getElementById('ncs-accordion-list');
             accordionContainer.innerHTML = ''; 
             
             const detalheSort = document.getElementById('detail-sort')?.value || 'recentes';
@@ -2008,41 +2254,42 @@
                 .sort((a, b) => detalheSort === 'antigas' ? a.refDate - b.refDate : b.refDate - a.refDate);
 
             if (ncsComObservacao.length === 0) {
-                accordionContainer.innerHTML = `<div class="text-emerald-600 font-medium text-sm p-4 bg-emerald-50 rounded border border-emerald-100 flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5"></i> Nenhuma ação com observação registrada no período selecionado.</div>`;
+                accordionContainer.innerHTML = `<div class="text-emerald-700 font-semibold text-sm p-4 bg-emerald-50 rounded-xl flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5"></i> Nenhuma ocorrência com este status no período.</div>`;
             } else {
                 ncsComObservacao.forEach((q) => {
                     const iaSuggestionText = AIOfflineRules[q.id] || AIOfflineRules['default'];
-                    const iaBlock = `<div class="bg-indigo-50 border border-indigo-100 rounded p-3 mb-4 flex items-start gap-3"><div class="bg-indigo-200 p-1.5 rounded-full shrink-0"><i data-lucide="sparkles" class="w-4 h-4 text-indigo-700"></i></div><div><h6 class="text-xs font-bold text-indigo-800 uppercase tracking-wide mb-1">Guia de Solução da IA</h6><p class="text-sm text-indigo-900">${iaSuggestionText}</p></div></div>`;
+                    const iaBlock = `<div class="bg-indigo-50 rounded-xl p-3 mb-3 flex items-start gap-2.5"><i data-lucide="sparkles" class="w-4 h-4 text-indigo-600 mt-0.5 shrink-0"></i><div><h6 class="text-[11px] font-bold text-indigo-800 uppercase tracking-wide mb-0.5">Guia de solução</h6><p class="text-sm text-indigo-900 leading-snug">${escapeHtml(iaSuggestionText)}</p></div></div>`;
 
                     let historicoHtml = '';
                     q.historico.forEach(h => {
-                        let dF = h.data; if(dF.includes('T') || dF.includes('-')) dF = new Date(dF).toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+                        let dF = String(h.data || ''); if(dF.includes('T') || dF.includes('-')) dF = new Date(dF).toLocaleDateString('pt-BR', {timeZone: 'UTC'});
                         const status = (typeof h.status === 'string') ? h.status.toUpperCase() : (h.status === true ? 'RESOLVIDO' : 'PENDENTE');
                         let statusColor = status === 'RESOLVIDO' ? 'emerald' : (status === 'EM_ANDAMENTO' ? 'blue' : 'red');
 
                         let selectHtml = '';
                         if (h.idUnico) {
-                            selectHtml = `<div class="mt-2"><label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Status desta ocorrência</label><select data-previous="${status}" onchange="onStatusSelectChange('${h.idUnico}', this.value, this)" class="status-select text-${statusColor}-700"><option value="PENDENTE" ${status === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option><option value="EM_ANDAMENTO" ${status === 'EM_ANDAMENTO' ? 'selected' : ''}>EM ANDAMENTO</option><option value="RESOLVIDO" ${status === 'RESOLVIDO' ? 'selected' : ''}>RESOLVIDO</option></select></div>`;
+                            selectHtml = `<div class="mt-2"><label class="campo-rotulo">Status desta ocorrência</label><select data-previous="${status}" onchange="onStatusSelectChange('${escapeHtml(h.idUnico)}', this.value, this)" class="status-select text-${statusColor}-700"><option value="PENDENTE" ${status === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option><option value="EM_ANDAMENTO" ${status === 'EM_ANDAMENTO' ? 'selected' : ''}>EM ANDAMENTO</option><option value="RESOLVIDO" ${status === 'RESOLVIDO' ? 'selected' : ''}>RESOLVIDO</option></select></div>`;
                         } else {
-                            selectHtml = `<div class="mt-2 text-[10px] font-bold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1 w-fit">Sem ID para atualizar status</div>`;
+                            selectHtml = `<div class="mt-2 text-[10px] font-bold uppercase tracking-wide text-amber-700 bg-amber-50 rounded-md px-2 py-1 w-fit">Sem ID para atualizar status</div>`;
                         }
 
                         const statusBadge = `<span class="text-[10px] font-bold uppercase rounded px-2 py-1 bg-${statusColor}-50 text-${statusColor}-700 border border-${statusColor}-200">${status.replace('_', ' ')}</span>`;
-                        const obsHtml = h.obs ? `<p class="text-xs text-gray-700 italic border-l-2 border-${statusColor}-400 pl-2 ml-1 mt-2">"${h.obs}"</p>` : `<p class="text-xs text-gray-400 italic border-l-2 border-gray-300 pl-2 ml-1 mt-2">Sem observação informada.</p>`;
+                        const obsHtml = h.obs ? `<p class="text-sm text-slate-700 border-l-2 border-${statusColor}-300 pl-2 mt-2">${escapeHtml(h.obs)}</p>` : `<p class="text-xs text-slate-400 italic mt-2">Sem observação informada.</p>`;
 
                         let resolucaoHtml = '';
                         if (status === 'RESOLVIDO') {
-                            let dRes = h.dataResolucao || '';
+                            let dRes = String(h.dataResolucao || '');
                             if (dRes && (dRes.includes('T') || dRes.includes('-'))) dRes = new Date(dRes).toLocaleDateString('pt-BR', {timeZone: 'UTC'});
-                            const dResStr = dRes ? `<span class="font-bold">${dRes}</span>` : '<span class="text-gray-400">Não informada</span>';
-                            const oResStr = h.obsResolucao ? `<span class="italic">"${escapeHtml(h.obsResolucao)}"</span>` : '<span class="text-gray-400 italic">Não informada</span>';
-                            resolucaoHtml = `<div class="mt-2 bg-emerald-50 border border-emerald-200 rounded p-2 text-xs text-emerald-800"><div class="font-bold text-emerald-700 uppercase text-[10px] tracking-wide mb-1">Resolução</div><div class="flex flex-col gap-0.5"><span>Data: ${dResStr}</span><span>Como foi solucionado: ${oResStr}</span></div></div>`;
+                            const dResStr = dRes ? `<span class="font-bold">${escapeHtml(dRes)}</span>` : '<span class="text-slate-400">Não informada</span>';
+                            const oResStr = h.obsResolucao ? `<span class="italic">"${escapeHtml(h.obsResolucao)}"</span>` : '<span class="text-slate-400 italic">Não informada</span>';
+                            resolucaoHtml = `<div class="mt-2 bg-emerald-50 rounded-lg p-2 text-xs text-emerald-800"><div class="font-bold uppercase text-[10px] tracking-wide mb-1">Resolução</div><div class="flex flex-col gap-0.5"><span>Data: ${dResStr}</span><span>Como foi solucionado: ${oResStr}</span></div></div>`;
                         }
 
-                        historicoHtml += `<div class="mb-3 pb-3 border-b border-gray-100 last:border-0 last:mb-0 last:pb-0"><div class="flex justify-between items-start mb-1 gap-2"><div class="flex flex-col gap-1"><span class="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded w-fit">${dF} | ${h.setor || 'N/A'}</span><span class="text-[10px] text-gray-400">Resp: ${h.responsavel || 'N/A'}</span></div><div class="shrink-0">${statusBadge}</div></div>${obsHtml}${resolucaoHtml}${selectHtml}</div>`;
+                        historicoHtml += `<div class="mb-3 pb-3 border-b border-slate-100 last:border-0 last:mb-0 last:pb-0"><div class="flex justify-between items-start gap-2"><div class="flex flex-col gap-0.5 min-w-0"><span class="text-xs font-bold text-slate-700">${escapeHtml(dF)} · ${escapeHtml(h.setor || 'N/A')}</span><span class="text-[11px] font-semibold text-slate-400">Resp.: ${escapeHtml(h.responsavel || 'N/A')}${h.enviadoPor ? ` · Enviado por: ${escapeHtml(h.enviadoPor)}` : ''}</span></div><div class="shrink-0">${statusBadge}</div></div>${obsHtml}${resolucaoHtml}${selectHtml}</div>`;
                     });
 
-                    const itemHtml = `<div class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm print:break-inside-avoid print:border-gray-300 print:mb-2"><button onclick="toggleAccordion('${q.id}')" class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex justify-between items-center transition text-left"><div class="pr-4"><span class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">${q.pop}</span><h5 class="text-sm font-bold text-gray-800 leading-snug">${q.text}</h5></div><div class="flex items-center gap-3 shrink-0 print:hidden"><div class="flex flex-col items-end"><span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded-full">${q.historico.length} Ocorrências</span></div><i data-lucide="chevron-down" id="acc-icon-${q.id}" class="w-5 h-5 text-gray-400 transition-transform duration-200"></i></div></button><div id="acc-content-${q.id}" class="hidden print:block p-4 bg-white border-t border-gray-100">${iaBlock}<h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Anotações Anteriores:</h6>${historicoHtml}</div></div>`;
+                    const aberto = acordeoesAbertos.has(q.id);
+                    const itemHtml = `<div class="border border-slate-200 rounded-xl overflow-hidden bg-white"><button type="button" onclick="toggleAccordion('${q.id}')" class="w-full px-3.5 py-3 hover:bg-slate-50 flex justify-between items-center gap-3 transition text-left"><div class="min-w-0"><span class="text-[10px] font-black text-slate-400 mb-0.5 block uppercase tracking-wide">${escapeHtml(q.pop)}</span><h5 class="text-sm font-bold text-slate-800 leading-snug">${escapeHtml(q.text)}</h5></div><div class="flex items-center gap-2 shrink-0"><span class="bg-rose-50 text-rose-700 text-xs font-bold px-2 py-0.5 rounded-full">${q.historico.length}</span><i data-lucide="chevron-down" id="acc-icon-${q.id}" class="w-5 h-5 text-slate-400 transition-transform duration-200" style="transform:${aberto ? 'rotate(180deg)' : 'rotate(0deg)'}"></i></div></button><div id="acc-content-${q.id}" class="${aberto ? '' : 'hidden'} p-3.5 border-t border-slate-100">${iaBlock}${historicoHtml}</div></div>`;
                     accordionContainer.insertAdjacentHTML('beforeend', itemHtml);
                 });
             }
@@ -2052,11 +2299,13 @@
         function toggleAccordion(id) {
             const el = document.getElementById(`acc-content-${id}`);
             const icon = document.getElementById(`acc-icon-${id}`);
-            if (el.classList.contains('hidden')) { el.classList.remove('hidden'); icon.style.transform = 'rotate(180deg)'; } 
-            else { el.classList.add('hidden'); icon.style.transform = 'rotate(0deg)'; }
+            const abrir = el.classList.contains('hidden');
+            el.classList.toggle('hidden', !abrir);
+            icon.style.transform = abrir ? 'rotate(180deg)' : 'rotate(0deg)';
+            if (abrir) acordeoesAbertos.add(id); else acordeoesAbertos.delete(id);
         }
 
-        function escapeHtml(value) {
+function escapeHtml(value) {
             return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
@@ -2141,35 +2390,126 @@
             saveProgress();
         }
 
+        const RESPONSAVEIS = ['João Victor Gonçalves Barbosa', 'Francisco Fagner Isaias', 'Alessandra Leitão da Silva', 'Regilene Isaias', 'Thaynara Rodrigues', 'Maria Conceição', 'Daiany Rodrigues', 'Ana Paula Rodrigues da Silva', 'Myrla Ferreira'];
+
+        const POP_INFO = {
+            pop01: { nome: 'Higiene e saúde', icone: 'user-check' },
+            pop02: { nome: 'Higienização', icone: 'spray-can' },
+            pop03: { nome: 'Resíduos', icone: 'trash-2' },
+            pop04: { nome: 'Vetores e pragas', icone: 'bug' },
+            pop05: { nome: 'Potabilidade da água', icone: 'droplets' },
+            pop06: { nome: 'Matérias-primas', icone: 'package' },
+            pop07: { nome: 'Manutenção e calibração', icone: 'wrench' }
+        };
+
+        // Data de hoje no horário local (toISOString daria o dia seguinte à noite)
+        function hojeISO() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function preencherListasPessoas() {
+            const opcoes = '<option value="">Selecione...</option>' +
+                RESPONSAVEIS.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('') +
+                '<option value="outra">Outra (digitar manualmente)</option>';
+            document.querySelectorAll('.lista-pessoas').forEach(s => { s.innerHTML = opcoes; });
+        }
+
+        function atualizarSugestoesSetor() {
+            const setores = new Set(['Packing House']);
+            dashboardData.forEach(r => { const s = normalizeSetorValue(r[4]); if (s) setores.add(s); });
+            document.getElementById('setores-sugeridos').innerHTML = [...setores].sort().map(s => `<option value="${escapeHtml(s)}"></option>`).join('');
+        }
+
+        function montarTilesPOP() {
+            document.getElementById('pop-tiles').innerHTML = Object.keys(popsData).map(id => `
+                <button type="button" class="pop-tile" data-pop="${id}" onclick="selecionarPOP('${id}')">
+                    <span class="pop-tile-topo"><span class="pop-tile-numero">${id.replace('pop', 'POP ')}</span><i data-lucide="${POP_INFO[id].icone}" class="w-4 h-4"></i></span>
+                    <span class="pop-tile-nome">${POP_INFO[id].nome}</span>
+                    <span class="pop-tile-progresso" id="tile-prog-${id}"></span>
+                </button>`).join('');
+        }
+
+        function selecionarPOP(id) {
+            document.getElementById('popSelect').value = id;
+            changePOP();
+        }
+
+        function atualizarTilesPOP() {
+            Object.keys(popsData).forEach(id => {
+                const tile = document.querySelector(`.pop-tile[data-pop="${id}"]`);
+                if (!tile) return;
+                tile.classList.toggle('ativo', id === currentPOP);
+                const perguntas = popsData[id].groups.flatMap(g => g.questions);
+                let salvo = null;
+                try { salvo = JSON.parse(localStorage.getItem(`data_${id}`)); } catch (e) { /* rascunho inválido */ }
+                const respondidas = salvo?.answers ? perguntas.filter(q => salvo.answers[q.id]?.val).length : 0;
+                const prog = document.getElementById(`tile-prog-${id}`);
+                prog.innerText = salvo?.meta?.enviadoEm ? 'Enviado' : (respondidas ? `Rascunho · ${respondidas}/${perguntas.length}` : `${perguntas.length} perguntas`);
+                prog.classList.toggle('tem-rascunho', respondidas > 0 && !salvo?.meta?.enviadoEm);
+            });
+        }
+
         function changePOP() {
             currentPOP = document.getElementById('popSelect').value;
             localStorage.setItem('last_selected_pop', currentPOP);
             const savedData = JSON.parse(localStorage.getItem(`data_${currentPOP}`));
-            currentVisibleGroups = savedData?.meta?.visibleGroups || []; 
+            currentVisibleGroups = savedData?.meta?.visibleGroups || [];
             renderSubSelection(); renderPOP();
-            if (savedData) fillFormData(savedData);
+            if (savedData) {
+                fillFormData(savedData);
+            } else {
+                // Responsável, data e setor seguem para o próximo POP; o que é de cada avaliação, não
+                document.getElementById('obs-geral').value = '';
+                setSelectOrOutro('aprovado-por', 'aprovado-por-outro', '');
+                setSelectOrOutro('assinatura-digital', 'assinatura-digital-outro', '');
+            }
+            const campoData = document.getElementById('data-screen');
+            if (!campoData.value) {
+                campoData.value = hojeISO();
+                document.getElementById('data-print').value = campoData.value;
+            }
             updateStats();
         }
 
         function renderSubSelection() {
-            const list = document.getElementById('sub-selection-list'); list.innerHTML = ''; 
+            const list = document.getElementById('sub-selection-list'); list.innerHTML = '';
             popsData[currentPOP].groups.forEach((group, index) => {
                 const isChecked = currentVisibleGroups.includes(index) ? 'checked' : '';
-                list.insertAdjacentHTML('beforeend', `<label class="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-lg border border-slate-200 hover:bg-green-50 transition select-none shadow-sm"><input type="checkbox" class="w-5 h-5 text-green-600 rounded focus:ring-green-500" value="${index}" onchange="toggleGroup(${index})" ${isChecked}><span class="text-gray-700 font-medium text-sm">${group.title}</span></label>`);
+                list.insertAdjacentHTML('beforeend', `<label class="grupo-chip"><input type="checkbox" class="sr-only" value="${index}" onchange="toggleGroup(${index})" ${isChecked}><span>${escapeHtml(group.title)}</span></label>`);
             });
             document.getElementById('sub-selection-container').classList.remove('hidden');
+            atualizarBotaoTodosGrupos();
         }
 
-        function toggleGroup(index) {
-            saveProgress(); 
-            const cb = document.querySelector(`input[type="checkbox"][value="${index}"]`);
-            if (cb.checked && !currentVisibleGroups.includes(index)) currentVisibleGroups.push(index);
-            else if (!cb.checked) currentVisibleGroups = currentVisibleGroups.filter(i => i !== index);
-            currentVisibleGroups.sort((a, b) => a - b); 
+        function atualizarBotaoTodosGrupos() {
+            const todos = currentVisibleGroups.length === popsData[currentPOP].groups.length;
+            document.getElementById('btn-todos-grupos').innerText = todos ? 'Desmarcar todos' : 'Marcar todos';
+        }
+
+        function aplicarGruposVisiveis() {
             renderPOP();
             const savedData = JSON.parse(localStorage.getItem(`data_${currentPOP}`));
             if(savedData) fillFormData(savedData);
             saveProgress();
+            atualizarBotaoTodosGrupos();
+        }
+
+        function toggleGroup(index) {
+            saveProgress();
+            const cb = document.querySelector(`#sub-selection-list input[value="${index}"]`);
+            if (cb.checked && !currentVisibleGroups.includes(index)) currentVisibleGroups.push(index);
+            else if (!cb.checked) currentVisibleGroups = currentVisibleGroups.filter(i => i !== index);
+            currentVisibleGroups.sort((a, b) => a - b);
+            aplicarGruposVisiveis();
+        }
+
+        function alternarTodosGrupos() {
+            saveProgress();
+            const total = popsData[currentPOP].groups.length;
+            currentVisibleGroups = currentVisibleGroups.length === total ? [] : [...Array(total).keys()];
+            document.querySelectorAll('#sub-selection-list input').forEach(cb => { cb.checked = currentVisibleGroups.includes(Number(cb.value)); });
+            aplicarGruposVisiveis();
         }
 
         function renderPOP() {
@@ -2181,31 +2521,66 @@
             document.getElementById('current-pop-label').innerText = currentPOP.toUpperCase();
             const contentDiv = document.getElementById('dynamic-content'); contentDiv.innerHTML = '';
 
+            if (currentVisibleGroups.length === 0) {
+                contentDiv.innerHTML = `<div class="no-print cartao p-8 mb-4 text-center">
+                    <span class="inline-flex p-3 rounded-2xl bg-green-50 text-green-700 mb-3"><i data-lucide="list-checks" class="w-6 h-6"></i></span>
+                    <p class="text-sm font-bold text-slate-700">Quais grupos você vai avaliar?</p>
+                    <p class="text-xs text-slate-500 mt-1 mb-4">Marque os grupos no cartão acima para abrir as perguntas.</p>
+                    <button type="button" onclick="alternarTodosGrupos()" class="tema-btn-verde px-4 py-2.5 text-sm font-bold">Avaliar todos os grupos</button>
+                </div>`;
+            }
+
+            let numero = 0;
             data.groups.forEach((group, index) => {
-                if (!currentVisibleGroups.includes(index)) return; 
-                let gHtml = `<section class="mb-8 print:mb-4"><h3 class="text-lg font-bold text-slate-800 border-l-4 border-green-600 pl-3 mb-4 bg-green-50 py-2 rounded-r-lg">${group.title}</h3><div class="space-y-4 print:space-y-2">`;
+                if (!currentVisibleGroups.includes(index)) return;
+                let gHtml = `<section class="grupo-pop mb-8 print:mb-4"><h3 class="text-lg font-bold text-slate-800 border-l-4 border-green-600 pl-3 mb-4 bg-green-50 py-2 rounded-r-lg"><span>${group.title}</span><span id="grupo-cont-${index}" class="grupo-contador no-print"></span></h3><div class="print:space-y-2">`;
                 group.questions.forEach(q => {
+                    numero++;
                     const helpText = escapeHtml(getQuestionHelpText(q.text));
+                    const sugestao = AIOfflineRules[q.id];
                     gHtml += `
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 hover:shadow-md transition-shadow question-container">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 question-container" data-qid="${q.id}" data-estado="vazia">
                         <div class="flex items-start gap-2 mb-2">
+                            <span class="q-num no-print">${numero}</span>
                             <p class="font-medium text-gray-800 text-sm md:text-base flex-1">${q.text}</p>
-                            <span class="question-help print:hidden">?
-                                <span class="question-help-tooltip">${helpText}</span>
-                            </span>
+                            <button type="button" class="question-help no-print" aria-expanded="false" aria-controls="ajuda_${q.id}" title="O que verificar" onclick="alternarAjuda('${q.id}', this)">?</button>
                         </div>
-                        <div class="flex flex-wrap gap-2 mb-3 print:mb-1">
-                            <label class="cursor-pointer px-4 py-2 rounded border border-gray-300 text-sm font-bold text-gray-600 hover:bg-gray-100 transition select-none flex items-center gap-1 radio-label"><input type="radio" name="${q.id}" id="${q.id}_C" value="C" class="hidden radio-option" onchange="saveProgress()"><i data-lucide="check-circle" class="w-4 h-4 print:hidden"></i> C</label>
-                            <label class="cursor-pointer px-4 py-2 rounded border border-gray-300 text-sm font-bold text-gray-600 hover:bg-red-50 transition select-none flex items-center gap-1 radio-label"><input type="radio" name="${q.id}" id="${q.id}_NC" value="NC" class="hidden radio-option" onchange="saveProgress()"><i data-lucide="x-circle" class="w-4 h-4 print:hidden"></i> NC</label>
-                            <label class="cursor-pointer px-4 py-2 rounded border border-gray-300 text-sm font-bold text-gray-600 hover:bg-gray-100 transition select-none radio-label"><input type="radio" name="${q.id}" id="${q.id}_NA" value="NA" class="hidden radio-option" onchange="saveProgress()">NA</label>
+                        <p id="ajuda_${q.id}" class="q-ajuda no-print oculto">${helpText}</p>
+                        <div class="q-opcoes flex flex-wrap gap-2 mb-3 print:mb-1">
+                            <label class="cursor-pointer px-4 py-2 rounded border border-gray-300 text-sm font-bold text-gray-600 transition select-none flex items-center gap-1 radio-label"><input type="radio" name="${q.id}" id="${q.id}_C" value="C" class="sr-only radio-option" onchange="saveProgress()"><i data-lucide="check-circle" class="w-4 h-4 print:hidden"></i> <span class="rotulo-impressao">C</span><span class="rotulo-tela">Conforme</span></label>
+                            <label class="cursor-pointer px-4 py-2 rounded border border-gray-300 text-sm font-bold text-gray-600 transition select-none flex items-center gap-1 radio-label"><input type="radio" name="${q.id}" id="${q.id}_NC" value="NC" class="sr-only radio-option" onchange="saveProgress()"><i data-lucide="x-circle" class="w-4 h-4 print:hidden"></i> <span class="rotulo-impressao">NC</span><span class="rotulo-tela">Não conforme</span></label>
+                            <label class="cursor-pointer px-4 py-2 rounded border border-gray-300 text-sm font-bold text-gray-600 transition select-none flex items-center gap-1 radio-label"><input type="radio" name="${q.id}" id="${q.id}_NA" value="NA" class="sr-only radio-option" onchange="saveProgress()"><i data-lucide="minus-circle" class="w-4 h-4 print:hidden"></i> <span class="rotulo-impressao">NA</span><span class="rotulo-tela">Não avaliado</span></label>
                         </div>
-                        <div class="mt-2"><label for="obs_${q.id}" class="text-xs text-gray-500 font-semibold mb-1 block print:text-black">Observações:</label><textarea id="obs_${q.id}" rows="2" class="modern-input w-full text-sm p-2 border rounded focus:border-green-600 focus:ring-1 outline-none bg-gray-50" oninput="saveProgress()"></textarea></div>
+                        ${sugestao ? `<div class="q-sugestao no-print oculto"><i data-lucide="sparkles" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span><strong>Sugestão de ação:</strong> ${escapeHtml(sugestao)}</span></div>` : ''}
+                        <button type="button" class="q-obs-abrir no-print" onclick="abrirObservacao('${q.id}')"><i data-lucide="message-square-plus" class="w-3.5 h-3.5"></i> Adicionar observação</button>
+                        <div class="q-obs fechada mt-2"><label for="obs_${q.id}" class="text-xs text-gray-500 font-semibold mb-1 block print:text-black">Observações:</label><textarea id="obs_${q.id}" rows="2" placeholder="Descreva o que foi observado..." class="modern-input w-full text-sm p-2 border rounded focus:border-green-600 focus:ring-1 outline-none bg-gray-50" oninput="saveProgress()"></textarea></div>
                     </div>`;
                 });
                 gHtml += `</div></section>`;
                 contentDiv.insertAdjacentHTML('beforeend', gHtml);
             });
             lucide.createIcons(); updateStats();
+        }
+
+        function alternarAjuda(qId, botao) {
+            const aberta = document.getElementById(`ajuda_${qId}`).classList.toggle('oculto') === false;
+            botao.setAttribute('aria-expanded', aberta ? 'true' : 'false');
+        }
+
+        function abrirObservacao(qId) {
+            const bloco = document.querySelector(`.question-container[data-qid="${qId}"] .q-obs`);
+            bloco.dataset.manual = '1';
+            updateAnswerButtonStyles();
+            document.getElementById(`obs_${qId}`).focus();
+        }
+
+        function irParaPendente() {
+            const pendente = document.querySelector('.question-container[data-estado="vazia"]');
+            if (!pendente) return;
+            pendente.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            pendente.classList.remove('destaque');
+            void pendente.offsetWidth;
+            pendente.classList.add('destaque');
         }
 
         function fillFormData(data) {
@@ -2215,11 +2590,11 @@
 
                 document.getElementById('setor-screen').value = data.meta.setor || '';
                 document.getElementById('setor-print').value = data.meta.setor || '';
-                
+
                 const dVal = data.meta.data || '';
                 document.getElementById('data-screen').value = dVal; document.getElementById('data-print').value = dVal;
                 document.getElementById('obs-geral').value = data.meta.obsGeral || '';
-                
+
                 setSelectOrOutro('aprovado-por', 'aprovado-por-outro', data.meta.aprovadoPor);
                 setSelectOrOutro('assinatura-digital', 'assinatura-digital-outro', data.meta.assinaturaDigital);
             }
@@ -2244,12 +2619,25 @@
                 else if (radio.value === 'NC') label.classList.add('answer-nc');
                 else if (radio.value === 'NA') label.classList.add('answer-na');
             });
+
+            // Estado de cada pergunta: cor da lateral, observação aberta em NC e sugestão de ação
+            document.querySelectorAll('.question-container').forEach(c => {
+                const marcada = c.querySelector('.radio-option:checked');
+                const estado = marcada ? marcada.value.toLowerCase() : 'vazia';
+                c.dataset.estado = estado;
+                const bloco = c.querySelector('.q-obs');
+                const aberta = estado === 'nc' || c.querySelector('textarea').value.trim() !== '' || bloco.dataset.manual === '1';
+                bloco.classList.toggle('fechada', !aberta);
+                c.querySelector('.q-obs-abrir').classList.toggle('oculto', aberta);
+                c.querySelector('.q-sugestao')?.classList.toggle('oculto', estado !== 'nc');
+            });
         }
 
         function saveProgress() {
             updateAnswerButtonStyles();
+            document.querySelectorAll('.campo-faltando').forEach(el => { if (el.value) el.classList.remove('campo-faltando'); });
             const dateVal = document.getElementById('data-screen').value;
-            const newAnswers = { ...JSON.parse(localStorage.getItem(`data_${currentPOP}`))?.answers }; 
+            const newAnswers = { ...JSON.parse(localStorage.getItem(`data_${currentPOP}`))?.answers };
             popsData[currentPOP].groups.forEach((g, i) => {
                 if(currentVisibleGroups.includes(i)) {
                     g.questions.forEach(q => {
@@ -2274,35 +2662,52 @@
                 meta: { responsavel: respVal, setor: normalizeSetorValue(document.getElementById('setor-screen').value), data: dateVal, obsGeral: document.getElementById('obs-geral').value, aprovadoPor: aprovVal, assinaturaDigital: assVal, visibleGroups: currentVisibleGroups },
                 answers: newAnswers
             }));
+            const barraSub = document.getElementById('barra-sub');
+            if (document.getElementById('dashboard-view').classList.contains('hidden')) {
+                barraSub.innerText = `Rascunho salvo às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+            }
             updateStats();
         }
 
         function updateStats() {
             updateAnswerButtonStyles();
-            let t = 0, c = 0, nc = 0;
+            let total = 0, respondidas = 0, c = 0, nc = 0;
             popsData[currentPOP].groups.forEach((g, i) => {
                 if (!currentVisibleGroups.includes(i)) return;
+                let doGrupo = 0;
                 g.questions.forEach(q => {
+                    total++;
                     const s = document.querySelector(`input[name="${q.id}"]:checked`);
-                    if (s) { t++; if (s.value === 'C') c++; else if (s.value === 'NC') nc++; }
+                    if (s) { respondidas++; doGrupo++; if (s.value === 'C') c++; else if (s.value === 'NC') nc++; }
                 });
+                const contador = document.getElementById(`grupo-cont-${i}`);
+                if (contador) {
+                    contador.innerText = `${doGrupo}/${g.questions.length}`;
+                    contador.classList.toggle('completo', doGrupo === g.questions.length);
+                }
             });
-            const p = t === 0 ? 0 : Math.round((c / t) * 100);
+
+            // Mesmo cálculo do dashboard: "Não avaliado" fica fora da conta
+            const avaliadas = c + nc;
+            const p = avaliadas === 0 ? null : Math.round((c / avaliadas) * 100);
             const sEl = document.getElementById('score-display');
-            sEl.innerText = `${p}%`;
-            sEl.className = `text-2xl font-bold ${p >= 90 ? 'text-green-600' : (p >= 70 ? 'text-green-600' : 'text-red-600')}`;
+            sEl.innerText = p === null ? '—' : `${p}%`;
+            sEl.className = `text-xl font-black leading-none ${p === null ? 'text-slate-400' : (p >= 95 ? 'text-green-600' : (p >= 80 ? 'text-amber-600' : 'text-red-600'))}`;
             document.getElementById('count-c').innerText = c; document.getElementById('count-nc').innerText = nc;
+            document.getElementById('barra-progresso').style.width = total ? `${(respondidas / total) * 100}%` : '0%';
+            document.getElementById('progresso-texto').innerText = total ? `${respondidas} de ${total} respondidas${nc ? ` · ${nc} NC` : ''}` : 'Marque os grupos a avaliar';
+            document.getElementById('btn-proxima').classList.toggle('oculto', total === 0 || respondidas === total);
+            atualizarTilesPOP();
         }
 
-        let _pendingResolve = null;
+let _pendingResolve = null;
 
         function onStatusSelectChange(idUnico, novoStatus, selectEl) {
             if (novoStatus === 'RESOLVIDO') {
                 const prev = selectEl.dataset.previous || 'PENDENTE';
                 _pendingResolve = { idUnico, selectEl, previousValue: prev };
                 selectEl.dataset.previous = novoStatus;
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('resolve-date').value = today;
+                document.getElementById('resolve-date').value = hojeISO();
                 document.getElementById('resolve-obs').value = '';
                 const modal = document.getElementById('resolve-modal');
                 modal.classList.remove('hidden');

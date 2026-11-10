@@ -370,10 +370,6 @@
                     class="p-1.5 rounded-lg text-slate-400 hover:text-sky-600 hover:bg-sky-50">
                     <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                 </button>
-                <button type="button" onclick="window.fazerLogout()" title="Sair"
-                    class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
-                </button>
             </div>
         </div>
 
@@ -10939,21 +10935,6 @@
                 btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4"></i> ENTRAR`;
                 if(typeof lucide !== 'undefined') lucide.createIcons();
             }
-        }
-
-        window.fazerLogout = function() {
-            const s = API.status();
-            const texto = s.pendentes > 0
-                ? `Há ${s.pendentes} dado(s) ainda não enviado(s) ao banco. Eles ficam guardados neste aparelho e serão enviados quando você entrar de novo com internet.`
-                : 'Deseja sair do aplicativo?';
-            pendingConfirmCallback = async () => {
-                pararTempoReal();
-                await API.logout();
-                progUnlocked = false;
-                window.updateProgLockUI();
-                location.replace('../../index.html');
-            };
-            window.showConfirmModal("Sair?", texto, "SAIR", "log-out");
         }
 
         function renderStatusSync(s) {

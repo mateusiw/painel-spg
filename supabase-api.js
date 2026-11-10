@@ -377,6 +377,7 @@
         { id: 'estoque', nome: 'Estoque de Produtos', descricao: 'Cadastro, lançamentos, compras, custos e inventário', icone: 'boxes', grupo: 'Operação', gradiente: 'from-emerald-600 to-green-800',
           cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/estoque/index.html',
           areas: [{ modulo: 'estoque', nome: 'Acesso ao Estoque', recursos: recursos('estoque', [
+              ['geral', 'Visão Geral', 'warehouse'],
               ['resumo', 'Resumo', 'layout-dashboard'], ['cadastro', 'Cadastro', 'package'], ['lancamentos', 'Lançamentos', 'arrow-left-right'],
               ['compras', 'Compras', 'shopping-cart'], ['custos', 'Custos', 'calculator'], ['inventario', 'Inventário', 'clipboard-list'],
               ['relatorio', 'Relatório', 'file-text'], ['fornecedores', 'Fornecedores', 'truck']]) }] },
@@ -397,6 +398,8 @@
               { modulo: 'organograma_edicao', nome: 'Editar o organograma', extra: true, requer: 'organograma', recursos: [] }] },
         { id: 'online', nome: 'Usuários online', descricao: 'Quem está usando agora, em qual página e há quanto tempo', icone: 'radio', grupo: 'Administração', gradiente: 'from-emerald-500 to-teal-700',
           cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/online/index.html', soAdmin: true, areas: [] },
+        { id: 'notificacoes', nome: 'Notificações', descricao: 'Quais sites avisam os usuários no celular, horários e recados', icone: 'bell-ring', grupo: 'Administração', gradiente: 'from-amber-500 to-orange-600',
+          cor: 'bg-amber-50 text-amber-700', caminho: 'projetos/notificacoes/index.html', soAdmin: true, areas: [] },
         { id: 'log', nome: 'Log de atividades', descricao: 'O que cada pessoa registrou, alterou ou excluiu em todos os projetos', icone: 'scroll-text', grupo: 'Administração', gradiente: 'from-slate-500 to-slate-700',
           cor: 'bg-slate-100 text-slate-700', caminho: 'projetos/log/index.html', soAdmin: true, areas: [] },
         { id: 'usuarios', nome: 'Cadastro de Usuários', descricao: 'Pessoas, locais e o que cada um pode acessar', icone: 'users', grupo: 'Administração', gradiente: 'from-slate-600 to-slate-800',

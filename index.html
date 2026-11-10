@@ -123,6 +123,7 @@
     <script src="./lista-moderna.js"></script>
     <script src="./trava-fundo.js"></script>
     <script src="./cartao-aniversario.js"></script>
+    <script src="./notificacoes.js"></script>
 </head>
 <body class="bg-[#f5f7f2] text-slate-900 min-h-screen">
 
@@ -204,6 +205,7 @@
                         <span id="menuUsuario" class="block text-sm font-bold truncate"></span>
                         <span id="menuPerfil" class="block text-[11px] font-semibold text-emerald-100/60 truncate"></span>
                     </span>
+                    <button type="button" data-notificacoes title="Notificações" aria-label="Notificações" class="foco p-2 rounded-lg text-emerald-100/70 hover:text-white hover:bg-white/10"><i data-lucide="bell-ring" class="w-4 h-4"></i></button>
                     <button type="button" data-sair title="Sair" aria-label="Sair" class="foco p-2 rounded-lg text-emerald-100/70 hover:text-white hover:bg-white/10"><i data-lucide="log-out" class="w-4 h-4"></i></button>
                 </div>
             </aside>
@@ -482,6 +484,7 @@
         }
 
         function mostrarMenu() {
+            NotificacoesSPG.sincronizar();
             const projetos = API.projetosDoUsuario();
             // Quem tem um só projeto vai direto para ele
             if (projetos.length === 1) { location.replace(projetos[0].caminho); return; }
@@ -1082,7 +1085,9 @@
                 aplicarLateral();
                 return;
             }
+            if (e.target.closest('[data-notificacoes]')) { NotificacoesSPG.abrir(); return; }
             if (e.target.closest('[data-sair]')) {
+                await NotificacoesSPG.aoSair();
                 await API.logout();
                 fecharTodasAbas();
                 history.replaceState(null, '', location.pathname + location.search);

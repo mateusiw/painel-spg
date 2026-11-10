@@ -64,17 +64,12 @@
     window.iniciarChecklists = function () {
         if (!API.projetosDoUsuario().some(p => p.id === 'checklist')) { location.replace(MENU); return; }
         bloqueiosIniciais = JSON.stringify((API.usuarioAtual() || {}).bloqueios || []);
-        el('nomeUsuario').textContent = API.nomeUsuario();
         const varios = API.projetosDoUsuario().length > 1;
         el('btnMenuProjetos').classList.toggle('hidden', !varios);
         el('btnMenuProjetos').classList.toggle('flex', varios);
         el('checklistAbas').addEventListener('click', e => {
             const b = e.target.closest('[data-checklist]');
             if (b) abrir(b.dataset.checklist);
-        });
-        el('btnSair').addEventListener('click', async () => {
-            try { await API.logout(); } catch (e) { /* sai mesmo assim */ }
-            location.replace(MENU);
         });
         let salvo = null;
         try { salvo = localStorage.getItem(CHAVE); } catch (e) { /* abre a primeira */ }

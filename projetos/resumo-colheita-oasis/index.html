@@ -185,7 +185,6 @@
                 <button type="button" id="sendBtn" onclick="spg_manualSend()" title="Enviar dados deste aparelho para a base" class="spg-send-btn hidden items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-full transition-colors active:scale-95"><i data-lucide="upload-cloud" class="w-3 h-3"></i><span>Enviar</span></button>
                 <!-- Aparece só quando o navegador permite instalar -->
                 <button type="button" id="installAppBtn" onclick="spg_installApp()" title="Instalar aplicativo" class="hidden items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"><i data-lucide="download" class="w-3 h-3"></i> Instalar</button>
-                <button type="button" onclick="logoutSystem()" title="Sair do Sistema" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"><i data-lucide="log-out" class="w-4 h-4"></i></button>
             </div>
         </div>
     </div>
@@ -954,12 +953,6 @@
         // -------------------------------------------------------------
         // LOGIN E NAVEGAÇÃO
         // -------------------------------------------------------------
-        async function logoutSystem() {
-            isAuthColheita = false; isAuthPesagem = false; isAuthLancamentos = false; isAuthMaster = false;
-            try { await SPG_API.logout(); } catch(e) {}
-            location.replace(SPG_MENU_URL);
-        }
-
         // Sem acesso ou sem login: volta ao menu de projetos, que cuida do login
         function showLogin() { location.replace(SPG_MENU_URL); }
 

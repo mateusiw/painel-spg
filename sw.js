@@ -1,4 +1,4 @@
-const CACHE = 'sistema-v122';
+const CACHE = 'sistema-v124';
 
 // Arquivos do próprio app. Este service worker fica na raiz e atende todos os projetos.
 const ARQUIVOS_APP = [
@@ -49,6 +49,9 @@ const ARQUIVOS_APP = [
   './projetos/checklist/listas/logo-limpeza.png',
   './projetos/checklist/listas/logo-pop.png',
   './projetos/programacao/icone.png',
+  './notificacoes.js',
+  './projetos/notificacoes/index.html',
+  './projetos/notificacoes/notificacoes.js',
   './projetos/online/index.html',
   './projetos/online/online.js',
   './projetos/log/index.html',
@@ -155,5 +158,33 @@ self.addEventListener('fetch', e => {
     } catch (err) {
       return Response.error();
     }
+  })());
+});
+
+// Notificações no celular (enviadas pela Edge Function "notificacoes")
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { corpo: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.titulo || 'Painel SPG', {
+    body: d.corpo || '',
+    icon: './icone-app.png',
+    badge: './icone-app.png',
+    tag: d.tag || undefined,
+    data: { url: d.url || './index.html' }
+  }));
+});
+
+// Tocar na notificação abre o Painel na tela do aviso (ou usa a janela que já está aberta)
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const alvo = new URL((e.notification.data && e.notification.data.url) || './index.html', self.registration.scope).href;
+  e.waitUntil((async () => {
+    const janelas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const principal = janelas.find(c => c.frameType !== 'nested' && c.url.startsWith(self.registration.scope));
+    if (principal) {
+      if (principal.url !== alvo && 'navigate' in principal) { try { await principal.navigate(alvo); } catch (err) { /* só traz para a frente */ } }
+      return principal.focus();
+    }
+    return self.clients.openWindow(alvo);
   })());
 });
