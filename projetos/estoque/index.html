@@ -929,6 +929,164 @@ dialog::backdrop{background:rgba(4,10,7,.55);backdrop-filter:blur(5px)}
   .print-doc table.tbl-compact-5{font-size:7.5px}
   .print-doc table.tbl-compact-5 th,.print-doc table.tbl-compact-5 td{padding:2px 3px;line-height:1.1}
 }
+
+/* ===== Visual no padrão da Irrigação (Painel SPG) =====
+   Mesma paleta (cinza-azulado + verde-esmeralda), mesma fonte, mesma barra
+   do topo e mesma barra de abas. Fica no fim do estilo para valer por cima. */
+:root{
+  --page:#f8fafc; --surface:#ffffff; --surface-2:#f8fafc; --surface-3:#f1f5f9; --surface-translucent:rgba(255,255,255,.88);
+  --ink:#0f172a; --ink-2:#334155; --muted:#64748b; --line:#e2e8f0; --line-strong:#cbd5e1; --border:rgba(15,23,42,.08);
+  --brand:#059669; --brand-dark:#047857; --brand-light:#10b981; --brand-soft:#ecfdf5; --brand-soft-strong:#d1fae5;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.05); --shadow-md:0 8px 24px -12px rgba(15,23,42,.18); --shadow-lg:0 24px 56px -16px rgba(15,23,42,.28);
+}
+:root[data-theme="dark"]{
+  --page:#020617; --surface:#0f172a; --surface-2:#131c31; --surface-3:#1e293b; --surface-translucent:rgba(15,23,42,.86);
+  --ink:#f1f5f9; --ink-2:#cbd5e1; --muted:#94a3b8; --line:#1e293b; --line-strong:#334155; --border:rgba(255,255,255,.08);
+  --brand:#10b981; --brand-dark:#059669; --brand-light:#34d399; --brand-soft:rgba(16,185,129,.12); --brand-soft-strong:rgba(16,185,129,.26);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow-md:0 10px 28px -12px rgba(0,0,0,.6); --shadow-lg:0 28px 64px -16px rgba(0,0,0,.7);
+}
+@media(prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
+  --page:#020617; --surface:#0f172a; --surface-2:#131c31; --surface-3:#1e293b; --surface-translucent:rgba(15,23,42,.86);
+  --ink:#f1f5f9; --ink-2:#cbd5e1; --muted:#94a3b8; --line:#1e293b; --line-strong:#334155; --border:rgba(255,255,255,.08);
+  --brand:#10b981; --brand-dark:#059669; --brand-light:#34d399; --brand-soft:rgba(16,185,129,.12); --brand-soft-strong:rgba(16,185,129,.26);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow-md:0 10px 28px -12px rgba(0,0,0,.6); --shadow-lg:0 28px 64px -16px rgba(0,0,0,.7);
+}}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--page);overflow-x:clip;-webkit-tap-highlight-color:transparent}
+.shell{padding-top:0}
+.sticky-head{top:0;background:var(--page)}
+
+/* Botões e cartões com os cantos e sombras da Irrigação */
+.btn{border-radius:12px;border-color:var(--line);box-shadow:var(--shadow-sm)}
+.btn:hover{transform:none;border-color:var(--line-strong);background:var(--surface-2);box-shadow:var(--shadow-sm)}
+.btn-primary{background:linear-gradient(180deg,#10b981,#059669);border-color:transparent;color:#fff;box-shadow:0 1px 2px rgba(5,150,105,.2),0 4px 12px -4px rgba(5,150,105,.45)}
+.btn-primary:hover{background:linear-gradient(180deg,#059669,#047857);color:#fff;filter:none}
+.btn-soft{background:var(--brand-soft);border-color:var(--brand-soft-strong);color:var(--brand-dark)}
+.kpi{border-radius:16px;border-color:var(--line);box-shadow:var(--shadow-sm)}
+.kpi-icon{border-radius:12px}
+
+/* ----- Barra do topo ----- */
+#navbar{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin:0 calc(50% - 50vw);padding:10px max(14px,calc(50vw - 50%));
+  background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%);
+  border-bottom:1px solid rgba(226,232,240,.9);box-shadow:0 6px 24px -18px rgba(15,23,42,.35)}
+#navbar::before{content:'';position:absolute;left:0;right:0;top:0;height:3px;pointer-events:none;
+  background:linear-gradient(90deg,#10b981,#14b8a6 35%,#0ea5e9 70%,#6366f1)}
+.nb-esq{display:flex;align-items:center;gap:10px;min-width:0}
+.nb-menu{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;flex:none;border-radius:12px;color:#64748b;box-shadow:inset 0 0 0 1px rgba(226,232,240,.8)}
+.nb-menu:hover{background:#f1f5f9}
+.nb-menu svg{width:16px;height:16px}
+.nb-logo{width:36px;height:36px;flex:none;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.05)}
+.nb-titulo{min-width:0}
+.nb-titulo h1{margin:0;font-size:15px;font-weight:800;line-height:1.25;letter-spacing:-.02em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nb-dir{display:flex;align-items:center;gap:8px;flex:none}
+#navbar .btn{min-height:38px;font-size:12.5px;padding:0 13px}
+#navbar .btn-icon-only{width:38px;padding:0}
+#navbar .btn-icon-only span{display:none}
+
+/* Locais (Sede / Oásis / Estufa): pílula verde abaixo do título, como o seletor de local da Irrigação */
+#locationTabs.location-tabs{display:inline-flex;flex-wrap:nowrap;gap:2px;margin:3px 0 0;padding:2px;border-radius:999px;
+  background:#ecfdf5;box-shadow:inset 0 0 0 1px rgba(167,243,208,.9)}
+#locationTabs .location-tab{border:0;background:transparent;box-shadow:none;padding:2px 10px;border-radius:999px;
+  font-size:10.5px;font-weight:700;letter-spacing:.02em;color:#047857;transform:none;line-height:1.6}
+#locationTabs .location-tab:hover{background:rgba(255,255,255,.75);color:#065f46;transform:none}
+#locationTabs .location-tab.active{background:linear-gradient(180deg,#10b981,#059669);color:#fff;box-shadow:0 1px 3px rgba(5,150,105,.35)}
+
+/* ----- Abas ----- */
+#navTabs{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding:12px 0 10px}
+#subTabs.sub-tabs{display:flex;gap:4px;margin:0;padding:4px;border:0;border-radius:16px;background:rgba(241,245,249,.8);
+  box-shadow:inset 0 0 0 1px rgba(226,232,240,.7);overflow-x:auto;scrollbar-width:none;min-width:0;flex:0 1 auto}
+#subTabs.sub-tabs::-webkit-scrollbar{display:none}
+#subTabs .sub-tab{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1 0 auto;margin:0;padding:9px 14px;
+  border:0;border-radius:12px;font-size:12px;font-weight:700;color:#64748b;background:transparent;white-space:nowrap;transition:background .2s,color .2s,box-shadow .2s}
+#subTabs .sub-tab svg{width:14px;height:14px;flex:none}
+#subTabs .sub-tab:hover{color:#1e293b;background:rgba(255,255,255,.6)}
+#subTabs .sub-tab.active{background:#fff;color:#047857;box-shadow:0 1px 2px rgba(15,23,42,.06),0 0 0 1px rgba(226,232,240,.8)}
+
+/* Usuário + status, à direita das abas (como na Irrigação) */
+#statusBar{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;margin-left:auto}
+#statusBar .btn{min-height:32px;height:32px;border:0;background:transparent;box-shadow:none;color:#94a3b8;padding:0 8px;border-radius:10px}
+#statusBar .btn-icon-only{width:32px;padding:0}
+#statusBar .btn:hover{background:#f1f5f9;color:#334155}
+#statusBar #userBtn{color:#475569;font-size:12px;font-weight:700;gap:6px}
+#statusBar #userBtn svg{color:#94a3b8}
+#statusBar .cloud-badge{padding:4px 10px;border-radius:999px;background:#fff;border:1px solid #e2e8f0;color:#64748b;font-size:10.5px;font-weight:700;gap:6px}
+#statusBar .cloud-badge .dot{width:7px;height:7px}
+
+/* ----- Tema escuro ----- */
+:root[data-theme="dark"] #navbar{background:rgba(15,23,42,.78);border-bottom-color:rgba(30,41,59,.9)}
+:root[data-theme="dark"] .nb-menu{color:#94a3b8;box-shadow:inset 0 0 0 1px #1e293b}
+:root[data-theme="dark"] .nb-menu:hover{background:#1e293b}
+:root[data-theme="dark"] #locationTabs.location-tabs{background:rgba(16,185,129,.12);box-shadow:inset 0 0 0 1px rgba(16,185,129,.28)}
+:root[data-theme="dark"] #locationTabs .location-tab{color:#6ee7b7}
+:root[data-theme="dark"] #locationTabs .location-tab:hover{background:rgba(255,255,255,.06);color:#a7f3d0}
+:root[data-theme="dark"] #locationTabs .location-tab.active{color:#fff}
+:root[data-theme="dark"] #subTabs.sub-tabs{background:rgba(30,41,59,.6);box-shadow:inset 0 0 0 1px rgba(51,65,85,.6)}
+:root[data-theme="dark"] #subTabs .sub-tab{color:#94a3b8}
+:root[data-theme="dark"] #subTabs .sub-tab:hover{color:#e2e8f0;background:rgba(255,255,255,.05)}
+:root[data-theme="dark"] #subTabs .sub-tab.active{background:#1e293b;color:#6ee7b7;box-shadow:0 0 0 1px #334155}
+:root[data-theme="dark"] #statusBar .btn:hover{background:#1e293b;color:#e2e8f0}
+:root[data-theme="dark"] #statusBar #userBtn{color:#cbd5e1}
+:root[data-theme="dark"] #statusBar .cloud-badge{background:#0f172a;border-color:#1e293b;color:#94a3b8}
+@media(prefers-color-scheme:dark){
+  :root:where(:not([data-theme="light"])) #navbar{background:rgba(15,23,42,.78);border-bottom-color:rgba(30,41,59,.9)}
+  :root:where(:not([data-theme="light"])) .nb-menu{color:#94a3b8;box-shadow:inset 0 0 0 1px #1e293b}
+  :root:where(:not([data-theme="light"])) #locationTabs.location-tabs{background:rgba(16,185,129,.12);box-shadow:inset 0 0 0 1px rgba(16,185,129,.28)}
+  :root:where(:not([data-theme="light"])) #locationTabs .location-tab{color:#6ee7b7}
+  :root:where(:not([data-theme="light"])) #locationTabs .location-tab.active{color:#fff}
+  :root:where(:not([data-theme="light"])) #subTabs.sub-tabs{background:rgba(30,41,59,.6);box-shadow:inset 0 0 0 1px rgba(51,65,85,.6)}
+  :root:where(:not([data-theme="light"])) #subTabs .sub-tab{color:#94a3b8}
+  :root:where(:not([data-theme="light"])) #subTabs .sub-tab.active{background:#1e293b;color:#6ee7b7;box-shadow:0 0 0 1px #334155}
+  :root:where(:not([data-theme="light"])) #statusBar #userBtn{color:#cbd5e1}
+  :root:where(:not([data-theme="light"])) #statusBar .cloud-badge{background:#0f172a;border-color:#1e293b;color:#94a3b8}
+}
+
+/* ----- Celular e tablet: abas viram a barra flutuante de vidro do rodapé ----- */
+@media(max-width:1023px){
+  body{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+  .toast-modern{bottom:calc(92px + env(safe-area-inset-bottom))}
+  #navTabs{padding:8px 0 6px}
+  #statusBar{width:100%;justify-content:space-between;margin:0}
+  #navbar .btn:not(.btn-icon-only) span{display:none}
+  #navbar #logBtn{width:38px;padding:0;justify-content:center}
+  #subTabs.sub-tabs{position:fixed;z-index:60;left:max(12px,calc((100% - 560px) / 2));bottom:calc(12px + env(safe-area-inset-bottom));
+    width:min(calc(100% - 24px),560px);height:64px;padding:5px;gap:2px;border-radius:999px;
+    background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(255,255,255,.5));
+    -webkit-backdrop-filter:blur(22px) saturate(190%);backdrop-filter:blur(22px) saturate(190%);
+    border:1px solid rgba(255,255,255,.65);
+    box-shadow:0 10px 30px rgba(15,23,42,.18),0 2px 6px rgba(15,23,42,.08),inset 0 1px 1px rgba(255,255,255,.9)}
+  #subTabs .sub-tab{flex-direction:column;gap:3px;flex:1 0 auto;min-width:60px;padding:4px 8px;border-radius:999px;
+    font-size:10px;letter-spacing:-.02em;color:#475569}
+  #subTabs .sub-tab svg{width:20px;height:20px}
+  #subTabs .sub-tab:active{transform:scale(.92)}
+  #subTabs .sub-tab[data-tab="resumo"]{--cor:79,70,229}
+  #subTabs .sub-tab[data-tab="cadastro"]{--cor:22,163,74}
+  #subTabs .sub-tab[data-tab="lancamentos"]{--cor:2,132,199}
+  #subTabs .sub-tab[data-tab="compras"]{--cor:217,119,6}
+  #subTabs .sub-tab[data-tab="custos"]{--cor:190,24,93}
+  #subTabs .sub-tab[data-tab="inventario"]{--cor:13,148,136}
+  #subTabs .sub-tab[data-tab="relatorio"]{--cor:71,85,105}
+  #subTabs .sub-tab[data-tab="fornecedores"]{--cor:124,58,237}
+  #subTabs .sub-tab.active{color:rgb(var(--cor));font-weight:800;background:rgba(var(--cor),.14);
+    box-shadow:inset 0 0 0 1px rgba(var(--cor),.22),inset 0 1px 0 rgba(255,255,255,.7),0 3px 10px rgba(var(--cor),.18)}
+  #subTabs .sub-tab.active svg{stroke-width:2.4}
+  :root[data-theme="dark"] #subTabs.sub-tabs{background:linear-gradient(180deg,rgba(30,41,59,.82),rgba(15,23,42,.72));border-color:rgba(51,65,85,.7)}
+  :root[data-theme="dark"] #subTabs .sub-tab{color:#cbd5e1}
+  :root[data-theme="dark"] #subTabs .sub-tab.active{color:rgb(var(--cor));background:rgba(var(--cor),.2);box-shadow:inset 0 0 0 1px rgba(var(--cor),.35)}
+}
+@media(max-width:1023px) and (prefers-color-scheme:dark){
+  :root:where(:not([data-theme="light"])) #subTabs.sub-tabs{background:linear-gradient(180deg,rgba(30,41,59,.82),rgba(15,23,42,.72));border-color:rgba(51,65,85,.7)}
+  :root:where(:not([data-theme="light"])) #subTabs .sub-tab{color:#cbd5e1}
+  :root:where(:not([data-theme="light"])) #subTabs .sub-tab.active{color:rgb(var(--cor));background:rgba(var(--cor),.2);box-shadow:inset 0 0 0 1px rgba(var(--cor),.35)}
+}
+@media(max-width:480px){
+  #navbar{gap:8px}
+  .nb-dir{gap:6px}
+  #navbar .btn-icon-only,#navbar #logBtn{width:34px;min-height:34px}
+  .nb-logo{display:none}
+  .nb-esq{gap:8px}
+  #locationTabs .location-tab{padding:2px 8px}
+}
+@media print{#navbar,#navTabs{display:none!important}}
 </style>
 </head>
 <body class="auth-locked">
@@ -961,36 +1119,46 @@ dialog::backdrop{background:rgba(4,10,7,.55);backdrop-filter:blur(5px)}
 
 <main class="shell" id="shell">
   <div class="sticky-head" id="stickyHead">
-  <header class="topbar">
-    <div class="brand"><div class="brand-mark"><img src="icon.png" alt=""></div><div><h1>Estoque de Produtos</h1><p>Sede · Oásis · Estufa</p></div></div>
-    <div class="topbar-status">
-      <div class="online-bar" id="onlineBar" title="Quem está online agora"></div>
+  <!-- Barra do topo no padrão da Irrigação: vidro claro com um fio de cor no topo -->
+  <header id="navbar">
+    <div class="nb-esq">
+      <a id="btnMenuProjetos" href="../../index.html" class="nb-menu" title="Menu de projetos" aria-label="Menu de projetos" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></a>
+      <img src="../../icone-app.png" alt="" class="nb-logo">
+      <div class="nb-titulo">
+        <h1>Estoque de Produtos</h1>
+        <nav class="location-tabs" id="locationTabs" aria-label="Local do estoque"></nav>
+      </div>
+    </div>
+    <div class="nb-dir">
       <button type="button" class="btn btn-icon-only" id="undoBtn" title="Desfazer (Ctrl+Z)" aria-label="Desfazer última alteração" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></button>
       <button type="button" class="btn btn-icon-only" id="redoBtn" title="Refazer (Ctrl+Y)" aria-label="Refazer alteração desfeita" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/></svg></button>
-      <div class="cloud-badge" id="cloudBadge"><span class="dot"></span><span id="cloudText">Conectando…</span></div>
-      <button type="button" class="btn btn-icon-only" id="zoomFixBtn" hidden aria-label="Corrigir zoom da tela" title="Sua tela parece estar com escala/zoom do Windows fracionado (ex.: 125%, 150%) — isso pode deixar a tabela com colunas levemente desalinhadas. Clique pra ajustar o zoom da página automaticamente e corrigir."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
-      <button type="button" class="btn btn-icon-only" id="themeBtn" title="Alternar tema" aria-label="Alternar entre tema claro e escuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg></button>
-      <button type="button" class="btn btn-icon-only" id="gerenciarDestinosBtn" title="Gerenciar destinos — corrige o nome de um destino já lançado (ex.: nome digitado errado)" aria-label="Gerenciar destinos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></button>
-    </div>
-    <div class="actions">
-      <button type="button" class="btn btn-soft" id="usersBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Usuários</span></button>
-      <button type="button" class="btn btn-soft" id="logBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>Histórico</span></button>
-      <button type="button" class="btn btn-soft" id="helpBtn" title="Como usar o painel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>Ajuda</span></button>
-      <button type="button" class="btn" id="userBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span id="userBtnName">Entrar</span></button>
+      <button type="button" class="btn" id="logBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>Histórico</span></button>
+      <button type="button" class="btn btn-icon-only" id="helpBtn" title="Como usar o painel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>Ajuda</span></button>
     </div>
   </header>
 
-  <nav class="location-tabs" id="locationTabs"></nav>
-  <nav class="sub-tabs" id="subTabs">
-    <button type="button" class="sub-tab" data-tab="resumo">Resumo</button>
-    <button type="button" class="sub-tab active" data-tab="cadastro">Cadastro</button>
-    <button type="button" class="sub-tab" data-tab="lancamentos">Lançamentos</button>
-    <button type="button" class="sub-tab" data-tab="compras">Compras</button>
-    <button type="button" class="sub-tab" data-tab="custos">Custos</button>
-    <button type="button" class="sub-tab" data-tab="inventario">Inventário</button>
-    <button type="button" class="sub-tab" data-tab="relatorio">Relatório</button>
-    <button type="button" class="sub-tab" data-tab="fornecedores">Fornecedores</button>
+  <!-- Abas (no celular viram a barra flutuante do rodapé) + usuário e status -->
+  <div id="navTabs">
+  <nav class="sub-tabs" id="subTabs" aria-label="Seções do estoque">
+    <button type="button" class="sub-tab" data-tab="resumo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg><span>Resumo</span></button>
+    <button type="button" class="sub-tab active" data-tab="cadastro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/></svg><span>Cadastro</span></button>
+    <button type="button" class="sub-tab" data-tab="lancamentos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg><span>Lançamentos</span></button>
+    <button type="button" class="sub-tab" data-tab="compras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg><span>Compras</span></button>
+    <button type="button" class="sub-tab" data-tab="custos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg><span>Custos</span></button>
+    <button type="button" class="sub-tab" data-tab="inventario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg><span>Inventário</span></button>
+    <button type="button" class="sub-tab" data-tab="relatorio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg><span>Relatório</span></button>
+    <button type="button" class="sub-tab" data-tab="fornecedores"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg><span>Fornecedores</span></button>
   </nav>
+  <div id="statusBar">
+    <div class="online-bar" id="onlineBar" title="Quem está online agora"></div>
+    <button type="button" class="btn" id="userBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span id="userBtnName">Entrar</span></button>
+    <div class="cloud-badge" id="cloudBadge"><span class="dot"></span><span id="cloudText">Conectando…</span></div>
+    <button type="button" class="btn btn-icon-only" id="zoomFixBtn" hidden aria-label="Corrigir zoom da tela" title="Sua tela parece estar com escala/zoom do Windows fracionado (ex.: 125%, 150%) — isso pode deixar a tabela com colunas levemente desalinhadas. Clique pra ajustar o zoom da página automaticamente e corrigir."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+    <button type="button" class="btn btn-icon-only" id="gerenciarDestinosBtn" title="Gerenciar destinos — corrige o nome de um destino já lançado (ex.: nome digitado errado)" aria-label="Gerenciar destinos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg></button>
+    <button type="button" class="btn btn-icon-only" id="themeBtn" title="Alternar tema" aria-label="Alternar entre tema claro e escuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg></button>
+    <button type="button" class="btn btn-soft" id="usersBtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Usuários</span></button>
+  </div>
+  </div>
   </div>
 
   <section id="viewResumo" class="view" hidden></section>
@@ -3435,6 +3603,8 @@ function aplicarAbasLiberadas(){
 function switchTab(tab){if(!abaEstoqueLiberada(tab))return;activeTab=tab;renderAll();atualizarPresenca()}
 function renderSubTabs(){
   document.querySelectorAll('#subTabs .sub-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===activeTab));
+  /* Celular: a barra de abas do rodapé rola para os lados — mantém a aba ativa à vista */
+  const abaAtiva=document.querySelector('#subTabs .sub-tab.active');if(abaAtiva&&abaAtiva.scrollIntoView)abaAtiva.scrollIntoView({block:'nearest',inline:'nearest'});
   document.getElementById('viewResumo').hidden=activeTab!=='resumo';
   document.getElementById('viewCadastro').hidden=activeTab!=='cadastro';
   document.getElementById('viewLancamentos').hidden=activeTab!=='lancamentos';
@@ -6588,6 +6758,7 @@ async function carregarPerfil(uid){
 (function iniciarComPainel(){
   const u=API.usuarioAtual();
   if(!u)return;
+  document.getElementById('btnMenuProjetos').hidden=!(API.projetosDoUsuario().length>1);
   currentAuthUser={id:u.id,email:''};
   document.getElementById('bootLoading').hidden=false;
   setCloudStatus('','Entrando…');

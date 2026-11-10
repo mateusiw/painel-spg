@@ -1,4 +1,4 @@
-const CACHE = 'sistema-v121';
+const CACHE = 'sistema-v122';
 
 // Arquivos do próprio app. Este service worker fica na raiz e atende todos os projetos.
 const ARQUIVOS_APP = [
