@@ -355,6 +355,12 @@
           areas: [{ modulo: 'producao_oasis', nome: 'Acesso à Produção', recursos: recursos('producao', [
               ['previsao', 'Previsões', 'calendar-days'], ['produtividade', 'Produtividade', 'layout-dashboard'], ['calendario', 'Calendário', 'list-todo'],
               ['entregas', 'Entregas', 'package'], ['ranking', 'Ranking', 'trophy'], ['analise', 'Análise', 'microscope'], ['comparacao', 'Comparação', 'columns-2']]) }] },
+        { id: 'producao-estufa', nome: 'Produção Estufa', descricao: 'Pepino: previsões, produtividade, descarte, ranking e simulador', icone: 'warehouse', grupo: 'Indicadores', gradiente: 'from-sky-500 to-blue-700',
+          cor: 'bg-sky-50 text-sky-700', caminho: 'projetos/producao-estufa/index.html', local: 'estufa',
+          areas: [{ modulo: 'producao_estufa', nome: 'Acesso à Produção Estufa', recursos: recursos('producao_estufa', [
+              ['previsao', 'Previsões', 'calendar-days'], ['produtividade', 'Produtividade', 'layout-dashboard'], ['bruta', 'Prod. Bruta', 'package'],
+              ['calendario', 'Calendário', 'list-todo'], ['ranking', 'Ranking', 'trophy'], ['analise', 'Análise', 'microscope'],
+              ['comparacao', 'Comparação', 'columns-2'], ['simulador', 'Simulador', 'calculator']]) }] },
         { id: 'programacao', nome: 'Programação de Trabalho', descricao: 'Programação da semana, equipes e produtividade', icone: 'calendar-range', grupo: 'Operação', gradiente: 'from-amber-500 to-orange-600',
           cor: 'bg-amber-50 text-amber-700', caminho: 'projetos/programacao/index.html',
           areas: [{ modulo: 'programacao_semana', nome: 'Acesso à Programação', recursos: recursos('programacao', [
@@ -682,6 +688,11 @@
     // Qualquer pessoa ativa pode ver; guarda no aparelho por 6 h e funciona sem internet com a última cópia.
     async function aniversariosOrganograma(forcarAtualizacao) {
         return buscarComCache('aniversarios', () => sb.rpc('organograma_aniversarios'), forcarAtualizacao ? 0 : 6 * 3600 * 1000);
+    }
+
+    // Produção Estufa: colheitas, previsões e descartes da Estufa (mesmo formato do Apps Script antigo)
+    function producaoEstufaPainel() {
+        return buscarComCache('painel_producao_estufa', () => sb.rpc('producao_estufa_painel'), 0);
     }
 
     async function listarPerfis(forcarAtualizacao) {
@@ -2016,7 +2027,7 @@
 
     window.IrrigacaoAPI = {
         // login
-        login, logout, usuarioAtual, isGestor, isAdmin, nomeUsuario, atualizarPerfil, listarPerfis, aniversariosOrganograma, sessaoValida,
+        login, logout, usuarioAtual, isGestor, isAdmin, nomeUsuario, atualizarPerfil, listarPerfis, aniversariosOrganograma, producaoEstufaPainel, sessaoValida,
         // cliente do banco e fila offline, para os projetos com backend próprio (respeitam as regras de acesso)
         cliente: sb, enfileirar,
         // projetos e módulos

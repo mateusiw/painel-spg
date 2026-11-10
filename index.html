@@ -270,7 +270,7 @@
                     <button type="button" id="faixaAniversario" data-cartao-hoje="0" class="hidden mt-6 w-full text-left foco items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200/70 hover:shadow-md transition">
                         <span class="w-10 h-10 rounded-xl bg-white text-rose-500 flex items-center justify-center shadow-sm shrink-0"><i data-lucide="cake" class="w-5 h-5"></i></span>
                         <span class="min-w-0 flex-1"><span id="faixaAniversarioTitulo" class="block text-sm font-extrabold text-slate-800"></span><span id="faixaAniversarioTexto" class="block text-xs text-slate-600 truncate"></span></span>
-                        <span class="text-xs font-bold text-rose-600 shrink-0">Ver cartão</span>
+                        <span id="faixaAniversarioAcao" class="text-xs font-bold text-rose-600 shrink-0">Ver cartão</span>
                     </button>
 
                     <section id="blocoFavoritos" class="hidden mt-8" aria-labelledby="tituloFavoritos">
@@ -581,6 +581,9 @@
             });
             // Faixa no Início
             const faixa = el('faixaAniversario');
+            if (podeGerarCartao()) { faixa.setAttribute('data-cartao-hoje', '0'); faixa.removeAttribute('data-alertas'); }
+            else { faixa.setAttribute('data-alertas', ''); faixa.removeAttribute('data-cartao-hoje'); }
+            el('faixaAniversarioAcao').textContent = podeGerarCartao() ? 'Ver cartão' : 'Ver';
             faixa.classList.toggle('hidden', !hoje.length);
             faixa.classList.toggle('flex', !!hoje.length);
             if (hoje.length) {
@@ -606,7 +609,7 @@
                 <span class="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${cor}">${esc(iniciais)}</span>
                 <span class="min-w-0 flex-1"><span class="block text-sm font-bold text-slate-800 truncate">${esc(a.nome)}</span><span class="block text-xs text-slate-500 truncate">${esc([a.cargo, a.empresa].filter(Boolean).join(' · '))}</span></span>
                 <span class="text-xs text-right shrink-0">${quando}</span>
-                <button type="button" data-cartao-id="${esc(a.id)}" title="Gerar o cartão de parabéns de ${esc(a.nome)}" class="foco shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold ${a.emDias === 0 && modo !== 'busca' ? 'bg-rose-500 hover:bg-rose-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:border-rose-300 hover:text-rose-600'}"><i data-lucide="image" class="w-3.5 h-3.5"></i>Cartão</button>
+                ${!podeGerarCartao() ? '' : `<button type="button" data-cartao-id="${esc(a.id)}" title="Gerar o cartão de parabéns de ${esc(a.nome)}" class="foco shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold ${a.emDias === 0 && modo !== 'busca' ? 'bg-rose-500 hover:bg-rose-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:border-rose-300 hover:text-rose-600'}"><i data-lucide="image" class="w-3.5 h-3.5"></i>Cartão</button>`}
             </li>`;
         }
 
@@ -630,7 +633,7 @@
                 + (proximos.length ? `<ul class="divide-y divide-slate-100">${proximos.map(x => linhaAniversario(x, 'proximo')).join('')}</ul>` : '<p class="text-sm text-slate-400 py-2">Nenhum aniversário nos próximos dias.</p>')
                 + titulo(`Já passaram (últimos ${DIAS_RECENTES} dias)`)
                 + (recentes.length ? `<ul class="divide-y divide-slate-100">${recentes.map(x => linhaAniversario(x, 'recente')).join('')}</ul>` : '<p class="text-sm text-slate-400 py-2">Nenhum aniversário nos últimos dias.</p>')
-                + (aniversarios.length ? `${titulo('Gerar cartão de qualquer pessoa')}
+                + (aniversarios.length && podeGerarCartao() ? `${titulo('Gerar cartão de qualquer pessoa')}
                     <div class="relative mt-1">
                         <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                         <input type="search" data-busca-aniversario value="${esc(buscaAniversario)}" placeholder="Digite o nome..." aria-label="Buscar pessoa para gerar o cartão" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-[#4a7c3a] focus:border-[#4a7c3a]">
@@ -659,11 +662,13 @@
             icones();
         }
 
-        // Cartão de parabéns (cartao-aniversario.js) de quem faz aniversário hoje
+        // Cartão de parabéns (cartao-aniversario.js): só quem tem o Organograma liberado gera o cartão.
+        // Os demais veem os alertas de aniversário normalmente, sem os botões de cartão.
+        const podeGerarCartao = () => !!window.CartaoAniversario && API.temModulo('organograma');
         const aniversariantesHoje = () => listaAniversarios().filter(a => a.emDias === 0);
         function abrirCartaoHoje(i) {
             const hoje = aniversariantesHoje();
-            if (!hoje.length || !window.CartaoAniversario) return;
+            if (!hoje.length || !podeGerarCartao()) return;
             const janela = document.getElementById('janelaAlertas');
             if (janela) janela.remove();
             alternarGaveta(false);
@@ -674,7 +679,7 @@
             const i = hoje.findIndex(a => String(a.id) === String(id));
             if (i >= 0) { abrirCartaoHoje(i); return; }
             const pessoa = listaAniversarios().find(a => String(a.id) === String(id));
-            if (!pessoa || !window.CartaoAniversario) return;
+            if (!pessoa || !podeGerarCartao()) return;
             const janela = document.getElementById('janelaAlertas');
             if (janela) janela.remove();
             alternarGaveta(false);
@@ -684,7 +689,7 @@
         const chaveCartaoVisto = () => 'spg_cartao_visto_' + ((API.usuarioAtual() || {}).id || '');
         function cartaoAutomatico() {
             const hoje = aniversariantesHoje();
-            if (!hoje.length || document.getElementById('telaMenu').classList.contains('hidden')) return;
+            if (!hoje.length || !podeGerarCartao() || document.getElementById('telaMenu').classList.contains('hidden')) return;
             const marca = isoDia(diaHoje()) + '|' + hoje.map(a => a.id).join(',');
             let visto = '';
             try { visto = localStorage.getItem(chaveCartaoVisto()) || ''; } catch (e) { /* segue */ }
