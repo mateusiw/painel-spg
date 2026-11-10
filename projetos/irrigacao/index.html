@@ -259,6 +259,8 @@
             #dadosBlocosLista > p { grid-column: 1 / -1; }
         }
     </style>
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-900 min-h-screen pb-24 safe-area-bottom">
 
@@ -1611,37 +1613,6 @@
         </div>
     </div>
 
-    <!-- ATUALIZAR APLICATIVO (administrador escolhe: só este aparelho ou todos) -->
-    <div id="atualizarModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden items-center justify-center p-5 backdrop-blur-sm" onclick="if (event.target === this) window.fecharAtualizarModal()">
-        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-center">
-            <div class="w-16 h-16 bg-sky-50 text-sky-600 rounded-full flex items-center justify-center mb-4 mx-auto">
-                <i data-lucide="refresh-cw" class="w-8 h-8"></i>
-            </div>
-            <h3 class="text-xl font-black text-slate-800 mb-1">Atualizar aplicativo</h3>
-            <p id="atualizarModalVersao" class="text-[11px] text-slate-400 font-semibold mb-5"></p>
-            <div class="space-y-2.5 text-left">
-                <button type="button" onclick="window.fecharAtualizarModal(); window.atualizarEsteAparelho()"
-                    class="w-full flex items-center gap-3 p-3.5 rounded-2xl border border-slate-200 hover:border-sky-300 hover:bg-sky-50 transition-colors">
-                    <span class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0"><i data-lucide="smartphone" class="w-5 h-5"></i></span>
-                    <span class="min-w-0">
-                        <span class="block text-sm font-black text-slate-700">Só neste aparelho</span>
-                        <span class="block text-[11px] text-slate-500 leading-snug">Baixa a versão mais nova aqui e limpa o cache.</span>
-                    </span>
-                </button>
-                <button type="button" onclick="window.fecharAtualizarModal(); window.atualizarParaTodos()"
-                    class="w-full flex items-center gap-3 p-3.5 rounded-2xl border border-sky-200 bg-sky-50 hover:bg-sky-100 transition-colors">
-                    <span class="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center shrink-0"><i data-lucide="radio-tower" class="w-5 h-5"></i></span>
-                    <span class="min-w-0">
-                        <span class="block text-sm font-black text-sky-800">Para todos os aparelhos</span>
-                        <span class="block text-[11px] text-sky-700/80 leading-snug">Todos que estão com o app aberto recarregam na hora; quem está sem internet atualiza ao conectar.</span>
-                    </span>
-                </button>
-            </div>
-            <button type="button" onclick="window.fecharAtualizarModal()" class="w-full mt-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-2xl transition-colors text-sm">
-                CANCELAR
-            </button>
-        </div>
-    </div>
 
     <!-- OVERLAY DE SINCRONIZAÇÃO (pré-carrega o histórico ao entrar no modo edição) -->
     <div id="syncOverlay" class="hidden fixed inset-0 bg-white/70 backdrop-blur-sm z-[60] flex-col items-center justify-center gap-3">
@@ -11835,23 +11806,8 @@
 
         const AVISO_SEM_CONEXAO_ATUALIZAR = "Para atualizar o aplicativo é preciso estar com internet. Tente de novo quando tiver sinal.";
 
-        // Botão do topo: o administrador escolhe entre só este aparelho ou todos;
-        // os demais (inclusive outros gestores) atualizam só o próprio aparelho
-        window.atualizarApp = async function() {
-            if (!API.isAdmin()) { window.atualizarEsteAparelho(); return; }
-            const versao = await versaoInstalada();
-            document.getElementById('atualizarModalVersao').innerText = versao ? `Versão instalada: ${versao}` : '';
-            const modal = document.getElementById('atualizarModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        };
-
-        window.fecharAtualizarModal = function() {
-            const modal = document.getElementById('atualizarModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        };
+        // Botão do topo: atualiza este aparelho. "Atualizar todos os aparelhos" fica na Administração do Painel.
+        window.atualizarApp = function() { window.atualizarEsteAparelho(); };
 
         window.atualizarEsteAparelho = async function() {
             const versao = await versaoInstalada();
@@ -11863,84 +11819,7 @@
                 "ATUALIZAR", "refresh-cw");
         };
 
-        // --- ATUALIZAR PARA TODOS (só o administrador) ---
-        // O número da versão publicada fica em app_versao (supabase/forcar_atualizacao.sql).
-        // Cada aparelho guarda o último número que viu; quando o número sobe, recarrega.
-        const CHAVE_VERSAO_FORCADA = 'irrigacao_versao_forcada';
-        let atualizacaoForcadaEmAndamento = false;
-
-        window.atualizarParaTodos = function() {
-            if (!API.isAdmin()) { window.atualizarEsteAparelho(); return; }
-            pendingConfirmCallback = async () => {
-                document.getElementById('syncOverlayTexto').innerText = 'Avisando todos os aparelhos...';
-                window.showSyncOverlay();
-                let versao;
-                try {
-                    versao = await API.forcarAtualizacaoTodos();
-                } catch (err) {
-                    window.hideSyncOverlay();
-                    document.getElementById('syncOverlayTexto').innerText = 'Sincronizando dados...';
-                    window.showAlert("Não foi possível atualizar para todos", err.message);
-                    return;
-                }
-                // Este aparelho já fica com o número novo (não recarrega duas vezes)
-                try { localStorage.setItem(CHAVE_VERSAO_FORCADA, String(versao)); } catch (e) {}
-                atualizacaoForcadaEmAndamento = true;
-                if (!(await executarAtualizacao('Atualizando o aplicativo...'))) {
-                    atualizacaoForcadaEmAndamento = false;
-                    window.showAlert("Aviso enviado", "Os outros aparelhos vão atualizar. Este aparelho perdeu a conexão: toque em atualizar de novo quando tiver sinal.");
-                }
-            };
-            window.showConfirmModal("Atualizar para todos?",
-                "Todos os aparelhos com o app aberto vão recarregar em alguns segundos, já na versão nova. Quem estiver sem internet ou com o app fechado atualiza assim que abrir.\n\nOs registros e os dados ainda não enviados de cada aparelho continuam salvos.",
-                "ATUALIZAR TODOS", "radio-tower");
-        };
-
-        // Recebeu um número de versão (ao abrir, em tempo real ou ao voltar para o app)
-        function aplicarVersaoForcada(versao, quem) {
-            if (versao == null || isNaN(versao) || atualizacaoForcadaEmAndamento) return;
-            let vista = null;
-            try { vista = localStorage.getItem(CHAVE_VERSAO_FORCADA); } catch (e) {}
-            // Primeira vez neste aparelho: já abriu com a versão atual, só guarda o número
-            if (vista === null || isNaN(Number(vista))) {
-                try { localStorage.setItem(CHAVE_VERSAO_FORCADA, String(versao)); } catch (e) {}
-                return;
-            }
-            if (versao <= Number(vista)) return;
-            atualizacaoForcadaEmAndamento = true;
-            let segundos = 5;
-            const overlayTexto = document.getElementById('syncOverlayTexto');
-            const contar = () => { overlayTexto.innerText = `${quem || 'O gestor'} publicou uma nova versão do aplicativo.\nAtualizando em ${segundos}s...`; };
-            contar();
-            window.showSyncOverlay();
-            const timer = setInterval(async () => {
-                segundos--;
-                if (segundos > 0) { contar(); return; }
-                clearInterval(timer);
-                try { localStorage.setItem(CHAVE_VERSAO_FORCADA, String(versao)); } catch (e) {}
-                if (!(await executarAtualizacao('Atualizando o aplicativo...'))) {
-                    // Sem internet agora: tenta de novo quando conectar
-                    try { localStorage.setItem(CHAVE_VERSAO_FORCADA, String(vista)); } catch (e) {}
-                    atualizacaoForcadaEmAndamento = false;
-                }
-            }, 1000);
-        }
-
-        async function conferirVersaoForcada() {
-            if (!API.usuarioAtual() || atualizacaoForcadaEmAndamento) return;
-            const v = await API.versaoForcada();
-            if (v) aplicarVersaoForcada(v.versao, v.nome);
-        }
-
-        function iniciarVersaoForcada() {
-            API.assinarVersaoApp(aplicarVersaoForcada);
-            conferirVersaoForcada();
-        }
-
-        // Reserva do tempo real: confere ao voltar para o app, ao voltar a internet e a cada 5 minutos
-        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') conferirVersaoForcada(); });
-        window.addEventListener('online', () => { if (API.usuarioAtual()) iniciarVersaoForcada(); });
-        setInterval(() => { if (document.visibilityState === 'visible') conferirVersaoForcada(); }, 5 * 60 * 1000);
+        // O aviso de "Atualizar todos os aparelhos" fica no supabase-api.js e vale para todo o Painel.
 
         // --- INSTALAR O APLICATIVO ---
         // Android/Chrome avisa que dá para instalar (beforeinstallprompt); no iPhone o Safari
@@ -12187,7 +12066,6 @@
             window.switchTab('registro');
             renderList();
             iniciarTempoReal();
-            iniciarVersaoForcada();
             carregarBlocosRegistro();
             window.updateProgLockUI();
             API.listarCulturas().then(c => { atualizarApelidos(c); renderList(); renderBlocosRegistro(); }).catch(() => {});

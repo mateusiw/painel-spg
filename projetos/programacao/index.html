@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -466,6 +466,30 @@
         #landscapeModeExitBtn.active { display: flex; }
 
     </style>
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
+    <script src="../../barra-abas.js"></script>
+    <style>
+        /* ===== MESMO LAYOUT DA IRRIGAÇÃO: topo de vidro, abas no topo (computador) e barra flutuante (celular) ===== */
+        #appSidebar { display: none !important; }
+        #appShell { display: block !important; }
+        #topoProg {
+            position: sticky; top: 0; z-index: 40;
+            background: rgba(255,255,255,0.78);
+            -webkit-backdrop-filter: blur(18px) saturate(180%); backdrop-filter: blur(18px) saturate(180%);
+            border-bottom: 1px solid rgba(226,232,240,0.9);
+            box-shadow: 0 6px 24px -18px rgba(15,23,42,0.35);
+        }
+        #topoProg::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none; background: linear-gradient(90deg, #10b981, #14b8a6 35%, #0ea5e9 70%, #6366f1); }
+        #abasProg { scrollbar-width: none; }
+        #abasProg::-webkit-scrollbar { display: none; }
+        #abasProg > button { flex: 1 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; padding: .6rem .85rem; border-radius: .75rem; font-size: .75rem; font-weight: 700; color: #64748b; white-space: nowrap; transition: background-color .15s, color .15s; }
+        #abasProg > button svg { width: 14px; height: 14px; }
+        #abasProg > button:hover { color: #1e293b; background: rgba(255,255,255,.6); }
+        #abasProg > button.aba-ativa { color: rgb(var(--cor)); background: #fff; font-weight: 800; box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 0 0 1px rgba(226,232,240,.85); }
+        @media (max-width: 1023px) { #abasProgLinha { display: none; } }
+        body:has(.landscape-mode-backdrop.active) .barra-abas { display: none !important; }
+    </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen pb-20 select-none">
 
@@ -483,6 +507,24 @@
     <button type="button" id="landscapeModeExitBtn" onclick="exitLandscapeMode()">
         <i data-lucide="x" class="w-4 h-4"></i> Sair do Modo Paisagem
     </button>
+
+    <!-- TOPO NO PADRÃO DA IRRIGAÇÃO (o menu lateral antigo continua no código, escondido,
+         porque é ele que guarda quais abas cada pessoa pode ver e qual está aberta) -->
+    <header id="topoProg" class="print-hide">
+        <div class="px-4 sm:px-6 py-2.5 flex items-center gap-2.5">
+            <a id="topoMenuProjetos" href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="hidden w-8 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>
+            <img src="../../icone-app.png" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
+            <div class="min-w-0 flex-1">
+                <p class="text-sm sm:text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 truncate">Programação de Trabalho</p>
+                <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">SPG Sede · equipes, serviços e produtividade</p>
+            </div>
+            <span id="topoUsuario" class="hidden sm:block text-xs font-bold text-slate-500 truncate max-w-[12rem]"></span>
+            <button type="button" onclick="sairDoSistema()" title="Sair" aria-label="Sair" class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 shrink-0"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+        </div>
+        <div id="abasProgLinha" class="px-4 sm:px-6 pb-2.5">
+            <div id="abasProg" role="tablist" aria-label="Abas da Programação" class="flex gap-1 overflow-x-auto p-1 bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70"></div>
+        </div>
+    </header>
 
     <!-- SHELL DO DASHBOARD: MENU LATERAL + CONTEÚDO -->
     <div id="appShell" class="flex">
@@ -8688,6 +8730,46 @@
             jumpNovaProgWizardToDayServices(dayId);
             showMessageModal('Carregado', 'Programação carregada no assistente. Faça as alterações e envie novamente.', 'success');
         }
+    </script>
+    <script>
+    // Abas no topo (computador) e barra flutuante (celular), sempre iguais ao menu lateral antigo
+    (function () {
+        'use strict';
+        const ICONES = { visaogeral: 'layout-dashboard', programacao: 'clipboard-list', equipes: 'users-round', produtividade: 'trending-up', caixas: 'package-check', servicos: 'wrench', calendario: 'calendar', relatorios: 'bar-chart-3', historico: 'history' };
+        const NOMES_CURTOS = { visaogeral: 'Visão Geral', produtividade: 'Produtividade', programacao: 'Programação' };
+        const CORES = { visaogeral: '2, 132, 199', programacao: '217, 119, 6', equipes: '124, 58, 237', produtividade: '22, 163, 74', caixas: '13, 148, 136', servicos: '71, 85, 105', calendario: '234, 88, 12', relatorios: '79, 70, 229', historico: '100, 116, 139' };
+        const menu = document.getElementById('appSidebar');
+        const abasPc = document.getElementById('abasProg');
+        const abas = () => [...menu.querySelectorAll('.dash-nav-item[data-view]')].filter(b => b.style.display !== 'none').map(b => ({
+            id: b.dataset.view,
+            nome: NOMES_CURTOS[b.dataset.view] || (b.querySelector('.dash-sidebar-label') || b).textContent.trim(),
+            icone: ICONES[b.dataset.view] || 'circle',
+            cor: CORES[b.dataset.view],
+            ativa: b.classList.contains('active')
+        }));
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const abrir = id => { switchDashboardView(id); window.scrollTo({ top: 0 }); };
+
+        function montarPc() {
+            abasPc.innerHTML = abas().map(a => `<button type="button" role="tab" data-aba="${esc(a.id)}" aria-selected="${a.ativa}" style="--cor: ${a.cor}" class="${a.ativa ? 'aba-ativa' : ''}"><i data-lucide="${a.icone}"></i>${esc(a.nome)}</button>`).join('');
+            const linkMenu = document.getElementById('btnMenuProjetos');
+            const topoMenu = document.getElementById('topoMenuProjetos');
+            const varios = linkMenu && linkMenu.style.display !== 'none';
+            topoMenu.classList.toggle('hidden', !varios);
+            topoMenu.classList.toggle('flex', varios);
+            document.getElementById('topoUsuario').textContent = window.IrrigacaoAPI ? IrrigacaoAPI.nomeUsuario() : '';
+            if (window.lucide) lucide.createIcons();
+        }
+        abasPc.addEventListener('click', e => { const b = e.target.closest('[data-aba]'); if (b) abrir(b.dataset.aba); });
+
+        const barra = BarraAbas.criar({ abas, abrir, rotulo: 'Abas da Programação' });
+        let agendado = false;
+        const atualizar = () => { if (agendado) return; agendado = true; requestAnimationFrame(() => { agendado = false; montarPc(); barra.atualizar(); }); };
+        // Aba ativa, abas liberadas e o link do menu de projetos vêm do menu antigo
+        new MutationObserver(lista => { if (lista.some(m => m.target.classList && m.target.classList.contains('dash-nav-item'))) atualizar(); })
+            .observe(menu, { subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+        montarPc();
+    })();
     </script>
 </body>
 </html>

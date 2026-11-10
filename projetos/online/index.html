@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Usuários online | Painel SPG</title>
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" type="image/png" href="../../favicon.png">
+    <link rel="apple-touch-icon" href="../../icone-app.png">
+    <link rel="manifest" href="../../manifest.json">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../../supabase-config.js"></script>
+    <script src="../../supabase-api.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        #topo {
+            background: rgba(255,255,255,0.78);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            backdrop-filter: blur(18px) saturate(180%);
+            border-bottom: 1px solid rgba(226,232,240,0.9);
+        }
+        #topo::before {
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none;
+            background: linear-gradient(90deg, #10b981, #14b8a6 35%, #0ea5e9 70%, #6366f1);
+        }
+        .pulso { position: relative; }
+        .pulso::after { content: ''; position: absolute; inset: -3px; border-radius: 999px; background: rgba(16,185,129,.35); animation: pulso 1.8s ease-out infinite; }
+        @keyframes pulso { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+        @media (prefers-reduced-motion: reduce) { .pulso::after { animation: none; } }
+    </style>
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <header id="topo" class="sticky top-0 z-30 px-4 py-2.5 flex items-center gap-3">
+        <a href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>
+        <img src="../../icone-app.png" alt="" class="w-9 h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight truncate">Usuários online</h1>
+            <p id="atualizadoEm" class="text-[10px] font-semibold text-slate-400 truncate" aria-live="polite">Carregando...</p>
+        </div>
+        <button type="button" id="btnAtualizar" title="Atualizar agora" class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-slate-100/80 ring-1 ring-slate-200/70 text-slate-600 hover:bg-white shrink-0"><i data-lucide="refresh-cw" class="w-4 h-4"></i><span class="hidden sm:inline">Atualizar</span></button>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 space-y-6 pb-16">
+        <section aria-label="Resumo" class="grid grid-cols-3 gap-3">
+            <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                <p class="text-[11px] font-bold text-slate-500">Online agora</p>
+                <p id="resumoOnline" class="text-2xl font-extrabold mt-1 tabular-nums text-emerald-700">–</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                <p class="text-[11px] font-bold text-slate-500">Usaram hoje</p>
+                <p id="resumoHoje" class="text-2xl font-extrabold mt-1 tabular-nums">–</p>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-2xl p-4">
+                <p class="text-[11px] font-bold text-slate-500">Aparelhos agora</p>
+                <p id="resumoAparelhos" class="text-2xl font-extrabold mt-1 tabular-nums">–</p>
+            </div>
+        </section>
+
+        <section aria-labelledby="tituloAgora">
+            <h2 id="tituloAgora" class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Online agora</h2>
+            <div id="listaOnline" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+        <section aria-labelledby="tituloHoje">
+            <h2 id="tituloHoje" class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3">Usaram mais cedo hoje</h2>
+            <div id="listaHoje" class="bg-white border border-slate-200 rounded-2xl divide-y divide-slate-100 overflow-hidden"></div>
+        </section>
+    </main>
+
+    <script src="online.js"></script>
+</body>
+</html>

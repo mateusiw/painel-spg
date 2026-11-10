@@ -9,7 +9,7 @@
     <link rel="shortcut icon" type="image/png" href="icone.png">
     <link rel="apple-touch-icon" href="icone.png">
     
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#ffffff">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -51,20 +51,26 @@
     <script src="../../supabase-api.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f8fafc; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f8fafc; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .animate-fade-in-down { animation: fadeInDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
         
-        .tab-btn { transition: all 0.3s ease; position: relative; white-space: nowrap; flex-shrink: 0; cursor: grab; }
+        .tab-btn { transition: all 0.3s ease; position: relative; white-space: nowrap; flex-shrink: 0; cursor: default; }
         .tab-btn::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 3px; background-color: #0ea5e9; transform: scaleX(0); transition: transform 0.3s ease; border-radius: 3px 3px 0 0; }
         .tab-btn.active::after { transform: scaleX(1); }
         .tab-btn.active { color: #0f172a; font-weight: 800; }
         .tab-btn.inactive { color: #64748b; font-weight: 600; }
         .tab-btn.inactive:hover { color: #334155; }
-        .tab-btn:active { cursor: grabbing; }
+        /* Mãozinha de arrastar só no modo "Editar ordem" */
+        #tabsBar.editando-abas .tab-btn[data-tab] { cursor: grab; box-shadow: inset 0 0 0 1px rgba(148,163,184,.45); }
+        #tabsBar.editando-abas .tab-btn[data-tab]:active { cursor: grabbing; }
+        #tab-reset-order { display: none; }
+        #tabsBar.editando-abas #tab-reset-order { display: block; }
+        #btnEditarAbas { margin-left: auto; }
+        #tabDragHint { margin-left: auto; }
+        #tabDragHint ~ #btnEditarAbas { margin-left: 0; }
         .tab-btn.dragging { opacity: 0.35; }
         .tab-btn.drag-over-left { box-shadow: inset 3px 0 0 0 #0ea5e9; }
         .tab-btn.drag-over-right { box-shadow: inset -3px 0 0 0 #0ea5e9; }
@@ -212,44 +218,149 @@
             svg.lucide { display: none !important; }
             canvas, .chart-container { display: none !important; }
         }
+
+        /* ===== MESMO VISUAL DA IRRIGAÇÃO ===== */
+        #mainNavbar {
+            background: rgba(255,255,255,0.78);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            backdrop-filter: blur(18px) saturate(180%);
+            border-bottom: 1px solid rgba(226,232,240,0.9);
+            box-shadow: 0 6px 24px -18px rgba(15,23,42,0.35);
+        }
+        #mainNavbar::before {
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none;
+            background: linear-gradient(90deg, #10b981, #14b8a6 35%, #0ea5e9 70%, #6366f1);
+        }
+        .acao-topo { display: flex; align-items: center; gap: .4rem; padding: .5rem .75rem; border-radius: .75rem; font-size: .75rem; font-weight: 700; color: #475569; background: rgba(241,245,249,.8); box-shadow: inset 0 0 0 1px rgba(226,232,240,.8); transition: background-color .15s, color .15s; }
+        .acao-topo:hover { background: #fff; color: #0f172a; }
+        .acao-topo svg { width: 16px; height: 16px; }
+
+        /* Cor de cada aba (a aba ativa usa a sua) */
+        [data-tab="previsao"], [data-aba="previsao"] { --cor: 2, 132, 199; }
+        [data-tab="produtividade"], [data-aba="produtividade"] { --cor: 22, 163, 74; }
+        [data-tab="calendario"], [data-aba="calendario"] { --cor: 217, 119, 6; }
+        [data-tab="entregas"], [data-aba="entregas"] { --cor: 13, 148, 136; }
+        [data-tab="ranking"], [data-aba="ranking"] { --cor: 234, 88, 12; }
+        [data-tab="analise"], [data-aba="analise"] { --cor: 79, 70, 229; }
+        [data-tab="comparacao"], [data-aba="comparacao"] { --cor: 51, 65, 85; }
+
+        /* Abas no computador: barra segmentada, como na Irrigação */
+        #tabsBarWrapper { background: #f8fafc; border-bottom: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+        #tabsBarWrapper > div { padding-top: .75rem; padding-bottom: .5rem; }
+        #tabsBar { gap: 4px !important; padding: 4px !important; background: rgba(241,245,249,.85); border-radius: 1rem; box-shadow: inset 0 0 0 1px rgba(226,232,240,.75); }
+        #tabsBar .tab-btn { padding: .6rem 1rem !important; border-radius: .75rem; font-size: .75rem; text-transform: none; letter-spacing: 0; gap: .4rem; }
+        #tabsBar .tab-btn svg { width: 14px; height: 14px; }
+        #tabsBar .tab-btn::after { display: none; }
+        #tabsBar .tab-btn.inactive { color: #64748b !important; font-weight: 700; }
+        #tabsBar .tab-btn.inactive:hover { color: #1e293b !important; background: rgba(255,255,255,.6); }
+        #tabsBar .tab-btn.active { color: rgb(var(--cor)) !important; background: #fff; font-weight: 800; box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 0 0 1px rgba(226,232,240,.85); }
+        #tab-reset-order { padding: .5rem !important; }
+
+        /* Barra flutuante de abas no celular (a mesma "liquid glass" da Irrigação) */
+        #barraAbas, #maisAbas { display: none; }
+        @media (max-width: 1023px) {
+            #tabsBarWrapper { display: none; }
+            body { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+            #barraAbas {
+                display: flex; position: fixed; z-index: 45;
+                left: max(12px, calc((100% - 460px) / 2)); bottom: calc(12px + env(safe-area-inset-bottom));
+                width: min(calc(100% - 24px), 460px); height: 64px;
+                padding: 5px; gap: 2px; overflow: hidden; border-radius: 999px;
+                background: linear-gradient(180deg, rgba(255,255,255,0.62), rgba(255,255,255,0.42));
+                -webkit-backdrop-filter: blur(22px) saturate(190%); backdrop-filter: blur(22px) saturate(190%);
+                border: 1px solid rgba(255,255,255,0.65);
+                box-shadow: 0 10px 30px rgba(15,23,42,0.18), 0 2px 6px rgba(15,23,42,0.08), inset 0 1px 1px rgba(255,255,255,0.9), inset 0 -1px 1px rgba(255,255,255,0.35);
+                transition: width .42s cubic-bezier(.32,.72,0,1), height .42s cubic-bezier(.32,.72,0,1), transform .3s ease, opacity .3s ease;
+            }
+            #barraAbas::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(180deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 45%); opacity: .6; }
+            #barraAbas > button:not(#barraTopo) {
+                /* Largura pelo próprio nome (+ folga igual), como na Irrigação: Produtividade cabe inteiro */
+                position: relative; flex: 1 1 auto; min-width: 0; padding: 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+                border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: -0.02em; color: #475569; white-space: nowrap;
+                transition: opacity .18s ease, transform .25s ease, background-color .25s ease, color .25s ease;
+            }
+            #barraAbas > button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+            #barraAbas > button:not(#barraTopo):active { transform: scale(.92); }
+            #barraAbas > button svg { width: 21px; height: 21px; }
+            #barraAbas > button.aba-ativa:not(#barraTopo) {
+                color: rgb(var(--cor)); font-weight: 800; background: rgba(var(--cor), .14);
+                box-shadow: inset 0 0 0 1px rgba(var(--cor), .22), inset 0 1px 0 rgba(255,255,255,.7), 0 3px 10px rgba(var(--cor), .18);
+            }
+            #barraAbas > button.aba-ativa svg { stroke-width: 2.4; }
+            #barraTopo { display: flex; align-items: center; justify-content: center; position: absolute; left: 0; top: 0; width: 52px; height: 52px; border-radius: 999px; color: #0f172a; opacity: 0; pointer-events: none; transform: scale(.6); transition: opacity .25s ease, transform .35s cubic-bezier(.32,.72,0,1); }
+            #barraTopo svg { width: 22px; height: 22px; }
+            #barraAbas.recolhida { width: 52px; height: 52px; }
+            #barraAbas.recolhida > button:not(#barraTopo) { opacity: 0; transform: scale(.7); pointer-events: none; }
+            #barraAbas.recolhida #barraTopo { opacity: 1; pointer-events: auto; transform: scale(1); transition-delay: .08s; }
+            #barraAbas.teclado { transform: translateY(160%); opacity: 0; pointer-events: none; }
+
+            /* "Mais": as outras abas */
+            #maisAbas:not(.hidden) { display: block; position: fixed; inset: 0; z-index: 44; background: rgba(15,23,42,.25); }
+            #maisAbasLista { position: absolute; right: max(12px, calc((100% - 460px) / 2)); bottom: calc(86px + env(safe-area-inset-bottom)); width: 220px; padding: 6px; border-radius: 20px; background: rgba(255,255,255,.96); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 18px 40px rgba(15,23,42,.22); animation: maisAbrir .16s ease-out; }
+            @keyframes maisAbrir { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+            #maisAbasLista button { display: flex; width: 100%; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 14px; font-size: 14px; font-weight: 700; color: #334155; }
+            #maisAbasLista button svg { width: 18px; height: 18px; color: rgb(var(--cor)); }
+            #maisAbasLista button.aba-ativa { background: rgba(var(--cor), .12); color: rgb(var(--cor)); }
+
+            /* Filtros recolhidos num resumo; abertos, dois campos por linha */
+            .filtros-card { padding: 0 !important; overflow: visible; }
+            .filtros-card > .flex { padding: 0 1rem 1rem; gap: .65rem !important; }
+            .filtros-card.filtros-fechado > :not(.filtros-topo) { display: none !important; }
+            .filtros-card .flex-auto { flex: 1 1 calc(50% - .4rem) !important; width: auto !important; min-width: 0 !important; max-width: none !important; }
+            .filtros-card > .flex > .flex-auto:first-child { flex-basis: 100% !important; }
+            .filtros-card label.uppercase { margin-bottom: .3rem !important; }
+
+            /* Tabelas mais compactas */
+            #mainContent table td, #mainContent table th { padding: .55rem .7rem !important; }
+        }
+        .filtros-topo { display: none; }
+        @media (max-width: 1023px) {
+            .filtros-topo { display: flex; width: 100%; align-items: center; gap: .75rem; padding: .85rem 1rem; text-align: left; }
+            .filtros-topo .filtros-icone { width: 2.25rem; height: 2.25rem; border-radius: .75rem; background: #f0fdf4; color: #16a34a; display: flex; align-items: center; justify-content: center; flex: none; }
+            .filtros-topo .filtros-icone svg { width: 18px; height: 18px; }
+            .filtros-topo .filtros-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+            .filtros-topo b { font-size: .8rem; font-weight: 800; color: #1e293b; }
+            .filtros-topo small { font-size: .7rem; font-weight: 600; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .filtros-topo .filtros-seta { width: 18px; height: 18px; color: #94a3b8; transition: transform .2s; flex: none; }
+            .filtros-card:not(.filtros-fechado) .filtros-seta { transform: rotate(180deg); }
+            .filtros-card:not(.filtros-fechado) .filtros-topo { border-bottom: 1px solid #f1f5f9; margin-bottom: .85rem; }
+        }
+        @media (min-width: 1024px) { #barraAbas, #maisAbas, #btnAcoesCel, #menuAcoesCel { display: none !important; } }
     </style>
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
 </head>
 <body class="text-slate-800 min-h-screen bg-slate-50">
 
     <!-- CONTEÚDO PRINCIPAL DO SISTEMA (Oculto até o login) -->
     <div id="appContent" class="hidden pb-10">
         <!-- Navbar -->
-        <div id="mainNavbar" class="print-hide bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-4 sm:px-6 py-4 flex justify-between items-center sticky top-0 z-40">
-            <div class="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                <a id="btnMenuProjetos" href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="hidden w-10 h-10 sm:w-11 sm:h-11 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 border border-slate-200"><i data-lucide="house" class="w-5 h-5"></i></a>
-                <div class="w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-xl bg-gradient-to-tr from-brand-500 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
-                    <i data-lucide="bar-chart-3" class="w-5 h-5 text-white"></i>
-                </div>
-                <div class="truncate">
-                    <h1 class="text-sm sm:text-base font-black text-slate-900 tracking-tight truncate">SPG OÁSIS</h1>
-                    <p class="text-[9px] sm:text-[11px] text-slate-500 font-bold uppercase tracking-wider truncate">Gestão de Cultivos e Produtividade</p>
+        <div id="mainNavbar" class="print-hide text-slate-900 px-4 sm:px-6 py-2.5 flex justify-between items-center gap-3 sticky top-0 z-40">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <a id="btnMenuProjetos" href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="hidden w-8 h-8 sm:w-9 sm:h-9 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>
+                <img src="../../icone-app.png" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
+                <div class="min-w-0">
+                    <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 truncate">Produção Oásis</h1>
+                    <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">Gestão de cultivos e produtividade</p>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <button onclick="logout()" title="Sair" aria-label="Sair" class="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 hover:bg-slate-100 text-slate-500 rounded-xl text-xs font-bold transition-all">
-                    <i data-lucide="log-out" class="w-4 h-4 sm:hidden"></i><span class="hidden sm:inline">Sair</span>
-                </button>
-                <button onclick="openHelpModal()" title="Como usar o painel: abas, gráficos, KPIs e cálculos" class="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200">
-                    <i data-lucide="help-circle" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">Ajuda</span>
-                </button>
-                <button onclick="openWidgetCustomizer()" title="Escolher quais gráficos e tabelas aparecem para você" class="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200">
-                    <i data-lucide="layout-grid" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">Personalizar</span>
-                </button>
-                <button onclick="toggleChartLabels()" id="toggleLabelsBtn" title="Mostrar/ocultar os rótulos numéricos dos gráficos" class="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200">
-                    <i data-lucide="eye" id="toggleLabelsIcon" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline" id="toggleLabelsText">Rótulos</span>
-                </button>
-                <button onclick="prepareAndPrint()" class="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200">
-                    <i data-lucide="printer" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">Imprimir Relatório</span>
-                </button>
+            <div id="acoesPc" class="hidden lg:flex items-center gap-2 shrink-0">
+                <button type="button" onclick="openHelpModal()" title="Como usar o painel: abas, gráficos, KPIs e cálculos" class="acao-topo"><i data-lucide="help-circle"></i>Ajuda</button>
+                <button type="button" onclick="openWidgetCustomizer()" title="Escolher quais gráficos e tabelas aparecem para você" class="acao-topo"><i data-lucide="layout-grid"></i>Personalizar</button>
+                <button type="button" onclick="toggleChartLabels()" id="toggleLabelsBtn" title="Mostrar/ocultar os rótulos numéricos dos gráficos" class="acao-topo"><i data-lucide="eye" id="toggleLabelsIcon"></i><span id="toggleLabelsText">Rótulos</span></button>
+                <button type="button" onclick="prepareAndPrint()" title="Imprimir relatório" class="acao-topo"><i data-lucide="printer"></i>Imprimir</button>
+                <button type="button" onclick="logout()" title="Sair" aria-label="Sair" class="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+            </div>
+            <div class="relative lg:hidden shrink-0">
+                <button type="button" id="btnAcoesCel" aria-haspopup="menu" aria-expanded="false" aria-controls="menuAcoesCel" title="Mais opções" class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-600 bg-slate-100/80 ring-1 ring-slate-200/70"><i data-lucide="ellipsis" class="w-5 h-5"></i></button>
+                <div id="menuAcoesCel" role="menu" class="hidden absolute right-0 top-full mt-2 w-60 bg-white rounded-2xl shadow-xl shadow-slate-900/10 ring-1 ring-slate-200 p-1.5 z-50">
+                    <button type="button" role="menuitem" data-acao-cel="openHelpModal" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50"><i data-lucide="help-circle" class="w-4 h-4 text-slate-400"></i>Ajuda</button>
+                    <button type="button" role="menuitem" data-acao-cel="openWidgetCustomizer" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50"><i data-lucide="layout-grid" class="w-4 h-4 text-slate-400"></i>Personalizar gráficos</button>
+                    <button type="button" role="menuitem" data-acao-cel="toggleChartLabels" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50"><i data-lucide="tag" class="w-4 h-4 text-slate-400"></i><span data-rotulos-cel>Números nos gráficos</span></button>
+                    <button type="button" role="menuitem" data-acao-cel="prepareAndPrint" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50"><i data-lucide="printer" class="w-4 h-4 text-slate-400"></i>Imprimir relatório</button>
+                    <div class="my-1 border-t border-slate-100"></div>
+                    <button type="button" role="menuitem" data-acao-cel="logout" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50"><i data-lucide="log-out" class="w-4 h-4"></i>Sair</button>
+                </div>
             </div>
         </div>
 
@@ -257,34 +368,37 @@
         <div id="tabsBarWrapper" class="print-hide sticky z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/60">
             <div class="container mx-auto px-4 md:px-6 max-w-[1800px]">
                 <div id="tabsBar" class="flex items-center gap-6 sm:gap-8 overflow-x-auto hide-scrollbar pt-1">
-                    <button draggable="true" data-tab="previsao" onclick="switchTab('previsao')" id="tab-previsao" class="tab-btn active pb-3 text-sm uppercase tracking-wider flex items-center gap-2" title="Arraste para reordenar as abas">
+                    <button draggable="false" data-tab="previsao" onclick="switchTab('previsao')" id="tab-previsao" class="tab-btn active pb-3 text-sm uppercase tracking-wider flex items-center gap-2" >
                         <i data-lucide="calendar-days" class="w-4 h-4"></i> Previsões
                     </button>
-                    <button draggable="true" data-tab="produtividade" onclick="switchTab('produtividade')" id="tab-produtividade" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2" title="Arraste para reordenar as abas">
+                    <button draggable="false" data-tab="produtividade" onclick="switchTab('produtividade')" id="tab-produtividade" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2" >
                         <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Produtividade
                     </button>
-                    <button draggable="true" data-tab="calendario" onclick="switchTab('calendario')" id="tab-calendario" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2" title="Arraste para reordenar as abas">
+                    <button draggable="false" data-tab="calendario" onclick="switchTab('calendario')" id="tab-calendario" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2" >
                         <i data-lucide="list-todo" class="w-4 h-4"></i> Calendário
                     </button>
-                    <button draggable="true" data-tab="entregas" onclick="switchTab('entregas')" id="tab-entregas" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2" title="Arraste para reordenar as abas">
+                    <button draggable="false" data-tab="entregas" onclick="switchTab('entregas')" id="tab-entregas" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2" >
                         <i data-lucide="truck" class="w-4 h-4"></i> Entregas
                     </button>
-                    <button draggable="true" data-tab="ranking" onclick="switchTab('ranking')" id="tab-ranking" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2" title="Arraste para reordenar as abas">
+                    <button draggable="false" data-tab="ranking" onclick="switchTab('ranking')" id="tab-ranking" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2" >
                         <i data-lucide="trophy" class="w-4 h-4"></i> Ranking
                     </button>
-                    <button draggable="true" data-tab="analise" onclick="switchTab('analise')" id="tab-analise" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2 text-indigo-600" title="Arraste para reordenar as abas">
+                    <button draggable="false" data-tab="analise" onclick="switchTab('analise')" id="tab-analise" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2 text-indigo-600" >
                         <i data-lucide="microscope" class="w-4 h-4"></i> Análise Avançada
                     </button>
-                    <button draggable="true" data-tab="comparacao" onclick="switchTab('comparacao')" id="tab-comparacao" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2 text-brand-600" title="Arraste para reordenar as abas">
+                    <button draggable="false" data-tab="comparacao" onclick="switchTab('comparacao')" id="tab-comparacao" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2 text-brand-600" >
                         <i data-lucide="columns" class="w-4 h-4"></i> Comparação
                     </button>
                     <div id="tabDragHint" class="ml-auto shrink-0 flex items-center gap-2 bg-brand-50 text-brand-600 border border-brand-100 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap">
                         <i data-lucide="move-horizontal" class="w-3.5 h-3.5 shrink-0"></i>
-                        <span>Arraste as abas para reordenar do seu jeito</span>
+                        <span>Use "Editar ordem" para arrumar as abas do seu jeito</span>
                         <button type="button" onclick="dismissTabDragHint()" title="Fechar (volta a aparecer da próxima vez)" class="shrink-0 text-brand-400 hover:text-brand-700 transition-colors">
                             <i data-lucide="x" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
+                    <button type="button" id="btnEditarAbas" onclick="alternarEdicaoAbas()" aria-pressed="false" title="Mudar a ordem das abas" class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-white/70 transition-colors">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i><span>Editar ordem</span>
+                    </button>
                     <button onclick="resetTabOrder()" id="tab-reset-order" title="Restaurar ordem padrão das abas" class="shrink-0 pb-3 text-slate-300 hover:text-slate-500 transition-colors">
                         <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                     </button>
@@ -1334,7 +1448,9 @@
         }
         let charts = {};
         let cachedApiData = null;
-        let showChartLabels = localStorage.getItem('spg_show_chart_labels') !== 'false';
+        let showChartLabels = localStorage.getItem('spg_show_chart_labels') !== null
+            ? localStorage.getItem('spg_show_chart_labels') !== 'false'
+            : !window.matchMedia('(max-width: 767px)').matches;
         const WIDGET_VISIBILITY_KEY = 'spg_widget_visibility';
         let widgetVisibility = {};
         try { widgetVisibility = JSON.parse(localStorage.getItem(WIDGET_VISIBILITY_KEY) || '{}'); } catch (e) { widgetVisibility = {}; }
@@ -1359,7 +1475,7 @@
         let dragCardId = null;
 
         Chart.register(ChartDataLabels);
-        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
         Chart.defaults.color = '#64748b';
 
         const safeSetText = (id, val) => {
@@ -1944,8 +2060,28 @@
         }
 
         // Âncora onde os botões de aba devem ser inseridos: antes do aviso de "arraste" (se ainda visível) ou do botão de restaurar.
+        // Modo "Editar ordem": só nele as abas podem ser arrastadas
+        let editandoAbas = false;
+        function alternarEdicaoAbas() {
+            editandoAbas = !editandoAbas;
+            const barra = document.getElementById('tabsBar');
+            barra.classList.toggle('editando-abas', editandoAbas);
+            barra.querySelectorAll('.tab-btn[data-tab]').forEach(b => {
+                b.draggable = editandoAbas;
+                if (editandoAbas) b.title = 'Arraste para mudar a ordem'; else b.removeAttribute('title');
+            });
+            const botao = document.getElementById('btnEditarAbas');
+            botao.setAttribute('aria-pressed', String(editandoAbas));
+            botao.innerHTML = editandoAbas ? '<i data-lucide="check" class="w-3.5 h-3.5"></i><span>Concluir</span>' : '<i data-lucide="pencil" class="w-3.5 h-3.5"></i><span>Editar ordem</span>';
+            botao.classList.toggle('bg-white', editandoAbas);
+            botao.classList.toggle('text-emerald-700', editandoAbas);
+            botao.classList.toggle('shadow-sm', editandoAbas);
+            if (editandoAbas) hideTabDragHintElement();
+            if (window.lucide) lucide.createIcons();
+        }
+
         function getTabInsertAnchor() {
-            return document.getElementById('tabDragHint') || document.getElementById('tab-reset-order');
+            return document.getElementById('tabDragHint') || document.getElementById('btnEditarAbas') || document.getElementById('tab-reset-order');
         }
 
         const TAB_HINT_DISMISS_KEY = 'spg_tab_hint_dismiss_count';
@@ -2001,7 +2137,8 @@
             if (!container) return;
 
             container.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
-                btn.addEventListener('dragstart', () => {
+                btn.addEventListener('dragstart', (e) => {
+                    if (!editandoAbas) { e.preventDefault(); return; }
                     btn.classList.add('dragging');
                 });
                 btn.addEventListener('dragend', () => {
@@ -3885,6 +4022,133 @@
 
             setTimeout(() => { window.print(); }, 100);
         }
+    </script>
+    <!-- Celular: barra flutuante de abas (igual à Irrigação) e as abas que não cabem nela -->
+    <nav id="barraAbas" class="print-hide" aria-label="Abas da Produção"></nav>
+    <div id="maisAbas" class="hidden print-hide"><div id="maisAbasLista" role="menu" aria-label="Outras abas"></div></div>
+    <script>
+    (function () {
+        'use strict';
+        const NOMES = { previsao: 'Previsões', produtividade: 'Produtividade', calendario: 'Calendário', entregas: 'Entregas', ranking: 'Ranking', analise: 'Análise', comparacao: 'Comparar' };
+        const ICONES = { previsao: 'calendar-days', produtividade: 'layout-dashboard', calendario: 'list-todo', entregas: 'truck', ranking: 'trophy', analise: 'microscope', comparacao: 'columns-2' };
+        const barra = document.getElementById('barraAbas');
+        const mais = document.getElementById('maisAbas');
+        const listaMais = document.getElementById('maisAbasLista');
+        const celular = () => window.matchMedia('(max-width: 1023px)').matches;
+        const icones = () => { if (window.lucide) lucide.createIcons(); };
+
+        // Mesmas abas, na mesma ordem (a que a pessoa arrumou) e só as liberadas para ela
+        const abasVisiveis = () => [...document.querySelectorAll('#tabsBar .tab-btn[data-tab]')].filter(b => !b.classList.contains('hidden')).map(b => ({ id: b.dataset.tab, ativa: b.classList.contains('active') }));
+
+        function montar() {
+            const abas = abasVisiveis();
+            const principais = abas.length <= 5 ? abas : abas.slice(0, 4);
+            const extras = abas.length <= 5 ? [] : abas.slice(4);
+            const extraAtiva = extras.find(a => a.ativa);
+            const botao = a => `<button type="button" data-aba="${a.id}" class="${a.ativa ? 'aba-ativa' : ''}"${a.ativa ? ' aria-current="page"' : ''}><i data-lucide="${ICONES[a.id]}"></i><span>${NOMES[a.id]}</span></button>`;
+            barra.innerHTML = principais.map(botao).join('') +
+                (extras.length ? `<button type="button" data-mais aria-haspopup="menu" aria-expanded="${!mais.classList.contains('hidden')}" ${extraAtiva ? `data-aba-cor="${extraAtiva.id}" class="aba-ativa"` : ''}><i data-lucide="${extraAtiva ? ICONES[extraAtiva.id] : 'ellipsis'}"></i><span>${extraAtiva ? NOMES[extraAtiva.id] : 'Mais'}</span></button>` : '') +
+                `<button type="button" id="barraTopo" aria-label="Voltar ao topo" title="Voltar ao topo"><i data-lucide="arrow-up"></i></button>`;
+            const cor = barra.querySelector('[data-aba-cor]');
+            if (cor) cor.setAttribute('data-aba', cor.dataset.abaCor);   // herda a cor da aba escolhida
+            listaMais.innerHTML = extras.map(a => `<button type="button" role="menuitem" data-aba="${a.id}" class="${a.ativa ? 'aba-ativa' : ''}"><i data-lucide="${ICONES[a.id]}"></i>${NOMES[a.id]}</button>`).join('');
+            icones();
+        }
+
+        let agendado = false;
+        const agendar = () => { if (agendado) return; agendado = true; requestAnimationFrame(() => { agendado = false; montar(); }); };
+        // Só mudanças de aba (ordem e aba ativa/liberada). Não observa os ícones: redesenhá-los
+        // dispararia o observador de novo, sem parar.
+        const barraTopoPc = document.getElementById('tabsBar');
+        new MutationObserver(agendar).observe(barraTopoPc, { childList: true });
+        new MutationObserver(lista => { if (lista.some(m => m.target.classList && m.target.classList.contains('tab-btn'))) agendar(); })
+            .observe(barraTopoPc, { subtree: true, attributes: true, attributeFilter: ['class'] });
+
+        function fecharMais() { mais.classList.add('hidden'); const b = barra.querySelector('[data-mais]'); if (b) b.setAttribute('aria-expanded', 'false'); }
+        function abrirAba(id) {
+            fecharMais();
+            switchTab(id);
+            window.scrollTo({ top: 0 });
+            barra.classList.remove('recolhida');
+        }
+        barra.addEventListener('click', e => {
+            const b = e.target.closest('button');
+            if (!b) return;
+            if (b.id === 'barraTopo') { window.scrollTo({ top: 0, behavior: 'smooth' }); barra.classList.remove('recolhida'); return; }
+            if (b.hasAttribute('data-mais')) { const abrir = mais.classList.contains('hidden'); mais.classList.toggle('hidden', !abrir); b.setAttribute('aria-expanded', String(abrir)); return; }
+            if (b.dataset.aba) abrirAba(b.dataset.aba);
+        });
+        mais.addEventListener('click', e => { const b = e.target.closest('[data-aba]'); if (b) abrirAba(b.dataset.aba); else fecharMais(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharMais(); fecharAcoes(); } });
+
+        // Rolando para baixo a barra vira um botão de voltar ao topo; para cima, volta inteira
+        let ultimoY = window.scrollY;
+        window.addEventListener('scroll', () => {
+            const y = window.scrollY;
+            if (y > 160 && y > ultimoY + 6) { barra.classList.add('recolhida'); fecharMais(); }
+            else if (y < ultimoY - 6 || y < 80) barra.classList.remove('recolhida');
+            ultimoY = y;
+        }, { passive: true });
+        // Teclado aberto: a barra sai da frente dos campos
+        document.addEventListener('focusin', e => { if (celular() && /^(INPUT|TEXTAREA)$/.test(e.target.tagName) && !/^(checkbox|radio|button)$/.test(e.target.type)) barra.classList.add('teclado'); });
+        document.addEventListener('focusout', () => barra.classList.remove('teclado'));
+
+        // ---------- Menu "⋯" do topo no celular ----------
+        const btnAcoes = document.getElementById('btnAcoesCel');
+        const menuAcoes = document.getElementById('menuAcoesCel');
+        function fecharAcoes() { menuAcoes.classList.add('hidden'); btnAcoes.setAttribute('aria-expanded', 'false'); }
+        btnAcoes.addEventListener('click', e => {
+            e.stopPropagation();
+            const abrir = menuAcoes.classList.contains('hidden');
+            const rotulo = menuAcoes.querySelector('[data-rotulos-cel]');
+            if (rotulo) rotulo.textContent = showChartLabels ? 'Esconder números dos gráficos' : 'Mostrar números nos gráficos';
+            menuAcoes.classList.toggle('hidden', !abrir);
+            btnAcoes.setAttribute('aria-expanded', String(abrir));
+        });
+        menuAcoes.addEventListener('click', e => {
+            const b = e.target.closest('[data-acao-cel]');
+            if (!b) return;
+            fecharAcoes();
+            const acao = window[b.dataset.acaoCel];
+            if (typeof acao === 'function') acao();
+        });
+        document.addEventListener('click', e => { if (!menuAcoes.classList.contains('hidden') && !menuAcoes.contains(e.target) && e.target !== btnAcoes) fecharAcoes(); });
+
+        // ---------- Filtros: no celular ficam recolhidos num resumo ----------
+        function resumir(card) {
+            // O período aparece como no campo (dd/mm/aaaa), não no formato interno
+            const campo = card.querySelector('.date-range-picker');
+            const periodo = campo ? ((campo._flatpickr && campo._flatpickr.altInput) ? campo._flatpickr.altInput.value : campo.value) : '';
+            const ativos = [...card.querySelectorAll('[id^="text-"]')].map(s => s.textContent.trim()).filter(t => t && !/^(todos|todas)\b/i.test(t)).length;
+            const texto = [periodo, ativos ? ativos + (ativos > 1 ? ' filtros' : ' filtro') : ''].filter(Boolean).join(' · ');
+            const alvo = card.querySelector('[data-resumo]');
+            const novo = texto || 'Toque para escolher período, bloco, cultura...';
+            if (alvo.textContent !== novo) alvo.textContent = novo;   // só escreve se mudou (senão o observador volta a chamar)
+        }
+        document.querySelectorAll('#mainContent [id^="view"] > .print-hide.relative.z-30').forEach(card => {
+            card.classList.add('filtros-card', 'filtros-fechado');
+            const topo = document.createElement('button');
+            topo.type = 'button';
+            topo.className = 'filtros-topo';
+            topo.setAttribute('aria-expanded', 'false');
+            topo.innerHTML = '<span class="filtros-icone"><i data-lucide="sliders-horizontal"></i></span><span class="filtros-textos"><b>Filtros</b><small data-resumo></small></span><i data-lucide="chevron-down" class="filtros-seta"></i>';
+            card.prepend(topo);
+            topo.addEventListener('click', () => {
+                const fechar = !card.classList.contains('filtros-fechado');
+                card.classList.toggle('filtros-fechado', fechar);
+                topo.setAttribute('aria-expanded', String(!fechar));
+                resumir(card);
+            });
+            let pendente = false;
+            new MutationObserver(() => { if (pendente) return; pendente = true; requestAnimationFrame(() => { pendente = false; resumir(card); }); })
+                .observe(card, { subtree: true, childList: true, characterData: true });
+            card.addEventListener('change', () => resumir(card));
+            resumir(card);
+        });
+
+        montar();
+        icones();
+    })();
     </script>
 </body>
 </html>

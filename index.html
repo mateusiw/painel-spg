@@ -62,6 +62,11 @@
         .item-lateral:focus-visible, .foco:focus-visible { outline: 2px solid var(--limao); outline-offset: 2px; }
         .item-lateral.atual { background: rgba(166,198,59,.16); color: #fff; }
         .item-lateral.atual svg { color: var(--limao); }
+        /* Quantas pessoas estão online (item "Usuários online") */
+        .item-lateral { position: relative; }
+        .contador-online { margin-left: auto; min-width: 1.5rem; height: 1.25rem; padding: 0 .4rem; border-radius: 999px; background: var(--limao); color: var(--mata-escura); font-size: .7rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; flex: none; }
+        .contador-online[data-zero] { background: rgba(255,255,255,.12); color: rgba(236,244,226,.7); }
+        #lateral.recolhida .contador-online { position: absolute; top: 2px; right: 8px; min-width: 1rem; height: 1rem; padding: 0 .25rem; font-size: .6rem; margin: 0; }
 
         .cartao-projeto { position: relative; display: flex; flex-direction: column; min-height: 11.5rem; padding: 1.25rem; background: #fff; border: 1px solid rgb(226 232 240 / .9); border-radius: 1.25rem; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
         .cartao-projeto:hover { transform: translateY(-3px); border-color: rgb(203 213 225); box-shadow: 0 18px 40px -22px rgba(18,42,30,.45); }
@@ -74,6 +79,8 @@
             .cartao-projeto:hover { transform: none; }
         }
     </style>
+    <script src="./lista-moderna.js"></script>
+    <script src="./trava-fundo.js"></script>
 </head>
 <body class="bg-[#f5f7f2] text-slate-900 min-h-screen">
 
@@ -357,6 +364,7 @@
                 porGrupo.map(([g, lista]) => `<div class="space-y-1">
                     <p class="rotulo px-3 text-[10px] font-extrabold uppercase tracking-widest text-emerald-100/40">${esc(g)}</p>
                     ${lista.map(p => `<a href="#/${esc(p.id)}" title="${esc(p.nome)}" data-projeto="${esc(p.id)}" class="item-lateral"><i data-lucide="${p.icone}" class="w-4 h-4 shrink-0"></i><span class="rotulo truncate">${esc(p.nome)}</span></a>`).join('')}
+                    ${g === 'Administração' && API.isAdmin() ? `<button type="button" data-atualizar-todos title="Atualizar todos os aparelhos" class="item-lateral w-full text-left"><i data-lucide="radio-tower" class="w-4 h-4 shrink-0"></i><span class="rotulo truncate">Atualizar aparelhos</span></button>` : ''}
                 </div>`).join('');
 
             const larguraGrupo = n => n >= 3 ? ['sm:col-span-2 xl:col-span-3', 'sm:grid-cols-2 xl:grid-cols-3'] : n === 2 ? ['sm:col-span-2', 'sm:grid-cols-2'] : ['', ''];
@@ -370,7 +378,33 @@
 
             mostrarTela('telaMenu');
             rotear();
+            atualizarContadorOnline();
         }
+
+        // --- QUANTAS PESSOAS ESTÃO ONLINE (só o administrador vê) ---
+        const ONLINE_MS = 2 * 60 * 1000;   // mesmo critério da tela Usuários online
+        let contandoOnline = false;
+        async function atualizarContadorOnline() {
+            const item = document.querySelector('#navLateral a[data-projeto="online"]');
+            if (!item || !API.isAdmin() || contandoOnline || !navigator.onLine) return;
+            contandoOnline = true;
+            try {
+                const lista = await API.listarSessoes(new Date(Date.now() - ONLINE_MS).toISOString());
+                const n = new Set(lista.filter(s => !s.fim && Date.now() - new Date(s.ultimo_sinal).getTime() < ONLINE_MS).map(s => s.usuario_id)).size;
+                const alvo = document.querySelector('#navLateral a[data-projeto="online"]');
+                if (!alvo) return;
+                let selo = alvo.querySelector('.contador-online');
+                if (!selo) { selo = document.createElement('span'); selo.className = 'contador-online'; alvo.appendChild(selo); }
+                selo.textContent = n;
+                selo.toggleAttribute('data-zero', n === 0);
+                const texto = n === 1 ? '1 pessoa online agora' : n + ' pessoas online agora';
+                selo.title = texto;
+                selo.setAttribute('aria-label', texto);
+            } catch (e) { /* sem internet ou sem permissão: fica o último número */ }
+            finally { contandoOnline = false; }
+        }
+        setInterval(() => { if (document.visibilityState === 'visible' && API.usuarioAtual()) atualizarContadorOnline(); }, 60 * 1000);
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && API.usuarioAtual()) atualizarContadorOnline(); });
 
         // --- PROJETOS DENTRO DO PAINEL ---
         // O endereço guarda o projeto aberto (#/irrigacao): voltar, recarregar e link direto funcionam.
@@ -573,6 +607,7 @@
                 icones();
                 return;
             }
+            if (e.target.closest('[data-atualizar-todos]')) { alternarGaveta(false); confirmarAtualizarTodos(); return; }
             if (e.target.closest('[data-gaveta]')) { alternarGaveta(true); return; }
             if (e.target.closest('[data-fechar-gaveta]')) { alternarGaveta(false); return; }
             if (e.target.closest('[data-recolher]')) {
@@ -588,6 +623,49 @@
                 mostrarLogin();
             }
         });
+
+        // --- ATUALIZAR TODOS OS APARELHOS (só o administrador) ---
+        function confirmarAtualizarTodos() {
+            if (!API.isAdmin() || document.getElementById('janelaAtualizarTodos')) return;
+            const caixa = document.createElement('div');
+            caixa.id = 'janelaAtualizarTodos';
+            caixa.className = 'fixed inset-0 z-[80] bg-slate-950/60 flex items-center justify-center p-5';
+            caixa.setAttribute('role', 'dialog');
+            caixa.setAttribute('aria-modal', 'true');
+            caixa.setAttribute('aria-labelledby', 'tituloAtualizarTodos');
+            caixa.innerHTML = `<div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 text-center">
+                <div class="w-14 h-14 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-4"><i data-lucide="radio-tower" class="w-7 h-7"></i></div>
+                <h3 id="tituloAtualizarTodos" class="text-lg font-extrabold text-slate-800">Atualizar todos os aparelhos?</h3>
+                <p class="text-sm text-slate-500 mt-2 leading-relaxed">Todos que estão com o Painel aberto, em qualquer projeto, recarregam em alguns segundos já na versão nova. Quem estiver sem internet ou com o app fechado atualiza assim que abrir.</p>
+                <p class="text-xs text-slate-400 mt-2">Os registros e os dados ainda não enviados de cada aparelho continuam salvos.</p>
+                <p data-erro role="alert" class="hidden mt-3 text-xs font-bold text-red-600"></p>
+                <div class="flex gap-2 mt-5">
+                    <button type="button" data-cancelar class="foco flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-xl text-sm">Cancelar</button>
+                    <button type="button" data-confirmar class="foco flex-1 bg-gradient-to-b from-emerald-600 to-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow-md">Atualizar todos</button>
+                </div>
+            </div>`;
+            document.body.appendChild(caixa);
+            icones();
+            const fechar = () => caixa.remove();
+            const erro = texto => { const p = caixa.querySelector('[data-erro]'); p.textContent = texto; p.classList.remove('hidden'); };
+            caixa.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });
+            caixa.addEventListener('click', async e => {
+                if (e.target === caixa || e.target.closest('[data-cancelar]')) { fechar(); return; }
+                const ok = e.target.closest('[data-confirmar]');
+                if (!ok || ok.disabled) return;
+                ok.disabled = true;
+                ok.textContent = 'Avisando...';
+                try {
+                    const r = await API.atualizarTodosAparelhos();
+                    if (!r.recarregou) { erro('Os outros aparelhos vão atualizar. Este aparelho está sem conexão: atualize de novo quando tiver sinal.'); ok.textContent = 'Aviso enviado'; }
+                } catch (err) {
+                    erro(err.message || 'Não foi possível avisar os aparelhos.');
+                    ok.disabled = false;
+                    ok.textContent = 'Atualizar todos';
+                }
+            });
+            caixa.querySelector('[data-confirmar]').focus();
+        }
 
         el('buscaProjetos').addEventListener('input', filtrar);
         window.addEventListener('hashchange', () => { if (!el('telaMenu').classList.contains('hidden')) rotear(); });

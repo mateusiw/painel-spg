@@ -8,7 +8,6 @@
         { id: 'embarque', nome: 'Embarque', icone: 'ship', arquivo: 'listas/embarque.html' },
         { id: 'limpeza', nome: 'Limpeza', icone: 'sparkles', arquivo: 'listas/limpeza-diaria.html' },
         { id: 'cronograma', nome: 'Cronograma de Limpeza', icone: 'calendar-check', arquivo: 'listas/cronograma-limpeza.html' },
-        { id: 'packing', nome: 'Packing House', icone: 'package', arquivo: 'listas/packing.html' },
         { id: 'pop', nome: 'POP', icone: 'clipboard-check', arquivo: 'listas/pop.html' }
     ];
     const CHAVE = 'spg_checklist_atual';

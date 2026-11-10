@@ -348,7 +348,7 @@
           areas: [
               { modulo: 'colheita_oasis', nome: 'Campo e Colheita', recursos: recursos('colheita', [['campo', 'Campo', 'truck'], ['colheita', 'Colheita', 'tractor']]) },
               { modulo: 'pesagem_oasis', nome: 'Pesagem', recursos: [] },
-              { modulo: 'lancamentos_oasis', nome: 'Lançamentos', recursos: recursos('lancar', [['colheita', 'Colheita', 'tractor'], ['previsao', 'Previsão', 'calendar-clock'], ['descarte', 'Descarte', 'trash-2']]) }
+              { modulo: 'lancamentos_oasis', nome: 'Lançamentos', recursos: recursos('lancar', [['colheita', 'Colheita', 'tractor'], ['previsao', 'Calendário', 'calendar-days'], ['descarte', 'Descarte', 'trash-2']]) }
           ] },
         { id: 'producao-oasis', nome: 'Produção Oásis', descricao: 'Previsões, produtividade, calendário, ranking e análise', icone: 'bar-chart-3', grupo: 'Indicadores', gradiente: 'from-indigo-500 to-violet-600',
           cor: 'bg-indigo-50 text-indigo-700', caminho: 'projetos/producao-oasis/index.html', local: 'oasis',
@@ -361,16 +361,18 @@
               ['visaogeral', 'Visão Geral', 'layout-dashboard'], ['programacao', 'Programação', 'clipboard-list'], ['equipes', 'Equipes', 'users-round'],
               ['produtividade', 'Produtividade', 'trending-up'], ['caixas', 'Caixas', 'package-check'],
               ['servicos', 'Serviços', 'wrench'], ['calendario', 'Calendário', 'calendar'], ['relatorios', 'Relatórios', 'bar-chart-3'], ['historico', 'Histórico', 'history']]) }] },
-        { id: 'checklist', nome: 'Check List', descricao: 'Veículos, embarque, limpeza, packing house e POP', icone: 'clipboard-check', grupo: 'Operação', gradiente: 'from-teal-500 to-emerald-700',
+        { id: 'checklist', nome: 'Check List', descricao: 'Veículos, embarque, limpeza e POP', icone: 'clipboard-check', grupo: 'Operação', gradiente: 'from-teal-500 to-emerald-700',
           cor: 'bg-teal-50 text-teal-700', caminho: 'projetos/checklist/index.html',
           areas: [{ modulo: 'checklist', nome: 'Acesso ao Check List', recursos: recursos('checklist', [
               ['geral', 'Geral', 'truck'], ['embarque', 'Embarque', 'ship'], ['limpeza', 'Limpeza', 'sparkles'], ['cronograma', 'Cronograma de Limpeza', 'calendar-check'],
-              ['packing', 'Packing House', 'package'], ['pop', 'POP', 'clipboard-check']]) },
+              ['pop', 'POP', 'clipboard-check']]) },
               // Permissão extra, desligada por padrão: substitui a senha do dashboard do POP
               { modulo: 'pop_dashboard', nome: 'Dashboard do POP (gestão)', extra: true, requer: 'checklist', recursos: [] }] },
         { id: 'aplicacoes-fitossanitarias', nome: 'Aplicações Fitossanitárias', descricao: 'Defensivos, laboratório, adubação e dashboard', icone: 'spray-can', grupo: 'Operação', gradiente: 'from-green-500 to-emerald-700',
           cor: 'bg-green-50 text-green-700', caminho: 'projetos/aplicacoes-fitossanitarias/index.html',
           areas: [{ modulo: 'aplicacoes_fitossanitarias', nome: 'Acesso às Aplicações', recursos: recursos('aplicacoes', [['registro', 'Registro', 'clipboard-pen'], ['dashboard', 'Dashboard', 'layout-dashboard']]) }] },
+        { id: 'online', nome: 'Usuários online', descricao: 'Quem está usando agora, em qual página e há quanto tempo', icone: 'radio', grupo: 'Administração', gradiente: 'from-emerald-500 to-teal-700',
+          cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/online/index.html', soAdmin: true, areas: [] },
         { id: 'usuarios', nome: 'Cadastro de Usuários', descricao: 'Pessoas, locais e o que cada um pode acessar', icone: 'users', grupo: 'Administração', gradiente: 'from-slate-600 to-slate-800',
           cor: 'bg-slate-100 text-slate-700', caminho: 'projetos/usuarios/index.html', soAdmin: true, areas: [] }
     ];
@@ -1531,6 +1533,103 @@
     }
 
     // ------------------------------------------------------------
+    // Atualizar todos os aparelhos: vale em qualquer tela do Painel.
+    // Roda só na janela principal (o Painel, ou o projeto aberto sozinho);
+    // os projetos abertos dentro do Painel recarregam junto com ele.
+    // ------------------------------------------------------------
+    const CHAVE_VERSAO_FORCADA = 'irrigacao_versao_forcada';   // nome antigo mantido: os aparelhos já guardam este número
+    let atualizandoApp = false;
+    let avisoAtualizacao = null;
+
+    function mostrarAvisoAtualizacao(texto) {
+        if (!avisoAtualizacao) {
+            avisoAtualizacao = document.createElement('div');
+            avisoAtualizacao.setAttribute('role', 'alert');
+            avisoAtualizacao.style.cssText = 'position:fixed;inset:0;z-index:2147483600;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(15,23,42,.72);font-family:inherit;';
+            avisoAtualizacao.innerHTML = '<style>@keyframes spgGira{to{transform:rotate(360deg)}}</style>' +
+                '<div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,.35)">' +
+                '<div style="width:44px;height:44px;margin:0 auto 14px;border:4px solid #d1fae5;border-top-color:#059669;border-radius:50%;animation:spgGira .9s linear infinite"></div>' +
+                '<p data-texto style="margin:0;font-size:15px;font-weight:700;color:#1e293b;white-space:pre-line;line-height:1.45"></p></div>';
+            document.body.appendChild(avisoAtualizacao);
+        }
+        avisoAtualizacao.querySelector('[data-texto]').textContent = texto;
+    }
+    function esconderAvisoAtualizacao() { if (avisoAtualizacao) { avisoAtualizacao.remove(); avisoAtualizacao = null; } }
+    function guardarVersaoVista(v) { try { localStorage.setItem(CHAVE_VERSAO_FORCADA, String(v)); } catch (e) { /* segue */ } }
+
+    // Baixa a versão nova, envia o que está pendente, limpa o cache e recarrega.
+    // Devolve false sem internet: nada é apagado.
+    async function atualizarAplicativo(texto) {
+        mostrarAvisoAtualizacao(texto || 'Atualizando o aplicativo...');
+        const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration().catch(() => null) : null;
+        try {
+            if (reg) await reg.update(); else await fetch(location.href, { cache: 'no-store' });
+        } catch (e) {
+            esconderAvisoAtualizacao();
+            return false;
+        }
+        await sincronizar(true).catch(() => {});
+        try {
+            if (window.caches) await Promise.all((await caches.keys()).map(k => caches.delete(k)));
+            if (reg) await reg.unregister();
+        } catch (e) { console.warn('Erro ao limpar o cache:', e); }
+        location.reload();
+        return true;
+    }
+
+    // Somente o administrador: publica a versão nova e já atualiza este aparelho
+    async function atualizarTodosAparelhos() {
+        const versao = await forcarAtualizacaoTodos();
+        guardarVersaoVista(versao);   // este aparelho não recarrega duas vezes
+        atualizandoApp = true;
+        const recarregou = await atualizarAplicativo('Atualizando o aplicativo...');
+        if (!recarregou) atualizandoApp = false;
+        return { versao, recarregou };
+    }
+
+    // Recebeu um número de versão (ao abrir, em tempo real ou ao voltar para o app)
+    function aplicarVersaoForcada(versao, quem) {
+        if (versao == null || isNaN(versao) || atualizandoApp) return;
+        let vista = null;
+        try { vista = localStorage.getItem(CHAVE_VERSAO_FORCADA); } catch (e) { /* segue */ }
+        // Primeira vez neste aparelho: já abriu na versão atual, só guarda o número
+        if (vista === null || isNaN(Number(vista))) { guardarVersaoVista(versao); return; }
+        if (versao <= Number(vista)) return;
+        atualizandoApp = true;
+        let segundos = 5;
+        const contar = () => mostrarAvisoAtualizacao(`${quem || 'O administrador'} publicou uma nova versão do aplicativo.\nAtualizando em ${segundos}s...`);
+        contar();
+        const timer = setInterval(async () => {
+            segundos--;
+            if (segundos > 0) { contar(); return; }
+            clearInterval(timer);
+            guardarVersaoVista(versao);
+            if (!(await atualizarAplicativo('Atualizando o aplicativo...'))) {
+                // Sem internet agora: tenta de novo quando conectar
+                guardarVersaoVista(vista);
+                atualizandoApp = false;
+            }
+        }, 1000);
+    }
+
+    async function conferirVersaoForcada() {
+        if (!usuarioAtual() || atualizandoApp) return;
+        const v = await versaoForcada();
+        if (v) aplicarVersaoForcada(v.versao, v.nome);
+    }
+
+    let janelaPrincipal = false;
+    try { janelaPrincipal = window.top === window.self; } catch (e) { janelaPrincipal = false; }
+    if (janelaPrincipal) {
+        setTimeout(() => { assinarVersaoApp(aplicarVersaoForcada); conferirVersaoForcada(); }, 0);
+        sb.auth.onAuthStateChange(evento => { if (evento === 'SIGNED_IN') setTimeout(conferirVersaoForcada, 0); });
+        // Reserva do tempo real: confere ao voltar para o app, ao voltar a internet e a cada 5 minutos
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') conferirVersaoForcada(); });
+        window.addEventListener('online', () => { if (usuarioAtual()) { assinarVersaoApp(aplicarVersaoForcada); conferirVersaoForcada(); } });
+        setInterval(() => { if (document.visibilityState === 'visible') conferirVersaoForcada(); }, 5 * 60 * 1000);
+    }
+
+    // ------------------------------------------------------------
     // Log de auditoria (somente gestor, precisa de internet)
     // ------------------------------------------------------------
     async function listarAuditoria(limite) {
@@ -1693,28 +1792,63 @@
         if (u && sessaoId) gravar(K_SESSAO, { id: sessaoId, usuarioId: u.id, local: localAtual(), em: Date.now() });
     }
 
+    // ---------- Em qual página a pessoa está ----------
+    // A sessão é da janela principal (o Painel, ou o projeto aberto sozinho).
+    // Os projetos abertos dentro do Painel só contam a ela onde a pessoa está.
+    function janelaDeCima() {
+        try { return window.top !== window.self && window.top.IrrigacaoAPI ? window.top.IrrigacaoAPI : null; } catch (e) { return null; }
+    }
+    let paginaProjeto = '';
+    let paginaSecao = '';
+    const NOMES_SECAO = { lancamentos: 'Lançar', campo: 'Campo', colheita: 'Colheita', pesagem: 'Pesagem', agua: 'Água', graficos: 'Gráficos', cadastros: 'Cadastros', registro: 'Registro', programacao: 'Programação' };
+
+    function projetoDestaPagina() {
+        const caminho = decodeURIComponent(location.pathname);
+        return PROJETOS.find(p => caminho.includes('/' + p.caminho.replace(/index\.html$/, ''))) || null;
+    }
+    function rotuloSecao(projeto, id) {
+        if (!id) return '';
+        const recurso = projeto && projeto.areas.flatMap(a => a.recursos).find(r => r.id.split('.').pop() === id);
+        return recurso ? recurso.nome : (NOMES_SECAO[id] || String(id).charAt(0).toUpperCase() + String(id).slice(1));
+    }
+    // projeto: nome do projeto ("" = Painel); secao: nome da aba aberta
+    function informarPagina(projeto, secao) {
+        const cima = janelaDeCima();
+        if (cima && cima.informarPagina) { cima.informarPagina(projeto, secao); return; }
+        paginaProjeto = projeto || '';
+        paginaSecao = secao || '';
+        const nova = [paginaProjeto || 'Início do Painel', paginaSecao].filter(Boolean).join(' › ');
+        if (nova === sessaoAba) return;
+        sessaoAba = nova;
+        enviarSinal();
+    }
+    function informarSecao(id) {
+        const p = projetoDestaPagina();
+        informarPagina(p ? p.nome : '', rotuloSecao(p, id));
+    }
+
     // Abre uma sessão (ao entrar no app ou fazer login), reaproveitando a anterior se ainda estiver valendo
     // (trocar de local abre uma sessão nova, para cada local ter o seu tempo de uso)
     function iniciarSessao(aba) {
+        if (janelaDeCima()) { if (aba) informarSecao(aba); return; }   // dentro do Painel: a sessão é dele
+        if (aba) { const p = projetoDestaPagina(); paginaProjeto = p ? p.nome : paginaProjeto; paginaSecao = rotuloSecao(p, aba); }
         const u = usuarioAtual();
         const anterior = ler(K_SESSAO, null);
         sessaoId = anterior && u && anterior.usuarioId === u.id && (anterior.local || LOCAL_PADRAO) === localAtual()
             && Date.now() - anterior.em < SESSAO_REUSO_MS
             ? anterior.id : novoId();
         lembrarSessao();
-        sessaoAba = aba || '';
+        sessaoAba = [paginaProjeto || 'Início do Painel', paginaSecao].filter(Boolean).join(' › ');
         clearInterval(timerSinal);
         timerSinal = setInterval(enviarSinal, 60 * 1000);
         enviarSinal();
     }
 
-    function informarAbaSessao(aba) {
-        if (aba === sessaoAba) return;
-        sessaoAba = aba;
-        enviarSinal();
-    }
+    function informarAbaSessao(aba) { informarSecao(aba); }
 
     async function encerrarSessao() {
+        const cima = janelaDeCima();
+        if (cima && cima.encerrarSessao) { await cima.encerrarSessao(); return; }
         clearInterval(timerSinal);
         if (sessaoId && navigator.onLine) {
             try { await sb.from('sessoes').update({ fim: new Date().toISOString() }).eq('id', sessaoId); } catch (e) {}
@@ -1726,6 +1860,34 @@
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') enviarSinal(); });
     window.addEventListener('online', enviarSinal);
     window.addEventListener('pagehide', lembrarSessao);
+
+    // Todo o Painel conta como online (antes só a Irrigação): a janela principal abre a sessão
+    // ao carregar com alguém logado e a cada login
+    if (janelaPrincipal) {
+        if (usuarioAtual()) setTimeout(() => { if (!sessaoId && usuarioAtual()) iniciarSessao(); }, 0);
+        sb.auth.onAuthStateChange(evento => { if (evento === 'SIGNED_IN') setTimeout(() => { if (!sessaoId && usuarioAtual()) iniciarSessao(); }, 0); });
+        // Painel voltando ao início (#/): a pessoa saiu do projeto
+        window.addEventListener('hashchange', () => { if (!projetoDestaPagina() && /^#?\/?$/.test(location.hash)) informarPagina('', ''); });
+    }
+    // Cada página conta onde está: o projeto ao abrir e a aba ao trocar
+    function acompanharPagina() {
+        const p = projetoDestaPagina();
+        if (p) informarPagina(p.nome, ''); else if (!janelaDeCima()) informarPagina('', '');
+        ['switchTab', 'switchDashboardView', 'switchMainTab'].forEach(nome => {
+            const original = window[nome];
+            if (typeof original !== 'function' || original.__comSessao) return;
+            const comSessao = function () {
+                const r = original.apply(this, arguments);
+                const aba = arguments[0];
+                if (typeof aba === 'string') setTimeout(() => informarSecao(aba), 0);
+                return r;
+            };
+            comSessao.__comSessao = true;
+            window[nome] = comSessao;
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(acompanharPagina, 0));
+    else setTimeout(acompanharPagina, 0);
 
     // Sessões com sinal a partir de "desde" e, se informado, iniciadas antes de "ate"
     // (somente gestor, precisa de internet)
@@ -1859,7 +2021,7 @@
         // tempo real (registros dos outros irrigadores)
         listarRegistrosEquipe, listarMeusRegistros, listarRegistrosDia, assinarRegistros, cancelarAssinaturaRegistros, assinarAgua,
         // atualizar o app de todos
-        versaoForcada, forcarAtualizacaoTodos, assinarVersaoApp,
+        versaoForcada, forcarAtualizacaoTodos, assinarVersaoApp, atualizarAplicativo, atualizarTodosAparelhos, informarPagina, encerrarSessao,
         // auditoria e sessões
         listarAuditoria, listarAuditoriaPeriodo, restaurarAuditoria, iniciarSessao, informarAbaSessao, encerrarSessao, listarSessoes, atividadesDaSessao, autoresAuditoriaPeriodo
     };

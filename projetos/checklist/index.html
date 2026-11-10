@@ -22,13 +22,28 @@
         #checklistAbas { scrollbar-width: none; }
         #checklistAbas::-webkit-scrollbar { display: none; }
     </style>
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
+    <script src="../../barra-abas.js"></script>
+    <style>
+        /* Celular: as abas vão para a barra flutuante, e o quadro da lista termina acima dela */
+        @media (max-width: 1023px) {
+            #checklistAbas { display: none; }
+            #cabecalho > div:first-child { padding-bottom: .65rem; }
+            body.com-barra-abas { padding-bottom: 0 !important; }
+            body.com-barra-abas #checklistArea { margin-bottom: calc(88px + env(safe-area-inset-bottom)); }
+        }
+    </style>
 </head>
 <body class="bg-slate-50 text-slate-900 h-[100dvh] flex flex-col overflow-hidden">
     <header id="cabecalho" class="shrink-0 z-20">
         <div class="flex items-center gap-2.5 px-4 pt-3">
             <a id="btnMenuProjetos" href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="hidden w-9 h-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>
-            <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-700 text-white flex items-center justify-center shrink-0 shadow-sm ring-1 ring-black/5"><i data-lucide="clipboard-check" class="w-5 h-5"></i></span>
-            <h1 class="flex-1 min-w-0 text-sm sm:text-[15px] font-extrabold tracking-tight truncate">Check List</h1>
+            <img src="../../icone-app.png" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
+            <div class="flex-1 min-w-0">
+                <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight tracking-tight truncate">Check List</h1>
+                <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">Veículos, embarque, limpeza e POP</p>
+            </div>
             <span id="nomeUsuario" class="hidden sm:block text-xs font-bold text-slate-500 truncate"></span>
             <button type="button" id="btnSair" title="Sair" aria-label="Sair" class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 shrink-0"><i data-lucide="log-out" class="w-4 h-4"></i></button>
         </div>
@@ -44,6 +59,27 @@
     <script>
         lucide.createIcons();
         window.iniciarChecklists();
+
+        // Barra flutuante no celular: mesmas abas, na mesma ordem e só as liberadas
+        (function () {
+            const abasTopo = document.getElementById('checklistAbas');
+            const area = document.getElementById('checklistArea');
+            const CURTOS = { cronograma: 'Cronograma' };
+            const ICONES = { geral: 'truck', embarque: 'ship', limpeza: 'sparkles', cronograma: 'calendar-check', pop: 'clipboard-check' };
+            const CORES = { geral: '2, 132, 199', embarque: '13, 148, 136', limpeza: '22, 163, 74', cronograma: '217, 119, 6', pop: '79, 70, 229' };
+            const abas = () => [...abasTopo.querySelectorAll('[data-checklist]')].map(b => ({
+                id: b.dataset.checklist, nome: CURTOS[b.dataset.checklist] || b.textContent.trim(),
+                icone: ICONES[b.dataset.checklist] || 'clipboard-list', cor: CORES[b.dataset.checklist],
+                ativa: b.getAttribute('aria-selected') === 'true'
+            }));
+            const barra = BarraAbas.criar({ abas, abrir: id => { const b = abasTopo.querySelector('[data-checklist="' + id + '"]'); if (b) b.click(); }, rotulo: 'Check-lists' });
+            new MutationObserver(() => barra.atualizar()).observe(abasTopo, { childList: true });
+            // A lista rola dentro do próprio quadro: a barra acompanha a rolagem e o teclado de lá
+            const ligar = q => { try { if (q.contentWindow) barra.acompanhar(q.contentWindow); } catch (e) { /* quadro de outro endereço */ } };
+            const prepararQuadro = q => { if (q.dataset.comBarra) return; q.dataset.comBarra = '1'; q.addEventListener('load', () => ligar(q)); ligar(q); };
+            area.querySelectorAll('iframe').forEach(prepararQuadro);
+            new MutationObserver(l => l.forEach(m => m.addedNodes.forEach(n => { if (n.tagName === 'IFRAME') prepararQuadro(n); }))).observe(area, { childList: true });
+        })();
         if ('serviceWorker' in navigator && location.protocol !== 'file:') {
             window.addEventListener('load', () => { navigator.serviceWorker.register('../../sw.js').catch(() => {}); });
         }

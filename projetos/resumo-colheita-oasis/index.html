@@ -131,6 +131,8 @@
             #statusBar { margin-top: 0; }
         }
     </style>
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-20 select-none relative">
 
@@ -990,7 +992,7 @@
                 ['view-colheita', 'view-pesagem'].forEach(id => { const v = document.getElementById(id); v.classList.add('hidden'); v.classList.remove('block'); });
                 document.getElementById('nav-actions-colheita').classList.add('hidden'); document.getElementById('nav-actions-pesagem').classList.add('hidden');
                 document.getElementById('nav-logo').src = 'logo-spg-oasis.png'; document.getElementById('favicon').href = 'icon-192.png';
-                document.getElementById('nav-title').innerText = 'SPG Oásis'; document.getElementById('nav-subtitle').innerText = 'Lançamentos de Colheita, Previsão e Descarte';
+                document.getElementById('nav-title').innerText = 'SPG Oásis'; document.getElementById('nav-subtitle').innerText = 'Lançamentos de Colheita, Calendário e Descarte';
                 spg_estiloAbas(tab);
                 spg_renderUsuario();
                 lanc_abrir();
