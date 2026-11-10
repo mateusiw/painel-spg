@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Painel SPG</title>
+    <script>if (window.top !== window.self) window.top.location.replace(location.href.split('#')[0]);</script>
+    <meta name="theme-color" content="#1b3a2a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Painel SPG">
+    <link rel="icon" type="image/png" href="./favicon.png">
+    <link rel="apple-touch-icon" href="./icone-app.png">
+    <link rel="manifest" href="./manifest.json">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="./supabase-config.js"></script>
+    <script src="./supabase-api.js"></script>
+
+    <style>
+        :root { --mata: #1b3a2a; --mata-escura: #122a1e; --limao: #a6c63b; --ceu: #38bdf8; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .fundo-mata { background: linear-gradient(165deg, var(--mata) 0%, var(--mata-escura) 100%); }
+
+        /* Curvas que lembram as faixas de plantio do selo */
+        .campo-curvas { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+        .campo-curvas i {
+            position: absolute; left: -30%; width: 160%; aspect-ratio: 1; border-radius: 50%;
+            border: 2px solid rgba(166,198,59,.14);
+        }
+        .campo-curvas i:nth-child(1) { top: 42%; }
+        .campo-curvas i:nth-child(2) { top: 54%; }
+        .campo-curvas i:nth-child(3) { top: 66%; }
+        .campo-curvas i:nth-child(4) { top: 78%; border-color: rgba(56,189,248,.14); }
+
+        aside .campo-curvas i:nth-child(1) { top: 66%; }
+        aside .campo-curvas i:nth-child(2) { top: 76%; }
+        aside .campo-curvas i:nth-child(3) { top: 86%; }
+
+        /* Área do projeto: o projeto ocupa toda a altura ao lado do menu */
+        body.modo-projeto { overflow: hidden; }
+        body.modo-projeto #colunaConteudo { height: 100dvh; }
+        #areaProjeto { padding-bottom: env(safe-area-inset-bottom); }
+        #cabecalhoMobile { padding-top: max(.75rem, env(safe-area-inset-top)); }
+        #lateral { transition: width .2s ease, transform .22s ease, visibility .22s; }
+        #lateral.aberta { transform: translateX(0) !important; box-shadow: 0 0 60px rgba(0,0,0,.45); }
+        @media (max-width: 1023px) { #lateral:not(.aberta) { visibility: hidden; } }
+        @media (min-width: 1024px) {
+            #lateral.recolhida { width: 4.75rem; }
+            #lateral.recolhida .rotulo, #lateral.recolhida .campo-curvas { display: none; }
+            #lateral.recolhida .cabeca-lateral { flex-direction: column; padding-inline: .5rem; }
+            #lateral.recolhida .item-lateral { justify-content: center; padding-inline: 0; }
+            #lateral.recolhida .usuario-lateral { flex-direction: column; margin-inline: .5rem; padding-inline: .25rem; }
+            #lateral.recolhida #btnRecolher svg { transform: rotate(180deg); }
+            #lateral.recolhida #navLateral > div + div { border-top: 1px solid rgba(255,255,255,.09); padding-top: 1rem; }
+        }
+
+        .item-lateral { display: flex; align-items: center; gap: .75rem; padding: .55rem .75rem; border-radius: .75rem; color: rgba(236,244,226,.72); font-size: .8125rem; font-weight: 600; transition: background-color .15s, color .15s; }
+        .item-lateral:hover { background: rgba(255,255,255,.07); color: #fff; }
+        .item-lateral:focus-visible, .foco:focus-visible { outline: 2px solid var(--limao); outline-offset: 2px; }
+        .item-lateral.atual { background: rgba(166,198,59,.16); color: #fff; }
+        .item-lateral.atual svg { color: var(--limao); }
+
+        .cartao-projeto { position: relative; display: flex; flex-direction: column; min-height: 11.5rem; padding: 1.25rem; background: #fff; border: 1px solid rgb(226 232 240 / .9); border-radius: 1.25rem; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+        .cartao-projeto:hover { transform: translateY(-3px); border-color: rgb(203 213 225); box-shadow: 0 18px 40px -22px rgba(18,42,30,.45); }
+        .cartao-projeto:focus-visible { outline: 2px solid #4a7c3a; outline-offset: 2px; }
+        .cartao-projeto .seta { transition: transform .2s ease, background-color .2s ease, color .2s ease; }
+        .cartao-projeto:hover .seta { transform: translate(2px, -2px); background: var(--mata); color: #fff; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition: none !important; animation: none !important; }
+            .cartao-projeto:hover { transform: none; }
+        }
+    </style>
+</head>
+<body class="bg-[#f5f7f2] text-slate-900 min-h-screen">
+
+    <!-- Carregando: evita mostrar o login a quem já está conectado -->
+    <div id="telaCarregando" class="min-h-screen items-center justify-center flex">
+        <img src="./logo.png" alt="Carregando" class="w-16 h-16 object-cover rounded-full animate-pulse">
+    </div>
+
+    <!-- LOGIN ÚNICO -->
+    <main id="telaLogin" class="hidden min-h-screen">
+        <section class="fundo-mata relative hidden lg:flex lg:w-[46%] xl:w-1/2 flex-col justify-between p-12 text-white overflow-hidden" aria-hidden="true">
+            <div class="campo-curvas"><i></i><i></i><i></i><i></i></div>
+            <div class="relative flex items-center gap-3">
+                <img src="./logo.png" alt="" class="w-14 h-14 object-cover rounded-full">
+                <div>
+                    <p class="text-lg font-extrabold leading-tight">Painel SPG</p>
+                    <p class="text-xs font-semibold text-emerald-100/70">Sítio Pedra Grande</p>
+                </div>
+            </div>
+            <div class="relative max-w-md">
+                <h2 class="text-4xl xl:text-[2.75rem] font-extrabold leading-[1.1] tracking-tight">Do plantio à entrega, tudo em um só lugar.</h2>
+                <p class="mt-4 text-base text-emerald-50/70">Irrigação, colheita, produção e equipes trabalhando com os mesmos dados.</p>
+            </div>
+            <p class="relative text-xs font-medium text-emerald-100/50">Acesso restrito a colaboradores autorizados.</p>
+        </section>
+
+        <section class="flex-1 flex flex-col items-center justify-center p-6 sm:p-10">
+            <div class="w-full max-w-sm">
+                <div class="lg:hidden flex flex-col items-center text-center mb-8">
+                    <img src="./logo.png" alt="Sítio Pedra Grande" class="w-24 h-24 object-cover rounded-full mb-3">
+                    <p class="text-lg font-extrabold">Painel SPG</p>
+                </div>
+                <h1 class="text-2xl font-extrabold tracking-tight">Bem-vindo de volta</h1>
+                <p class="text-sm text-slate-500 mt-1 mb-7">Entre com o seu usuário para acessar os seus projetos.</p>
+                <form id="formLogin" class="space-y-4">
+                    <div>
+                        <label for="loginUsuario" class="block text-xs font-bold text-slate-600 mb-1.5">Usuário</label>
+                        <div class="relative">
+                            <i data-lucide="user-round" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                            <input id="loginUsuario" type="text" required autocomplete="username" autocapitalize="none" spellcheck="false"
+                                class="w-full bg-white pl-10 pr-3 py-3 border border-slate-300 rounded-xl text-base outline-none focus:ring-2 focus:ring-[#4a7c3a] focus:border-[#4a7c3a]">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="loginSenha" class="block text-xs font-bold text-slate-600 mb-1.5">Senha</label>
+                        <div class="relative">
+                            <i data-lucide="lock-keyhole" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                            <input id="loginSenha" type="password" required autocomplete="current-password"
+                                class="w-full bg-white pl-10 pr-11 py-3 border border-slate-300 rounded-xl text-base outline-none focus:ring-2 focus:ring-[#4a7c3a] focus:border-[#4a7c3a]">
+                            <button type="button" id="btnVerSenha" title="Mostrar senha" aria-label="Mostrar senha" aria-pressed="false"
+                                class="foco absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-700"><i data-lucide="eye" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+                    <p id="loginErro" role="alert" class="hidden text-sm font-semibold text-red-700 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5"></p>
+                    <button id="btnEntrar" type="submit" class="foco fundo-mata w-full flex items-center justify-center gap-2 hover:brightness-125 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-950/20 transition">Entrar</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- MENU DE PROJETOS -->
+    <div id="telaMenu" class="hidden">
+        <div class="min-h-screen lg:flex">
+            <div id="fundoGaveta" data-fechar-gaveta class="hidden fixed inset-0 z-40 bg-slate-950/50 lg:hidden"></div>
+            <aside id="lateral" class="fundo-mata fixed lg:sticky top-0 left-0 z-50 flex flex-col w-72 max-w-[85vw] h-[100dvh] shrink-0 text-white overflow-hidden -translate-x-full lg:translate-x-0" aria-label="Navegação">
+                <div class="campo-curvas"><i></i><i></i><i></i></div>
+                <div class="cabeca-lateral relative flex items-center gap-3 px-5 pt-6 pb-5">
+                    <img src="./logo.png" alt="" class="w-11 h-11 object-cover rounded-full">
+                    <div class="rotulo min-w-0 flex-1">
+                        <p class="text-[15px] font-extrabold leading-tight">Painel SPG</p>
+                        <p class="text-[11px] font-semibold text-emerald-100/60">Sítio Pedra Grande</p>
+                    </div>
+                    <button type="button" id="btnRecolher" data-recolher title="Recolher ou expandir o menu" aria-label="Recolher ou expandir o menu" class="foco hidden lg:block p-1.5 rounded-lg text-emerald-100/60 hover:text-white hover:bg-white/10"><i data-lucide="chevrons-left" class="w-4 h-4"></i></button>
+                </div>
+                <nav id="navLateral" class="relative flex-1 overflow-y-auto overflow-x-hidden px-3 pb-4 space-y-4"></nav>
+                <div class="usuario-lateral relative m-3 p-3 rounded-2xl bg-white/[.07] flex items-center gap-3">
+                    <span id="avatarLateral" class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black bg-[var(--limao)] text-[var(--mata-escura)] shrink-0"></span>
+                    <span class="rotulo min-w-0 flex-1">
+                        <span id="menuUsuario" class="block text-sm font-bold truncate"></span>
+                        <span id="menuPerfil" class="block text-[11px] font-semibold text-emerald-100/60 truncate"></span>
+                    </span>
+                    <button type="button" data-sair title="Sair" aria-label="Sair" class="foco p-2 rounded-lg text-emerald-100/70 hover:text-white hover:bg-white/10"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+                </div>
+            </aside>
+
+            <div id="colunaConteudo" class="flex-1 min-w-0 flex flex-col">
+                <header id="cabecalhoMobile" class="fundo-mata relative overflow-hidden lg:hidden text-white px-3 pb-3 shrink-0">
+                    <div class="campo-curvas"><i></i><i></i></div>
+                    <div class="relative flex items-center gap-2.5">
+                        <button type="button" data-gaveta title="Abrir menu" aria-label="Abrir menu" class="foco p-2 rounded-lg hover:bg-white/10"><i data-lucide="menu" class="w-5 h-5"></i></button>
+                        <img src="./logo.png" alt="" class="w-8 h-8 object-cover rounded-full">
+                        <p id="tituloMobile" class="flex-1 min-w-0 text-[15px] font-extrabold truncate">Painel SPG</p>
+                        <button type="button" data-sair title="Sair" aria-label="Sair" class="foco p-2 rounded-lg text-emerald-100/80 hover:bg-white/10"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                    </div>
+                </header>
+
+                <div id="areaProjeto" class="hidden relative flex-1 min-h-0 bg-slate-50">
+                    <div id="carregandoProjeto" class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#f5f7f2]" role="status">
+                        <i data-lucide="loader-circle" class="w-7 h-7 text-[#4a7c3a] animate-spin"></i>
+                        <p id="carregandoTexto" class="text-sm font-semibold text-slate-500"></p>
+                    </div>
+                </div>
+
+                <main id="areaInicio" class="w-full max-w-6xl mx-auto px-4 sm:px-8 py-6 lg:py-10">
+                    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                        <div class="min-w-0">
+                            <p id="menuData" class="text-xs font-bold text-[#4a7c3a] first-letter:uppercase"></p>
+                            <h1 id="menuSaudacao" class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1"></h1>
+                        </div>
+                        <div class="relative w-full md:w-80 shrink-0">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                            <input id="buscaProjetos" type="search" placeholder="Buscar projeto ou tela" aria-label="Buscar projeto ou tela"
+                                class="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-10 text-sm outline-none focus:ring-2 focus:ring-[#4a7c3a] focus:border-[#4a7c3a]">
+                            <kbd class="hidden lg:block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 border border-slate-200 rounded px-1.5 py-0.5">/</kbd>
+                        </div>
+                    </div>
+
+                    <section aria-label="Resumo do acesso" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+                        <div class="bg-white border border-slate-200/90 rounded-2xl p-4">
+                            <p class="text-[11px] font-bold text-slate-500">Projetos liberados</p>
+                            <p id="resumoProjetos" class="text-2xl font-extrabold mt-1 tabular-nums"></p>
+                        </div>
+                        <div class="bg-white border border-slate-200/90 rounded-2xl p-4">
+                            <p class="text-[11px] font-bold text-slate-500">Perfil</p>
+                            <p id="resumoPerfil" class="text-base font-extrabold mt-2 truncate"></p>
+                        </div>
+                        <div class="bg-white border border-slate-200/90 rounded-2xl p-4">
+                            <p class="text-[11px] font-bold text-slate-500">Locais</p>
+                            <p id="resumoLocais" class="text-base font-extrabold mt-2 truncate"></p>
+                        </div>
+                        <div class="bg-white border border-slate-200/90 rounded-2xl p-4" aria-live="polite">
+                            <p class="text-[11px] font-bold text-slate-500">Sincronização</p>
+                            <p class="flex items-center gap-2 mt-2 min-w-0"><span id="statusPonto" class="w-2.5 h-2.5 rounded-full shrink-0 bg-slate-300"></span><span id="statusTexto" class="text-base font-extrabold truncate"></span></p>
+                        </div>
+                    </section>
+
+                    <section id="blocoRecentes" class="hidden mt-8" aria-labelledby="tituloRecentes">
+                        <h2 id="tituloRecentes" class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3">Continuar de onde parou</h2>
+                        <div id="listaRecentes" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                    </section>
+
+                    <div id="abasLocalMenu" role="group" aria-label="Filtrar projetos por local" class="hidden mt-8 flex flex-wrap gap-1.5"></div>
+                    <div id="listaProjetos" class="mt-6 grid sm:grid-cols-2 xl:grid-cols-3 gap-x-4 gap-y-8"></div>
+                    <p id="semResultado" class="hidden mt-8 py-12 text-center text-sm text-slate-500 bg-white border border-dashed border-slate-300 rounded-2xl">Nenhum projeto encontrado.</p>
+                    <div id="semProjetos" class="hidden mt-8 py-14 px-6 text-center bg-white border border-dashed border-slate-300 rounded-2xl">
+                        <i data-lucide="lock-keyhole" class="w-8 h-8 mx-auto text-slate-400 mb-3"></i>
+                        <p class="text-sm font-bold text-slate-700">Nenhum projeto liberado para o seu usuário.</p>
+                        <p class="text-sm text-slate-500 mt-1">Fale com o administrador do sistema.</p>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = window.IrrigacaoAPI;
+        const el = id => document.getElementById(id);
+        const icones = () => { if (window.lucide) lucide.createIcons(); };
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const semAcento = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        const MAX_RECENTES = 3;
+
+        function mostrarTela(id) {
+            ['telaCarregando', 'telaLogin', 'telaMenu'].forEach(t => {
+                el(t).classList.toggle('hidden', t !== id);
+                el(t).classList.toggle('flex', t === id && id !== 'telaMenu');
+            });
+            icones();
+        }
+
+        function mostrarLogin(mensagem) {
+            const u = API.usuarioAtual();
+            if (u && !el('loginUsuario').value) el('loginUsuario').value = u.usuario;
+            el('loginErro').innerText = mensagem || '';
+            el('loginErro').classList.toggle('hidden', !mensagem);
+            mostrarTela('telaLogin');
+        }
+
+        const chaveRecentes = () => 'spg_recentes_' + ((API.usuarioAtual() || {}).id || '');
+        function lerRecentes() {
+            try { return JSON.parse(localStorage.getItem(chaveRecentes())) || []; } catch (e) { return []; }
+        }
+        function registrarRecente(id) {
+            try {
+                const lista = [{ id, em: Date.now() }, ...lerRecentes().filter(r => r.id !== id)].slice(0, 8);
+                localStorage.setItem(chaveRecentes(), JSON.stringify(lista));
+            } catch (e) { /* sem espaço: só não guarda o atalho */ }
+        }
+
+        function quandoFoi(ms) {
+            const min = Math.floor((Date.now() - ms) / 60000);
+            if (min < 1) return 'Agora há pouco';
+            if (min < 60) return `Há ${min} min`;
+            const h = Math.floor(min / 60);
+            if (h < 24) return `Há ${h} h`;
+            const d = Math.floor(h / 24);
+            return d === 1 ? 'Ontem' : `Há ${d} dias`;
+        }
+
+        // O que a pessoa tem liberado dentro do projeto
+        function opcoesDoProjeto(p) {
+            const u = API.usuarioAtual();
+            if (p.soAdmin) return ['Somente administrador'];
+            const principais = p.areas.filter(a => !a.extra);
+            const areas = principais.filter(a => API.areaLiberada(a, u));
+            if (principais.length > 1) return areas.map(a => a.nome);
+            return areas.flatMap(a => a.recursos.filter(r => API.recursoLiberado(r.id, u)).map(r => r.nome));
+        }
+
+        const iconeProjeto = (p, tamanho) => `<span class="${tamanho} rounded-xl bg-gradient-to-br ${p.gradiente} text-white flex items-center justify-center shadow-md shrink-0"><i data-lucide="${p.icone}" class="w-1/2 h-1/2"></i></span>`;
+
+        function cartao(p) {
+            const opcoes = opcoesDoProjeto(p);
+            const doProjeto = API.locaisDoProjeto(p.id);
+            const locaisCartao = p.soAdmin ? [] : doProjeto ? doProjeto.map(id => API.nomeLocal(id)) : ['Todos os locais'];
+            const visiveis = opcoes.slice(0, Math.max(0, 2 - locaisCartao.length));
+            const resto = opcoes.length - visiveis.length;
+            const busca = semAcento([p.nome, p.descricao, p.grupo, ...opcoes].join(' '));
+            return `<a href="#/${esc(p.id)}" data-projeto="${esc(p.id)}" data-busca="${esc(busca)}" data-locais="${esc((doProjeto || []).join(','))}" class="cartao-projeto">
+                <div class="flex items-start justify-between gap-3">
+                    ${iconeProjeto(p, 'w-12 h-12')}
+                    <span class="seta w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><i data-lucide="arrow-up-right" class="w-4 h-4"></i></span>
+                </div>
+                <h3 class="text-base font-extrabold text-slate-900 mt-4 leading-snug">${esc(p.nome)}</h3>
+                <p class="text-[13px] text-slate-500 mt-1 leading-snug">${esc(p.descricao)}</p>
+                <div class="flex flex-wrap items-center gap-1.5 mt-auto pt-4">
+                    ${locaisCartao.map(n => `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#3f6b32] bg-[#eef4e2] px-2 py-1 rounded-md"><i data-lucide="map-pin" class="w-3 h-3"></i>${esc(n)}</span>`).join('')}
+                    ${visiveis.map(o => `<span class="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">${esc(o)}</span>`).join('')}
+                    ${resto > 0 ? `<span class="text-[11px] font-bold text-slate-500 px-1">+${resto}</span>` : ''}
+                </div>
+            </a>`;
+        }
+
+        function grupos(projetos) {
+            const mapa = new Map();
+            projetos.forEach(p => { if (!mapa.has(p.grupo)) mapa.set(p.grupo, []); mapa.get(p.grupo).push(p); });
+            return [...mapa.entries()];
+        }
+
+        function renderRecentes(projetos) {
+            const recentes = lerRecentes()
+                .map(r => ({ p: projetos.find(x => x.id === r.id), em: r.em }))
+                .filter(r => r.p).slice(0, MAX_RECENTES);
+            el('blocoRecentes').classList.toggle('hidden', !recentes.length);
+            el('listaRecentes').innerHTML = recentes.map(({ p, em }) => `<a href="#/${esc(p.id)}" data-projeto="${esc(p.id)}" class="foco flex items-center gap-3 p-3 bg-white border border-slate-200/90 rounded-2xl hover:border-slate-300 hover:shadow-md transition">
+                ${iconeProjeto(p, 'w-10 h-10')}
+                <span class="min-w-0 flex-1"><span class="block text-sm font-bold text-slate-800 truncate">${esc(p.nome)}</span><span class="block text-xs text-slate-500">${quandoFoi(em)}</span></span>
+                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
+            </a>`).join('');
+        }
+
+        function preencherCabecalho(projetos) {
+            const u = API.usuarioAtual();
+            const nome = API.nomeUsuario();
+            const hora = new Date().getHours();
+            const perfil = API.isAdmin() ? 'Administrador' : API.isGestor() ? 'Gestor' : 'Colaborador';
+            const locais = API.locaisPermitidos().map(l => l.nome);
+            el('menuUsuario').innerText = nome;
+            el('menuPerfil').innerText = perfil;
+            el('avatarLateral').innerText = nome.split(/\s+/).filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+            el('menuSaudacao').innerText = `${hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'}, ${nome.split(/\s+/)[0]}`;
+            el('menuData').innerText = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+            el('resumoProjetos').innerText = projetos.length;
+            el('resumoPerfil').innerText = perfil;
+            el('resumoLocais').innerText = API.isAdmin() ? 'Todos' : (locais.join(', ') || '—');
+            el('resumoLocais').title = locais.join(', ');
+        }
+
+        function mostrarMenu() {
+            const projetos = API.projetosDoUsuario();
+            // Quem tem um só projeto vai direto para ele
+            if (projetos.length === 1) { location.replace(projetos[0].caminho); return; }
+            preencherCabecalho(projetos);
+            el('semProjetos').classList.toggle('hidden', projetos.length > 0);
+            renderAbasLocalMenu();
+            el('buscaProjetos').value = '';
+            el('semResultado').classList.add('hidden');
+
+            const porGrupo = grupos(projetos);
+            el('navLateral').innerHTML = `<div class="space-y-1"><a href="#/" title="Início" data-projeto="" class="item-lateral"><i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i><span class="rotulo">Início</span></a></div>` +
+                porGrupo.map(([g, lista]) => `<div class="space-y-1">
+                    <p class="rotulo px-3 text-[10px] font-extrabold uppercase tracking-widest text-emerald-100/40">${esc(g)}</p>
+                    ${lista.map(p => `<a href="#/${esc(p.id)}" title="${esc(p.nome)}" data-projeto="${esc(p.id)}" class="item-lateral"><i data-lucide="${p.icone}" class="w-4 h-4 shrink-0"></i><span class="rotulo truncate">${esc(p.nome)}</span></a>`).join('')}
+                </div>`).join('');
+
+            const larguraGrupo = n => n >= 3 ? ['sm:col-span-2 xl:col-span-3', 'sm:grid-cols-2 xl:grid-cols-3'] : n === 2 ? ['sm:col-span-2', 'sm:grid-cols-2'] : ['', ''];
+            el('listaProjetos').innerHTML = porGrupo.map(([g, lista]) => {
+                const [secao, grade] = larguraGrupo(lista.length);
+                return `<section data-grupo aria-label="${esc(g)}" class="${secao}">
+                    <h2 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3">${esc(g)}</h2>
+                    <div class="grid ${grade} gap-4">${lista.map(cartao).join('')}</div>
+                </section>`;
+            }).join('');
+
+            mostrarTela('telaMenu');
+            rotear();
+        }
+
+        // --- PROJETOS DENTRO DO PAINEL ---
+        // O endereço guarda o projeto aberto (#/irrigacao): voltar, recarregar e link direto funcionam.
+        let projetoAberto = null;
+        let quadro = null;
+
+        function aplicarLateral() {
+            let pref = null;
+            try { pref = localStorage.getItem('spg_menu_lateral'); } catch (e) { /* segue o padrão */ }
+            // Com um projeto aberto, o menu começa recolhido para dar espaço a ele
+            el('lateral').classList.toggle('recolhida', pref ? pref === 'recolhida' : !!projetoAberto);
+        }
+
+        function marcarAtual(id) {
+            document.querySelectorAll('#navLateral a[data-projeto]').forEach(a => {
+                const atual = a.dataset.projeto === (id || '');
+                a.classList.toggle('atual', atual);
+                if (atual) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+            });
+        }
+
+        function nomearProjeto(p) {
+            projetoAberto = p.id;
+            document.title = `${p.nome} | Painel SPG`;
+            el('tituloMobile').innerText = p.nome;
+            marcarAtual(p.id);
+        }
+
+        function abrirProjeto(p) {
+            if (projetoAberto === p.id) return;
+            registrarRecente(p.id);
+            nomearProjeto(p);
+            document.body.classList.add('modo-projeto');
+            el('areaInicio').classList.add('hidden');
+            el('areaProjeto').classList.remove('hidden');
+            el('carregandoTexto').innerText = `Abrindo ${p.nome}...`;
+            el('carregandoProjeto').classList.remove('hidden');
+            aplicarLateral();
+            icones();
+            if (quadro) quadro.remove();
+            // Um quadro novo a cada projeto: trocar não acumula passos no botão Voltar
+            const novo = document.createElement('iframe');
+            novo.id = 'quadroProjeto';
+            novo.title = p.nome;
+            novo.className = 'block w-full h-full border-0';
+            novo.addEventListener('load', () => aoCarregarQuadro(novo));
+            novo.src = p.caminho;
+            quadro = novo;
+            el('areaProjeto').appendChild(novo);
+        }
+
+        function aoCarregarQuadro(f) {
+            if (f !== quadro) return;
+            el('carregandoProjeto').classList.add('hidden');
+            let doc, caminho;
+            try { doc = f.contentDocument; caminho = f.contentWindow.location.pathname; } catch (e) { return; }
+            // O menu do Painel já fica à vista: o atalho de cada projeto seria repetido
+            const estilo = doc.createElement('style');
+            estilo.textContent = '#btnMenuProjetos, a[title="Menu de projetos"] { display: none !important; }';
+            doc.head.appendChild(estilo);
+            // Um link dentro do projeto pode levar a outro (ex.: Irrigação > Usuários)
+            const p = API.projetosDoUsuario().find(x => caminho.endsWith(x.caminho));
+            if (p && p.id !== projetoAberto) {
+                registrarRecente(p.id);
+                nomearProjeto(p);
+                history.replaceState(null, '', '#/' + p.id);
+            }
+        }
+
+        function voltarInicio() {
+            projetoAberto = null;
+            if (quadro) { quadro.remove(); quadro = null; }
+            document.body.classList.remove('modo-projeto');
+            el('areaProjeto').classList.add('hidden');
+            el('areaInicio').classList.remove('hidden');
+            document.title = 'Painel SPG';
+            el('tituloMobile').innerText = 'Painel SPG';
+            marcarAtual('');
+            aplicarLateral();
+            renderRecentes(API.projetosDoUsuario());
+            filtrar();
+            icones();
+        }
+
+        function rotear() {
+            const id = location.hash.replace(/^#\/?/, '');
+            const p = API.projetosDoUsuario().find(x => x.id === id);
+            if (p) abrirProjeto(p);
+            else {
+                if (id) history.replaceState(null, '', location.pathname + location.search);
+                voltarInicio();
+            }
+            alternarGaveta(false);
+        }
+
+        function alternarGaveta(abrir) {
+            el('lateral').classList.toggle('aberta', abrir);
+            el('fundoGaveta').classList.toggle('hidden', !abrir);
+        }
+
+        // --- FILTRO POR LOCAL NO MENU ---
+        let localMenu = 'todos';
+        try { localMenu = localStorage.getItem('spg_menu_local') || 'todos'; } catch (e) { /* começa em Todos */ }
+
+        function renderAbasLocalMenu() {
+            const locais = API.locaisPermitidos();
+            if (!locais.some(l => l.id === localMenu)) localMenu = 'todos';
+            el('abasLocalMenu').classList.toggle('hidden', locais.length < 2);
+            el('abasLocalMenu').innerHTML = [{ id: 'todos', nome: 'Todos os locais' }, ...locais].map(l => {
+                const ativa = l.id === localMenu;
+                return `<button type="button" data-local-menu="${esc(l.id)}" aria-pressed="${ativa}" class="foco inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${ativa ? 'fundo-mata border-transparent text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}">${l.id === 'todos' ? '' : '<i data-lucide="map-pin" class="w-3.5 h-3.5"></i>'}${esc(l.nome)}</button>`;
+            }).join('');
+        }
+
+        function filtrar() {
+            const termo = semAcento(el('buscaProjetos').value.trim());
+            let achou = 0;
+            document.querySelectorAll('#listaProjetos [data-grupo]').forEach(g => {
+                let noGrupo = 0;
+                g.querySelectorAll('[data-busca]').forEach(c => {
+                    const locaisCartao = c.dataset.locais ? c.dataset.locais.split(',') : [];
+                    const noLocal = localMenu === 'todos' || !locaisCartao.length || locaisCartao.includes(localMenu);
+                    const ok = noLocal && (!termo || c.dataset.busca.includes(termo));
+                    c.style.display = ok ? '' : 'none';
+                    if (ok) noGrupo++;
+                });
+                g.classList.toggle('hidden', !noGrupo);
+                achou += noGrupo;
+            });
+            el('blocoRecentes').classList.toggle('hidden', !!termo || !el('listaRecentes').children.length);
+            el('semResultado').classList.toggle('hidden', achou > 0 || API.projetosDoUsuario().length === 0);
+        }
+
+        function renderStatus(s) {
+            let cor = 'bg-emerald-500', texto = 'Em dia';
+            if (s.falhas > 0) { cor = 'bg-red-500'; texto = `${s.falhas} com erro`; }
+            else if (s.sessaoExpirada) { cor = 'bg-amber-500'; texto = 'Entrar de novo'; }
+            else if (!s.online) { cor = 'bg-slate-400'; texto = s.pendentes ? `Offline · ${s.pendentes}` : 'Offline'; }
+            else if (s.pendentes > 0) { cor = 'bg-amber-500'; texto = `${s.pendentes} pendente${s.pendentes > 1 ? 's' : ''}`; }
+            el('statusPonto').className = `w-2.5 h-2.5 rounded-full shrink-0 ${cor}`;
+            el('statusTexto').innerText = texto;
+        }
+
+        async function iniciar() {
+            const u = API.usuarioAtual();
+            if (!u) { mostrarLogin(); return; }
+            if (navigator.onLine) {
+                if (!await API.sessaoValida()) { mostrarLogin('Sua sessão expirou. Entre novamente.'); return; }
+                // Permissões podem ter mudado; com sinal fraco não prende a pessoa nesta tela
+                const perfil = await Promise.race([
+                    API.atualizarPerfil().catch(() => u),
+                    new Promise(ok => setTimeout(() => ok(u), 5000))
+                ]);
+                if (!perfil) { mostrarLogin('Seu acesso foi desativado. Fale com o gestor.'); return; }
+            }
+            mostrarMenu();
+        }
+
+        el('formLogin').addEventListener('submit', async e => {
+            e.preventDefault();
+            const btn = el('btnEntrar');
+            el('loginErro').classList.add('hidden');
+            btn.disabled = true;
+            btn.innerText = 'Entrando...';
+            try {
+                const { trocouDeUsuario } = await API.login(el('loginUsuario').value, el('loginSenha').value);
+                if (trocouDeUsuario) localStorage.setItem('spg_trocou_usuario', '1');
+                el('loginSenha').value = '';
+                mostrarMenu();
+            } catch (err) {
+                el('loginErro').innerText = err.message;
+                el('loginErro').classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Entrar';
+            }
+        });
+
+        el('btnVerSenha').addEventListener('click', () => {
+            const campo = el('loginSenha');
+            const ver = campo.type === 'password';
+            campo.type = ver ? 'text' : 'password';
+            const btn = el('btnVerSenha');
+            btn.title = ver ? 'Esconder senha' : 'Mostrar senha';
+            btn.setAttribute('aria-label', btn.title);
+            btn.setAttribute('aria-pressed', String(ver));
+            btn.innerHTML = `<i data-lucide="${ver ? 'eye-off' : 'eye'}" class="w-5 h-5"></i>`;
+            icones();
+        });
+
+        document.addEventListener('click', async e => {
+            const projeto = e.target.closest('[data-projeto]');
+            if (projeto) { alternarGaveta(false); return; }
+            const botaoLocal = e.target.closest('[data-local-menu]');
+            if (botaoLocal) {
+                localMenu = botaoLocal.dataset.localMenu;
+                try { localStorage.setItem('spg_menu_local', localMenu); } catch (err) { /* só não lembra a escolha */ }
+                renderAbasLocalMenu();
+                filtrar();
+                icones();
+                return;
+            }
+            if (e.target.closest('[data-gaveta]')) { alternarGaveta(true); return; }
+            if (e.target.closest('[data-fechar-gaveta]')) { alternarGaveta(false); return; }
+            if (e.target.closest('[data-recolher]')) {
+                const recolher = !el('lateral').classList.contains('recolhida');
+                try { localStorage.setItem('spg_menu_lateral', recolher ? 'recolhida' : 'expandida'); } catch (err) { /* só não guarda a escolha */ }
+                aplicarLateral();
+                return;
+            }
+            if (e.target.closest('[data-sair]')) {
+                await API.logout();
+                history.replaceState(null, '', location.pathname + location.search);
+                voltarInicio();
+                mostrarLogin();
+            }
+        });
+
+        el('buscaProjetos').addEventListener('input', filtrar);
+        window.addEventListener('hashchange', () => { if (!el('telaMenu').classList.contains('hidden')) rotear(); });
+        document.addEventListener('keydown', e => {
+            const digitando = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+            if (e.key === 'Escape') alternarGaveta(false);
+            if (e.key === '/' && !digitando && !el('telaMenu').classList.contains('hidden')) { e.preventDefault(); el('buscaProjetos').focus(); }
+        });
+
+        API.onStatus(renderStatus);
+        if (window.top === window.self) iniciar();
+
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => {}); });
+        }
+    </script>
+</body>
+</html>

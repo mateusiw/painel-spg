@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="tituloPagina">Cronograma de Limpeza</title>
+<link id="siteFavicon" rel="icon" type="image/png">
+<link id="siteAppleTouchIcon" rel="apple-touch-icon">
+<link id="siteManifest" rel="manifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --border: #cbd5e1;
+        --border-strong: #64748b;
+        --text: #0f172a;
+        --text-muted: #475569;
+        --text-dim: #64748b;
+        --accent: #16a34a;
+        --accent-hover: #15803d;
+        --shadow: rgba(15, 23, 42, 0.10);
+        --verde-escuro: #1b5e20;
+        --verde-medio: #66bb6a;
+        --verde-claro: #c8e6c9;
+        --danger: #dc2626;
+
+        /* Linha do corpo da tabela: ajustada por JS conforme a qtd. de funcionários */
+        --linha-altura: 9mm;
+        --linha-fonte: 10px;
+    }
+
+    body {
+        font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 24px 16px 60px;
+    }
+
+    /* ── Layout: painel à esquerda, prévia à direita ── */
+    .layout-principal {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+        max-width: 1500px;
+        margin: 0 auto;
+        flex-wrap: wrap;
+    }
+
+    .coluna-preview {
+        flex: 1 1 480px;
+        min-width: 320px;
+        position: sticky;
+        top: 24px;
+    }
+
+    .preview-vazio {
+        background: var(--surface);
+        border: 1px dashed var(--border-strong, var(--border));
+        border-radius: 14px;
+        padding: 60px 24px;
+        text-align: center;
+        color: var(--text-dim);
+        font-size: 0.85rem;
+        line-height: 1.6;
+    }
+
+    /* ── Painel de configuração (não impresso) ── */
+    .painel {
+        flex: 1 1 420px;
+        max-width: 480px;
+        margin: 0;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 24px 24px 22px;
+        box-shadow: 0 10px 24px var(--shadow);
+    }
+
+    .painel h1 {
+        font-size: 1.15rem;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        margin-bottom: 4px;
+    }
+
+    .painel .sub {
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        margin-bottom: 20px;
+    }
+
+    .campo {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin-bottom: 14px;
+    }
+
+    .linha-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+    }
+
+    input, textarea {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 0.88rem;
+        font-family: inherit;
+        color: var(--text);
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+        width: 100%;
+    }
+
+    textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+
+    input:focus, textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+    }
+
+    .dica {
+        font-size: 0.72rem;
+        color: var(--text-dim);
+        margin-top: 4px;
+    }
+
+    .lista-funcionarios {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 4px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2px;
+        max-height: 260px;
+        overflow-y: auto;
+    }
+
+    .item-funcionario {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border-radius: 6px;
+        font-size: 0.84rem;
+        cursor: pointer;
+    }
+
+    .item-funcionario:hover { background: var(--bg); }
+
+    .item-funcionario input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--accent);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .lista-acoes {
+        display: flex;
+        gap: 14px;
+        margin-top: 8px;
+    }
+
+    .lista-acoes button {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 2px;
+    }
+    .lista-acoes button:hover { text-decoration: underline; }
+
+    select {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 0.88rem;
+        font-family: inherit;
+        color: var(--text);
+        outline: none;
+        width: 100%;
+    }
+    select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15); }
+
+    .form-nova-empregadora {
+        display: none;
+        border: 1px dashed var(--border-strong, var(--border));
+        border-radius: 8px;
+        padding: 14px;
+        margin-top: 10px;
+        background: var(--bg);
+    }
+    .form-nova-empregadora.visivel { display: block; }
+
+    .link-inline {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 4px 0;
+        margin-top: 4px;
+    }
+    .link-inline:hover { text-decoration: underline; }
+
+    .acoes {
+        display: flex;
+        gap: 10px;
+        margin-top: 18px;
+        flex-wrap: wrap;
+    }
+
+    button {
+        font-family: inherit;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        border-radius: 8px;
+        padding: 11px 20px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .btn-primario {
+        background: var(--accent);
+        color: #fff;
+    }
+    .btn-primario:hover { background: var(--accent-hover); }
+
+    .btn-secundario {
+        background: #fff;
+        color: var(--text-muted);
+        border-color: var(--border);
+    }
+    .btn-secundario:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Documento imprimível (1 folha A4 paisagem = 4 blocos semanais em grade 2x2) ── */
+    #documento { display: none; }
+    #documento.visivel { display: block; }
+
+    .folha-a4 {
+        width: 297mm;
+        margin: 0 auto 24px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8mm;
+        box-shadow: 0 10px 24px var(--shadow);
+        zoom: 1;
+    }
+
+    .cabecalho-doc {
+        display: flex;
+        flex-direction: column;
+        gap: 3mm;
+        padding: 0 4mm 4mm;
+        margin-bottom: 4mm;
+        border-bottom: 3px solid var(--verde-escuro);
+    }
+
+    .cabecalho-linha-topo {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        zoom: 1;
+    }
+
+    .cabecalho-doc .item { font-size: 1.05rem; font-weight: 800; color: var(--text); white-space: nowrap; flex-shrink: 0; }
+    .cabecalho-doc .item b {
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-right: 6px;
+        color: var(--verde-escuro);
+        font-weight: 900;
+        font-size: 0.88rem;
+    }
+
+    .cabecalho-doc .logo-doc {
+        height: 20mm;
+        width: auto;
+        margin-left: auto;
+        object-fit: contain;
+    }
+
+    .instrucao-preenchimento {
+        font-size: 0.7rem;
+        font-style: italic;
+        color: var(--text-muted);
+    }
+
+    .blocos-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 4mm;
+        height: var(--altura-grade, 162mm);
+    }
+
+    .bloco {
+        border: 1px solid var(--border-strong);
+        border-radius: 4px;
+        overflow: hidden;
+        display: flex;
+        align-items: flex-start;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .titulo-bloco th {
+        background: var(--verde-escuro);
+        color: #fff;
+        font-size: 0.66rem;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        text-align: center;
+        padding: 2mm 2px;
+        border: 1px solid var(--verde-escuro);
+    }
+
+    thead .linha-datas th {
+        background: var(--verde-medio);
+        color: #fff;
+        font-size: 0.6rem;
+        font-weight: 800;
+        text-align: center;
+        padding: 1.5mm 2px;
+        border: 1px solid var(--verde-medio);
+        white-space: nowrap;
+    }
+
+    thead .linha-datas th.col-nome {
+        background: var(--verde-escuro);
+        text-align: left;
+        padding-left: 2mm;
+    }
+
+    tbody td, tbody th {
+        border: 1px solid var(--border-strong);
+        padding: 0 2px;
+        font-size: var(--linha-fonte);
+        text-align: center;
+        height: var(--linha-altura);
+    }
+
+    tbody th.col-nome {
+        background: var(--verde-claro);
+        color: var(--verde-escuro);
+        font-weight: 700;
+        font-size: calc(var(--linha-fonte) * 0.82);
+        text-align: left;
+        padding-left: 2mm;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    tbody tr:nth-child(even) td { background: #f8fafc; }
+
+    .declaracao {
+        max-width: 297mm;
+        margin: 0 auto 30px;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+    }
+
+    @media print {
+        body { background: #fff; padding: 0; }
+        .layout-principal { display: block; }
+        .painel, .preview-vazio { display: none; }
+        .coluna-preview { position: static; }
+        #documento { display: block; }
+        .folha-a4 { box-shadow: none; border: none; width: 100%; padding: 0; page-break-after: always; zoom: 1 !important; }
+        .declaracao { display: none; }
+        @page { size: A4 landscape; margin: 8mm; }
+        tr { page-break-inside: avoid; }
+    }
+
+    /* Padrão visual da Irrigação (só na tela; a folha A4 não muda) */
+    @media screen {
+        .painel { --border: #e2e8f0; overflow: hidden; border-radius: 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .painel h1 { margin: -24px -24px 0; padding: 18px 24px 2px; background: linear-gradient(to right, #16a34a, #15803d); color: #fff; font-size: 1rem; font-weight: 700; letter-spacing: 0; }
+        .painel .sub { margin: 0 -24px 20px; padding: 2px 24px 16px; background: linear-gradient(to right, #16a34a, #15803d); color: #dcfce7; }
+        .painel label { color: #94a3b8; letter-spacing: 0.05em; }
+        .painel input:not([type=checkbox]), .painel select, .painel textarea { background: #f8fafc; border: 2px solid var(--border); border-radius: 12px; font-family: inherit; }
+        .painel input:not([type=checkbox]):focus, .painel select:focus, .painel textarea:focus { background: #fff; border-color: var(--accent); }
+        .painel .item-funcionario, .painel .item-funcionario * { color: #334155; }
+        .lista-funcionarios { border: 2px solid var(--border); border-radius: 12px; }
+        .btn-primario { background-image: linear-gradient(to bottom, #10b981, #059669); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.25); }
+        .btn-primario:hover { background-image: linear-gradient(to bottom, #059669, #047857); }
+        .btn-secundario { border-radius: 12px; }
+        .preview-vazio { border-radius: 16px; border-color: #e2e8f0; }
+    }
+</style>
+</head>
+<body>
+
+<div class="layout-principal">
+<div class="painel" id="painel">
+    <h1>Cronograma de Limpeza</h1>
+    <p class="sub">Preencha os dados abaixo e clique em "Gerar Cronograma". O mês é dividido em 4 tabelas
+        semanais, todas numa única folha A4 (paisagem) — funcionário por linha, dias nas colunas.</p>
+
+    <div class="campo">
+        <label for="selectEmpregador">Empregador(a)</label>
+        <select id="selectEmpregador"></select>
+        <button type="button" class="link-inline" id="btnNovaEmpregadora">+ Cadastrar nova empregadora</button>
+
+        <div class="form-nova-empregadora" id="formNovaEmpregadora">
+            <div class="linha-2">
+                <div class="campo">
+                    <label for="novoEmpregadorNome">Nome da nova empregadora</label>
+                    <input type="text" id="novoEmpregadorNome" placeholder="Ex: Ana Beatriz Souza">
+                </div>
+                <div class="campo">
+                    <label for="novoEmpregadorCpf">CPF (opcional)</label>
+                    <input type="text" id="novoEmpregadorCpf" placeholder="000.000.000-00" maxlength="14">
+                </div>
+            </div>
+            <div class="campo">
+                <label for="novoEmpregadorFuncionarios">Nomes dos funcionários (um por linha)</label>
+                <textarea id="novoEmpregadorFuncionarios" placeholder="Ex:&#10;Maria Souza&#10;João Pereira&#10;..."></textarea>
+            </div>
+            <div class="acoes" style="margin-top:10px;">
+                <button type="button" class="btn-primario" id="btnSalvarEmpregadora">Salvar empregadora</button>
+                <button type="button" class="btn-secundario" id="btnCancelarEmpregadora">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="linha-2">
+        <div class="campo">
+            <label for="empregadorNome">Nome do empregador (confirmar/ajustar)</label>
+            <input type="text" id="empregadorNome" placeholder="Ex: João da Silva">
+        </div>
+        <div class="campo">
+            <label for="empregadorCpf">CPF do empregador</label>
+            <input type="text" id="empregadorCpf" placeholder="000.000.000-00" maxlength="14">
+        </div>
+    </div>
+
+    <div class="campo">
+        <label for="tipoCronograma">Tipo de cronograma</label>
+        <select id="tipoCronograma">
+            <option value="Limpeza Geral (Balanças, Pós-Colheita e Canivetes)" selected>Limpeza Geral (Balanças, Pós-Colheita e Canivetes)</option>
+        </select>
+    </div>
+
+    <div class="campo">
+        <label for="mesAno">Mês / Ano</label>
+        <input type="month" id="mesAno">
+    </div>
+
+    <div class="campo">
+        <label for="formatoNome">Como exibir o nome na tabela</label>
+        <select id="formatoNome">
+            <option value="primeiro-inicial" selected>Primeiro nome + inicial do sobrenome (ex: Leandro F.)</option>
+            <option value="inicial-sobrenome">Inicial do nome + sobrenome (ex: L. Ferreira)</option>
+            <option value="completo">Nome completo (ex: Leandro Altino Ferreira)</option>
+            <option value="primeiro">Só o primeiro nome (ex: Leandro)</option>
+        </select>
+    </div>
+
+    <div class="campo">
+        <label>Funcionários</label>
+        <div class="lista-funcionarios" id="listaFuncionarios"></div>
+        <div class="lista-acoes">
+            <button type="button" id="btnMarcarTodos">Marcar todos</button>
+            <button type="button" id="btnDesmarcarTodos">Desmarcar todos</button>
+            <button type="button" id="btnRemoverEmpregadora" style="color:var(--danger, #dc2626); display:none;">Excluir esta empregadora</button>
+        </div>
+        <p class="dica">Desmarque quem não deve entrar no cronograma deste mês (ex: afastado, férias). Com mais
+            funcionários marcados as células ficam menores (tudo precisa caber numa folha só, em 4 tabelas
+            semanais).</p>
+    </div>
+
+    <div class="acoes">
+        <button class="btn-primario" id="btnGerar">Gerar Cronograma</button>
+        <button class="btn-secundario" id="btnImprimir">Imprimir / Salvar PDF</button>
+    </div>
+</div>
+
+<div class="coluna-preview">
+    <div class="preview-vazio" id="previewVazio">
+        A prévia do cronograma vai aparecer aqui.<br>Preencha os dados ao lado e clique em "Gerar Cronograma".
+    </div>
+
+    <div id="documento">
+        <div class="folha-a4" id="folhaA4">
+            <div class="cabecalho-doc">
+                <div class="cabecalho-linha-topo">
+                    <div class="item"><b>Cronograma:</b><span id="outTipoCronograma"></span></div>
+                    <div class="item"><b>Empregador:</b><span id="outEmpregadorNome"></span></div>
+                    <div class="item"><b>CPF:</b><span id="outEmpregadorCpf"></span></div>
+                    <img class="logo-doc" src="logo-limpeza.png" alt="Logo">
+                </div>
+                <p class="instrucao-preenchimento" id="instrucaoPreenchimento"></p>
+            </div>
+
+            <div class="blocos-grid" id="blocosContainer"></div>
+        </div>
+
+        <p class="declaracao" id="declaracaoTexto">
+            Cada funcionário(a) deve marcar/rubricar na célula do dia em que realizou a limpeza,
+            na linha com o próprio nome, confirmando que foi ele(a) quem executou o serviço naquela data.
+        </p>
+    </div>
+</div>
+</div>
+
+<template id="templateBloco">
+    <div class="bloco">
+        <table>
+            <colgroup class="colgroup-bloco"></colgroup>
+            <thead>
+                <tr class="titulo-bloco">
+                    <th class="titulo-texto"></th>
+                </tr>
+                <tr class="linha-datas">
+                    <th class="col-nome">Funcionário</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</template>
+
+<script>
+    // ── Ícone de PWA (favicon, atalho na tela inicial, manifest) ──
+    (function aplicarIconePwa() {
+        const logoUri      = 'logo-limpeza.png';
+        const favicon      = document.getElementById('siteFavicon');
+        const touchIcon    = document.getElementById('siteAppleTouchIcon');
+        const manifestLink = document.getElementById('siteManifest');
+        if (favicon)   { favicon.href = '../../../favicon.png'; favicon.type = 'image/png'; }
+        if (touchIcon) touchIcon.href = logoUri;
+        if (manifestLink) {
+            const manifest = {
+                name: 'Cronograma de Limpeza',
+                short_name: 'Cronograma',
+                start_url: '.',
+                display: 'standalone',
+                background_color: '#f1f5f9',
+                theme_color: '#f1f5f9',
+                icons: [
+                    { src: logoUri, sizes: '192x192', type: 'image/png' },
+                    { src: logoUri, sizes: '512x512', type: 'image/png' }
+                ]
+            };
+            manifestLink.href = `data:application/manifest+json,${encodeURIComponent(JSON.stringify(manifest))}`;
+        }
+    })();
+
+    const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+    // ── Empregadoras padrão (fixas no código) ──
+    const EMPREGADORES_PADRAO = {
+        'Gabriela Selbach': {
+            cpf: '456.326.853-49',
+            funcionarios: [
+                'Leandro Altino Ferreira',
+                'Marcos Feitosa De Oliveira',
+                'Nara Rubia De Melo Campos',
+                'Regilene Alves Isaias Ribeiro',
+                'Francisco Da Silva Ferreira',
+                'Gabriel Cardoso Araujo',
+                'Francisco Lucas Inacio De Sousa',
+                'Bruna Pereira Da Silva',
+                'Karine Marques De Almeida Martins',
+                'Monica Batista Farias',
+                'Daiane Ribeiro Leite'
+            ]
+        },
+        'Paula Selbach': {
+            cpf: '301.920.723-15',
+            funcionarios: [
+                'Lucas Ribeiro Da Silva',
+                'Maria Da Conceição De Jesus Ramalho',
+                'Fabiana Marques Barbosa',
+                'Gretha Chaves Fernandes',
+                'Marcelo Oliveira Da Silva',
+                'Michel Rodrigues De Souza',
+                'Alesandra Leitao Da Silva',
+                'Francisco Lucas Ribeiro Da Silva',
+                'Dionisio Pereira De Albuquerque',
+                'Pedro Lucas De Souza Gonçalves',
+                'Ana Paula Rodrigues Da Silva',
+                'Antonio Dheimison Costa Camelo'
+            ]
+        },
+        'SPG PRODUCAO': {
+            cpf: '33.765.655/0001-00',
+            funcionarios: [
+                'Rodrigo Lima Leitão',
+                'Emanuel Cardoso Araujo',
+                'Thaynara Rodrigues Da Silva',
+                'Francisca Idaiany Melo Rodrigues'
+            ]
+        }
+    };
+
+    // ── Empregadoras cadastradas pelo usuário (salvas no navegador) ──
+    const CHAVE_STORAGE = 'cronograma_limpeza_empregadoras';
+
+    function carregarEmpregadorasCustom() {
+        try {
+            return JSON.parse(localStorage.getItem(CHAVE_STORAGE)) || {};
+        } catch {
+            return {};
+        }
+    }
+
+    function salvarEmpregadorasCustom(dados) {
+        localStorage.setItem(CHAVE_STORAGE, JSON.stringify(dados));
+    }
+
+    function todasEmpregadoras() {
+        return { ...EMPREGADORES_PADRAO, ...carregarEmpregadorasCustom() };
+    }
+
+    // ── Funcionários desmarcados pelo usuário, por empregadora (salvo no navegador) ──
+    const CHAVE_DESMARCADOS = 'cronograma_limpeza_desmarcados';
+
+    function carregarDesmarcados() {
+        try {
+            return JSON.parse(localStorage.getItem(CHAVE_DESMARCADOS)) || {};
+        } catch {
+            return {};
+        }
+    }
+
+    function salvarMarcacaoAtual() {
+        const empregadorAtual = document.getElementById('selectEmpregador').value;
+        const desmarcados = Array.from(document.querySelectorAll('.chk-funcionario'))
+            .filter(chk => !chk.checked)
+            .map(chk => chk.value);
+
+        const todos = carregarDesmarcados();
+        if (desmarcados.length) todos[empregadorAtual] = desmarcados;
+        else delete todos[empregadorAtual];
+        localStorage.setItem(CHAVE_DESMARCADOS, JSON.stringify(todos));
+    }
+
+    function montarListaFuncionarios(nomes, empregadorNome) {
+        const lista = document.getElementById('listaFuncionarios');
+        const desmarcados = carregarDesmarcados()[empregadorNome] || [];
+        lista.innerHTML = '';
+        nomes.forEach(nome => {
+            const marcado = !desmarcados.includes(nome);
+            const label = document.createElement('label');
+            label.className = 'item-funcionario';
+            label.innerHTML = `<input type="checkbox" class="chk-funcionario" value="${nome}" ${marcado ? 'checked' : ''}> ${nome}`;
+            lista.appendChild(label);
+        });
+    }
+
+    function popularSelectEmpregadores(selecionar) {
+        const select = document.getElementById('selectEmpregador');
+        const nomesCustom = Object.keys(carregarEmpregadorasCustom());
+        select.innerHTML = '';
+        Object.keys(EMPREGADORES_PADRAO).concat(nomesCustom).forEach(nome => {
+            const opt = document.createElement('option');
+            opt.value = nome;
+            opt.textContent = nome;
+            select.appendChild(opt);
+        });
+        if (selecionar) select.value = selecionar;
+    }
+
+    function aplicarEmpregadoraSelecionada() {
+        const nomeSelecionado = document.getElementById('selectEmpregador').value;
+        const dados = todasEmpregadoras()[nomeSelecionado];
+        if (!dados) return;
+
+        document.getElementById('empregadorNome').value = nomeSelecionado;
+        document.getElementById('empregadorCpf').value  = dados.cpf || '';
+        montarListaFuncionarios(dados.funcionarios, nomeSelecionado);
+
+        const ehPadrao = Object.prototype.hasOwnProperty.call(EMPREGADORES_PADRAO, nomeSelecionado);
+        document.getElementById('btnRemoverEmpregadora').style.display = ehPadrao ? 'none' : 'inline';
+    }
+
+    document.getElementById('selectEmpregador').addEventListener('change', aplicarEmpregadoraSelecionada);
+
+    // ── Reaplica o cronograma automaticamente se a prévia já estiver gerada ──
+    function atualizarSePrevisualizando() {
+        if (document.getElementById('documento').classList.contains('visivel')) {
+            gerarCronograma();
+        }
+    }
+
+    document.getElementById('btnMarcarTodos').addEventListener('click', () => {
+        document.querySelectorAll('.chk-funcionario').forEach(chk => chk.checked = true);
+        salvarMarcacaoAtual();
+        atualizarSePrevisualizando();
+    });
+    document.getElementById('btnDesmarcarTodos').addEventListener('click', () => {
+        document.querySelectorAll('.chk-funcionario').forEach(chk => chk.checked = false);
+        salvarMarcacaoAtual();
+        atualizarSePrevisualizando();
+    });
+
+    // ── Delegação: cobre os checkboxes mesmo depois que a lista é recriada ao trocar de empregador(a) ──
+    document.getElementById('listaFuncionarios').addEventListener('change', e => {
+        if (!e.target.classList.contains('chk-funcionario')) return;
+        salvarMarcacaoAtual();
+        atualizarSePrevisualizando();
+    });
+
+    document.getElementById('btnRemoverEmpregadora').addEventListener('click', () => {
+        const nomeSelecionado = document.getElementById('selectEmpregador').value;
+        if (!confirm(`Excluir a empregadora "${nomeSelecionado}" e a lista de funcionários salva dela?`)) return;
+        const custom = carregarEmpregadorasCustom();
+        delete custom[nomeSelecionado];
+        salvarEmpregadorasCustom(custom);
+        const desmarcados = carregarDesmarcados();
+        delete desmarcados[nomeSelecionado];
+        localStorage.setItem(CHAVE_DESMARCADOS, JSON.stringify(desmarcados));
+        popularSelectEmpregadores(Object.keys(EMPREGADORES_PADRAO)[0]);
+        aplicarEmpregadoraSelecionada();
+    });
+
+    // ── Cadastro de nova empregadora ──
+    const formNovaEmpregadora = document.getElementById('formNovaEmpregadora');
+
+    document.getElementById('btnNovaEmpregadora').addEventListener('click', () => {
+        formNovaEmpregadora.classList.add('visivel');
+    });
+    document.getElementById('btnCancelarEmpregadora').addEventListener('click', () => {
+        formNovaEmpregadora.classList.remove('visivel');
+        document.getElementById('novoEmpregadorNome').value = '';
+        document.getElementById('novoEmpregadorCpf').value = '';
+        document.getElementById('novoEmpregadorFuncionarios').value = '';
+    });
+
+    document.getElementById('btnSalvarEmpregadora').addEventListener('click', () => {
+        const nome = document.getElementById('novoEmpregadorNome').value.trim();
+        const cpf  = document.getElementById('novoEmpregadorCpf').value.trim();
+        const funcionarios = document.getElementById('novoEmpregadorFuncionarios').value
+            .split('\n').map(n => n.trim()).filter(Boolean);
+
+        if (!nome) { alert('Informe o nome da empregadora.'); return; }
+        if (!funcionarios.length) { alert('Informe pelo menos um funcionário.'); return; }
+
+        const custom = carregarEmpregadorasCustom();
+        custom[nome] = { cpf, funcionarios };
+        salvarEmpregadorasCustom(custom);
+
+        popularSelectEmpregadores(nome);
+        aplicarEmpregadoraSelecionada();
+
+        formNovaEmpregadora.classList.remove('visivel');
+        document.getElementById('novoEmpregadorNome').value = '';
+        document.getElementById('novoEmpregadorCpf').value = '';
+        document.getElementById('novoEmpregadorFuncionarios').value = '';
+    });
+
+    // ── Inicialização ──
+    popularSelectEmpregadores(Object.keys(EMPREGADORES_PADRAO)[0]);
+    aplicarEmpregadoraSelecionada();
+
+    function formatarCpf(valor) {
+        const digitos = valor.replace(/\D/g, '').slice(0, 11);
+        let out = digitos;
+        if (digitos.length > 9) out = digitos.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+        else if (digitos.length > 6) out = digitos.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+        else if (digitos.length > 3) out = digitos.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+        return out;
+    }
+
+    document.getElementById('empregadorCpf').addEventListener('input', e => {
+        e.target.value = formatarCpf(e.target.value);
+    });
+
+    (function definirMesAtual() {
+        const hoje = new Date();
+        const mm = String(hoje.getMonth() + 1).padStart(2, '0');
+        document.getElementById('mesAno').value = `${hoje.getFullYear()}-${mm}`;
+    })();
+
+    // ── Divide uma lista de dias em exatamente 4 grupos (uma "semana" cada) ──
+    function distribuirDias(dias, partes) {
+        const base  = Math.floor(dias.length / partes);
+        const resto = dias.length % partes;
+        const grupos = [];
+        let indice = 0;
+        for (let i = 0; i < partes; i++) {
+            const tamanho = base + (i < resto ? 1 : 0);
+            grupos.push(dias.slice(indice, indice + tamanho));
+            indice += tamanho;
+        }
+        return grupos;
+    }
+
+    // ── Formata o nome pra exibição na tabela, conforme opção escolhida no painel ──
+    function formatarNomeExibicao(nomeCompleto, formato) {
+        const partes = nomeCompleto.trim().split(/\s+/);
+        if (partes.length === 1) return partes[0];
+
+        switch (formato) {
+            case 'completo':          return nomeCompleto.trim();
+            case 'primeiro':          return partes[0];
+            case 'inicial-sobrenome': return `${partes[0][0]}. ${partes[partes.length - 1]}`;
+            case 'primeiro-inicial':
+            default:                  return `${partes[0]} ${partes[partes.length - 1][0]}.`;
+        }
+    }
+
+    // ── Mede a altura real do cabeçalho (varia conforme o conteúdo) e reserva o restante
+    //    da folha A4 pra grade de tabelas, sempre cabendo numa página só na impressão ──
+    // ── Encolhe a linha "Cronograma/Empregador/CPF/logo" só o suficiente pra continuar
+    //    numa única linha, caso o texto do tipo de cronograma seja muito longo ──
+    function ajustarLinhaTopoCabecalho() {
+        const linha = document.querySelector('.cabecalho-linha-topo');
+        linha.style.zoom = '';
+        const disponivel  = linha.clientWidth;
+        const necessario  = linha.scrollWidth;
+        linha.style.zoom = necessario > disponivel ? disponivel / necessario : 1;
+    }
+
+    function ajustarAlturaGrade() {
+        const folha      = document.getElementById('folhaA4');
+        const cabecalho  = document.querySelector('.cabecalho-doc');
+        const ALTURA_PAGINA_MM          = 194; // A4 paisagem (210mm) menos as margens de impressão (8mm de cada lado)
+        const MARGEM_ABAIXO_CABECALHO_MM = 4;   // igual ao margin-bottom do .cabecalho-doc
+
+        const zoomAnterior = folha.style.zoom;
+        folha.style.zoom = ''; // mede em escala real (1mm = 1mm), sem o zoom reduzido da prévia
+        const PX_POR_MM = 96 / 25.4;
+        const cabecalhoAlturaMM = cabecalho.getBoundingClientRect().height / PX_POR_MM;
+        folha.style.zoom = zoomAnterior;
+
+        const alturaGradeMM = ALTURA_PAGINA_MM - cabecalhoAlturaMM - MARGEM_ABAIXO_CABECALHO_MM;
+        document.documentElement.style.setProperty('--altura-grade', `${alturaGradeMM}mm`);
+        return alturaGradeMM;
+    }
+
+    // ── Calcula altura/fonte das linhas para as 4 tabelas caberem na grade disponível ──
+    function ajustarTamanhoLinha(qtd, alturaGradeMM) {
+        const ALTURA_BLOCO_MM       = (alturaGradeMM - 4) / 2; // grade menos gap, dividido em 2 linhas
+        const ALTURA_CABECALHO_MM   = 16;                       // título + linha de datas do bloco
+        const alturaCorpoMM = ALTURA_BLOCO_MM - ALTURA_CABECALHO_MM;
+
+        let alturaLinhaMM = alturaCorpoMM / qtd;
+        alturaLinhaMM = Math.max(3, Math.min(9, alturaLinhaMM));
+
+        const fontePx = Math.max(6, Math.min(11, alturaLinhaMM * 2));
+
+        document.documentElement.style.setProperty('--linha-altura', `${alturaLinhaMM}mm`);
+        document.documentElement.style.setProperty('--linha-fonte', `${fontePx}px`);
+    }
+
+    function gerarCronograma() {
+        const empregadorNome = document.getElementById('empregadorNome').value.trim() || '—';
+        const empregadorCpf  = document.getElementById('empregadorCpf').value.trim() || '—';
+        const mesAnoValor    = document.getElementById('mesAno').value;
+
+        const nomes = Array.from(document.querySelectorAll('.chk-funcionario:checked'))
+            .map(chk => chk.value);
+        const formatoNome = document.getElementById('formatoNome').value;
+        const tipoCronograma = document.getElementById('tipoCronograma').value;
+
+        if (!mesAnoValor) {
+            alert('Selecione o mês/ano do cronograma.');
+            return;
+        }
+
+        if (!nomes.length) {
+            alert('Marque pelo menos um funcionário na lista.');
+            return;
+        }
+
+        const [ano, mes] = mesAnoValor.split('-').map(Number);
+        const totalDias = new Date(ano, mes, 0).getDate();
+        const tituloMes = `${MESES[mes - 1]} / ${ano}`;
+
+        // ── Remove os domingos (getDay() === 0) da lista de dias do mês ──
+        const diasUteis = [];
+        for (let d = 1; d <= totalDias; d++) {
+            if (new Date(ano, mes - 1, d).getDay() !== 0) diasUteis.push(d);
+        }
+
+        document.getElementById('outTipoCronograma').textContent = tipoCronograma;
+        document.getElementById('outEmpregadorNome').textContent = empregadorNome;
+        document.getElementById('outEmpregadorCpf').textContent  = empregadorCpf;
+        document.getElementById('tituloPagina').textContent = `Cronograma de ${tipoCronograma}`;
+        document.getElementById('declaracaoTexto').textContent =
+            `Cada funcionário(a) deve marcar/rubricar na célula do dia em que realizou a ${tipoCronograma.toLowerCase()}, ` +
+            `na linha com o próprio nome, confirmando que foi ele(a) quem executou o serviço naquela data.`;
+        document.getElementById('instrucaoPreenchimento').textContent =
+            `Marque um X na célula do dia em que a ${tipoCronograma.toLowerCase()} foi realizada, na linha com o seu nome, e assine na coluna "Responsável".`;
+
+        // ── Precisa estar visível antes de medir a altura real do cabeçalho ──
+        document.getElementById('previewVazio').style.display = 'none';
+        document.getElementById('documento').classList.add('visivel');
+
+        ajustarLinhaTopoCabecalho();
+        const alturaGradeMM = ajustarAlturaGrade();
+        ajustarTamanhoLinha(nomes.length, alturaGradeMM);
+
+        const grupos = distribuirDias(diasUteis, 4);
+
+        const container = document.getElementById('blocosContainer');
+        const template   = document.getElementById('templateBloco');
+        container.innerHTML = '';
+
+        grupos.forEach((dias, indiceGrupo) => {
+            const clone = template.content.cloneNode(true);
+
+            const totalColunas = 1 + dias.length + 1; // nome + dias + responsável
+            const tituloTh = clone.querySelector('.titulo-texto');
+            tituloTh.textContent = `Semana ${indiceGrupo + 1} — ${tituloMes}`;
+            tituloTh.colSpan = totalColunas;
+
+            // ── Colunas de dia bem curtas (só precisam caber um X a caneta); o espaço
+            //    liberado vai principalmente pro nome (caber o nome completo do funcionário) ──
+            const larguraDiaPct    = 7;
+            const larguraRestante  = 100 - larguraDiaPct * dias.length;
+            const LARGURA_NOME_PCT = larguraRestante * 0.6;
+            const LARGURA_RESP_PCT = larguraRestante * 0.4;
+
+            const colgroup = clone.querySelector('.colgroup-bloco');
+            const colNome = document.createElement('col');
+            colNome.style.width = `${LARGURA_NOME_PCT}%`;
+            colgroup.appendChild(colNome);
+            dias.forEach(() => {
+                const col = document.createElement('col');
+                col.style.width = `${larguraDiaPct}%`;
+                colgroup.appendChild(col);
+            });
+            const colResp = document.createElement('col');
+            colResp.style.width = `${LARGURA_RESP_PCT}%`;
+            colgroup.appendChild(colResp);
+
+            const linhaDatas = clone.querySelector('.linha-datas');
+            dias.forEach(dia => {
+                const th = document.createElement('th');
+                th.textContent = `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}`;
+                linhaDatas.appendChild(th);
+            });
+            const thResp = document.createElement('th');
+            thResp.textContent = 'Responsável';
+            linhaDatas.appendChild(thResp);
+
+            const tbody = clone.querySelector('tbody');
+            nomes.forEach(nome => {
+                const tr = document.createElement('tr');
+                const thNome = document.createElement('th');
+                thNome.className = 'col-nome';
+                thNome.textContent = formatarNomeExibicao(nome, formatoNome);
+                thNome.title = nome;
+                thNome.scope = 'row';
+                tr.appendChild(thNome);
+                dias.forEach(() => tr.appendChild(document.createElement('td')));
+                const tdResp = document.createElement('td');
+                tdResp.className = 'col-responsavel';
+                tr.appendChild(tdResp);
+                tbody.appendChild(tr);
+            });
+
+            container.appendChild(clone);
+        });
+
+        ajustarZoomPreview();
+    }
+
+    // ── Reduz a folha A4 (297mm) proporcionalmente pra caber na coluna de prévia ──
+    function ajustarZoomPreview() {
+        const coluna = document.querySelector('.coluna-preview');
+        const folha  = document.getElementById('folhaA4');
+        if (!coluna || !folha || !document.getElementById('documento').classList.contains('visivel')) return;
+
+        const LARGURA_A4_PX = 297 * (96 / 25.4);
+        const larguraDisponivel = coluna.clientWidth;
+        const escala = Math.min(1, larguraDisponivel / LARGURA_A4_PX);
+        folha.style.zoom = escala;
+    }
+
+    window.addEventListener('resize', ajustarZoomPreview);
+    window.addEventListener('beforeprint', () => { document.getElementById('folhaA4').style.zoom = ''; });
+    window.addEventListener('afterprint', ajustarZoomPreview);
+
+    document.getElementById('btnGerar').addEventListener('click', gerarCronograma);
+
+    document.getElementById('formatoNome').addEventListener('change', atualizarSePrevisualizando);
+
+    document.getElementById('btnImprimir').addEventListener('click', () => {
+        if (!document.getElementById('documento').classList.contains('visivel')) {
+            gerarCronograma();
+        }
+        window.print();
+    });
+</script>
+
+</body>
+</html>

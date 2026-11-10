@@ -1,0 +1,2384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aplicações Fitossanitárias - Painel SPG</title>
+    
+    <link rel="icon" type="image/png" href="../../favicon.png">
+    <link rel="apple-touch-icon" href="../../icone-app.png">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SPG Agro">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
+    <script>window.SPG_PROJETO_ATUAL = 'aplicacoes-fitossanitarias';</script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../../supabase-config.js"></script>
+    <script src="../../supabase-api.js"></script>
+    <script src="backend.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        input, select { line-height: 1.5; }
+        .fade-in { animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Filtros modernos (mesmo padrão dos filtros do dashboard) */
+        .filter-label { font-size: 11px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px; }
+        .msel { position: relative; --msel-accent: #15803d; --msel-ring: rgba(21, 128, 61, .18); --msel-sel-bg: #f0fdf4; --msel-sel-ink: #14532d; }
+        .msel-native { display: none !important; }
+        /* Campos do formulário: foco azul (padrão do form) e sem destaque de "filtro ativo" */
+        .msel.msel-field { --msel-accent: #2563eb; --msel-ring: rgba(37, 99, 235, .18); --msel-sel-bg: #eff6ff; --msel-sel-ink: #1e3a8a; }
+        .msel.msel-tone-emerald { --msel-accent: #059669; --msel-ring: rgba(5, 150, 105, .18); --msel-sel-bg: #ecfdf5; --msel-sel-ink: #065f46; }
+        .msel.msel-tone-amber { --msel-accent: #d97706; --msel-ring: rgba(217, 119, 6, .18); --msel-sel-bg: #fffbeb; --msel-sel-ink: #92400e; }
+        .msel-trigger { width: 100%; height: 38px; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; font-size: 13px; font-weight: 500; color: #0f172a; text-align: left; transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease; }
+        .msel-trigger:hover { border-color: #cbd5e1; }
+        .msel-trigger:disabled { opacity: .6; cursor: not-allowed; }
+        .msel.is-empty .msel-trigger { color: #64748b; }
+        .msel.open .msel-trigger, .msel-trigger:focus-visible { outline: none; border-color: var(--msel-accent); box-shadow: 0 0 0 3px var(--msel-ring); }
+        .msel.is-active:not(.msel-field) .msel-trigger { background: #ecfdf3; border-color: #bbf7d0; color: #14532d; font-weight: 600; }
+        .msel.msel-field .msel-trigger { font-size: 14px; }
+        .msel.msel-tone-emerald .msel-trigger { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; font-weight: 700; }
+        .msel.msel-tone-amber .msel-trigger { border-color: #fde68a; }
+        .msel.msel-tone-blue .msel-trigger { border-color: #bfdbfe; }
+        .msel.msel-action .msel-trigger { background: #f8fafc; color: #2563eb; font-weight: 600; }
+        .msel.is-error .msel-trigger { border-color: #ef4444; box-shadow: 0 0 0 1px #ef4444; }
+        .msel-chevron { flex: none; width: 16px; height: 16px; color: #94a3b8; transition: transform .15s ease; }
+        .msel.open .msel-chevron { transform: rotate(180deg); }
+        .msel-menu { display: none; position: absolute; z-index: 45; left: 0; top: calc(100% + 6px); min-width: 100%; width: max-content; max-width: min(340px, 90vw); background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 12px 28px -8px rgba(16, 24, 40, .18), 0 4px 8px -4px rgba(16, 24, 40, .08); overflow: hidden; }
+        .msel.open .msel-menu { display: block; animation: mselPop .14s ease-out; }
+        @keyframes mselPop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+        .msel-search { width: 100%; height: 34px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; outline: none; }
+        .msel-search:focus { border-color: var(--msel-accent); box-shadow: 0 0 0 3px var(--msel-ring); }
+        .msel-list { max-height: 240px; overflow: auto; padding: 4px 0; }
+        .msel-option { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; font-size: 12px; color: #334155; text-align: left; cursor: pointer; }
+        .msel-option:hover, .msel-option.is-focus { background: #f8fafc; }
+        .msel-option.is-selected { color: var(--msel-sel-ink); font-weight: 600; background: var(--msel-sel-bg); }
+        .msel-option.is-placeholder { color: #64748b; border-bottom: 1px solid #f1f5f9; }
+        .msel-check { flex: none; width: 14px; height: 14px; color: var(--msel-accent); visibility: hidden; }
+        .msel-option.is-selected .msel-check { visibility: visible; }
+        .msel-empty { padding: 12px; font-size: 12px; color: #94a3b8; text-align: center; }
+        .msel-list::-webkit-scrollbar { width: 8px; }
+        .msel-list::-webkit-scrollbar-thumb { background: #d6dde5; border-radius: 8px; }
+        .date-modern { width: 100%; height: 38px; padding: 0 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; font-size: 12px; font-weight: 500; color: #0f172a; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
+        .date-modern:focus { border-color: #15803d; box-shadow: 0 0 0 3px rgba(21, 128, 61, .18); }
+        .chip-modern { padding: 7px 10px; font-size: 11px; font-weight: 600; color: #334155; background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; transition: all .15s ease; }
+        .chip-modern:hover { border-color: #bbf7d0; background: #ecfdf3; color: #14532d; }
+        @media (prefers-reduced-motion: reduce) { .msel-menu, .msel-chevron, .msel-trigger { animation: none !important; transition: none !important; } }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-20 select-none">
+
+    <div class="bg-white border-b border-slate-200 px-4 py-3 flex flex-col md:flex-row justify-between items-center shadow-sm sticky top-0 z-40 gap-3">
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <img src="../../favicon.png" alt="Logo SPG" class="w-9 h-9 object-contain shrink-0">
+            <div>
+                <h1 class="text-sm font-bold text-slate-800 leading-tight">SPG RESUMO OPERACIONAL</h1>
+                <p class="text-[10px] text-slate-500 font-medium">Gestão de Operações Agrícolas</p>
+            </div>
+        </div>
+        <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            <div id="initialDataLoadingBadge" class="hidden flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-[10px] font-bold whitespace-nowrap">
+                <span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                <span id="initialDataLoadingText">Carregando dados... 0%</span>
+            </div>
+            <div id="spgAguardando" class="hidden flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-[10px] font-bold whitespace-nowrap">
+                <i data-lucide="cloud-off" class="w-3.5 h-3.5"></i>
+                <span id="spgAguardandoTexto"></span>
+            </div>
+            <a id="btnMenuProjetos" href="../../index.html" title="Menu de projetos" style="display:none" class="items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold whitespace-nowrap">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                <span>Menu</span>
+            </a>
+            <button id="btnSairSistema" onclick="sairDoSistema()" style="display:none" class="items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold whitespace-nowrap">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                <span>Sair</span>
+            </button>
+            <button id="btnAbrirDashboard" onclick="showDashboardInPage()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow-lg shadow-slate-700/20 transition-all active:scale-95 whitespace-nowrap">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                <span>Dashboard</span>
+            </button>
+            <button id="btnEnviarRelatorio" onclick="showConfirmSendModal()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold shadow-lg shadow-green-600/20 transition-all active:scale-95 active:bg-green-800 whitespace-nowrap">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span>Enviar para o WhatsApp</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="mainFormView" class="container mx-auto p-4 flex flex-col lg:flex-row gap-8 mt-4">
+        
+        <!-- ESQUERDA: CONTROLES -->
+        <div class="w-full lg:w-2/5 space-y-4">
+            
+            <div id="generalDataCard" class="bg-blue-50 p-5 rounded-2xl shadow-sm border border-blue-100 transition-colors duration-300">
+                <h2 class="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+                    <i data-lucide="clipboard-check" class="text-blue-600"></i> Dados Gerais da Operação
+                </h2>
+                
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <div class="relative">
+                        <label class="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1 block">Local <span class="text-red-500">*</span></label>
+                        <select id="partner" required onchange="clearError('partner'); updateGlobalState()" class="w-full p-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                            <option value="">Selecione...</option>
+                        </select>
+                        <span id="error-partner" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                    </div>
+                    <div class="relative">
+                        <label class="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1 block">Data <span class="text-red-500">*</span></label>
+                        <input type="date" id="appDate" required onchange="clearError('appDate'); updateGlobalState()" class="w-full p-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white text-slate-600">
+                        <span id="error-appDate" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <div class="relative">
+                        <label id="requestorLabel" class="text-[10px] font-bold text-slate-500 mb-1 block">Solicitante</label>
+                        <select id="requestor" onchange="toggleCustomField('requestor', 'requestor-custom-div', 'otherRequestorInput', 'Outro'); updateGlobalState();" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Selecione...</option>
+                            <option value="Guilherme Ramos">Guilherme Ramos</option>
+                            <option value="Claudio Rodrigues">Claudio Rodrigues</option>
+                            <option value="Mateus Correia">Mateus Correia</option>
+                            <option value="Outro">Outro (Digitar)</option>
+                        </select>
+                        <div id="requestor-custom-div" class="hidden relative w-full fade-in">
+                            <input type="text" id="otherRequestorInput" oninput="clearError('otherRequestorInput'); updateGlobalState();" class="w-full p-2 pr-8 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nome">
+                            <button type="button" onclick="resetCustomField('requestor', 'requestor-custom-div', 'otherRequestorInput', 'Guilherme Ramos'); updateGlobalState();" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500"><i data-lucide="x-circle" width="14"></i></button>
+                        </div>
+                        <span id="error-requestor" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                        <span id="error-otherRequestorInput" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                    </div>
+
+                    <div class="relative">
+                        <label id="applicatorLabel" class="text-[10px] font-bold text-slate-500 mb-1 block">Aplicador</label>
+                        <select id="applicator" onchange="toggleCustomField('applicator', 'applicator-custom-div', 'otherApplicatorInput', 'Outro'); updateGlobalState();" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Selecione...</option>
+                            <option value="Equipe Erisvaldo">Equipe Erisvaldo</option>
+                            <option value="Hugo Melo">Hugo Melo</option>
+                            <option value="Silvio Brito">Silvio Brito</option>
+                            <option value="Outro">Outro (Digitar)</option>
+                        </select>
+                        <div id="applicator-custom-div" class="hidden relative w-full fade-in">
+                            <input type="text" id="otherApplicatorInput" oninput="clearError('otherApplicatorInput'); updateGlobalState();" class="w-full p-2 pr-8 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nome">
+                            <button type="button" onclick="resetCustomField('applicator', 'applicator-custom-div', 'otherApplicatorInput', ''); updateGlobalState();" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500"><i data-lucide="x-circle" width="14"></i></button>
+                        </div>
+                        <span id="error-applicator" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                        <span id="error-otherApplicatorInput" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                    </div>
+                </div>
+
+                <div id="timeRow" class="grid grid-cols-3 gap-2 mb-3 transition-all duration-300">
+                    <div class="relative">
+                        <label class="text-[10px] font-bold text-slate-500 mb-1 block">Início</label>
+                        <input type="time" id="startTime" onchange="calcDuration('startTime','endTime','totalDuration',true);" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <span id="error-startTime" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                    </div>
+                    <div class="relative">
+                        <label class="text-[10px] font-bold text-slate-500 mb-1 block">Fim</label>
+                        <input type="time" id="endTime" onchange="calcDuration('startTime','endTime','totalDuration',true);" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <span id="error-endTime" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 mb-1 block">Total</label>
+                        <input type="text" id="totalDuration" readonly placeholder="--:--" class="w-full p-2 border border-slate-200 bg-slate-100 rounded-lg text-sm text-slate-600 focus:outline-none font-semibold">
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORMULÁRIO -->
+            <div id="formContainer" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 transition-colors duration-300">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="formTitle" class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="spray-can" class="text-blue-600"></i> Nova Aplicação
+                    </h2>
+                    <button type="button" onclick="clearBlockForm()" class="text-xs font-semibold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1">
+                        <i data-lucide="eraser" class="w-3 h-3"></i> Limpar
+                    </button>
+                </div>
+                
+                <div class="mb-5 bg-slate-50 p-2 rounded-xl border border-slate-200 shadow-inner">
+                    <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 block text-center">Tipo de Operação</label>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="recordTypeRadio" value="Fito" class="peer sr-only" checked onchange="toggleFormType()">
+                            <div class="text-center py-2 text-[10px] font-bold rounded-lg border border-slate-200 bg-white text-slate-500 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-700 transition-all flex flex-col items-center gap-1 shadow-sm peer-checked:shadow-inner">
+                                <i data-lucide="spray-can" class="w-4 h-4"></i> Defensivos
+                            </div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="recordTypeRadio" value="Multiplicacao" class="peer sr-only" onchange="toggleFormType()">
+                            <div class="text-center py-2 text-[10px] font-bold rounded-lg border border-slate-200 bg-white text-slate-500 peer-checked:bg-emerald-600 peer-checked:text-white peer-checked:border-emerald-700 transition-all flex flex-col items-center gap-1 shadow-sm peer-checked:shadow-inner">
+                                <i data-lucide="flask-conical" class="w-4 h-4"></i> Laboratório
+                            </div>
+                        </label>
+                        <label class="cursor-pointer relative">
+                            <input type="radio" name="recordTypeRadio" value="Adubacao" class="peer sr-only" onchange="toggleFormType()">
+                            <div class="text-center py-2 text-[10px] font-bold rounded-lg border border-slate-200 bg-white text-slate-500 peer-checked:bg-amber-600 peer-checked:text-white peer-checked:border-amber-700 transition-all flex flex-col items-center gap-1 shadow-sm peer-checked:shadow-inner">
+                                <i data-lucide="sprout" class="w-4 h-4"></i> Adubação
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <form id="appForm" onsubmit="addItem(event)" class="space-y-4" novalidate>
+                    
+                    <div id="fito-row-1" class="grid grid-cols-3 gap-2 mb-5">
+                        <div class="relative">
+                            <label class="text-[11px] font-bold text-slate-500 uppercase mb-1 block">Cultura</label>
+                            <select id="crop" onchange="toggleCustomField('crop', 'crop-custom-div', 'otherCropInput', 'Outros'); handleCropChange();" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                                <option value="Brócolis">Brócolis</option>
+                                <option value="Couve-Flor">Couve-Flor</option>
+                                <option value="Pepino">Pepino</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                            <div id="crop-custom-div" class="hidden relative w-full fade-in">
+                                <input type="text" id="otherCropInput" oninput="clearError('otherCropInput')" class="w-full p-2 pr-8 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Qual?">
+                                <button type="button" onclick="resetCustomField('crop', 'crop-custom-div', 'otherCropInput', 'Brócolis'); handleCropChange();" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500"><i data-lucide="x-circle" width="14"></i></button>
+                            </div>
+                            <span id="error-crop" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                            <span id="error-otherCropInput" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                        </div>
+
+                        <div class="relative">
+                            <label id="blockLabel" class="text-[11px] font-bold text-slate-500 uppercase mb-1 block">Nº Bloco</label>
+                            <input type="text" id="blockId" oninput="clearError('blockId')" placeholder="Ex: 1 - A" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                            <select id="blockSelect" onchange="clearError('blockSelect')" class="hidden w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white"><option value="">Selecione...</option></select>
+                            <span id="error-blockId" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                            <span id="error-blockSelect" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Selecione</span>
+                        </div>
+                        
+                        <div class="relative">
+                            <label class="text-[11px] font-bold text-slate-500 uppercase mb-1 block">Ciclo</label>
+                            <input type="text" id="cycle" oninput="clearError('cycle')" placeholder="Ex: 1" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-white">
+                        </div>
+                    </div>
+
+                    <div id="fito-row-2" class="mb-5 relative">
+                        <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Alvos Biológicos (Praga/Doença)</label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <select id="targetPestSelect" onchange="addTargetPest()" class="w-full sm:w-1/3 p-2 border border-slate-300 rounded-lg text-sm bg-slate-50 text-blue-600 font-semibold focus:ring-2 focus:ring-blue-500 outline-none">
+                            </select>
+                            <div class="relative w-full sm:w-2/3">
+                                <input type="text" id="targetPestInput" oninput="clearError('targetPestInput')" class="w-full p-2 pr-8 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Selecione ao lado ou digite...">
+                                <button type="button" onclick="document.getElementById('targetPestInput').value=''" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500"><i data-lucide="x-circle" width="14"></i></button>
+                            </div>
+                        </div>
+                        <span id="error-targetPestInput" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Informe pelo menos um alvo</span>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100" id="productsSection">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-2 flex justify-between items-center" id="productsLabel">
+                            <span>Produtos & Dosagens</span>
+                            <button type="button" onclick="addProductRow()" class="text-blue-500 hover:text-blue-700 flex items-center gap-1 text-[9px] bg-white px-2 py-1 rounded border border-slate-200 shadow-sm transition-all active:scale-95">
+                                <i data-lucide="plus" width="10"></i> Add Produto
+                            </button>
+                        </label>
+                        <div id="productsContainer" class="space-y-2"></div>
+                    </div>
+
+                    <div id="fito-row-3" class="grid grid-cols-2 gap-3 mt-4">
+                         <div class="col-span-1 relative">
+                            <label class="text-[10px] font-bold text-blue-600 mb-1 block">Vol. Calda (L)</label>
+                            <input type="number" id="syrupVolume" oninput="clearError('syrupVolume')" placeholder="200" class="w-full p-2 border border-blue-200 bg-blue-50 rounded-lg text-sm text-blue-800 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <span id="error-syrupVolume" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                        </div>
+                         <div class="col-span-1">
+                            <label class="text-[10px] font-bold text-purple-600 mb-1 block">P.H.</label>
+                            <input type="text" id="phValue" placeholder="Ex: 6.0" inputmode="decimal" class="w-full p-2 border border-purple-200 bg-purple-50 rounded-lg text-sm text-purple-800 font-bold focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                    </div>
+                    
+                    <div id="multi-product-row" class="hidden mt-4 relative">
+                        <label class="text-[10px] font-bold text-emerald-600 uppercase tracking-wide mb-1 block">Produto Final <span class="text-red-500">*</span></label>
+                        <select id="finalProduct" onchange="clearError('finalProduct')" class="w-full p-2 border border-emerald-200 bg-emerald-50 rounded-lg text-sm text-emerald-800 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="">Selecione...</option>
+                            <option value="Bravo - Beauveria Bassiana">Bravo - Beauveria Bassiana</option>
+                            <option value="Optimun - Metarhizium Anisopliae">Optimun - Metarhizium Anisopliae</option>
+                            <option value="Trichoderma - Harzianum">Trichoderma - Harzianum</option>
+                            <option value="Killper (Spinosa)">Killper (Spinosa)</option>
+                            <option value="Crystal - Bacillus Thuringiensis">Crystal - Bacillus Thuringiensis</option>
+                            <option value="Azospirillum - Brasilense">Azospirillum - Brasilense</option>
+                            <option value="Bioimpeto - Bac Subtilis">Bioimpeto - Bac Subtilis</option>
+                        </select>
+                        <span id="error-finalProduct" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Selecione</span>
+                    </div>
+
+                    <div id="multi-row-1" class="hidden grid grid-cols-2 gap-3 mt-4">
+                         <div class="col-span-1 relative">
+                            <label class="text-[10px] font-bold text-emerald-600 mb-1 block">Litros Multiplicados (L) <span class="text-red-500">*</span></label>
+                            <input type="number" id="multiLiters" oninput="clearError('multiLiters')" placeholder="1000" class="w-full p-2 border border-emerald-200 bg-emerald-50 rounded-lg text-sm text-emerald-800 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <span id="error-multiLiters" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                        </div>
+                         <div class="col-span-1 relative">
+                            <label class="text-[10px] font-bold text-emerald-600 mb-1 block">Dias de Aeração <span class="text-red-500">*</span></label>
+                            <input type="number" id="reactorDays" oninput="clearError('reactorDays')" placeholder="5" class="w-full p-2 border border-emerald-200 bg-emerald-50 rounded-lg text-sm text-emerald-800 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <span id="error-reactorDays" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                        </div>
+                    </div>
+
+                    <div id="adubacao-specific-row" class="hidden bg-amber-50 p-3 rounded-lg border border-amber-100 mt-4">
+                        <label class="text-[10px] font-bold text-amber-600 uppercase tracking-wide mb-2 flex items-center gap-1">
+                            <i data-lucide="settings-2" class="w-3 h-3"></i> Detalhes da Adubação
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div class="col-span-2 md:col-span-1 relative">
+                                <label class="text-[10px] font-bold text-amber-700 mb-1 block">Método <span class="text-red-500">*</span></label>
+                                <select id="adubacaoMethod" onchange="clearError('adubacaoMethod')" class="w-full p-2 border border-amber-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-500 outline-none">
+                                    <option value="">Selecione...</option>
+                                    <option value="Manual">Manual</option>
+                                    <option value="Aplicador Costal">Aplicador Costal</option>
+                                </select>
+                                <span id="error-adubacaoMethod" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                            </div>
+                            <div class="col-span-1 relative">
+                                <label class="text-[10px] font-bold text-amber-700 mb-1 block">Início <span class="text-red-500">*</span></label>
+                                <input type="time" id="adubacaoStart" onchange="calcDuration('adubacaoStart','adubacaoEnd','adubacaoDuration',false);" class="w-full p-2 border border-amber-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-500 outline-none">
+                                <span id="error-adubacaoStart" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                            </div>
+                            <div class="col-span-1 relative">
+                                <label class="text-[10px] font-bold text-amber-700 mb-1 block">Fim <span class="text-red-500">*</span></label>
+                                <input type="time" id="adubacaoEnd" onchange="calcDuration('adubacaoStart','adubacaoEnd','adubacaoDuration',false);" class="w-full p-2 border border-amber-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-500 outline-none">
+                                <span id="error-adubacaoEnd" class="text-[9px] text-red-500 font-bold hidden absolute -bottom-4 left-0">Preencha</span>
+                            </div>
+                            <div class="col-span-2 md:col-span-1">
+                                <label class="text-[10px] font-bold text-amber-700 mb-1 block">Total</label>
+                                <input type="text" id="adubacaoDuration" readonly placeholder="--:--" class="w-full p-2 border border-amber-200 bg-amber-100/50 rounded-lg text-sm text-amber-800 focus:outline-none font-semibold">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 mt-2">
+                        <div id="fito-row-4" class="col-span-1">
+                            <label class="text-[10px] font-bold text-slate-500 mb-1 block">Plantas</label>
+                            <input type="text" inputmode="numeric" id="totalPlants" oninput="formatThousands(this)" placeholder="Qtd" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div id="obs-container" class="col-span-2 transition-all">
+                            <label class="text-[10px] font-bold text-slate-500 mb-1 block">Observações (Opcional)</label>
+                            <input type="text" id="notes" placeholder="Ex: Vento calmo..." class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2 mt-4 active:scale-95">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> <span>Registrar Aplicação</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- LISTA -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="listTitle" class="text-sm font-bold text-slate-700">Aplicações Registradas</h3>
+                    <button onclick="showClearAllModal()" class="text-xs text-red-500 hover:text-red-700 font-bold underline">Limpar Tudo</button>
+                </div>
+                <ul id="itemsList" class="space-y-2 text-sm text-slate-600"></ul>
+            </div>
+        </div>
+
+        <!-- DIREITA: PREVIEW -->
+        <div class="w-full lg:w-3/5 flex flex-col bg-slate-200/50 p-4 rounded-3xl border border-slate-300/50 min-h-[calc(100vh-6rem)]">
+            
+            <div id="report-card" class="w-full flex-1 flex flex-col bg-white shadow-2xl overflow-hidden border border-slate-100 relative transition-colors duration-500">
+                
+                <div id="reportHeaderBg" class="bg-gradient-to-br from-slate-700 to-slate-900 p-6 text-white relative overflow-hidden flex flex-col justify-start shrink-0 gap-3 antialiased transition-colors duration-500">
+                    <img src="logo.png" alt="Logo SPG" class="absolute top-4 right-4 w-24 h-24 z-0" style="image-rendering: -webkit-optimize-contrast;">
+                    <div class="relative z-10 w-full pr-24"> 
+                        <h2 id="reportTitle" class="text-sm font-bold leading-snug tracking-normal"></h2>
+                        <div class="mt-3 pt-3 border-t border-white/20">
+                             <span id="headerDateTime" class="text-xs font-medium text-slate-300 block opacity-90 tracking-wide"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="operationalSummary" class="hidden bg-slate-50 border-b border-slate-200 p-4"></div>
+                <div id="operationalFooter" class="bg-white border-b border-slate-200 p-4 shrink-0"></div>
+
+                <div id="reportContent" class="divide-y divide-slate-50 flex-1 overflow-y-auto">
+                    <div class="p-8 text-center text-slate-400 text-xs italic leading-relaxed h-full flex items-center justify-center">Utilize o formulário para registrar as aplicações.</div>
+                </div>
+
+                <div class="bg-slate-100 p-3 text-center border-t border-slate-200 shrink-0">
+                    <div class="flex justify-center items-center gap-2 text-[10px] text-slate-400 font-medium uppercase tracking-widest leading-relaxed">
+                        SPG • Controle Integrado
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="clearAllModal" class="fixed inset-0 bg-black/50 z-50 hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-sm">
+            <div class="text-center mb-5">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4"><i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i></div>
+                <h3 class="text-lg font-bold text-slate-800">Limpar Tudo?</h3>
+                <p class="text-sm text-slate-500 mt-2">Tem certeza que deseja apagar todos os registros?</p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="hideClearAllModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-sm">Cancelar</button>
+                <button onclick="confirmClearAll()" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-sm">Sim, Limpar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmSendModal" class="fixed inset-0 bg-black/50 z-50 hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-11/12 max-w-sm flex flex-col items-center text-center">
+            <div id="confirmSendIconWrap" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full border-2 border-[#5b7566]/30 bg-[#5b7566]/5 mb-4 text-[#5b7566]"><i id="confirmSendIcon" data-lucide="help-circle" class="h-6 w-6"></i></div>
+            <h3 id="confirmSendTitle" class="text-xl font-extrabold text-[#1e293b] mb-2">Conferiu os dados?</h3>
+            <p id="confirmSendText" class="text-[13px] text-[#64748b] mb-6">Você conferiu todas as informações? Se sim, toque para enviar.</p>
+            <div class="flex gap-3 w-full">
+                <button onclick="hideConfirmSendModal()" class="flex-1 px-4 py-3 bg-[#f1f5f9] hover:bg-[#e2e8f0] text-[#475569] font-bold rounded-xl text-xs uppercase tracking-wider">Cancelar</button>
+                <button id="confirmSendBtn" onclick="confirmAndSend()" class="flex-1 px-4 py-3 bg-[#5b7566] hover:bg-[#4d6356] text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-[#5b7566]/30"><span id="confirmSendBtnText">Enviar Agora</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE COMPARTILHAMENTO DA IMAGEM GERADA -->
+    <div id="shareImageModal" class="fixed inset-0 bg-black/60 z-[70] hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-11/12 max-w-sm flex flex-col items-center text-center">
+            <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-green-50 mb-4">
+                <i data-lucide="image" class="h-8 w-8 text-green-600"></i>
+            </div>
+            <h3 class="text-xl font-extrabold text-[#1e293b]">Imagem Gerada!</h3>
+            <p class="text-[13px] text-[#64748b] mt-2 mb-6">Compartilhe direto no WhatsApp ou salve a imagem no aparelho.</p>
+            <div class="grid grid-cols-1 gap-3 w-full">
+                <button id="shareImageBtn" onclick="shareGeneratedImage()" class="px-4 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-green-500/30 transition-all active:scale-95 flex justify-center items-center gap-2">
+                    <i data-lucide="share-2" class="w-4 h-4"></i> Compartilhar no WhatsApp
+                </button>
+                <button onclick="downloadGeneratedImage()" class="px-4 py-3 bg-[#f1f5f9] hover:bg-[#e2e8f0] text-[#475569] font-bold rounded-xl text-xs uppercase tracking-wider transition-colors active:scale-95 flex justify-center items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i> Baixar Imagem
+                </button>
+                <button onclick="closeShareImageModal()" class="px-4 py-2 text-slate-400 hover:text-slate-600 font-bold rounded-xl text-[11px] uppercase tracking-wider transition-colors">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboardView" class="hidden w-full px-4 mt-4">
+        <div class="bg-white border border-slate-200/80 rounded-2xl px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-9 h-9 rounded-xl bg-green-50 text-green-700 grid place-items-center"><i data-lucide="chart-column" class="w-[18px] h-[18px]"></i></span>
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-900 leading-tight">Dashboard Analítico</h2>
+                        <p class="text-[11px] text-slate-500 leading-tight">Indicadores operacionais do período</p>
+                    </div>
+                </div>
+                <div id="topDashboardTypeTabs" class="bg-slate-100 rounded-xl p-1 flex gap-1">
+                    <button type="button" data-type="Defensivos" onclick="setTopDashboardType('Defensivos')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all bg-white text-slate-900 shadow-sm ring-1 ring-slate-200">Defensivos</button>
+                    <button type="button" data-type="Laboratório" onclick="setTopDashboardType('Laboratório')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-500 hover:text-slate-900">Laboratório</button>
+                    <button type="button" data-type="Adubação" onclick="setTopDashboardType('Adubação')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-500 hover:text-slate-900">Adubação</button>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 ml-auto">
+                <div class="relative">
+                    <button id="topPeriodButton" type="button" onclick="toggleTopPeriodPopover()" class="px-3 py-2 min-w-[220px] bg-white border border-slate-200 text-slate-800 text-xs font-semibold rounded-lg hover:border-slate-300 hover:bg-slate-50 text-left transition-colors">
+                        01/05/2026 - 31/05/2026
+                    </button>
+                    <div id="topPeriodPopover" class="hidden absolute right-0 top-full mt-2 w-[340px] max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 z-50">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i data-lucide="calendar-range" class="w-4 h-4 text-slate-500"></i>
+                            <span class="text-sm font-semibold text-slate-900">Período</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 mb-3">
+                            <button type="button" onclick="setTopPeriodShortcut('7dias')" class="chip-modern">7 dias</button>
+                            <button type="button" onclick="setTopPeriodShortcut('30dias')" class="chip-modern">30 dias</button>
+                            <button type="button" onclick="setTopPeriodShortcut('mes')" class="chip-modern">Este mês</button>
+                            <button type="button" onclick="setTopPeriodShortcut('mespassado')" class="chip-modern">Mês passado</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div>
+                                <label class="filter-label" for="topPeriodStart">Início</label>
+                                <input id="topPeriodStart" type="date" class="date-modern">
+                            </div>
+                            <div>
+                                <label class="filter-label" for="topPeriodEnd">Fim</label>
+                                <input id="topPeriodEnd" type="date" class="date-modern">
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center border-t border-slate-100 pt-3">
+                            <div class="flex items-center gap-1">
+                                <button type="button" onclick="clearTopPeriodInputs()" class="px-2.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg">Limpar</button>
+                                <button type="button" onclick="clearTopPeriod()" class="px-2.5 py-2 text-xs font-semibold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg">Automático</button>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="closeTopPeriodPopover()" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                                <button type="button" onclick="applyTopPeriod()" class="px-3.5 py-2 text-xs font-semibold bg-green-700 text-white rounded-lg hover:bg-green-800 shadow-sm">Aplicar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" onclick="clearDashboardFiltersTop()" class="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs transition-colors"><i data-lucide="filter-x" class="w-3.5 h-3.5"></i>Limpar Filtros</button>
+                <button type="button" onclick="refreshDashboardTop()" class="flex items-center gap-1.5 px-3 py-2 bg-green-700 hover:bg-green-800 text-white font-semibold rounded-lg text-xs shadow-sm transition-colors"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>Atualizar</button>
+                <button id="btnVoltarFormulario" onclick="hideDashboardInPage()" class="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs transition-colors"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>Voltar ao Formulário</button>
+            </div>
+        </div>
+        <div id="assistantAgronomicoCard" class="bg-gradient-to-br from-white via-sky-50/60 to-emerald-50/50 border border-sky-100 rounded-2xl p-4 mb-4 shadow-sm">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <div>
+                    <h3 class="text-sm font-extrabold text-slate-800">Assistente Agronômico</h3>
+                    <p class="text-[11px] text-slate-500">Consulta baseada no histórico real registrado</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                    <label class="filter-label" for="dashboardTargetSelect">Alvo <span class="text-red-500">*</span></label>
+                    <select id="dashboardTargetSelect" data-modern-select data-searchable="true" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Carregando alvos...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="filter-label" for="assistantCultureSelect">Cultura</label>
+                    <select id="assistantCultureSelect" data-modern-select data-placeholder="Todas as culturas" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Cultura (opcional)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="filter-label" for="assistantSectorSelect">Bloco/Setor</label>
+                    <select id="assistantSectorSelect" data-modern-select data-placeholder="Todos os blocos" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Bloco/Setor (opcional)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="filter-label" for="assistantCycleSelect">Ciclo</label>
+                    <select id="assistantCycleSelect" data-modern-select data-placeholder="Todos os ciclos" class="w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Ciclo (opcional)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 mt-3">
+                <button type="button" onclick="getOfflineSuggestion()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-green-700 text-white rounded-lg hover:bg-green-800 shadow-sm whitespace-nowrap transition-colors"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i>Consultar Assistente</button>
+                <button type="button" onclick="resetAssistantFilters()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 whitespace-nowrap transition-colors"><i data-lucide="filter-x" class="w-3.5 h-3.5"></i>Limpar Filtros</button>
+                <span class="text-[10px] text-slate-500">Alvo é obrigatório. Filtros refinam a recomendação técnica.</span>
+            </div>
+            <div id="offlineSuggestionBox" class="hidden mt-3 p-3 rounded-xl border border-sky-100 bg-white text-[11px]"></div>
+        </div>
+        <iframe id="dashboardFrame" src="" scrolling="no" class="w-full min-h-[320px] bg-transparent border-0 rounded-none overflow-hidden"></iframe>
+    </div>
+
+    <div id="dashboardModal" class="fixed inset-0 bg-black/50 z-50 hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-600"></i>
+                    Dashboard Operacional
+                </h3>
+                <button onclick="hideDashboardModal()" class="text-slate-500 hover:text-slate-700 p-1 rounded-md">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div id="dashboardLoading" class="p-6 text-sm text-slate-500">Carregando dados...</div>
+            <div id="dashboardContent" class="hidden p-4 overflow-y-auto space-y-4">
+                <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Janela analítica: últimos <span id="dashDays">90</span> dias</div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Total de Aplicações</div>
+                        <div id="dashTotalRegistros" class="text-xl font-extrabold text-slate-800">0</div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="text-[10px] uppercase font-bold text-blue-500">Defensivos</div>
+                        <div id="dashTotalFito" class="text-xl font-extrabold text-blue-700">0</div>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                        <div class="text-[10px] uppercase font-bold text-emerald-500">Laboratório</div>
+                        <div id="dashTotalLaboratorio" class="text-xl font-extrabold text-emerald-700">0</div>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <div class="text-[10px] uppercase font-bold text-amber-500">Adubação</div>
+                        <div id="dashTotalAdubacao" class="text-xl font-extrabold text-amber-700">0</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="bg-white border border-slate-200 rounded-lg p-3">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Setores Ativos</div>
+                        <div id="dashSetoresAtivos" class="text-lg font-extrabold text-slate-800">0</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-lg p-3">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Produtos Únicos</div>
+                        <div id="dashProdutosUnicos" class="text-lg font-extrabold text-slate-800">0</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-lg p-3">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Litros Laboratório</div>
+                        <div id="dashLitrosLab" class="text-lg font-extrabold text-slate-800">0</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-lg p-3">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Tempo Médio</div>
+                        <div id="dashTempoMedio" class="text-lg font-extrabold text-slate-800">0 min</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                        <div class="px-3 py-2 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">Aplicações por Setor (Top 8)</div>
+                        <div id="dashTopSetores" class="p-3 space-y-2 text-xs"></div>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                        <div class="px-3 py-2 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">Tendência Semanal</div>
+                        <div id="dashSemanas" class="p-3 space-y-2 text-xs"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
+                        <div class="px-3 py-2 border-b border-blue-200 text-xs font-bold text-blue-700 uppercase">Defensivos: Produtos Mais Aplicados</div>
+                        <div id="dashTopProdutos" class="p-3 space-y-2 text-xs"></div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
+                        <div class="px-3 py-2 border-b border-blue-200 text-xs font-bold text-blue-700 uppercase">Defensivos por Tipo</div>
+                        <div id="dashTiposDefensivos" class="p-3 space-y-2 text-xs"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-lg overflow-hidden">
+                        <div class="px-3 py-2 border-b border-emerald-200 text-xs font-bold text-emerald-700 uppercase">Laboratório: Multiplicação por Produto Final</div>
+                        <div id="dashLaboratorioProdutos" class="p-3 space-y-2 text-xs"></div>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg overflow-hidden">
+                        <div class="px-3 py-2 border-b border-amber-200 text-xs font-bold text-amber-700 uppercase">Adubação por Método</div>
+                        <div id="dashAdubacaoMetodos" class="p-3 space-y-2 text-xs"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                    <div class="px-3 py-2 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">Últimas aplicações registradas</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs">
+                            <thead class="bg-slate-50 text-slate-600">
+                                <tr>
+                                    <th class="text-left p-2">Data</th>
+                                    <th class="text-left p-2">Tipo</th>
+                                    <th class="text-left p-2">Local</th>
+                                    <th class="text-left p-2">Setor</th>
+                                    <th class="text-left p-2">Responsável</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashRecentRows"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="dashboardError" class="hidden p-6 text-sm text-red-600"></div>
+        </div>
+    </div>
+
+    <!-- OVERLAY DE CARREGAMENTO: bloqueia e desfoca a tela enquanto envia/gera a imagem, para o usuário não clicar várias vezes -->
+    <div id="loadingOverlay" class="fixed inset-0 z-[90] hidden flex flex-col items-center justify-center gap-4 bg-white/70 backdrop-blur-sm" style="touch-action: none; overscroll-behavior: contain;">
+        <div class="w-12 h-12 border-4 border-[#5b7566] border-t-transparent rounded-full animate-spin"></div>
+        <p id="loadingOverlayText" class="text-sm font-bold text-slate-600 px-6 text-center">Aguarde...</p>
+    </div>
+
+    <div id="messageModal" class="fixed inset-0 bg-black/50 z-50 hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-sm text-center">
+            <div id="msgIconContainer" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"></div>
+            <h3 id="msgTitle" class="text-lg font-bold text-slate-800"></h3>
+            <p id="msgText" class="text-sm text-slate-500 mt-2 mb-4 whitespace-pre-line"></p>
+            <button onclick="hideMessageModal()" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg text-sm">OK</button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        console.log("Aplicação 'Controle SPG' carregada.");
+
+        // ARRAYS GLOBAIS DE PRODUTOS E PRAGAS
+        const PESTS_BRASSICAS = ["Adubação Foliar", "Alternaria", "Bacteriose", "Hérnia", "Lagarta", "Míldio", "Podridão Negra", "Pulgão", "Traça", "Tripes", "Vaquinha"];
+        const PESTS_CUCUMBER = ["Ácaro", "Adubação Foliar", "Alternaria", "Antracnose", "Bacteriose", "Lagarta", "Mancha Angular", "Míldio", "Mosca Branca", "Oídio", "Pulgão", "Tripes", "Vaquinha", "Vírus"];
+        const PESTS_GENERAL = ["Adubação Foliar", "Ácaro", "Lagarta", "Fungo", "Bactéria", "Vírus"];
+        const TYPES_ADUBACAO = ['Orgânico', 'Mineral', 'Foliar', 'Organomineral'];
+        const TYPES_FITO = ['Acaricidas', 'Adjuvantes', 'Bactericidas', 'Biológico', 'Defensivo', 'Desfolhantes', 'Espalhante', 'Estabilizador de PH', 'Estruturador', 'Extrato', 'Fertilizante', 'Foliar', 'Fungicidas', 'Herbicidas', 'Inseticidas', 'Manipulado', 'Natural', 'Nematicidas', 'Nutricional', 'Repelente', 'Rodenticidas'].sort();
+        let PRODS_MULTI = [];
+        let PRODS_ADUBACAO = [];
+        let PRODS_FITO = [];
+
+        let appData = [], editingIndex = -1, lastFormState = null; 
+        const STORAGE_KEY = 'spg_fitosanitario_data_supabase', GLOBAL_KEY = 'spg_fitosanitario_global_supabase';
+        const APPS_SCRIPT_URL = 'spg:aplicacoes';
+        let dashboardCache = null;
+        let isInitialDataReady = false;
+        let currentDashboardType = 'Defensivos';
+        let topPeriodState = { inicio: '', fim: '' };
+
+        let globalInfo = { partner: '', date: '', requestor: '', applicator: '', startTime: '', endTime: '', duration: '' };
+
+        // ==========================================
+        // USUÁRIO LOGADO (login único do Painel SPG)
+        // O que cada pessoa acessa é definido em Cadastro de Usuários.
+        // ==========================================
+        const SPG_API = window.IrrigacaoAPI;
+        const SPG_MENU_URL = '../../index.html';
+        const SPG_PROJETO = 'aplicacoes-fitossanitarias';
+        const spg_temAcesso = () => SPG_API.projetosDoUsuario().some(p => p.id === SPG_PROJETO);
+        const spg_podeRegistrar = () => SPG_API.recursoLiberado('aplicacoes.registro');
+        const spg_podeDashboard = () => SPG_API.recursoLiberado('aplicacoes.dashboard');
+        const spg_bloqueiosIniciais = JSON.stringify((SPG_API.usuarioAtual() || {}).bloqueios || []);
+        if (!spg_temAcesso()) location.replace(SPG_MENU_URL);
+
+        function spg_preencherLocais() {
+            const select = document.getElementById('partner');
+            const locais = SPG_API.locaisPermitidos();
+            select.innerHTML = (locais.length === 1 ? '' : '<option value="">Selecione...</option>') +
+                locais.map(l => `<option value="${escapeHtml(l.nome)}">${escapeHtml(l.nome)}</option>`).join('');
+        }
+
+        function spg_aplicarAcesso() {
+            const fora = window.top === window.self;
+            const varios = SPG_API.projetosDoUsuario().length > 1;
+            document.getElementById('btnMenuProjetos').style.display = fora && varios ? 'flex' : 'none';
+            document.getElementById('btnSairSistema').style.display = fora ? 'flex' : 'none';
+            document.getElementById('btnAbrirDashboard').style.display = spg_podeDashboard() ? '' : 'none';
+            if (!spg_podeRegistrar()) {
+                document.getElementById('btnEnviarRelatorio').style.display = 'none';
+                document.getElementById('btnVoltarFormulario').style.display = 'none';
+                if (spg_podeDashboard()) showDashboardInPage();
+            }
+            SPG_API.onStatus(s => {
+                const caixa = document.getElementById('spgAguardando');
+                caixa.classList.toggle('hidden', !s.pendentes);
+                document.getElementById('spgAguardandoTexto').textContent = s.pendentes === 1 ? '1 registro aguardando internet' : s.pendentes + ' registros aguardando internet';
+            });
+            spg_conferirAcesso();
+        }
+
+        // O administrador pode ter mudado as permissões desde o último acesso
+        async function spg_conferirAcesso() {
+            if (!navigator.onLine) return;
+            if (!await SPG_API.sessaoValida()) { location.replace(SPG_MENU_URL); return; }
+            let perfil;
+            try { perfil = await SPG_API.atualizarPerfil(); } catch (e) { return; }
+            if (!perfil || !spg_temAcesso()) location.replace(SPG_MENU_URL);
+            else if (JSON.stringify(perfil.bloqueios || []) !== spg_bloqueiosIniciais) location.reload();
+        }
+
+        async function sairDoSistema() {
+            try { await SPG_API.logout(); } catch (e) { /* sai mesmo assim */ }
+            location.replace(SPG_MENU_URL);
+        }
+
+        spg_preencherLocais();
+        lucide.createIcons();
+        addProductRow();
+        loadFromStorage();
+        bootInitialDataLoad();
+        updateDynamicTitle();
+        calcDuration('startTime','endTime','totalDuration', true);
+        updateGlobalState();
+        handleCropChange();
+        document.querySelectorAll('select[data-modern-select], #mainFormView select').forEach(enhanceSelect);
+        // Linhas de produto são criadas dinamicamente: moderniza os selects novos assim que entram na tela
+        new MutationObserver((mutations) => {
+            mutations.forEach(m => m.addedNodes.forEach(node => {
+                if (node.nodeType !== 1) return;
+                if (node.matches('select')) enhanceSelect(node);
+                node.querySelectorAll?.('select').forEach(enhanceSelect);
+            }));
+        }).observe(document.getElementById('mainFormView'), { childList: true, subtree: true });
+        spg_aplicarAcesso();
+
+        // Select moderno: o <select> nativo continua sendo a fonte da verdade (value/innerHTML/change),
+        // o componente visual só espelha as opções e dispara 'change' ao escolher.
+        function enhanceSelect(select) {
+            if (!select || select.dataset.enhanced) return;
+            select.dataset.enhanced = '1';
+
+            const wrap = document.createElement('div');
+            wrap.className = 'msel';
+            // Largura/posição definidas no select passam para o wrapper (ex.: w-full sm:w-1/3)
+            select.className.split(/\s+/)
+                .filter(c => /^((sm|md|lg|xl):)?(w-|min-w-|max-w-|flex-|grow|shrink|basis-|col-span-)/.test(c))
+                .forEach(c => wrap.classList.add(c));
+            if (select.closest('#mainFormView')) wrap.classList.add('msel-field');
+            const cls = select.className;
+            if (cls.includes('emerald')) wrap.classList.add('msel-tone-emerald');
+            else if (cls.includes('amber')) wrap.classList.add('msel-tone-amber');
+            else if (cls.includes('text-blue-600')) wrap.classList.add('msel-action');
+            else if (cls.includes('border-blue-200')) wrap.classList.add('msel-tone-blue');
+            select.parentNode.insertBefore(wrap, select);
+            wrap.appendChild(select);
+            select.classList.add('msel-native');
+
+            const trigger = document.createElement('button');
+            trigger.type = 'button';
+            trigger.className = 'msel-trigger';
+            trigger.setAttribute('aria-haspopup', 'listbox');
+            trigger.setAttribute('aria-expanded', 'false');
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'truncate';
+            trigger.appendChild(labelSpan);
+            trigger.insertAdjacentHTML('beforeend', '<svg class="msel-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+
+            const menu = document.createElement('div');
+            menu.className = 'msel-menu';
+            menu.setAttribute('role', 'listbox');
+            const searchBox = document.createElement('div');
+            searchBox.className = 'p-2 border-b border-slate-100';
+            const search = document.createElement('input');
+            search.type = 'search';
+            search.className = 'msel-search';
+            search.placeholder = 'Buscar...';
+            searchBox.appendChild(search);
+            const list = document.createElement('div');
+            list.className = 'msel-list';
+            menu.appendChild(searchBox);
+            menu.appendChild(list);
+            wrap.appendChild(trigger);
+            wrap.appendChild(menu);
+
+            const checkSvg = '<svg class="msel-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+            function sync() {
+                const opt = select.options[select.selectedIndex];
+                const isEmpty = !select.value;
+                const placeholder = select.dataset.placeholder;
+                labelSpan.textContent = isEmpty && placeholder && select.options.length > 1
+                    ? placeholder
+                    : (opt ? opt.textContent : (placeholder || 'Selecione...'));
+                wrap.classList.toggle('is-empty', isEmpty);
+                wrap.classList.toggle('is-active', !isEmpty);
+                // Espelha estados que o código aplica no select (campo "Outro" escondido, borda de erro)
+                wrap.classList.toggle('hidden', select.classList.contains('hidden'));
+                wrap.classList.toggle('is-error', select.classList.contains('border-red-500'));
+                trigger.disabled = select.disabled;
+                if (wrap.classList.contains('open')) renderList();
+            }
+
+            function renderList() {
+                const term = search.value.trim().toLocaleLowerCase('pt-BR');
+                const options = Array.from(select.options);
+                const searchable = select.dataset.searchable === 'true' || options.length > 8;
+                searchBox.classList.toggle('hidden', !searchable);
+                list.innerHTML = '';
+                let shown = 0;
+                options.forEach((opt, idx) => {
+                    if (opt.disabled) return;
+                    const text = opt.textContent;
+                    const isPlaceholder = opt.value === '';
+                    if (term && (isPlaceholder || !text.toLocaleLowerCase('pt-BR').includes(term))) return;
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.setAttribute('role', 'option');
+                    btn.className = 'msel-option' + (idx === select.selectedIndex ? ' is-selected' : '') + (isPlaceholder ? ' is-placeholder' : '');
+                    btn.dataset.index = String(idx);
+                    const span = document.createElement('span');
+                    span.className = 'truncate';
+                    span.textContent = isPlaceholder && select.dataset.placeholder ? select.dataset.placeholder : text;
+                    btn.appendChild(span);
+                    btn.insertAdjacentHTML('beforeend', checkSvg);
+                    btn.addEventListener('click', () => choose(idx));
+                    list.appendChild(btn);
+                    shown++;
+                });
+                if (!shown) list.innerHTML = '<div class="msel-empty">Nenhum resultado</div>';
+            }
+
+            function choose(idx) {
+                const changed = select.selectedIndex !== idx;
+                select.selectedIndex = idx;
+                close();
+                if (changed) select.dispatchEvent(new Event('change', { bubbles: true }));
+                trigger.focus();
+            }
+
+            function open() {
+                document.querySelectorAll('.msel.open').forEach(el => { if (el !== wrap) el.classList.remove('open'); });
+                search.value = '';
+                wrap.classList.add('open');
+                trigger.setAttribute('aria-expanded', 'true');
+                renderList();
+                const selected = list.querySelector('.is-selected');
+                if (selected) selected.scrollIntoView({ block: 'nearest' });
+                if (!searchBox.classList.contains('hidden')) search.focus();
+            }
+
+            function close() {
+                wrap.classList.remove('open');
+                trigger.setAttribute('aria-expanded', 'false');
+            }
+
+            function moveFocus(step) {
+                const items = Array.from(list.querySelectorAll('.msel-option'));
+                if (!items.length) return;
+                const current = items.findIndex(el => el.classList.contains('is-focus'));
+                items.forEach(el => el.classList.remove('is-focus'));
+                const next = items[(current + step + items.length) % items.length];
+                next.classList.add('is-focus');
+                next.scrollIntoView({ block: 'nearest' });
+            }
+
+            trigger.addEventListener('click', () => (wrap.classList.contains('open') ? close() : open()));
+            search.addEventListener('input', renderList);
+            wrap.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') { close(); trigger.focus(); }
+                else if (e.key === 'ArrowDown') { e.preventDefault(); if (!wrap.classList.contains('open')) open(); moveFocus(1); }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); moveFocus(-1); }
+                else if (e.key === 'Enter' && wrap.classList.contains('open')) {
+                    const target = list.querySelector('.msel-option.is-focus') || (search.value ? list.querySelector('.msel-option') : null);
+                    if (target) { e.preventDefault(); choose(Number(target.dataset.index)); }
+                }
+            });
+            document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) close(); });
+            document.querySelectorAll('label[for="' + select.id + '"]').forEach(lbl => {
+                lbl.addEventListener('click', (e) => { e.preventDefault(); trigger.click(); });
+            });
+
+            // Mantém o visual em dia quando o código altera opções ou valor do select nativo
+            new MutationObserver(sync).observe(select, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'class'] });
+            select.addEventListener('change', sync);
+            const proto = HTMLSelectElement.prototype;
+            ['value', 'selectedIndex'].forEach(prop => {
+                const desc = Object.getOwnPropertyDescriptor(proto, prop);
+                Object.defineProperty(select, prop, {
+                    configurable: true,
+                    get() { return desc.get.call(this); },
+                    set(v) { desc.set.call(this, v); sync(); }
+                });
+            });
+
+            sync();
+        }
+
+        // Helpers de Custom Fields e Validações
+        function getRecordType() { return document.querySelector('input[name="recordTypeRadio"]:checked')?.value || 'Fito'; }
+        function toggleError(id, show) {
+            const el = document.getElementById(id), err = document.getElementById('error-' + id);
+            if (!el) return;
+            el.classList.toggle('border-red-500', show); el.classList.toggle('ring-1', show); el.classList.toggle('ring-red-500', show);
+            if(err) err.classList.toggle('hidden', !show);
+        }
+        function clearError(id) { toggleError(id, false); }
+        function setProductInputsDisabled(disabled) {
+            document.querySelectorAll('.prod-name-input').forEach(input => {
+                input.disabled = disabled;
+                input.classList.toggle('opacity-60', disabled);
+                input.classList.toggle('cursor-not-allowed', disabled);
+                if (disabled) input.setAttribute('title', 'Aguarde carregar os dados...');
+                else input.removeAttribute('title');
+            });
+        }
+        
+        function toggleCustomField(selectId, divId, inputId, triggerVal) {
+            const select = document.getElementById(selectId);
+            if (select.value === triggerVal || select.value === 'Outros') {
+                select.classList.add('hidden'); select.required = false;
+                document.getElementById(divId).classList.remove('hidden');
+                document.getElementById(inputId).focus(); document.getElementById(inputId).required = true;
+            }
+        }
+        function resetCustomField(selectId, divId, inputId, defaultVal) {
+            document.getElementById(inputId).value = ''; document.getElementById(inputId).required = false;
+            const select = document.getElementById(selectId);
+            select.value = defaultVal; if(!select.value) select.selectedIndex = 0;
+            select.classList.remove('hidden'); select.required = true;
+            document.getElementById(divId).classList.add('hidden');
+        }
+        function mergeUniqueProducts(localList, remoteList) {
+            const map = {};
+            const out = [];
+            [...(localList || []), ...(remoteList || [])].forEach(name => {
+                const val = (name || '').trim();
+                if (!val) return;
+                const key = val.toLowerCase();
+                if (map[key]) return;
+                map[key] = true;
+                out.push(val);
+            });
+            return out.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        }
+        function refreshApplicatorOptions() {
+            const select = document.getElementById('applicator');
+            if (!select) return;
+
+            const currentValue = select.classList.contains('hidden') ? '' : (select.value || '');
+            const defaults = ['Equipe Erisvaldo', 'Hugo Melo', 'Silvio Brito'];
+            const localNames = (appData || []).map(item => (item?.applicator || '').trim()).filter(Boolean);
+            const remoteNames = (dashboardCache?.analytics?.allRecords || []).map(rec =>
+                (rec?.aplicador || rec?.responsavel || rec?.['responsável'] || '').toString().trim()
+            ).filter(Boolean);
+
+            const map = {};
+            const names = [...defaults, ...localNames, ...remoteNames].filter(name => {
+                const key = name.toLowerCase();
+                if (!key || map[key]) return false;
+                map[key] = true;
+                return true;
+            }).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+            select.innerHTML = '<option value="">Selecione...</option>' +
+                names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('') +
+                '<option value="Outro">Outro (Digitar)</option>';
+
+            if (currentValue && currentValue !== 'Outro') {
+                const exists = names.some(name => name.toLowerCase() === currentValue.toLowerCase());
+                if (exists) select.value = currentValue;
+            }
+        }
+        async function loadProductsCatalog() {
+            if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'SUA_URL_DO_APPS_SCRIPT_AQUI') return;
+            try {
+                const res = await aplicacoesBackend(APPS_SCRIPT_URL + '?action=products');
+                if (!res.ok) throw new Error('Falha na consulta (' + res.status + ')');
+                const data = await res.json();
+                if (data.status !== 'success' || !data.products) throw new Error('Resposta inválida');
+                PRODS_FITO = mergeUniqueProducts(PRODS_FITO, data.products.Fito || []);
+                PRODS_ADUBACAO = mergeUniqueProducts(PRODS_ADUBACAO, data.products.Adubacao || []);
+                PRODS_MULTI = mergeUniqueProducts(PRODS_MULTI, data.products.Multiplicacao || []);
+                refreshOpenProductSuggestions();
+            } catch (err) {
+                console.warn('Não foi possível carregar catálogo remoto de produtos:', err.message);
+            }
+        }
+        async function prefetchDashboardData() {
+            if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'SUA_URL_DO_APPS_SCRIPT_AQUI') return;
+            try {
+                const res = await aplicacoesBackend(APPS_SCRIPT_URL + '?days=90');
+                if (!res.ok) throw new Error('Falha na consulta (' + res.status + ')');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    dashboardCache = data;
+                    refreshDashboardTargetOptions();
+                    refreshApplicatorOptions();
+                }
+            } catch (err) {
+                console.warn('Não foi possível pré-carregar dados do dashboard:', err.message);
+            }
+        }
+        function preloadDashboardFrame() {
+            return new Promise(resolve => {
+                const frame = document.getElementById('dashboardFrame');
+                if (!frame) return resolve();
+                const currentSrc = frame.getAttribute('src');
+                if (currentSrc || !spg_podeDashboard()) return resolve();
+
+                let done = false;
+                const finish = () => {
+                    if (done) return;
+                    done = true;
+                    resolve();
+                };
+                frame.addEventListener('load', finish, { once: true });
+                frame.setAttribute('src', 'dashboard.html');
+                setTimeout(finish, 3000);
+            });
+        }
+        async function bootInitialDataLoad() {
+            const badge = document.getElementById('initialDataLoadingBadge');
+            const text = document.getElementById('initialDataLoadingText');
+            const setProgress = (value) => {
+                const pct = Math.max(0, Math.min(100, value));
+                if (text) text.innerText = `Carregando dados... ${pct}%`;
+            };
+            if (badge) badge.classList.remove('hidden');
+            setProgress(0);
+            const tasks = [
+                loadProductsCatalog().then(() => setProgress(34)).catch(() => setProgress(34)),
+                prefetchDashboardData().then(() => setProgress(67)).catch(() => setProgress(67)),
+                preloadDashboardFrame().then(() => setProgress(100)).catch(() => setProgress(100))
+            ];
+            await Promise.all(tasks);
+            isInitialDataReady = true;
+            setProductInputsDisabled(false);
+            if (text) text.innerText = 'Dados carregados 100%';
+            setTimeout(() => badge && badge.classList.add('hidden'), 900);
+        }
+        function getStandardProductsByRecordType(recType) {
+            return recType === 'Multiplicacao' ? PRODS_MULTI : (recType === 'Adubacao' ? PRODS_ADUBACAO : PRODS_FITO);
+        }
+        function refreshDashboardTargetOptions() {
+            const select = document.getElementById('dashboardTargetSelect');
+            if (!select) return;
+            const items = dashboardCache?.analytics?.porAlvo || [];
+            const map = {};
+            const targets = [];
+            items.forEach(item => {
+                const alvo = (item?.alvo || '').toString().trim();
+                if (!alvo) return;
+                const key = alvo.toLowerCase();
+                if (map[key]) return;
+                map[key] = true;
+                targets.push(alvo);
+            });
+            targets.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+            if (!targets.length) {
+                select.innerHTML = '<option value="">Sem alvos registrados no período</option>';
+                refreshAssistantFilterOptions();
+                return;
+            }
+            select.innerHTML = '<option value="">Selecione um alvo registrado...</option>' +
+                targets.map(alvo => `<option value="${escapeHtml(alvo)}">${escapeHtml(alvo)}</option>`).join('');
+            refreshAssistantFilterOptions();
+        }
+        function fillAssistantSelect(selectId, list, placeholder) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            const sorted = (list || []).slice().sort((a, b) =>
+                selectId === 'assistantSectorSelect'
+                    ? compareAssistantSector(a, b)
+                    : a.localeCompare(b, 'pt-BR')
+            );
+            select.innerHTML = `<option value="">${placeholder}</option>` +
+                sorted.map(item => `<option value="${escapeHtml(item)}">${escapeHtml(item)}</option>`).join('');
+        }
+        function compareAssistantSector(a, b) {
+            const va = String(a || '').trim();
+            const vb = String(b || '').trim();
+            const na = Number(va);
+            const nb = Number(vb);
+            const aNum = va !== '' && !Number.isNaN(na);
+            const bNum = vb !== '' && !Number.isNaN(nb);
+            if (aNum && bNum) return na - nb;
+            if (aNum && !bNum) return -1;
+            if (!aNum && bNum) return 1;
+            return va.localeCompare(vb, 'pt-BR');
+        }
+        function refreshAssistantFilterOptions() {
+            const records = dashboardCache?.analytics?.allRecords || [];
+            const culturas = [];
+            const ciclos = [];
+            const setores = [];
+            const mapCult = {};
+            const mapCiclo = {};
+            const mapSetor = {};
+
+            records.forEach(rec => {
+                const cultura = (rec?.rawRows?.[0]?.['Cultura'] || '').toString().trim();
+                const ciclo = (rec?.ciclo || '').toString().trim();
+                const setor = (rec?.setor || '').toString().trim();
+                if (cultura && !mapCult[cultura.toLowerCase()]) {
+                    mapCult[cultura.toLowerCase()] = true;
+                    culturas.push(cultura);
+                }
+                if (ciclo && !mapCiclo[ciclo.toLowerCase()]) {
+                    mapCiclo[ciclo.toLowerCase()] = true;
+                    ciclos.push(ciclo);
+                }
+                if (setor && !mapSetor[setor.toLowerCase()]) {
+                    mapSetor[setor.toLowerCase()] = true;
+                    setores.push(setor);
+                }
+            });
+
+            fillAssistantSelect('assistantCultureSelect', culturas, 'Cultura (opcional)');
+            fillAssistantSelect('assistantCycleSelect', ciclos, 'Ciclo (opcional)');
+            fillAssistantSelect('assistantSectorSelect', setores, 'Bloco/Setor (opcional)');
+            bindAssistantFilterEvents();
+            updateAssistantDependentFilters();
+        }
+        function getAssistantSelection() {
+            return {
+                target: (document.getElementById('dashboardTargetSelect')?.value || '').trim(),
+                culture: (document.getElementById('assistantCultureSelect')?.value || '').trim(),
+                cycle: (document.getElementById('assistantCycleSelect')?.value || '').trim(),
+                sector: (document.getElementById('assistantSectorSelect')?.value || '').trim()
+            };
+        }
+        function collectFrontendAssistantFilters(target, culture) {
+            const records = dashboardCache?.analytics?.allRecords || [];
+            const cicloMap = {};
+            const setorMap = {};
+            records.forEach(rec => {
+                const raw = rec?.rawRows?.[0] || {};
+                const recTarget = ((rec?.alvos?.[0] || '').toString().trim()).toLowerCase();
+                const recCulture = ((raw['Cultura'] || '').toString().trim()).toLowerCase();
+                if (target && recTarget.indexOf(target.toLowerCase()) === -1) return;
+                if (culture && recCulture !== culture.toLowerCase()) return;
+                const ciclo = (rec?.ciclo || '').toString().trim();
+                const setor = (rec?.setor || '').toString().trim();
+                if (ciclo) cicloMap[ciclo] = true;
+                if (setor) setorMap[setor] = true;
+            });
+            return {
+                cycles: Object.keys(cicloMap).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+                sectors: Object.keys(setorMap).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+            };
+        }
+        async function updateAssistantDependentFilters() {
+            const selected = getAssistantSelection();
+            const prevCycle = selected.cycle;
+            const prevSector = selected.sector;
+            const frontend = collectFrontendAssistantFilters(selected.target, selected.culture);
+            const cycles = frontend.cycles;
+            const sectors = frontend.sectors;
+            fillAssistantSelect('assistantCycleSelect', cycles, 'Ciclo (opcional)');
+            fillAssistantSelect('assistantSectorSelect', sectors, 'Bloco/Setor (opcional)');
+
+            const cycleSelect = document.getElementById('assistantCycleSelect');
+            const sectorSelect = document.getElementById('assistantSectorSelect');
+            if (cycleSelect && prevCycle && cycles.includes(prevCycle)) cycleSelect.value = prevCycle;
+            if (sectorSelect && prevSector && sectors.includes(prevSector)) sectorSelect.value = prevSector;
+        }
+        function bindAssistantFilterEvents() {
+            const targetEl = document.getElementById('dashboardTargetSelect');
+            const cultureEl = document.getElementById('assistantCultureSelect');
+            if (targetEl && !targetEl.dataset.assistantBound) {
+                targetEl.addEventListener('change', () => updateAssistantDependentFilters());
+                targetEl.dataset.assistantBound = '1';
+            }
+            if (cultureEl && !cultureEl.dataset.assistantBound) {
+                cultureEl.addEventListener('change', () => updateAssistantDependentFilters());
+                cultureEl.dataset.assistantBound = '1';
+            }
+        }
+        function resetAssistantFilters() {
+            ['assistantCultureSelect', 'assistantCycleSelect', 'assistantSectorSelect'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.selectedIndex = 0;
+            });
+            updateAssistantDependentFilters();
+        }
+        function computeAssistantContextFallback(target, culture, cycle, sector) {
+            const records = dashboardCache?.analytics?.allRecords || [];
+            let volumeTotal = 0;
+            let plantasTotal = 0;
+            let usosComVolume = 0;
+            let usosComPlantas = 0;
+            let usosComVolumeEPlantas = 0;
+
+            records.forEach(rec => {
+                if ((rec?.tipo || '') !== 'Defensivos') return;
+                const recAlvos = Array.isArray(rec?.alvos) ? rec.alvos : [];
+                const recTargetMatch = recAlvos.some(a => (a || '').toString().toLowerCase().includes((target || '').toLowerCase()));
+                if (!recTargetMatch) return;
+                if (culture) {
+                    const recCulture = ((rec?.rawRows?.[0]?.['Cultura'] || '').toString().trim()).toLowerCase();
+                    if (recCulture !== culture.toLowerCase()) return;
+                }
+                if (cycle && ((rec?.ciclo || '').toString().trim().toLowerCase() !== cycle.toLowerCase())) return;
+                if (sector && ((rec?.setor || '').toString().trim().toLowerCase() !== sector.toLowerCase())) return;
+
+                const rows = Array.isArray(rec?.rawRows) && rec.rawRows.length ? rec.rawRows : [null];
+                const groupVolumeRaw = rows.find(r => (r?.['Volume Calda (L)'] || '').toString().trim())?.['Volume Calda (L)'] || '';
+                const groupPlantasRaw = rows.find(r => (r?.['Plantas'] || '').toString().trim())?.['Plantas'] || '';
+                const groupVolume = parseFloat(groupVolumeRaw.toString().replace(/\./g, '').replace(',', '.')) || 0;
+                const groupPlantas = parseFloat(groupPlantasRaw.toString().replace(/\./g, '').replace(',', '.')) || 0;
+                rows.forEach(row => {
+                    const volumeLinha = row ? (parseFloat((row['Volume Calda (L)'] || '').toString().replace(/\./g, '').replace(',', '.')) || 0) : 0;
+                    const plantasLinha = row ? (parseFloat((row['Plantas'] || '').toString().replace(/\./g, '').replace(',', '.')) || 0) : 0;
+                    const volume = volumeLinha > 0 ? volumeLinha : (groupVolume > 0 ? groupVolume : (parseFloat(rec?.volumeCalda) || 0));
+                    const plantas = plantasLinha > 0 ? plantasLinha : groupPlantas;
+                    if (volume > 0) {
+                        volumeTotal += volume;
+                        usosComVolume++;
+                    }
+                    if (plantas > 0) {
+                        plantasTotal += plantas;
+                        usosComPlantas++;
+                    }
+                    if (volume > 0 && plantas > 0) usosComVolumeEPlantas++;
+                });
+            });
+
+            const volumeCaldaMedio = usosComVolume ? Number((volumeTotal / usosComVolume).toFixed(2)) : 0;
+            const plantasMedias = usosComPlantas ? Math.round(plantasTotal / usosComPlantas) : 0;
+            const litrosPor100Plantas = (volumeTotal > 0 && plantasTotal > 0) ? Number(((volumeTotal / plantasTotal) * 100).toFixed(2)) : 0;
+            return { usosComVolume, usosComPlantas, usosComVolumeEPlantas, volumeCaldaMedio, plantasMedias, litrosPor100Plantas };
+        }
+        function getDoseHistoryForProduct(target, culture, cycle, sector, produto, tipo, unidade) {
+            const records = dashboardCache?.analytics?.allRecords || [];
+            const out = [];
+            records.forEach(rec => {
+                if ((rec?.tipo || '') !== 'Defensivos') return;
+                const recAlvos = Array.isArray(rec?.alvos) ? rec.alvos : [];
+                const recTargetMatch = recAlvos.some(a => (a || '').toString().toLowerCase().includes((target || '').toLowerCase()));
+                if (!recTargetMatch) return;
+                if (culture) {
+                    const recCulture = ((rec?.rawRows?.[0]?.['Cultura'] || '').toString().trim()).toLowerCase();
+                    if (recCulture !== culture.toLowerCase()) return;
+                }
+                if (cycle && ((rec?.ciclo || '').toString().trim().toLowerCase() !== cycle.toLowerCase())) return;
+                if (sector && ((rec?.setor || '').toString().trim().toLowerCase() !== sector.toLowerCase())) return;
+
+                const rows = Array.isArray(rec?.rawRows) ? rec.rawRows : [];
+                const groupVolumeRaw = rows.find(r => (r?.['Volume Calda (L)'] || '').toString().trim())?.['Volume Calda (L)'] || '';
+                const groupPlantasRaw = rows.find(r => (r?.['Plantas'] || '').toString().trim())?.['Plantas'] || '';
+                rows.forEach(row => {
+                    const rowProduto = (row?.['Produto'] || '').toString().trim();
+                    const rowTipo = (row?.['Tipo do Produto'] || '').toString().trim();
+                    const rowUnidade = (row?.['Unidade'] || '').toString().trim();
+                    if (rowProduto.toLowerCase() !== (produto || '').toLowerCase()) return;
+                    if (rowTipo.toLowerCase() !== (tipo || '').toLowerCase()) return;
+                    if (rowUnidade.toLowerCase() !== (unidade || '').toLowerCase()) return;
+                    const rowDose = (row?.['Dose'] || '').toString().trim();
+                    if (!rowDose) return;
+                    out.push({
+                        dose: rowDose,
+                        unidade: rowUnidade || unidade || '-',
+                        data: (row?.['Data da Aplicação'] || '').toString().trim() || '-',
+                        setor: (row?.['Bloco/Setor'] || '').toString().trim() || '-',
+                        plantas: (row?.['Plantas'] || '').toString().trim() || groupPlantasRaw.toString().trim() || '-',
+                        calda: (row?.['Volume Calda (L)'] || '').toString().trim() || groupVolumeRaw.toString().trim() || '-'
+                    });
+                });
+            });
+            return out.reverse();
+        }
+        function formatHistoryDate(value) {
+            const raw = (value || '').toString().trim();
+            if (!raw || raw === '-') return '-';
+            const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (br) return raw;
+            const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+            const dt = new Date(raw);
+            if (!Number.isNaN(dt.getTime())) {
+                const d = String(dt.getDate()).padStart(2, '0');
+                const m = String(dt.getMonth() + 1).padStart(2, '0');
+                const y = dt.getFullYear();
+                return `${d}/${m}/${y}`;
+            }
+            return raw;
+        }
+        function formatPtBrNumberText(value) {
+            const raw = (value || '').toString().trim();
+            if (!raw || raw === '-') return raw || '-';
+            const normalized = raw.replace(/\./g, '').replace(',', '.');
+            const num = Number(normalized);
+            if (!Number.isNaN(num)) return num.toLocaleString('pt-BR');
+            return raw;
+        }
+        function refreshOpenProductSuggestions() {
+            const list = getStandardProductsByRecordType(getRecordType());
+            document.querySelectorAll('.prod-suggestions').forEach(box => {
+                box.innerHTML = list.map(p => `<button type="button" onclick="selectProductSuggestion(this)" class="w-full text-left px-2 py-1.5 text-xs text-slate-700 hover:bg-blue-50">${p}</button>`).join('');
+            });
+        }
+
+        // Modos (Fito, Multi, Adubacao)
+        function toggleFormType(skipValidation = false) {
+            const newRecordType = getRecordType();
+            if (!skipValidation) {
+                const checkArr = editingIndex >= 0 ? appData.filter((_, idx) => idx !== editingIndex) : appData;
+                if (checkArr.length > 0 && checkArr[0].recordType !== newRecordType) {
+                    document.querySelector(`input[name="recordTypeRadio"][value="${checkArr[0].recordType}"]`).checked = true;
+                    return showMessageModal('Ação Bloqueada', `Não é permitido misturar tipos diferentes no mesmo relatório.\nPara iniciar um relatório diferente, clique em "Limpar Tudo".`, 'error');
+                }
+                const container = document.getElementById('productsContainer');
+                if (container) { container.innerHTML = ''; addProductRow(); }
+            }
+
+            const recType = getRecordType();
+            const els = { fito: ['fito-row-1', 'fito-row-2', 'fito-row-3', 'fito-row-4', 'timeRow'], multi: ['multi-row-1', 'multi-product-row'], adubacao: ['fito-row-1', 'fito-row-4', 'adubacao-specific-row'] };
+            
+            [...els.fito, ...els.multi, 'adubacao-specific-row'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+            document.getElementById('obs-container').className = 'transition-all col-span-2';
+            const show = (ids) => ids.forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+
+            const txtReq = document.getElementById('requestorLabel'), txtApp = document.getElementById('applicatorLabel'), title = document.getElementById('formTitle'), btn = document.getElementById('submitBtn');
+            
+            if (recType === 'Multiplicacao') {
+                show(els.multi); document.getElementById('obs-container').classList.replace('col-span-2', 'col-span-3');
+                txtReq.innerText = "Quem pediu?"; txtApp.innerText = "Responsável"; clearError('startTime'); clearError('endTime');
+                if (editingIndex === -1) { title.innerHTML = '<i data-lucide="flask-conical" class="text-emerald-600"></i> Nova Multiplicação'; btn.querySelector('span').innerText = 'Registrar Multiplicação'; btn.className = "w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2 mt-4 active:scale-95"; }
+            } else if (recType === 'Adubacao') {
+                show(els.adubacao); txtReq.innerText = "Solicitante"; txtApp.innerText = "Aplicador"; clearError('startTime'); clearError('endTime');
+                if (editingIndex === -1) { title.innerHTML = '<i data-lucide="sprout" class="text-amber-600"></i> Nova Adubação'; btn.querySelector('span').innerText = 'Registrar Adubação'; btn.className = "w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2 mt-4 active:scale-95"; }
+            } else {
+                show(els.fito); txtReq.innerText = "Solicitante"; txtApp.innerText = "Aplicador";
+                if (editingIndex === -1) { title.innerHTML = '<i data-lucide="spray-can" class="text-blue-600"></i> Nova Aplicação'; btn.querySelector('span').innerText = 'Registrar Aplicação'; btn.className = "w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2 mt-4 active:scale-95"; }
+            }
+            if(editingIndex === -1) btn.querySelector('i')?.setAttribute('data-lucide', 'plus-circle');
+            lucide.createIcons(); updateDynamicTitle(); renderHeaderAndSummary(); renderReport();
+        }
+
+        function validateHeader() {
+            let isValid = true;
+            const checkField = (selId, inpId) => {
+                const sel = document.getElementById(selId);
+                const isCustom = sel.classList.contains('hidden') || sel.value === 'Outro' || sel.value === 'Outros';
+                const val = isCustom ? document.getElementById(inpId).value.trim() : sel.value;
+                toggleError(isCustom ? inpId : selId, !val); if (!val) isValid = false;
+            };
+
+            ['partner', 'appDate'].forEach(id => { toggleError(id, !document.getElementById(id).value); if(!document.getElementById(id).value) isValid = false; });
+            checkField('requestor', 'otherRequestorInput'); checkField('applicator', 'otherApplicatorInput');
+
+            if (getRecordType() === 'Fito') {
+                ['startTime', 'endTime'].forEach(id => { toggleError(id, !document.getElementById(id).value); if(!document.getElementById(id).value) isValid = false; });
+            } else { toggleError('startTime', false); toggleError('endTime', false); }
+            return isValid;
+        }
+
+        function updateGlobalState() {
+            ['partner', 'appDate', 'requestor', 'otherRequestorInput', 'applicator', 'otherApplicatorInput', 'startTime', 'endTime'].forEach(id => clearError(id));
+            document.querySelectorAll('[id^="error-"]').forEach(el => el.classList.add('hidden'));
+
+            globalInfo.partner = document.getElementById('partner').value; globalInfo.date = document.getElementById('appDate').value;
+            globalInfo.requestor = document.getElementById('requestor').classList.contains('hidden') ? document.getElementById('otherRequestorInput').value : document.getElementById('requestor').value;
+            globalInfo.applicator = document.getElementById('applicator').classList.contains('hidden') ? document.getElementById('otherApplicatorInput').value : document.getElementById('applicator').value;
+            globalInfo.startTime = document.getElementById('startTime').value; globalInfo.endTime = document.getElementById('endTime').value; globalInfo.duration = document.getElementById('totalDuration').value;
+
+            localStorage.setItem(GLOBAL_KEY, JSON.stringify(globalInfo));
+            updateDynamicTitle(); renderHeaderAndSummary(); renderList(); renderReport();
+        }
+
+        function formatDecimalInput(input) { let v = input.value.replace('.', ',').replace(/[^0-9,]/g, ''); const p = v.split(','); if (p.length > 2) v = p[0] + ',' + p.slice(1).join(''); input.value = v; }
+        function formatThousands(input) { let v = input.value.replace(/\D/g, ''); input.value = v ? parseInt(v, 10).toLocaleString('pt-BR') : ''; }
+
+        function addProductRow(name = '', dose = '', unit = 'ml', type = '') { 
+            const container = document.getElementById('productsContainer');
+            const rowId = 'prod-row-' + Date.now() + Math.random().toString(36).substr(2, 5);
+            const div = document.createElement('div'); div.className = "flex gap-2 items-start product-row animate-fade-in flex-wrap"; div.id = rowId;
+            const recType = getRecordType(); unit = unit || (recType === 'Adubacao' ? 'Kg' : 'ml');
+            
+            const standardTypes = recType === 'Adubacao' ? TYPES_ADUBACAO : (recType === 'Fito' ? TYPES_FITO : []);
+            const standardProducts = recType === 'Multiplicacao' ? PRODS_MULTI : (recType === 'Adubacao' ? PRODS_ADUBACAO : PRODS_FITO);
+            
+            let isCustom = type && !standardTypes.includes(type) && type !== 'Outros', displayType = isCustom ? 'Outros' : (type || 'Outros');
+
+            const opts = arr => [...arr, 'Outros'].map(o => `<option value="${o}" ${o===arguments[1]?'selected':''}>${o}</option>`).join('');
+
+            const showType = recType !== 'Multiplicacao';
+            const typeHtml = showType ? `
+                <div class="flex-1 min-w-[90px] relative">
+                     <select onchange="this.classList.replace('text-slate-400','text-slate-800'); this.classList.remove('border-red-500'); toggleRowCustomType(this)" class="prod-type-select ${isCustom?'hidden':''} w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none ${!type?'text-slate-400':'text-slate-800'}" ${!isCustom?'required':''}>
+                        <option value="" disabled ${!type ? 'selected' : ''}>Selecione...</option>${[...standardTypes, 'Outros'].map(t => `<option value="${t}" ${t === displayType ? 'selected' : ''}>${t}</option>`).join('')}
+                    </select>
+                    <div class="prod-type-custom-div ${isCustom?'':'hidden'} w-full relative">
+                        <input type="text" placeholder="Qual?" oninput="this.classList.remove('border-red-500')" class="prod-type-custom-input w-full p-2 pr-6 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none fade-in" value="${isCustom?type:''}" ${isCustom?'required':''}>
+                        <button type="button" onclick="resetRowType(this)" class="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 p-1"><i data-lucide="x-circle" width="14"></i></button>
+                    </div>
+                </div>` : '';
+
+            div.innerHTML = `
+                <div class="w-full relative">
+                    <input type="text" oninput="this.classList.replace('text-slate-400','text-slate-800'); this.classList.remove('border-red-500'); filterProductSuggestions(this)" onfocus="filterProductSuggestions(this)" onblur="hideProductSuggestions(this)" placeholder="Produto..." class="prod-name-input w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none ${!name?'text-slate-400':'text-slate-800'} ${isInitialDataReady?'':'opacity-60 cursor-not-allowed'}" value="${name||''}" required autocomplete="off" ${isInitialDataReady?'':'disabled title=\"Aguarde carregar os dados...\"'}>
+                    <div class="prod-suggestions hidden absolute z-30 mt-1 w-full max-h-40 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg">
+                        ${standardProducts.map(p => `<button type="button" onclick="selectProductSuggestion(this)" class="w-full text-left px-2 py-1.5 text-xs text-slate-700 hover:bg-blue-50">${p}</button>`).join('')}
+                    </div>
+                </div>
+                ${typeHtml}
+                <div class="w-1/4 sm:w-16"><input type="text" inputmode="decimal" oninput="formatDecimalInput(this); this.classList.remove('border-red-500')" placeholder="Dose" class="prod-dose-input w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none" value="${dose}" required></div>
+                <div class="w-1/4 sm:w-[72px]"><select class="prod-unit-input w-full p-2 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none">${['ml', 'L', 'g', 'Kg'].map(u => `<option value="${u}" ${u === unit ? 'selected' : ''}>${u}</option>`).join('')}</select></div>
+                <button type="button" onclick="removeProductRow('${rowId}')" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors h-[38px] flex items-center justify-center" tabindex="-1"><i data-lucide="trash-2" width="16"></i></button>
+            `;
+            container.appendChild(div); lucide.createIcons();
+        }
+
+        function toggleRowCustomProduct() {}
+        function resetRowProduct() {}
+        function filterProductSuggestions(input) {
+            const box = input.parentElement.querySelector('.prod-suggestions');
+            const term = input.value.trim().toLowerCase();
+            let hasVisible = false;
+            box.querySelectorAll('button').forEach(btn => {
+                const show = !term || btn.textContent.toLowerCase().includes(term);
+                btn.classList.toggle('hidden', !show);
+                if (show) hasVisible = true;
+            });
+            box.classList.toggle('hidden', !hasVisible);
+        }
+        function selectProductSuggestion(btn) {
+            const wrap = btn.closest('.relative');
+            const input = wrap.querySelector('.prod-name-input');
+            input.value = btn.textContent.trim();
+            input.classList.replace('text-slate-400', 'text-slate-800');
+            input.classList.remove('border-red-500');
+            wrap.querySelector('.prod-suggestions').classList.add('hidden');
+        }
+        function hideProductSuggestions(input) {
+            setTimeout(() => {
+                const box = input.parentElement.querySelector('.prod-suggestions');
+                if (box) box.classList.add('hidden');
+            }, 120);
+        }
+        function toggleRowCustomType(sel) { if(sel.value==='Outros'){ sel.classList.add('hidden'); sel.required=false; const d=(sel.closest('.msel')||sel).parentElement.querySelector('.prod-type-custom-div'); d.classList.remove('hidden'); d.querySelector('input').required=true; d.querySelector('input').focus(); } }
+        function resetRowType(btn) { const d=btn.parentElement, s=d.parentElement.querySelector('.prod-type-select'), i=d.querySelector('input'); i.value=''; i.required=false; s.value=''; s.selectedIndex=0; s.classList.remove('hidden'); s.classList.add('text-slate-400'); s.required=true; d.classList.add('hidden'); }
+
+        function removeProductRow(id) {
+            const container = document.getElementById('productsContainer');
+            if (container.children.length > 1) document.getElementById(id).remove();
+            else { const r = document.getElementById(id); r.querySelector('button[onclick^="resetRowProduct"]')?.click(); r.querySelector('button[onclick^="resetRowType"]')?.click(); r.querySelector('.prod-dose-input').value = ''; }
+        }
+
+        function getRawProductsState() {
+            return Array.from(document.querySelectorAll('.product-row')).map(row => {
+                const pI = row.querySelector('.prod-name-input'), sT = row.querySelector('.prod-type-select'), cT = row.querySelector('.prod-type-custom-input');
+                return { name: pI ? pI.value : '', type: sT ? (sT.classList.contains('hidden') ? cT.value : sT.value) : '', dose: row.querySelector('.prod-dose-input').value, unit: row.querySelector('.prod-unit-input').value };
+            });
+        }
+
+        function getFormStateObject() {
+            const getVal = (sId, iId) => { const s = document.getElementById(sId); return (s && (s.classList.contains('hidden') || s.value==='Outro' || s.value==='Outros')) ? document.getElementById(iId).value : s?.value; };
+            return {
+                recordType: getRecordType(), partner: document.getElementById('partner').value, date: document.getElementById('appDate').value,
+                requestor: getVal('requestor', 'otherRequestorInput'), applicator: getVal('applicator', 'otherApplicatorInput'),
+                startTime: document.getElementById('startTime').value, endTime: document.getElementById('endTime').value, duration: document.getElementById('totalDuration').value,
+                crop: getVal('crop', 'otherCropInput'), block: getVal('blockSelect', 'blockId'), cycle: document.getElementById('cycle')?.value||'', plants: document.getElementById('totalPlants').value,
+                target: document.getElementById('targetPestInput')?.value.trim(), products: getRawProductsState(), volume: document.getElementById('syrupVolume').value, ph: document.getElementById('phValue').value, notes: document.getElementById('notes').value,
+                finalProduct: document.getElementById('finalProduct').value, multiLiters: document.getElementById('multiLiters').value, reactorDays: document.getElementById('reactorDays').value,
+                adubacaoMethod: document.getElementById('adubacaoMethod').value, adubacaoStart: document.getElementById('adubacaoStart').value, adubacaoEnd: document.getElementById('adubacaoEnd').value, adubacaoDuration: document.getElementById('adubacaoDuration').value
+            };
+        }
+
+        function populateForm(item) {
+            document.querySelector(`input[name="recordTypeRadio"][value="${item.recordType || 'Fito'}"]`).checked = true; toggleFormType(true);
+            const setVal = (id, val) => document.getElementById(id).value = val || '';
+            const setCustom = (sId, dId, iId, val, dflt) => { const opts = Array.from(document.getElementById(sId).options).map(o=>o.value); if(opts.includes(val) && val!=='Outro' && val!=='Outros'){ setVal(sId,val); document.getElementById(dId).classList.add('hidden'); document.getElementById(sId).classList.remove('hidden'); } else { setVal(sId,dflt); toggleCustomField(sId, dId, iId, dflt); setVal(iId, val); }};
+
+            setVal('partner', item.partner); setVal('appDate', item.date); setVal('startTime', item.startTime); setVal('endTime', item.endTime);
+            setCustom('requestor', 'requestor-custom-div', 'otherRequestorInput', item.requestor, 'Outro'); setCustom('applicator', 'applicator-custom-div', 'otherApplicatorInput', item.applicator, 'Outro');
+            calcDuration('startTime','endTime','totalDuration', true);
+            if (item.crop) setCustom('crop', 'crop-custom-div', 'otherCropInput', item.crop, 'Outros');
+            else resetCustomField('crop', 'crop-custom-div', 'otherCropInput', 'Brócolis');
+            handleCropChange();
+            
+            if(!document.getElementById('blockSelect').classList.contains('hidden')) setVal('blockSelect', item.block); else setVal('blockId', item.block);
+            setVal('targetPestInput', item.target);
+            
+            setVal('cycle', item.cycle); setVal('totalPlants', item.plants); if(item.plants) formatThousands(document.getElementById('totalPlants'));
+            setVal('syrupVolume', item.volume); setVal('phValue', item.ph); setVal('notes', item.notes); setVal('finalProduct', item.finalProduct); setVal('multiLiters', item.multiLiters); setVal('reactorDays', item.reactorDays);
+            setVal('adubacaoMethod', item.adubacaoMethod); setVal('adubacaoStart', item.adubacaoStart); setVal('adubacaoEnd', item.adubacaoEnd); setVal('adubacaoDuration', item.adubacaoDuration);
+
+            const container = document.getElementById('productsContainer'); container.innerHTML = '';
+            if (item.products && item.products.length > 0) item.products.forEach(p => addProductRow(p.name, p.dose, p.unit, p.type)); else addProductRow(item.product, item.dosage, 'ml', 'Biológico');
+            lucide.createIcons();
+        }
+
+        function calcDuration(sId, eId, tId, isGlob) {
+            clearError(sId); clearError(eId);
+            const start = document.getElementById(sId).value, end = document.getElementById(eId).value, totalInput = document.getElementById(tId);
+            if (start && end) {
+                let diffMs = new Date(`2000-01-01T${end}`) - new Date(`2000-01-01T${start}`);
+                if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+                const m = Math.floor(diffMs / 60000);
+                totalInput.value = (Math.floor(m / 60) > 0 ? `${Math.floor(m / 60)}h ` : '') + `${m % 60}min`;
+            } else totalInput.value = "";
+            if(isGlob) updateGlobalState();
+        }
+
+        function handleCropChange() {
+            const sel = document.getElementById('crop'), blockL = document.getElementById('blockLabel'), blockI = document.getElementById('blockId'), blockS = document.getElementById('blockSelect'), targetS = document.getElementById('targetPestSelect');
+            const cV = sel.classList.contains('hidden') ? 'Outros' : sel.value;
+            const useS = cV === 'Pepino' || cV === 'Brócolis' || cV === 'Couve-Flor';
+            
+            blockL.innerText = cV === 'Pepino' ? 'Nº Setor' : 'Nº Bloco';
+            blockI.classList.toggle('hidden', useS); blockI.required = !useS;
+            if(blockS) {
+                blockS.classList.toggle('hidden', !useS); blockS.required = useS;
+                if(useS) {
+                    const opts = cV === 'Pepino' ? ['1','2','3','4'] : Array.from({length:19},(_,i)=>(i+1).toString()).concat(['A','B','C','D','E']);
+                    blockS.innerHTML = '<option value="">Selecione...</option>' + opts.map(o => `<option value="${o}" ${blockS.value===o?'selected':''}>${o}</option>`).join('');
+                }
+            }
+            if(targetS) {
+                const pOpts = cV==='Pepino'?PESTS_CUCUMBER:(cV==='Brócolis'||cV==='Couve-Flor'?PESTS_BRASSICAS:PESTS_GENERAL);
+                targetS.innerHTML = '<option value="" disabled selected>+ Adicionar Alvo</option>' + pOpts.map(o => `<option value="${o}">${o}</option>`).join('');
+            }
+        }
+
+        function addTargetPest() {
+            const sel = document.getElementById('targetPestSelect'), inp = document.getElementById('targetPestInput');
+            if (sel.value) {
+                let cur = inp.value.trim();
+                if (cur.length > 0) { if (!cur.includes(sel.value)) inp.value = cur + ", " + sel.value; } 
+                else inp.value = sel.value;
+                clearError('targetPestInput'); sel.selectedIndex = 0;
+            }
+        }
+
+        function saveToStorage() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); } catch(e){} }
+        function loadFromStorage() {
+            try {
+                if (localStorage.getItem(GLOBAL_KEY)) { globalInfo = JSON.parse(localStorage.getItem(GLOBAL_KEY)); populateForm({...globalInfo, recordType: 'Fito'}); }
+                if (localStorage.getItem(STORAGE_KEY)) { appData = JSON.parse(localStorage.getItem(STORAGE_KEY)).map(i => ({...i, products: i.products?.length ? i.products : [{name:i.product, dose:i.dosage, unit:'ml', type:'Biológico'}]})); if(appData.length) document.querySelector(`input[name="recordTypeRadio"][value="${appData[0].recordType||'Fito'}"]`).checked = true; renderList(); }
+                refreshApplicatorOptions();
+                toggleFormType(true); renderHeaderAndSummary(); updateDynamicTitle(); renderReport(); 
+            } catch(e){}
+        }
+        
+        function getFilteredData() { const p = globalInfo.partner || document.getElementById('partner').value; return p ? appData.filter(i => i.partner === p) : []; }
+        function getWeekNum(d) { d=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())); d.setUTCDate(d.getUTCDate()+4-(d.getUTCDay()||7)); return Math.ceil((((d-new Date(Date.UTC(d.getUTCFullYear(),0,1)))/86400000)+1)/7); }
+
+        function updateDynamicTitle() {
+            const rType = appData[0]?.recordType || getRecordType();
+            const texts = { Multiplicacao: ["Multiplicações de Biológicos", "Multiplicações Registradas", 'Data', 'from-emerald-700', 'to-emerald-900'], Adubacao: ["Adubações Granuladas", "Adubações Registradas", 'Data', 'from-amber-600', 'to-amber-800'], Fito: ["Aplicações Fitossanitárias", "Aplicações Registradas", 'Aplicações', 'from-slate-700', 'to-slate-900'] }[rType];
+            
+            document.getElementById('reportTitle').innerHTML = `Resumo de ${texts[0]}<br>${globalInfo.partner || 'Parceiro'}`;
+            if(document.getElementById('listTitle')) document.getElementById('listTitle').innerText = texts[1];
+            
+            const dtEl = document.getElementById('headerDateTime');
+            if (globalInfo.date) { const [y, m, d] = globalInfo.date.split('-'); dtEl.innerText = `${texts[2]}: ${d}/${m}/${y} - Semana ${getWeekNum(new Date(y,m-1,d))}`; dtEl.style.opacity = "1"; }
+            else dtEl.innerText = "Aguardando data...";
+            
+            const bg = document.getElementById('reportHeaderBg');
+            if(bg) { bg.classList.remove('from-slate-700','to-slate-900','from-emerald-700','to-emerald-900','from-amber-600','to-amber-800'); bg.classList.add(texts[3], texts[4]); }
+        }
+
+        function showClearAllModal() { document.getElementById('clearAllModal').classList.remove('hidden'); }
+        function hideClearAllModal() { document.getElementById('clearAllModal').classList.add('hidden'); }
+        function confirmClearAll() { appData = []; saveToStorage(); clearBlockForm(false); renderReport(); renderList(); hideClearAllModal(); }
+
+        function showMessageModal(title, msg, type) {
+            document.getElementById('msgTitle').innerText = title; document.getElementById('msgText').innerText = msg;
+            const ic = document.getElementById('msgIconContainer');
+            ic.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 bg-${type==='error'?'red':(type==='success'?'green':'blue')}-100`;
+            ic.innerHTML = `<i data-lucide="${type==='error'?'alert-circle':(type==='success'?'check-circle':'info')}" class="h-6 w-6 text-${type==='error'?'red':(type==='success'?'green':'blue')}-600"></i>`;
+            document.getElementById('messageModal').classList.remove('hidden'); lucide.createIcons();
+        }
+        function hideMessageModal() { document.getElementById('messageModal').classList.add('hidden'); }
+
+        // Congela a página por trás do overlay: bloqueia cliques (overlay em cima de tudo)
+        // e trava o scroll do body. Usa "overflow: hidden" em vez do truque de
+        // "position: fixed", porque esse truque tira o body do fluxo normal do documento e
+        // isso pode atrapalhar o html-to-image ao capturar o report-card (o contexto de
+        // posicionamento muda no meio da captura e a lib pode falhar silenciosamente).
+        let _scrollLockCount = 0;
+        function lockBodyScroll() {
+            if (_scrollLockCount === 0) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.touchAction = 'none';
+                document.body.style.overscrollBehavior = 'contain';
+            }
+            _scrollLockCount++;
+        }
+        function unlockBodyScroll() {
+            if (_scrollLockCount === 0) return;
+            _scrollLockCount--;
+            if (_scrollLockCount === 0) {
+                document.body.style.overflow = '';
+                document.body.style.touchAction = '';
+                document.body.style.overscrollBehavior = '';
+            }
+        }
+
+        function showLoadingOverlay(text) {
+            const overlay = document.getElementById('loadingOverlay');
+            const textEl = document.getElementById('loadingOverlayText');
+            if (textEl) textEl.innerText = text || 'Aguarde...';
+            if (overlay) overlay.classList.remove('hidden');
+            lockBodyScroll();
+        }
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.classList.add('hidden');
+            unlockBodyScroll();
+        }
+
+        // ==========================================
+        // BLOQUEIO DE ENVIO DUPLICADO
+        // ==========================================
+        // Guarda a "assinatura" (conteúdo) do último relatório enviado com sucesso por
+        // parceiro/local. Se o usuário tentar enviar de novo sem ter alterado nada, mostramos
+        // um aviso em vez de disparar outro envio, porque estava acontecendo muito de a pessoa
+        // clicar em enviar várias vezes sem ter alterado nada.
+        const LAST_SENT_KEY = 'spg_fitosanitario_envios_supabase';
+        let _isSendingReport = false;
+
+        function getLastSentReports() {
+            try { return JSON.parse(localStorage.getItem(LAST_SENT_KEY)) || {}; } catch (e) { return {}; }
+        }
+        function saveLastSentSignature(partner, signature) {
+            if (!partner) return;
+            const all = getLastSentReports();
+            all[partner] = { signature, sentAt: Date.now() };
+            localStorage.setItem(LAST_SENT_KEY, JSON.stringify(all));
+        }
+        function getReportSignature() {
+            return JSON.stringify({ partner: globalInfo.partner, date: globalInfo.date, data: getFilteredData() });
+        }
+        function isDuplicateReport() {
+            const partner = globalInfo.partner;
+            if (!partner) return false;
+            const last = getLastSentReports()[partner];
+            if (!last) return false;
+            const withinWindow = (Date.now() - last.sentAt) < (24 * 60 * 60 * 1000);
+            return withinWindow && last.signature === getReportSignature();
+        }
+        function renderConfirmSendModal(isDuplicate) {
+            const iconWrap = document.getElementById('confirmSendIconWrap');
+            const icon = document.getElementById('confirmSendIcon');
+            const title = document.getElementById('confirmSendTitle');
+            const text = document.getElementById('confirmSendText');
+            const btnText = document.getElementById('confirmSendBtnText');
+
+            if (isDuplicate) {
+                iconWrap.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full border-2 border-amber-300 bg-amber-50 mb-4 text-amber-600";
+                icon.setAttribute('data-lucide', 'alert-triangle');
+                title.innerText = "Este relatório já foi enviado!";
+                text.innerHTML = "Não encontramos nenhuma alteração desde o último envio. Os registros não serão duplicados: só a imagem do resumo será gerada de novo.<br><br>Deseja continuar?";
+                btnText.innerText = "Enviar Mesmo Assim";
+            } else {
+                iconWrap.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full border-2 border-[#5b7566]/30 bg-[#5b7566]/5 mb-4 text-[#5b7566]";
+                icon.setAttribute('data-lucide', 'help-circle');
+                title.innerText = "Conferiu os dados?";
+                text.innerText = "Você conferiu todas as informações? Se sim, toque para enviar.";
+                btnText.innerText = "Enviar Agora";
+            }
+        }
+
+        function showConfirmSendModal() {
+            if (_isSendingReport) return;
+            if (!getFilteredData().length) return showMessageModal('Atenção', 'Adicione registros primeiro para enviar.', 'error');
+            if (!validateHeader()) { document.getElementById('generalDataCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); return showMessageModal('Atenção', 'Preencha os Dados Gerais.', 'error'); }
+            updateGlobalState(); appData.forEach(i => Object.assign(i, {partner:globalInfo.partner, date:globalInfo.date, requestor:globalInfo.requestor, applicator:globalInfo.applicator, startTime:globalInfo.startTime, endTime:globalInfo.endTime, duration:globalInfo.duration})); saveToStorage();
+            renderConfirmSendModal(isDuplicateReport());
+            document.getElementById('confirmSendModal').classList.remove('hidden'); lucide.createIcons();
+        }
+        function hideConfirmSendModal() { document.getElementById('confirmSendModal').classList.add('hidden'); }
+        async function confirmAndSend() {
+            if (_isSendingReport) return;
+            _isSendingReport = true;
+            hideConfirmSendModal();
+            showLoadingOverlay('Salvando e gerando a imagem, aguarde...');
+            try {
+                spg_garantirIds(getFilteredData());
+                const signature = getReportSignature();
+                const partner = globalInfo.partner;
+                await aplicacoesSalvar(getFilteredData());
+                saveLastSentSignature(partner, signature);
+                await downloadImage();
+            } catch (err) {
+                showMessageModal('Não foi salvo', 'Os registros não foram salvos: ' + err.message + ' Confira e tente de novo.', 'error');
+            } finally {
+                _isSendingReport = false;
+                hideLoadingOverlay();
+            }
+        }
+        function showDashboardInPage() {
+            if (!spg_podeDashboard()) return;
+            document.getElementById('mainFormView').classList.add('hidden');
+            document.getElementById('dashboardView').classList.remove('hidden');
+            const frame = document.getElementById('dashboardFrame');
+            const currentSrc = frame.getAttribute('src');
+            if (!currentSrc) frame.setAttribute('src', 'dashboard.html');
+            syncTopDashboardTypeTabs(currentDashboardType);
+            setTimeout(() => setTopDashboardType(currentDashboardType), 250);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function hideDashboardInPage() {
+            if (!spg_podeRegistrar()) return;
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('mainFormView').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.addEventListener('message', (event) => {
+            if (!event?.data || event.data.type !== 'dashboardHeight') return;
+            const frame = document.getElementById('dashboardFrame');
+            if (!frame) return;
+            const h = Number(event.data.height || 0);
+            if (!Number.isFinite(h) || h <= 0) return;
+            const safeHeight = Math.min(Math.max(Math.ceil(h), 320), 12000);
+            frame.style.height = `${safeHeight}px`;
+        });
+        window.addEventListener('message', (event) => {
+            if (!event?.data || event.data.type !== 'dashboardActiveType') return;
+            const card = document.getElementById('assistantAgronomicoCard');
+            if (!card) return;
+            const activeType = String(event.data.activeType || '');
+            currentDashboardType = activeType || 'Defensivos';
+            syncTopDashboardTypeTabs(currentDashboardType);
+            if (activeType === 'Defensivos') card.classList.remove('hidden');
+            else card.classList.add('hidden');
+        });
+        window.addEventListener('message', (event) => {
+            if (!event?.data || event.data.type !== 'dashboardPeriodLabel') return;
+            const btn = document.getElementById('topPeriodButton');
+            if (!btn) return;
+            btn.textContent = String(event.data.label || 'Período automático');
+            topPeriodState.inicio = String(event.data.inicio || '');
+            topPeriodState.fim = String(event.data.fim || '');
+        });
+        function syncTopDashboardTypeTabs(activeType) {
+            const root = document.getElementById('topDashboardTypeTabs');
+            if (!root) return;
+            root.querySelectorAll('button[data-type]').forEach(btn => {
+                const isActive = btn.getAttribute('data-type') === activeType;
+                btn.className = isActive
+                    ? 'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all bg-white text-slate-900 shadow-sm ring-1 ring-slate-200'
+                    : 'px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all text-slate-500 hover:text-slate-900';
+            });
+        }
+        function setTopDashboardType(type) {
+            currentDashboardType = type;
+            syncTopDashboardTypeTabs(type);
+            const frame = document.getElementById('dashboardFrame');
+            if (!frame || !frame.contentWindow) return;
+            frame.contentWindow.postMessage({ type: 'setDashboardActiveType', activeType: type }, '*');
+        }
+        function postDashboardAction(action, extra = {}) {
+            const frame = document.getElementById('dashboardFrame');
+            if (!frame || !frame.contentWindow) return;
+            frame.contentWindow.postMessage({ type: 'dashboardAction', action: action, ...extra }, '*');
+        }
+        function openDashboardPeriodPicker() { toggleTopPeriodPopover(); }
+        function clearDashboardFiltersTop() { postDashboardAction('clearFilters'); }
+        function refreshDashboardTop() { postDashboardAction('refreshData'); }
+        function toggleTopPeriodPopover() {
+            const pop = document.getElementById('topPeriodPopover');
+            if (!pop) return;
+            const willOpen = pop.classList.contains('hidden');
+            if (willOpen) {
+                const inputStart = document.getElementById('topPeriodStart');
+                const inputEnd = document.getElementById('topPeriodEnd');
+                if (inputStart) inputStart.value = topPeriodState.inicio || '';
+                if (inputEnd) inputEnd.value = topPeriodState.fim || '';
+            }
+            pop.classList.toggle('hidden', !willOpen);
+        }
+        function closeTopPeriodPopover() {
+            const pop = document.getElementById('topPeriodPopover');
+            if (pop) pop.classList.add('hidden');
+        }
+        function getTodayIso() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        function offsetIsoDays(baseIso, offset) {
+            const [y, m, d] = String(baseIso).split('-').map(Number);
+            const dt = new Date(y, (m || 1) - 1, d || 1);
+            dt.setDate(dt.getDate() + offset);
+            const yy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            return `${yy}-${mm}-${dd}`;
+        }
+        function setTopPeriodShortcut(type) {
+            const end = getTodayIso();
+            let start = end;
+            if (type === '7dias') start = offsetIsoDays(end, -6);
+            if (type === '30dias') start = offsetIsoDays(end, -29);
+            if (type === 'mes') {
+                const [y, m] = end.split('-').map(Number);
+                start = `${y}-${String(m).padStart(2, '0')}-01`;
+            }
+            if (type === 'mespassado') {
+                const [y, m] = end.split('-').map(Number);
+                const firstThisMonth = new Date(y, m - 1, 1);
+                const lastPrev = new Date(firstThisMonth.getTime() - 86400000);
+                const firstPrev = new Date(lastPrev.getFullYear(), lastPrev.getMonth(), 1);
+                const fpY = firstPrev.getFullYear();
+                const fpM = String(firstPrev.getMonth() + 1).padStart(2, '0');
+                const lpY = lastPrev.getFullYear();
+                const lpM = String(lastPrev.getMonth() + 1).padStart(2, '0');
+                const lpD = String(lastPrev.getDate()).padStart(2, '0');
+                start = `${fpY}-${fpM}-01`;
+                const endPrev = `${lpY}-${lpM}-${lpD}`;
+                const inputEnd = document.getElementById('topPeriodEnd');
+                if (inputEnd) inputEnd.value = endPrev;
+            } else {
+                const inputEnd = document.getElementById('topPeriodEnd');
+                if (inputEnd) inputEnd.value = end;
+            }
+            const inputStart = document.getElementById('topPeriodStart');
+            if (inputStart) inputStart.value = start;
+        }
+        function applyTopPeriod() {
+            const inputStart = document.getElementById('topPeriodStart');
+            const inputEnd = document.getElementById('topPeriodEnd');
+            const inicio = String(inputStart?.value || '');
+            const fim = String(inputEnd?.value || '');
+            if ((inicio && !fim) || (!inicio && fim)) return;
+            if (inicio && fim && inicio > fim) return;
+            postDashboardAction('setPeriod', { inicio: inicio, fim: fim });
+            closeTopPeriodPopover();
+        }
+        function clearTopPeriod() {
+            postDashboardAction('setPeriod', { inicio: '', fim: '' });
+            closeTopPeriodPopover();
+        }
+        function clearTopPeriodInputs() {
+            const inputStart = document.getElementById('topPeriodStart');
+            const inputEnd = document.getElementById('topPeriodEnd');
+            if (inputStart) inputStart.value = '';
+            if (inputEnd) inputEnd.value = '';
+        }
+        document.addEventListener('click', (event) => {
+            const wrap = document.getElementById('topPeriodButton')?.parentElement;
+            if (!wrap) return;
+            if (!wrap.contains(event.target)) closeTopPeriodPopover();
+        });
+
+        function showDashboardModal() {
+            document.getElementById('dashboardModal').classList.remove('hidden');
+            document.getElementById('dashboardLoading').classList.remove('hidden');
+            document.getElementById('dashboardContent').classList.add('hidden');
+            document.getElementById('dashboardError').classList.add('hidden');
+            loadDashboardData();
+            lucide.createIcons();
+        }
+
+        function hideDashboardModal() { document.getElementById('dashboardModal').classList.add('hidden'); }
+
+        async function loadDashboardData() {
+            if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'SUA_URL_DO_APPS_SCRIPT_AQUI') {
+                return showDashboardError('Conexão não configurada.');
+            }
+            if (dashboardCache && dashboardCache.status === 'success') {
+                return renderDashboard(dashboardCache);
+            }
+            try {
+                const res = await aplicacoesBackend(APPS_SCRIPT_URL + '?days=90');
+                if (!res.ok) throw new Error('Falha ao buscar dados (' + res.status + ')');
+                const data = await res.json();
+                if (data.status !== 'success') throw new Error(data.message || 'Resposta inválida do servidor');
+                dashboardCache = data;
+                refreshDashboardTargetOptions();
+                renderDashboard(data);
+            } catch (err) {
+                showDashboardError('Não foi possível carregar o dashboard. ' + err.message);
+            }
+        }
+
+        function showDashboardError(message) {
+            document.getElementById('dashboardLoading').classList.add('hidden');
+            const errEl = document.getElementById('dashboardError');
+            errEl.innerText = message;
+            errEl.classList.remove('hidden');
+        }
+
+        function renderDashboard(data) {
+            document.getElementById('dashboardLoading').classList.add('hidden');
+            document.getElementById('dashboardError').classList.add('hidden');
+            document.getElementById('dashboardContent').classList.remove('hidden');
+
+            const analytics = data.analytics || {};
+            const totals = analytics.totals || {};
+            const kpis = analytics.kpis || {};
+            document.getElementById('dashDays').innerText = data.days || analytics.days || 90;
+            document.getElementById('dashTotalRegistros').innerText = totals.total || 0;
+            document.getElementById('dashTotalFito').innerText = totals.fito || 0;
+            document.getElementById('dashTotalLaboratorio').innerText = totals.laboratorio || 0;
+            document.getElementById('dashTotalAdubacao').innerText = totals.adubacao || 0;
+            document.getElementById('dashSetoresAtivos').innerText = kpis.setoresAtivos || 0;
+            document.getElementById('dashProdutosUnicos').innerText = kpis.produtosUnicos || 0;
+            document.getElementById('dashLitrosLab').innerText = formatNumber(kpis.litrosMultiplicados || 0) + ' L';
+            document.getElementById('dashTempoMedio').innerText = formatNumber(kpis.tempoMedioAplicacaoMin || 0) + ' min';
+
+            renderRankingBlock('dashTopSetores', analytics.topSetores || [], 'setor', 'total', function(item) {
+                return 'Fito: ' + (item.fito || 0) + ' | Adubação: ' + (item.adubacao || 0);
+            });
+            renderRankingBlock('dashSemanas', analytics.porSemana || [], 'semana', 'total', function(item) {
+                return 'F: ' + (item.fito || 0) + ' | L: ' + (item.laboratorio || 0) + ' | A: ' + (item.adubacao || 0);
+            });
+            renderRankingBlock('dashTopProdutos', analytics.topProdutos || [], 'produto', 'total');
+            renderRankingBlock('dashTiposDefensivos', analytics.defensivosTipos || [], 'tipo', 'total');
+            renderRankingBlock('dashLaboratorioProdutos', analytics.laboratorioProdutos || [], 'produto', 'litros', function(item) {
+                return 'Lotes: ' + (item.total || 0);
+            }, ' L');
+            renderRankingBlock('dashAdubacaoMetodos', analytics.adubacaoMetodos || [], 'metodo', 'total');
+
+            const rows = analytics.recent || [];
+            const tbody = document.getElementById('dashRecentRows');
+            if (!rows.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-3 text-center text-slate-400">Sem registros no período.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rows.map(function(row) {
+                return '<tr class="border-t border-slate-100">' +
+                    '<td class="p-2">' + escapeHtml(row.data || '-') + '</td>' +
+                    '<td class="p-2">' + escapeHtml(row.tipo || '-') + '</td>' +
+                    '<td class="p-2">' + escapeHtml(row.local || '-') + '</td>' +
+                    '<td class="p-2">' + escapeHtml(row.setor || '-') + '</td>' +
+                    '<td class="p-2">' + escapeHtml(row.responsavel || '-') + '</td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        function renderRankingBlock(containerId, items, labelKey, valueKey, subtitleFn, suffix) {
+            const el = document.getElementById(containerId);
+            if (!items.length) {
+                el.innerHTML = '<div class="text-slate-400 text-xs">Sem dados no período.</div>';
+                return;
+            }
+
+            const max = Math.max.apply(null, items.map(function(i) { return Number(i[valueKey] || 0); }));
+            el.innerHTML = items.map(function(item) {
+                const value = Number(item[valueKey] || 0);
+                const width = max > 0 ? Math.max(8, Math.round((value / max) * 100)) : 8;
+                const subtitle = subtitleFn ? subtitleFn(item) : '';
+                return '<div>' +
+                    '<div class="flex items-center justify-between mb-1">' +
+                    '<span class="font-semibold text-slate-700">' + escapeHtml(item[labelKey] || '-') + '</span>' +
+                    '<span class="font-bold text-slate-800">' + formatNumber(value) + (suffix || '') + '</span>' +
+                    '</div>' +
+                    '<div class="w-full bg-slate-200 rounded-full h-1.5"><div class="bg-slate-600 h-1.5 rounded-full" style="width:' + width + '%"></div></div>' +
+                    (subtitle ? '<div class="text-[10px] text-slate-500 mt-1">' + escapeHtml(subtitle) + '</div>' : '') +
+                    '</div>';
+            }).join('');
+        }
+
+        function formatNumber(value) {
+            return Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function clearBlockForm(clearAll = false) {
+            if (clearAll) { document.getElementById('partner').selectedIndex=0; resetCustomField('requestor','requestor-custom-div','otherRequestorInput','Guilherme Ramos'); resetCustomField('applicator','applicator-custom-div','otherApplicatorInput',''); ['startTime','endTime','totalDuration'].forEach(id=>document.getElementById(id).value=''); updateGlobalState(); }
+            ['blockId','otherCropInput','targetPestInput','cycle','totalPlants','syrupVolume','phValue','notes','finalProduct','multiLiters','reactorDays','adubacaoStart','adubacaoEnd','adubacaoDuration'].forEach(id=>{if(document.getElementById(id)) document.getElementById(id).value='';});
+            ['crop', 'blockSelect', 'targetPestSelect', 'adubacaoMethod'].forEach(id=>{if(document.getElementById(id)) document.getElementById(id).selectedIndex=0;});
+            ['crop-custom-div'].forEach(id=>{if(document.getElementById(id)) document.getElementById(id).classList.add('hidden');});
+            ['crop'].forEach(id=>{if(document.getElementById(id)) document.getElementById(id).classList.remove('hidden');});
+            
+            handleCropChange(); document.getElementById('productsContainer').innerHTML = ''; addProductRow(); 
+            if (appData.length) document.querySelector(`input[name="recordTypeRadio"][value="${appData[0].recordType||'Fito'}"]`).checked = true; toggleFormType(true);
+            ['crop','otherCropInput','blockId','blockSelect','targetPestInput','totalPlants','syrupVolume','finalProduct','multiLiters','reactorDays','adubacaoMethod','adubacaoStart','adubacaoEnd'].forEach(id=>toggleError(id, false));
+            editingIndex = -1; document.getElementById('formContainer').classList.remove('border-blue-300', 'ring-2', 'ring-blue-100'); lucide.createIcons();
+        }
+
+        function addItem(e) {
+            e.preventDefault();
+            const recType = getRecordType(), sO = getFormStateObject(); let isValid = true;
+            const baseRecords = editingIndex >= 0 ? appData.filter((_, idx) => idx !== editingIndex) : appData;
+            if (baseRecords.length && baseRecords[0]?.recordType !== recType) return showMessageModal('Erro', 'Tipos não podem ser misturados.', 'error');
+            if (!validateHeader()) { document.getElementById('generalDataCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+
+            const chk = (id, cond = true) => { if(!cond) return true; const v = sO[id] || (document.getElementById(id)?document.getElementById(id).value:''); toggleError(id, !v); if(!v) isValid = false; return !!v; };
+            if (recType === 'Fito' || recType === 'Adubacao') {
+                const isC = document.getElementById('crop').classList.contains('hidden'); chk(isC ? 'otherCropInput' : 'crop');
+                const isB = !document.getElementById('blockSelect').classList.contains('hidden'); chk(isB ? 'blockSelect' : 'blockId');
+                chk('totalPlants');
+                if (recType === 'Fito') { chk('targetPestInput'); chk('syrupVolume'); } 
+                else { chk('adubacaoMethod'); chk('adubacaoStart'); chk('adubacaoEnd'); }
+            } else { chk('finalProduct'); chk('multiLiters'); chk('reactorDays'); }
+
+            const pList = [];
+            document.querySelectorAll('.product-row').forEach(row => {
+                const pI = row.querySelector('.prod-name-input'), sT = row.querySelector('.prod-type-select'), cT = row.querySelector('.prod-type-custom-input'), dI = row.querySelector('.prod-dose-input');
+                let n = (pI?.value || '').trim(), t = sT ? (sT.classList.contains('hidden') ? cT.value.trim() : sT.value) : "Matéria-Prima", d = dI.value.trim();
+                if (!n) { pI.classList.add('border-red-500'); isValid = false; }
+                if (recType !== 'Multiplicacao' && !t) { (sT.classList.contains('hidden') ? cT : sT).classList.add('border-red-500'); isValid = false; }
+                if (!d) { dI.classList.add('border-red-500'); isValid = false; }
+                if (n && d) pList.push({ name: n, type: t, dose: d, unit: row.querySelector('.prod-unit-input').value });
+            });
+            if (!pList.length) { showMessageModal('Atenção', 'Adicione um produto.', 'error'); return; }
+            if (!isValid) return showMessageModal('Atenção', 'Preencha os campos obrigatórios.', 'error');
+
+            sO.products = pList; sO.volume = parseFloat(sO.volume)||0; sO.multiLiters = parseFloat(sO.multiLiters); sO.reactorDays = parseInt(sO.reactorDays);
+
+            if (editingIndex >= 0) { if (appData[editingIndex].id) { sO.id = appData[editingIndex].id; sO.idChave = appData[editingIndex].idChave; } appData[editingIndex] = sO; editingIndex = -1; if(lastFormState){ populateForm(lastFormState); lastFormState = null; document.getElementById('formContainer').classList.remove('border-blue-300', 'ring-2', 'ring-blue-100'); } else clearBlockForm(); } 
+            else appData.push(sO);
+
+            refreshApplicatorOptions();
+            saveToStorage(); renderReport(); renderList();
+            if (editingIndex === -1 && !lastFormState) { const f = document.getElementById(recType==='Multiplicacao'?'multiLiters':(document.getElementById('blockSelect').classList.contains('hidden')?'blockId':'blockSelect')); if(f){f.focus(); if(f.select) f.select();} }
+        }
+
+        function editItem(index) { lastFormState = getFormStateObject(); populateForm(appData[index]); editingIndex = index; const f = document.getElementById('formContainer'), btn = document.getElementById('submitBtn'); document.getElementById('formTitle').innerHTML = '<i data-lucide="pencil" class="text-blue-600"></i> Editando Registro'; btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> <span>Salvar Alterações</span>'; btn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all flex justify-center items-center gap-2 mt-4 active:scale-95"; f.classList.add('border-blue-300', 'ring-2', 'ring-blue-100'); f.scrollIntoView({ behavior: 'smooth', block: 'center' }); lucide.createIcons(); }
+        function removeItem(index) { if (editingIndex === index) { editingIndex = -1; clearBlockForm(); } appData.splice(index, 1); refreshApplicatorOptions(); saveToStorage(); if (!appData.length) { document.querySelector('input[name="recordTypeRadio"][value="Fito"]').checked = true; toggleFormType(true); } renderReport(); renderList(); }
+
+        function renderHeaderAndSummary() {
+            document.getElementById('operationalSummary').classList.remove('hidden');
+            const rType = appData[0]?.recordType || getRecordType(), reqL = rType==='Multiplicacao'?'Solicitante':'Solicitante', appL = rType==='Multiplicacao'?'Responsável':'Aplicador';
+            let tHtml = "";
+            if (rType !== 'Multiplicacao') tHtml = `<div class="text-right w-1/3"><span class="text-[9px] uppercase font-bold text-slate-400 tracking-wider block mb-1">Tempo Operação</span><span class="font-bold text-slate-700 text-[9px] whitespace-nowrap">${rType==='Adubacao' ? 'Por Setor/Bloco' : (globalInfo.startTime ? `Início: ${globalInfo.startTime}` + (globalInfo.endTime ? ` às ${globalInfo.endTime} (${globalInfo.duration})` : '') : 'Não informado')}</span></div>`;
+            document.getElementById('operationalSummary').innerHTML = `<div class="flex flex-col gap-2 text-xs"><div class="flex justify-between items-start border-b border-slate-200 pb-2"><div class="flex flex-col gap-1 ${rType==='Multiplicacao'?'w-full':'w-2/3'}"><span class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Responsáveis</span><div class="flex flex-col gap-1"><span class="text-slate-600 font-medium text-[10px]">${reqL}: <b class="text-slate-800">${globalInfo.requestor||'-'}</b></span><span class="text-slate-600 font-medium text-[10px]">${appL}: <b class="text-slate-800">${globalInfo.applicator||'-'}</b></span></div></div>${tHtml}</div></div>`;
+        }
+
+        function renderList() {
+            const list = document.getElementById('itemsList'), dD = getFilteredData(); list.innerHTML = '';
+            if (!appData.length || !dD.length) return list.innerHTML = `<li class="text-center text-slate-400 italic py-2">Nenhum registro ${!appData.length?'adicionado':'para este parceiro'}.</li>`;
+            
+            dD.forEach(i => {
+                const dt = i.date.split('-'), rT = i.recordType || 'Fito', act = appData.indexOf(i) === editingIndex ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-200' : 'border-slate-100 bg-slate-50';
+                const pS = i.products?.length ? i.products[0].name + (i.products.length>1?` + ${i.products.length-1} outros`:'') : (i.product || "Sem produto");
+                const lL = i.crop?.toLowerCase().includes('pepino') ? 'Setor' : 'Bloco', cS = i.cycle ? ` (Ciclo ${i.cycle})` : '';
+                
+                const htmls = {
+                    Multiplicacao: { h: `<span class="text-emerald-500 flex items-center gap-1"><i data-lucide="flask-conical" class="w-3 h-3"></i> Laboratório</span>`, s: `${i.multiLiters}L • Aeração: ${i.reactorDays} dias`, p: i.finalProduct || "Não Informado" },
+                    Adubacao: { h: `<span class="text-amber-600 flex items-center gap-1"><i data-lucide="sprout" class="w-3 h-3"></i> ${lL} ${i.block}${cS}</span>`, s: i.plants ? `${i.plants} plantas` : '', p: pS },
+                    Fito: { h: `${lL} ${i.block}${cS}`, s: i.target, p: pS }
+                }[rT];
+
+                list.innerHTML += `<li class="flex justify-between items-center p-2 rounded border ${act} transition-all"><div class="flex flex-col"><span class="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1">${dt[2]}/${dt[1]} • ${htmls.h}</span><span class="font-bold text-slate-700">${htmls.p}</span><span class="text-xs text-slate-500">${htmls.s}</span></div><div class="flex items-center"><button onclick="editItem(${appData.indexOf(i)})" class="text-blue-500 hover:bg-blue-100 p-1.5 rounded-md mr-1"><i data-lucide="pencil" width="14"></i></button><button onclick="removeItem(${appData.indexOf(i)})" class="text-red-500 hover:bg-red-100 p-1.5 rounded-md"><i data-lucide="trash-2" width="14"></i></button></div></li>`;
+            }); lucide.createIcons();
+        }
+
+        function renderReport() {
+            const cont = document.getElementById('reportContent'), ft = document.getElementById('operationalFooter'), dD = getFilteredData(); cont.innerHTML = '';
+            if (!dD.length) { cont.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs italic leading-relaxed h-full flex flex-col items-center justify-center"><i data-lucide="clipboard-list" class="mb-2 w-8 h-8 opacity-20"></i><span>Adicione registros.</span></div>`; ft.innerHTML = ''; return; }
+            
+            dD.sort((a,b) => (a.block||'').localeCompare(b.block||'', undefined, {numeric: true})).forEach(i => {
+                const rT = i.recordType || 'Fito', lC = i.crop?.toLowerCase().includes('pepino') ? 'Setor' : 'Bloco', cS = i.cycle ? ` (Ciclo ${i.cycle})` : '', pS = i.plants ? ` <span class="text-xs font-normal text-slate-500">(${i.plants} Plantas)</span>` : '';
+                let pHtml = i.products?.length ? `<div class="mt-2 space-y-1">${i.products.map(p => {
+                    let tC = "text-slate-400"; if(rT==='Adubacao') tC = p.type==='Orgânico'||p.type==='Esterco'?'text-emerald-700':(p.type==='Mineral'?'text-amber-600':'text-blue-600'); else if(rT==='Fito') tC = ['Inseticidas','Fungicidas','Herbicidas','Acaricidas','Nematicidas','Bactericidas','Rodenticidas','Desfolhantes','Químico'].includes(p.type)?'text-red-600':(p.type==='Biológico'||p.type==='Natural'||p.type==='Repelente'?'text-green-600':(p.type==='Nutricional'?'text-blue-600':'text-amber-600'));
+                    return `<div class="flex justify-between items-center text-xs border-b border-slate-50 pb-1 last:border-0"><div class="flex items-center gap-1"><span class="font-bold text-slate-700">• ${p.name}</span>${rT!=='Multiplicacao'?`<span class="inline-block shrink-0 whitespace-nowrap text-[9px] uppercase font-bold ${tC} border border-current/20 rounded px-1.5 py-0.5 bg-white/70">${p.type||'Geral'}</span>`:''}</div><span class="shrink-0 whitespace-nowrap pl-2 font-medium text-slate-600">${p.dose} ${p.unit||''}</span></div>`;
+                }).join('')}</div>` : '';
+
+                const bgs = { Multiplicacao: 'bg-emerald-50/30', Adubacao: 'bg-amber-50/20', Fito: '' }[rT], lbls = { Multiplicacao: 'Produtos Base', Adubacao: 'Adubos & Dosagens', Fito: 'Produtos & Dosagens' }[rT];
+                let midH = rT === 'Multiplicacao' ? `<div class="mt-2 flex justify-end items-center gap-3"><span class="whitespace-nowrap text-[11px] font-extrabold text-emerald-600">Produzido: ${i.multiLiters} Litros</span></div>` : (rT === 'Adubacao' ? (i.adubacaoStart ? `<div class="mt-2 flex justify-start items-center gap-3 border-t border-amber-100 pt-2"><span class="text-[10px] font-bold text-amber-700 flex items-center gap-1">Horário: ${i.adubacaoStart} às ${i.adubacaoEnd} (${i.adubacaoDuration})</span></div>` : '') : `<div class="mt-2 flex flex-wrap justify-end items-center gap-2">${i.ph?`<span class="inline-block shrink-0 whitespace-nowrap text-[10px] font-bold text-red-600 border border-red-200 bg-red-50 rounded-md px-2 py-0.5">PH: ${i.ph}</span>`:''}<span class="inline-block shrink-0 whitespace-nowrap text-[10px] font-bold text-blue-600 border border-blue-200 bg-blue-50 rounded-md px-2 py-0.5">Volume Calda: ${i.volume} L</span></div>`);
+                let tH = rT === 'Multiplicacao' ? `<span class="text-sm font-bold text-emerald-700">${i.finalProduct||'Multiplicação'}</span><div class="text-xs font-bold text-emerald-600">Aeração: ${i.reactorDays} dias</div>` : (rT === 'Adubacao' ? `<span class="text-sm font-bold text-slate-700">${i.crop} • ${lC} ${i.block}${cS}${pS}</span><div class="text-xs font-bold text-slate-600">Adubação ${i.adubacaoMethod?`(${i.adubacaoMethod})`:''}</div>` : `<div><span class="text-sm font-bold text-slate-700 block">${i.crop} • ${lC} ${i.block}${cS}${pS}</span><div class="text-xs font-bold text-slate-600 mt-1 inline-flex items-center gap-1 border border-orange-200 bg-orange-50 rounded-md px-2 py-0.5"><span class="text-orange-600 text-sm font-extrabold">Alvo:</span><span>${i.target}</span></div></div>`);
+
+                cont.innerHTML += `<div class="p-5 hover:bg-slate-50 transition-colors group border-b border-slate-50 last:border-0 ${bgs}"><div class="flex flex-col mb-2"><div class="flex items-start justify-between mt-1"><div class="w-full"><div class="flex justify-between items-center mb-2">${tH}</div><div class="${rT==='Fito'?'bg-slate-50/50':'bg-white shadow-sm'} rounded-lg border ${rT==='Multiplicacao'?'border-emerald-100':(rT==='Adubacao'?'border-amber-100':'border-slate-100')} p-2"><span class="text-[9px] font-bold ${rT==='Multiplicacao'?'text-emerald-600':(rT==='Adubacao'?'text-amber-600':'text-slate-400')} uppercase tracking-wider block mb-1 text-center">${lbls}</span>${pHtml}</div>${midH}</div></div>${i.notes?`<div class="mt-2 text-[10px] text-slate-400 italic border-l-2 ${rT==='Multiplicacao'?'border-emerald-200':(rT==='Adubacao'?'border-amber-100':'border-slate-200')} pl-2">Obs: ${i.notes}</div>`:''}</div></div>`;
+            });
+            const ftL = {Multiplicacao:'MULTIPLICAÇÕES', Adubacao:'ADUBAÇÕES', Fito:'APLICAÇÕES'}[appData[0]?.recordType||getRecordType()];
+            ft.innerHTML = `<div class="bg-slate-100 rounded-xl p-4 flex justify-center items-center relative overflow-hidden"><div class="absolute top-0 right-0 w-16 h-16 bg-slate-200/50 rounded-full -mr-8 -mt-8 pointer-events-none"></div><div class="text-center"><div class="text-[10px] text-slate-500 font-bold uppercase mb-0.5">TOTAL DE ${ftL}</div><div class="text-xl font-extrabold text-slate-800">${dD.length}</div></div></div>`;
+            lucide.createIcons(); renderHeaderAndSummary(); 
+        }
+
+        function isIOSDevice() {
+            return /iP(hone|od|ad)/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        // O Safari do iOS não suporta o atributo "download" em links (o clique simplesmente
+        // não faz nada, silenciosamente). Nesses aparelhos abrimos a imagem numa nova aba para
+        // o usuário salvá-la com "Segurar e Salvar Imagem". Em outros navegadores usamos o
+        // fluxo normal de download via blob: URL.
+        async function downloadFile(source, name) {
+            try {
+                const blob = source instanceof Blob ? source : await (await fetch(source)).blob();
+                const blobUrl = URL.createObjectURL(blob);
+
+                if (isIOSDevice()) {
+                    const win = window.open(blobUrl, '_blank');
+                    if (!win) {
+                        showMessageModal('Atenção', 'O navegador bloqueou a abertura da imagem. Verifique se o bloqueador de pop-ups está desativado para este site e tente novamente.', 'error');
+                        return;
+                    }
+                    showMessageModal('Salvar imagem', 'A imagem foi aberta em uma nova aba. Toque e segure sobre ela e escolha "Salvar Imagem" para baixá-la.', 'success');
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+                    return;
+                }
+
+                const link = document.createElement('a');
+                link.href = blobUrl; link.download = name;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+            } catch (err) {
+                console.error('Erro ao baixar imagem:', err);
+                window.open(source, '_blank');
+            }
+        }
+
+        function canShareFiles(file) {
+            return typeof navigator.share === 'function' &&
+                typeof navigator.canShare === 'function' &&
+                navigator.canShare({ files: [file] });
+        }
+
+        let _pendingShareData = null;
+
+        // Depois de gerar a imagem, mostra um popup com a opção de compartilhar direto
+        // (WhatsApp e outros apps, via Web Share API) ou baixar o arquivo. Como as ações só
+        // disparam quando o usuário toca em um botão do popup, o clique sempre conta como um
+        // gesto novo do usuário — necessário para o navegador permitir o compartilhamento ou
+        // a abertura de janela no Safari do iOS.
+        function openShareImageModal({ file, blob, filename, shareText }) {
+            _pendingShareData = { file, blob, filename, shareText };
+            const shareBtn = document.getElementById('shareImageBtn');
+            if (shareBtn) shareBtn.classList.toggle('hidden', !canShareFiles(file));
+            document.getElementById('shareImageModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeShareImageModal() {
+            document.getElementById('shareImageModal').classList.add('hidden');
+            _pendingShareData = null;
+        }
+
+        async function shareGeneratedImage() {
+            if (!_pendingShareData) return;
+            const { file, shareText } = _pendingShareData;
+            document.getElementById('shareImageModal').classList.add('hidden');
+            try {
+                await navigator.share({ files: [file], title: document.title, text: shareText || '' });
+            } catch (err) {
+                if (err && err.name !== 'AbortError') {
+                    console.error('Erro ao compartilhar imagem:', err);
+                    showMessageModal('Erro', 'Não foi possível compartilhar a imagem. Tente baixá-la e enviar manualmente.', 'error');
+                }
+            } finally {
+                _pendingShareData = null;
+            }
+        }
+
+        async function downloadGeneratedImage() {
+            if (!_pendingShareData) return;
+            const { blob, filename } = _pendingShareData;
+            document.getElementById('shareImageModal').classList.add('hidden');
+            await downloadFile(blob, filename);
+            _pendingShareData = null;
+        }
+
+        async function downloadImage() {
+            const btnSpan = document.querySelector('button[onclick="showConfirmSendModal()"] span'), orig = btnSpan?.innerText; if (btnSpan) btnSpan.innerText = "Gerando Imagem...";
+            let reportCard = null, reportContent = null, prevCardStyle = null, prevContentStyle = null;
+            try {
+                if (!getFilteredData().length) return showMessageModal('Atenção', 'Adicione registros.', 'error');
+                reportCard = document.getElementById('report-card');
+                reportContent = document.getElementById('reportContent');
+                prevCardStyle = reportCard ? reportCard.getAttribute('style') : null;
+                prevContentStyle = reportContent ? reportContent.getAttribute('style') : null;
+
+                if (reportCard) {
+                    reportCard.style.width = '560px';
+                    reportCard.style.maxWidth = '560px';
+                    reportCard.style.margin = '0';
+                    reportCard.style.boxShadow = 'none';
+                    reportCard.style.borderRadius = '0';
+                    reportCard.style.border = 'none';
+                }
+                if (reportContent) {
+                    reportContent.style.height = 'auto';
+                    reportContent.style.overflow = 'visible';
+                    reportContent.style.maxHeight = 'none';
+                }
+
+                const dataUrl = await htmlToImage.toPng(reportCard, { pixelRatio: 5, cacheBust: true, backgroundColor: '#ffffff' });
+                const filename = `Resumo_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}_${globalInfo.partner||'Geral'}.png`;
+                const blob = await (await fetch(dataUrl)).blob();
+                const file = new File([blob], filename, { type: 'image/png' });
+                openShareImageModal({ file, blob, filename, shareText: `Resumo - ${globalInfo.partner || 'Geral'}` });
+            } catch (err) {
+                console.error('Falha ao gerar imagem:', err);
+                showMessageModal('Erro', 'Falha ao gerar imagem: ' + (err?.message || err?.type || 'erro desconhecido. Tente novamente.'), 'error');
+            } finally {
+                if (reportCard) {
+                    if (prevCardStyle === null) reportCard.removeAttribute('style');
+                    else reportCard.setAttribute('style', prevCardStyle);
+                }
+                if (reportContent) {
+                    if (prevContentStyle === null) reportContent.removeAttribute('style');
+                    else reportContent.setAttribute('style', prevContentStyle);
+                }
+                if (btnSpan) btnSpan.innerText = orig;
+            }
+        }
+
+        // Cada registro guarda sua identidade: enviar de novo atualiza em vez de duplicar.
+        // Mudou o local ou a data (a mesma lista usada em outro dia), vira um registro novo.
+        function spg_garantirIds(itens) {
+            itens.forEach(i => {
+                const chave = i.partner + '|' + i.date;
+                if (!i.id || i.idChave !== chave) { i.id = SPG_API.novoId(); i.idChave = chave; }
+            });
+            saveToStorage();
+        }
+
+        async function getOfflineSuggestion() {
+            const dashboardTarget = (document.getElementById('dashboardTargetSelect')?.value || '').trim();
+            const formTarget = (document.getElementById('targetPestInput')?.value || '').trim();
+            const target = dashboardTarget || formTarget;
+            const culture = (document.getElementById('assistantCultureSelect')?.value || '').trim();
+            const cycle = (document.getElementById('assistantCycleSelect')?.value || '').trim();
+            const sector = (document.getElementById('assistantSectorSelect')?.value || '').trim();
+            const box = document.getElementById('offlineSuggestionBox');
+            if (!target) return showMessageModal('Atenção', 'Informe um alvo antes de consultar o histórico técnico.', 'error');
+            if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === 'SUA_URL_DO_APPS_SCRIPT_AQUI') return showMessageModal('Atenção', 'Conexão não configurada.', 'error');
+
+            box.classList.remove('hidden');
+            box.innerHTML = '<div class="flex items-center gap-2 text-slate-500"><span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span><span>Buscando recomendações no histórico...</span></div>';
+            try {
+                const query = [
+                    'action=suggest',
+                    'target=' + encodeURIComponent(target),
+                    'culture=' + encodeURIComponent(culture),
+                    'cycle=' + encodeURIComponent(cycle),
+                    'sector=' + encodeURIComponent(sector)
+                ].join('&');
+                const res = await aplicacoesBackend(APPS_SCRIPT_URL + '?' + query);
+                if (!res.ok) throw new Error('Falha na consulta (' + res.status + ')');
+                const data = await res.json();
+                if (data.status !== 'success') throw new Error(data.message || 'Resposta inválida');
+                const list = data.suggestions || [];
+                const backendContext = data.context || {};
+                const totalUsos = list.reduce((acc, item) => acc + (item.usos || 0), 0);
+                if (!list.length) {
+                    box.innerHTML = '<div class="rounded-lg border border-amber-200 bg-amber-50 p-2 text-amber-800">Sem histórico para este alvo com os filtros selecionados.</div>';
+                    return;
+                }
+                let context = computeAssistantContextFallback(target, culture, cycle, sector);
+                const hasLocalContext = context && (
+                    Number(context.volumeCaldaMedio || 0) > 0 ||
+                    Number(context.plantasMedias || 0) > 0 ||
+                    Number(context.usosComVolume || 0) > 0 ||
+                    Number(context.usosComPlantas || 0) > 0
+                );
+                if (!hasLocalContext) context = backendContext;
+                const filterTags = [
+                    culture ? `Cultura: ${escapeHtml(culture)}` : '',
+                    cycle ? `Ciclo: ${escapeHtml(cycle)}` : '',
+                    sector ? `Setor: ${escapeHtml(sector)}` : ''
+                ].filter(Boolean);
+                box.innerHTML =
+                    '<div class="rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-white p-3 mb-3">' +
+                        '<div class="flex items-start justify-between gap-2 mb-1">' +
+                            '<div class="text-[10px] uppercase font-bold tracking-wide text-sky-700">Resposta do Assistente</div>' +
+                            '<button type="button" id="assistantMinimizeBtn" onclick="toggleAssistantResultList()" aria-expanded="true" class="px-2 py-1 rounded-md border border-slate-300 bg-white text-[10px] font-bold text-slate-700 hover:bg-slate-50">Minimizar lista</button>' +
+                        '</div>' +
+                        '<div class="text-sm font-extrabold text-slate-800">Alvo analisado: ' + escapeHtml(target) + '</div>' +
+                        '<div class="text-[11px] text-slate-600 mt-1">Baseado no histórico local: <b>' + totalUsos + ' uso(s)</b> encontrados.</div>' +
+                        '<div class="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">' +
+                            '<div class="rounded-lg border border-slate-200 bg-white p-2">' +
+                                '<div class="text-[10px] text-slate-500 uppercase font-bold">Calda</div>' +
+                                '<div class="text-sm font-extrabold text-slate-800">' + (context.volumeCaldaMedio || 0) + ' L</div>' +
+                                '<div class="text-[10px] text-slate-500">' + (context.usosComVolume || 0) + ' registro(s) com volume</div>' +
+                            '</div>' +
+                            '<div class="rounded-lg border border-slate-200 bg-white p-2">' +
+                                '<div class="text-[10px] text-slate-500 uppercase font-bold">Plantas</div>' +
+                                '<div class="text-sm font-extrabold text-slate-800">' + Number(context.plantasMedias || 0).toLocaleString('pt-BR') + '</div>' +
+                                '<div class="text-[10px] text-slate-500">' + (context.usosComPlantas || 0) + ' registro(s) com plantas</div>' +
+                            '</div>' +
+                            '<div class="rounded-lg border border-slate-200 bg-white p-2">' +
+                                '<div class="text-[10px] text-slate-500 uppercase font-bold">Relação técnica</div>' +
+                                '<div class="text-sm font-extrabold text-slate-800">' + (context.litrosPor100Plantas || 0) + ' L/100 plantas</div>' +
+                                '<div class="text-[10px] text-slate-500">' + (context.usosComVolumeEPlantas || 0) + ' registro(s) combinados</div>' +
+                            '</div>' +
+                        '</div>' +
+                        (filterTags.length ? '<div class="mt-2 flex flex-wrap gap-1">' + filterTags.map(tag => '<span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-[10px] text-slate-600">' + tag + '</span>').join('') + '</div>' : '') +
+                    '</div>' +
+                    '<div id="assistantResultList" class="space-y-2">' +
+                        list.map((s, i) => {
+                            const conf = Math.max(20, Math.min(95, Math.round((s.usos / totalUsos) * 100)));
+                            const hist = getDoseHistoryForProduct(target, culture, cycle, sector, s.produto, s.tipo, s.unidade);
+                            const ultimaDose = hist.length ? `${formatPtBrNumberText(hist[0].dose)} ${hist[0].unidade}` : null;
+                            return '<div class="rounded-lg border border-slate-200 bg-white p-2">' +
+                                '<div class="flex items-start justify-between gap-2">' +
+                                    '<div><div class="text-[11px] font-extrabold text-slate-800">#' + (i + 1) + ' ' + escapeHtml(s.produto) + '</div>' +
+                                    '<div class="text-[10px] text-slate-500">Tipo: ' + escapeHtml(s.tipo) + '</div></div>' +
+                                    '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200 bg-blue-50 text-blue-700">' + conf + '% aderência</span>' +
+                                '</div>' +
+                                '<div class="mt-2 text-[11px] text-slate-700">Última dose utilizada: <b>' + escapeHtml(ultimaDose || '-') + '</b></div>' +
+                                '<div class="mt-1 text-[10px] text-slate-500">Média histórica: ' + s.doseMedia + ' ' + escapeHtml(s.unidade) + ' • ' + s.usos + ' uso(s)</div>' +
+                                '<details class="mt-2 rounded-md border border-slate-200 bg-slate-50">' +
+                                    '<summary class="cursor-pointer px-2 py-1.5 text-[10px] font-bold text-slate-700">Ver histórico completo de doses (' + hist.length + ')</summary>' +
+                                    '<div class="px-2 pb-2 pt-1 space-y-1 max-h-40 overflow-y-auto">' +
+                                        (hist.length ? hist.map((h, idx) =>
+                                            '<div class="text-[10px] text-slate-700 border-b border-slate-200 pb-1">' +
+                                                '<b>#' + (idx + 1) + '</b> ' + escapeHtml(formatPtBrNumberText(h.dose)) + ' ' + escapeHtml(h.unidade) +
+                                                ' • Data: ' + escapeHtml(formatHistoryDate(h.data)) +
+                                                ' • Setor: ' + escapeHtml(h.setor) +
+                                                ' • Plantas: ' + escapeHtml(formatPtBrNumberText(h.plantas)) +
+                                                ' • Calda: ' + escapeHtml(formatPtBrNumberText(h.calda)) + ' L' +
+                                            '</div>'
+                                        ).join('') : '<div class="text-[10px] text-slate-500">Sem histórico detalhado disponível.</div>') +
+                                    '</div>' +
+                                '</details>' +
+                            '</div>';
+                        }).join('') +
+                    '</div>';
+            } catch (err) {
+                box.innerHTML = '<span class="text-red-600">Erro ao consultar histórico técnico: ' + escapeHtml(err.message) + '</span>';
+            }
+        }
+        function toggleAssistantResultList() {
+            const list = document.getElementById('assistantResultList');
+            const btn = document.getElementById('assistantMinimizeBtn');
+            if (!list || !btn) return;
+            const hidden = list.classList.toggle('hidden');
+            btn.textContent = hidden ? 'Expandir lista' : 'Minimizar lista';
+            btn.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Qualidade - POPs</title>
+    
+    <meta name="theme-color" content="#059669">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" type="image/png" href="../../../favicon.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="banco.js"></script>
+    <link rel="stylesheet" href="tema-irrigacao.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @media print {
+            @page { margin: 0.5cm; size: A4; }
+            body, html { background: white; color: black; font-size: 9.5pt; margin: 0; padding: 0; }
+            .no-print { display: none !important; }
+            .print-border { border: 1px solid #ccc; }
+            input[type="text"], input[type="date"], select { 
+                border: none !important; border-bottom: 1px solid #000 !important; outline: none !important;
+                box-shadow: none !important; background: transparent !important; padding: 0 !important; 
+                margin: 0 !important; appearance: none !important; -webkit-appearance: none !important; 
+                height: 20px !important; width: 100% !important; display: block !important;
+                font-size: 9.5pt !important; line-height: 1.1 !important; border-radius: 0 !important;
+            }
+            input[type="date"] { color: transparent; }
+            input[type="date"].has-value { color: black; }
+            input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
+            textarea { 
+                border: 1px solid #999 !important; resize: none; background: transparent;
+                min-height: 1.5cm !important; box-shadow: none !important; margin-top: 2px !important;
+                display: block !important; page-break-inside: avoid; font-size: 9pt; width: 100%; line-height: 1.2;
+            }
+            
+            .question-container { page-break-inside: avoid; border: none !important; padding: 2px 0 !important; box-shadow: none !important; margin-bottom: 2px !important; border-bottom: 1px dashed #ccc !important; }
+            main { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: none !important; box-shadow: none !important; }
+            .space-y-8 > :not([hidden]) ~ :not([hidden]) { margin-top: 0 !important; } 
+            h3 { font-size: 10.5pt !important; margin-top: 0.2cm !important; margin-bottom: 0.1cm !important; padding: 2px !important; background-color: #f0f0f0 !important; color: #000 !important; border-left: 3px solid #000 !important; page-break-after: avoid; }
+            .radio-label { border: 1px solid #000 !important; color: #000 !important; background: none !important; padding: 0 4px !important; font-size: 8pt !important; border-radius: 4px !important; }
+            select { background-image: none; }
+            section { page-break-inside: auto !important; page-break-after: auto !important; margin-bottom: 0 !important; display: block !important; }
+            i[data-lucide] { display: none !important; }
+            .screen-only-grid { display: none !important; }
+            
+            .header-info-grid { display: grid !important; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 5px; font-size: 9pt; border-bottom: 1px solid #000; padding-bottom: 5px; margin-bottom: 5px; }
+            .header-info-item label { font-weight: bold; display: block; margin-bottom: 0;}
+            .header-info-item input { width: 100%; height: 16px; }
+            .footer-section { margin-top: 0.2cm !important; padding-top: 0.1cm !important; border-top: 1px solid #ccc !important; page-break-inside: avoid; }
+            .footer-label { font-size: 8pt !important; margin-bottom: 0 !important; }
+            .footer-input { font-size: 9pt !important; height: 0.5cm !important; padding: 0 !important; }
+            #report-title { font-size: 14pt !important; margin: 0; }
+            #report-subtitle { font-size: 9pt !important; margin: 0; }
+            .logo-print { height: 1.5cm !important; }
+            .header-container { margin-bottom: 0 !important; padding-bottom: 0 !important; border-bottom: none !important;}
+            #dashboard-view { display: none !important; }
+            #app-view { display: block !important; }
+            #aprovado-por, #aprovado-por-outro, #assinatura-digital, #assinatura-digital-outro { display: none !important; }
+            #aprovado-print, #assinatura-print { display: block !important; }
+        }
+
+        body.modal-open { overflow: hidden; }
+
+        .print-report-only { display: none; }
+
+        @media print {
+            body.printing-dashboard-report #app-view,
+            body.printing-dashboard-report #dashboard-view { display: none !important; }
+            body.printing-dashboard-report .print-report-only {
+                display: block !important;
+                font-family: Arial, Helvetica, sans-serif;
+                color: #000;
+                font-size: 9.5pt;
+            }
+            .dash-report-header { display: flex; align-items: center; gap: 12px; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px; }
+            .dash-report-logo { height: 1.4cm; width: auto; }
+            .dash-report-titles { flex: 1; }
+            .dash-report-titles h1 { font-size: 13pt; margin: 0 0 2px; text-transform: uppercase; line-height: 1.2; }
+            .dash-report-titles p { font-size: 8pt; margin: 0; color: #333; }
+            .dash-report-doc-meta { display: flex; flex-direction: column; gap: 2px; font-size: 8pt; text-align: right; white-space: nowrap; }
+
+            .dash-report-info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9pt; }
+            .dash-report-info-table td { border: 1px solid #999; padding: 3px 6px; }
+            .dash-report-info-table td.label { font-weight: bold; background: #f2f2f2; width: 16%; white-space: nowrap; }
+
+            .dash-report-section-title { font-size: 10.5pt; background: #e5e7eb; border-left: 4px solid #000; padding: 3px 6px; margin: 10px 0 6px; page-break-after: avoid; }
+
+            .dash-report-kpi-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+            .dash-report-kpi-table td { border: 1px solid #999; text-align: center; padding: 6px 4px; }
+            .dash-report-kpi-table .kpi-value { display: block; font-size: 14pt; font-weight: bold; }
+            .dash-report-kpi-table .kpi-label { display: block; font-size: 7.5pt; text-transform: uppercase; color: #444; }
+
+            .dash-report-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 8.5pt; }
+            .dash-report-table th, .dash-report-table td { border: 1px solid #999; padding: 3px 5px; text-align: left; vertical-align: top; }
+            .dash-report-table th { background: #dbe2ea; font-size: 8pt; text-transform: uppercase; }
+            .dash-report-table thead { display: table-header-group; }
+            .dash-report-table tr { page-break-inside: avoid; }
+            .dash-report-table .text-center { text-align: center; }
+            .dash-report-table .muted { color: #888; font-style: italic; }
+            .dash-report-nc-table { font-size: 8pt; }
+
+            .dash-report-declaration { margin: 14px 0; font-size: 8.5pt; text-align: justify; border-top: 1px solid #ccc; padding-top: 8px; }
+
+            .dash-report-signatures { display: flex; justify-content: space-between; gap: 40px; margin-top: 20px; page-break-inside: avoid; }
+            .sig-block { flex: 1; text-align: center; padding-top: 40px; }
+            .sig-line { display: block; border-top: 1px solid #000; margin-bottom: 4px; }
+            .sig-label { display: block; font-size: 8.5pt; font-weight: bold; }
+            .sig-sub { display: block; font-size: 8pt; color: #444; }
+        }
+
+        :root {
+            --surface: #ffffff;
+            --page: #f6f7fb;
+            --ink: #111827;
+            --muted: #64748b;
+            --line: #e2e8f0;
+            --primary: #16a34a;
+            --primary-dark: #15803d;
+            --nav: #111827;
+            --nav-soft: #1f2937;
+            --accent-soft: #f0fdf4;
+        }
+
+        body {
+            background: #f8fafc;
+        }
+
+        .app-shell {
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 16px;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        }
+
+        .control-panel {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 25px rgba(15, 23, 42, 0.04);
+        }
+
+        .modern-input {
+            border: 2px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            background: #f8fafc !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+
+        .modern-input:focus,
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16) !important;
+        }
+
+        .radio-label.answer-selected {
+            color: white !important;
+            border-color: transparent !important;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+        }
+        .radio-label.answer-c { background-color: #16a34a !important; }
+        .radio-label.answer-nc { background-color: #dc2626 !important; }
+        .radio-label.answer-na { background-color: #64748b !important; }
+
+        .bg-emerald-50, .bg-green-50, .bg-teal-50, .bg-yellow-50 { background-color: var(--accent-soft) !important; }
+        .bg-emerald-100, .bg-green-100, .bg-teal-100, .bg-yellow-100 { background-color: #dcfce7 !important; }
+        .bg-emerald-200, .bg-green-200, .bg-teal-200, .bg-yellow-200 { background-color: #bbf7d0 !important; }
+        .bg-emerald-500, .bg-emerald-600, .bg-emerald-700, .bg-emerald-800, .bg-emerald-900,
+        .bg-green-400, .bg-green-500, .bg-teal-600, .bg-yellow-500, .bg-yellow-600 {
+            background-color: var(--primary) !important;
+        }
+        .hover\:bg-emerald-50:hover, .hover\:bg-green-50:hover, .hover\:bg-yellow-50:hover { background-color: #f0fdf4 !important; }
+        .hover\:bg-emerald-700:hover, .hover\:bg-emerald-800:hover, .hover\:bg-emerald-900:hover,
+        .hover\:bg-yellow-600:hover { background-color: var(--primary-dark) !important; }
+        .text-emerald-100, .text-emerald-600, .text-emerald-700, .text-emerald-800, .text-emerald-900,
+        .text-green-400, .text-green-500, .text-teal-600, .text-yellow-600, .text-yellow-800 {
+            color: var(--primary) !important;
+        }
+        .text-emerald-100 { color: #dcfce7 !important; }
+        .text-emerald-900 { color: #ffffff !important; }
+        .border-emerald-100, .border-emerald-200, .border-emerald-300,
+        .border-emerald-500, .border-emerald-600, .border-green-400, .border-yellow-500 {
+            border-color: #bbf7d0 !important;
+        }
+        
+        .focus\:ring-emerald-500:focus, .focus\:ring-yellow-500:focus { --tw-ring-color: rgba(22, 163, 74, 0.35) !important; }
+        .focus\:border-emerald-500:focus, .focus\:border-emerald-600:focus { border-color: var(--primary) !important; }
+        .from-emerald-500 { --tw-gradient-from: #16a34a var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(22 163 74 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+        .to-teal-600 { --tw-gradient-to: #15803d var(--tw-gradient-to-position) !important; }
+        .status-select {
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            padding: 6px 10px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+            outline: none;
+            cursor: pointer;
+        }
+        
+        .question-help {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #15803d;
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            cursor: help;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .question-help-tooltip {
+            position: absolute;
+            left: 50%;
+            top: calc(100% + 8px);
+            transform: translateX(-50%);
+            width: min(320px, 75vw);
+            background: #0f172a;
+            color: #f8fafc;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.35;
+            padding: 8px 10px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+            z-index: 60;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity .12s ease;
+        }
+        .question-help:hover .question-help-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px;}
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px;}
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-gray-800 font-sans min-h-screen pb-24">
+
+    <!-- MODAL CUSTOMIZADO (Substitui os window.alert) -->
+    <div id="custom-alert" class="fixed inset-0 bg-black/60 z-[200] hidden flex items-center justify-center p-4 transition-opacity opacity-0">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 text-center transform scale-95 transition-all" id="custom-alert-box">
+            <div id="custom-alert-icon-container" class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-emerald-100 mb-4">
+                <i data-lucide="info" id="custom-alert-icon" class="w-8 h-8 text-emerald-600"></i>
+            </div>
+            <h3 id="custom-alert-title" class="text-xl font-bold text-gray-800 mb-2">Aviso</h3>
+            <p id="custom-alert-message" class="text-sm text-gray-600 mb-6 font-medium"></p>
+            <div class="flex gap-3 justify-center" id="custom-alert-buttons">
+                <button onclick="closeCustomAlert()" class="w-full px-4 py-2.5 bg-emerald-600 text-white font-bold rounded-md hover:bg-emerald-700 transition">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA DE PROGRESSO MINIMALISTA -->
+    <div id="top-progress-container" class="fixed top-0 left-0 right-0 h-1 z-[200] hidden bg-gray-900/50">
+        <div id="top-progress-bar" class="h-full bg-emerald-500 w-0 transition-all duration-200 ease-out shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
+    </div>
+
+    <!-- MODAL DE RESOLUÇÃO DE OCORRÊNCIA -->
+    <div id="resolve-modal" class="fixed inset-0 bg-black/60 z-[90] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600"></i>
+                    Registrar Resolução
+                </h3>
+                <button onclick="cancelarResolucao()" class="text-gray-500 hover:text-gray-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">Informe como a ocorrência foi solucionada.</p>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Data de Resolução <span class="text-red-500">*</span></label>
+                <input type="date" id="resolve-date" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" />
+            </div>
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Como foi solucionado <span class="text-red-500">*</span></label>
+                <textarea id="resolve-obs" rows="3" placeholder="Descreva como a ocorrência foi resolvida..." class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm resize-none"></textarea>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button onclick="cancelarResolucao()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition text-sm font-medium">Cancelar</button>
+                <button onclick="confirmarResolucao()" class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition text-sm font-bold flex items-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    Confirmar Resolução
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE DADOS DO RELATÓRIO OFICIAL (CABEÇALHO PARA IMPRESSÃO A4) -->
+    <div id="report-header-modal" class="fixed inset-0 bg-black/60 z-[90] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 transform transition-all max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-5 h-5 text-green-600"></i>
+                    Dados do Relatório Oficial
+                </h3>
+                <button onclick="closeReportHeaderModal()" class="text-gray-500 hover:text-gray-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Estes dados aparecem no cabeçalho do relatório impresso em A4, no padrão exigido para apresentação a órgãos fiscalizadores (ex.: Ministério do Trabalho). Ficam salvos no sistema, então preenchem automaticamente em qualquer computador.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Empresa / Razão Social</label>
+                    <input type="text" id="report-empresa" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" placeholder="Ex: Packing House Ltda">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">CNPJ</label>
+                    <input type="text" id="report-cnpj" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" placeholder="00.000.000/0000-00">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Cargo do Responsável</label>
+                    <input type="text" id="report-cargo" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" placeholder="Ex: Responsável Técnico">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Endereço / Unidade</label>
+                    <input type="text" id="report-endereco" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" placeholder="Endereço completo da unidade">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Responsável Técnico / Elaborado por</label>
+                    <input type="text" id="report-responsavel" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" placeholder="Nome completo">
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 pt-4 mb-4">
+                <p class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <i data-lucide="filter" class="w-4 h-4 text-green-600"></i> Filtros do Relatório
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Período</label>
+                        <select id="report-periodo" class="modern-input w-full p-2.5 border rounded-md focus:ring-2 focus:outline-none text-sm" onchange="clearReportCustomDates()">
+                            <option value="all">Todo o Histórico</option>
+                            <option value="today">Apenas Hoje</option>
+                            <option value="7d">Últimos 7 dias (Semana)</option>
+                            <option value="30d">Últimos 30 dias (Mês)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Ou período personalizado</label>
+                        <div class="flex items-center gap-1">
+                            <input type="date" id="report-data-inicio" class="modern-input w-full p-2 border rounded-md text-xs" title="Data inicial" onchange="handleReportCustomDateChange()">
+                            <span class="text-xs text-gray-400">até</span>
+                            <input type="date" id="report-data-fim" class="modern-input w-full p-2 border rounded-md text-xs" title="Data final" onchange="handleReportCustomDateChange()">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2 flex justify-between items-center">
+                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide">Procedimentos (POPs)</label>
+                    <button type="button" onclick="toggleAllReportPops()" class="text-xs font-bold text-green-600 hover:underline">Marcar/Desmarcar todos</button>
+                </div>
+                <div id="report-pop-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5 max-h-36 overflow-y-auto border border-gray-200 rounded-md p-2 bg-gray-50">
+                    <!-- Injetado via JS -->
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button onclick="closeReportHeaderModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition text-sm font-medium">Cancelar</button>
+                <button onclick="confirmReportHeaderAndPrint()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition text-sm font-bold flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    Gerar e Imprimir Relatório
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <header class="tema-nav text-slate-900 sticky top-0 z-50 no-print">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <h1 class="text-sm sm:text-[15px] font-extrabold tracking-tight flex items-center gap-2.5">
+                    <img src="logo-pop.png" alt="Logo" class="h-9 w-9 object-contain bg-white rounded-xl shadow-sm ring-1 ring-black/5">
+                    Gestão de POPs
+                </h1>
+                <div id="header-loader" class="hidden items-center gap-2 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 transition-opacity">
+                    <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-emerald-400"></i>
+                    <span class="text-[10px] text-slate-600 tracking-wider font-bold"><span id="sync-percent">0</span>%</span>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button id="btnDashboardPop" onclick="abrirDashboardPop()" class="tema-btn-claro p-2 transition font-bold flex items-center gap-1" title="Dashboard de Métricas">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                    <span class="hidden sm:inline">Dashboard</span>
+                </button>
+                <button onclick="promptResetForm()" class="tema-btn-claro p-2 transition" title="Limpar Formulário Atual">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                </button>
+                <button id="btn-enviar" onclick="enviarDados()" class="tema-btn-verde p-2 font-bold flex items-center gap-1" title="Enviar dados">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                    <span class="hidden sm:inline">Enviar Dados</span>
+                </button>
+                <button onclick="printChecklistBlankFields()" class="tema-btn-claro p-2 transition font-bold flex items-center gap-1">
+                    <i data-lucide="printer" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div id="app-view" class="block">
+        <main class="app-shell max-w-4xl mx-auto p-4 md:p-8 mt-4 mb-8 print:shadow-none print:mt-0 print:w-full">
+            <div class="control-panel p-4 mb-8 no-print">
+                <div class="mb-4">
+                    <label class="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
+                        <i data-lucide="library" class="inline w-4 h-4 mr-1"></i> Selecione o Procedimento (POP)
+                    </label>
+                    <select id="popSelect" onchange="changePOP()" class="modern-input w-full p-3 border-2 rounded-md focus:ring-2 focus:outline-none text-lg font-medium">
+                        <option value="pop01">POP 01 - HIGIENE E SAÚDE DOS MANIPULADORES</option>
+                        <option value="pop02">POP 02 - HIGIENIZAÇÃO DE INSTALAÇÕES E EQUIPAMENTOS</option>
+                        <option value="pop03">POP 03 - MANEJO DE RESÍDUOS</option>
+                        <option value="pop04">POP 04 - CONTROLE INTEGRADO DE VETORES E PRAGAS</option>
+                        <option value="pop05">POP 05 - CONTROLE DA POTABILIDADE DE ÁGUA</option>
+                        <option value="pop06">POP 06 - SELEÇÃO DE MATÉRIAS-PRIMAS E EMBALAGENS</option>
+                        <option value="pop07">POP 07 - MANUTENÇÃO PREVENTIVA E CALIBRAÇÃO</option>
+                    </select>
+                </div>
+                <div id="sub-selection-container" class="border-t border-slate-200 pt-4 hidden">
+                    <p class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <i data-lucide="list-checks" class="w-4 h-4"></i>
+                        Selecione os grupos para avaliar/imprimir:
+                    </p>
+                    <div id="sub-selection-list" class="flex flex-wrap gap-3"></div>
+                </div>
+            </div>
+
+            <div class="print:block header-container border-b-2 border-gray-200 pb-4 mb-4 print:mb-1 print:pb-1">
+                <div class="flex justify-between items-start mb-4 print:mb-1">
+                    <div class="flex items-center gap-4">
+                        <img src="logo-pop.png" alt="Logo" class="h-20 w-auto hidden print:block logo-print">
+                        <div>
+                            <h2 id="report-title" class="text-2xl font-bold text-gray-800 uppercase print:text-lg print:leading-tight">Lista de Verificação</h2>
+                            <p id="report-subtitle" class="text-gray-500 text-sm mt-1 print:text-xs">Selecione um POP acima</p>
+                        </div>
+                    </div>
+                    <div class="text-right hidden print:block">
+                        <div class="text-xs text-gray-500">Emissão: <span id="pop-date">--/--/----</span></div>
+                        <div class="text-xs text-gray-500">Rev: <span id="pop-rev">00</span></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 screen-only-grid">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-1">Responsável pela Avaliação:</label>
+                        <select id="responsavel-screen" class="modern-input w-full p-2 border rounded focus:ring-2 focus:outline-none" onchange="checkOutro('responsavel-screen', 'responsavel-outro', 'responsavel')">
+                            <option value="">Selecione...</option>
+                            <option value="João Victor Gonçalves Barbosa">João Victor Gonçalves Barbosa</option>
+                            <option value="Francisco Fagner Isaias">Francisco Fagner Isaias</option>
+                            <option value="Alessandra Leitão da Silva">Alessandra Leitão da Silva</option>
+                            <option value="Regilene Isaias">Regilene Isaias</option>
+                            <option value="Thaynara Rodrigues">Thaynara Rodrigues</option>
+                            <option value="Maria Conceição">Maria Conceição</option>
+                            <option value="Daiany Rodrigues">Daiany Rodrigues</option>
+                            <option value="Ana Paula Rodrigues da Silva">Ana Paula Rodrigues da Silva</option>
+                            <option value="Myrla Ferreira">Myrla Ferreira</option>
+                            <option value="outra">Outra (Digitar manualmente)</option>
+                        </select>
+                        <input type="text" id="responsavel-outro" class="hidden modern-input w-full p-2 border rounded mt-2 focus:ring-2 focus:outline-none" placeholder="Digite o nome do responsável..." oninput="document.getElementById('responsavel-print').value = this.value; saveProgress()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-600 mb-1">Data da Avaliação:</label>
+                        <input type="date" id="data-screen" class="modern-input w-full p-2 border rounded focus:ring-2 focus:outline-none" oninput="syncInputs('data', this.value)">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-semibold text-gray-600 mb-1">Setor Avaliado:</label>
+                        <input type="text" id="setor-screen" class="modern-input w-full p-2 border rounded focus:ring-2 focus:outline-none" oninput="syncInputs('setor', this.value)">
+                    </div>
+                </div>
+
+                <div class="hidden print:grid header-info-grid">
+                    <div class="header-info-item"><label>Responsável:</label><input type="text" id="responsavel-print"></div>
+                    <div class="header-info-item"><label>Data:</label><input type="date" id="data-print"></div>
+                    <div class="header-info-item"><label>Setor:</label><input type="text" id="setor-print"></div>
+                </div>
+            </div>
+
+            <form id="checklistForm" class="space-y-8 print:space-y-0">
+                <div class="bg-slate-50 border-l-4 border-green-600 p-3 mb-4 rounded-lg text-sm text-slate-700 print:bg-white print:border print:border-gray-300 print:text-gray-600 print:text-xs print:mb-2 print:p-1 print:border-l-2">
+                    <span class="font-bold mr-2">Legenda:</span>
+                    <span class="mr-4"><strong>C</strong> = Conforme</span>
+                    <span class="mr-4"><strong>NC</strong> = Não Conforme</span>
+                    <span><strong>NA</strong> = Não Avaliado</span>
+                </div>
+
+                <div id="dynamic-content"></div>
+
+                <section class="mt-8 border-t pt-4 print:mt-2 print:pt-1">
+                    <h3 class="text-lg font-bold text-gray-700 mb-2 print:text-sm print:mb-1 print:bg-transparent print:p-0 print:border-none">Observações Gerais / Ações Corretivas</h3>
+                    <textarea id="obs-geral" rows="4" class="modern-input w-full p-3 border rounded focus:ring-2 focus:outline-none" oninput="saveProgress()"></textarea>
+                </section>
+
+                <section class="mt-12 pt-6 border-t-2 border-gray-300 print:mt-2 print:pt-2 print:border-t footer-section">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 print:gap-4 print:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1 print:text-xs footer-label">Aprovado por:</label>
+                            <select id="aprovado-por" class="w-full p-2 border-b-2 border-slate-300 bg-gray-50 focus:bg-white focus:border-green-600 transition-colors outline-none font-medium print:hidden footer-input" onchange="checkOutro('aprovado-por', 'aprovado-por-outro')">
+                                <option value="">Selecione...</option>
+                                <option value="João Victor Gonçalves Barbosa">João Victor Gonçalves Barbosa</option>
+                                <option value="Francisco Fagner Isaias">Francisco Fagner Isaias</option>
+                                <option value="Alessandra Leitão da Silva">Alessandra Leitão da Silva</option>
+                                <option value="Regilene Isaias">Regilene Isaias</option>
+                                <option value="Thaynara Rodrigues">Thaynara Rodrigues</option>
+                                <option value="Maria Conceição">Maria Conceição</option>
+                                <option value="Daiany Rodrigues">Daiany Rodrigues</option>
+                                <option value="Ana Paula Rodrigues da Silva">Ana Paula Rodrigues da Silva</option>
+                                <option value="Myrla Ferreira">Myrla Ferreira</option>
+                                <option value="outra">Outra (Digitar manualmente)</option>
+                            </select>
+                            <input type="text" id="aprovado-por-outro" class="hidden w-full p-2 border-b-2 border-slate-300 bg-gray-50 focus:bg-white focus:border-green-600 transition-colors outline-none font-medium print:hidden mt-2 footer-input" placeholder="Digite o nome..." oninput="saveProgress()">
+                            <input type="text" id="aprovado-print" class="hidden print:block w-full border-b border-black bg-transparent p-0 h-8 footer-input" value="">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1 print:text-xs footer-label">Assinatura:</label>
+                            <select id="assinatura-digital" class="w-full p-2 border-b-2 border-slate-300 bg-gray-50 focus:bg-white focus:border-green-600 transition-colors outline-none font-medium print:hidden footer-input" onchange="checkOutro('assinatura-digital', 'assinatura-digital-outro')">
+                                <option value="">Selecione...</option>
+                                <option value="João Victor Gonçalves Barbosa">João Victor Gonçalves Barbosa</option>
+                                <option value="Francisco Fagner Isaias">Francisco Fagner Isaias</option>
+                                <option value="Alessandra Leitão da Silva">Alessandra Leitão da Silva</option>
+                                <option value="Regilene Isaias">Regilene Isaias</option>
+                                <option value="Thaynara Rodrigues">Thaynara Rodrigues</option>
+                                <option value="Maria Conceição">Maria Conceição</option>
+                                <option value="Daiany Rodrigues">Daiany Rodrigues</option>
+                                <option value="Ana Paula Rodrigues da Silva">Ana Paula Rodrigues da Silva</option>
+                                <option value="Myrla Ferreira">Myrla Ferreira</option>
+                                <option value="outra">Outra (Digitar manualmente)</option>
+                            </select>
+                            <input type="text" id="assinatura-digital-outro" class="hidden w-full p-2 border-b-2 border-slate-300 bg-gray-50 focus:bg-white focus:border-green-600 transition-colors outline-none font-medium print:hidden mt-2 footer-input" placeholder="Digite o nome..." oninput="saveProgress()">
+                            <input type="text" id="assinatura-print" class="hidden print:block w-full border-b border-black bg-transparent p-0 h-8 footer-input" value="">
+                        </div>
+                    </div>
+                </section>
+            </form>
+        </main>
+        
+        <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_30px_-20px_rgba(15,23,42,0.45)] p-4 no-print z-40">
+            <div class="max-w-4xl mx-auto flex justify-between items-center">
+                <div>
+                    <span class="text-sm text-gray-500">Conformidade (<span id="current-pop-label">POP --</span>):</span>
+                    <div class="text-2xl font-bold text-green-600" id="score-display">0%</div>
+                </div>
+                <div class="text-right text-xs text-gray-400">
+                    Itens Conformes: <span id="count-c">0</span> | Não Conformes: <span id="count-nc">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard-view" class="hidden no-print bg-gray-50 min-h-screen pb-12">
+        <div class="max-w-[1920px] mx-auto p-4 md:p-8 xl:p-10" id="dashboard-export-area">
+            
+            <!-- Dashboard Header & Controls -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4" data-html2canvas-ignore>
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-800">Dashboard de Comando</h2>
+                    <p class="text-gray-500 text-sm mt-1">Gestão à Vista - Packing House</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button id="btn-sync-dash" onclick="handleManualSync()" class="px-4 py-2 bg-green-50 text-green-600 font-bold rounded shadow border border-green-600 hover:bg-green-100 transition flex items-center gap-2" title="Puxar dados mais recentes da nuvem">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Atualizar dados
+                    </button>
+                    <button onclick="clearDashboardFilters()" class="px-4 py-2 bg-white text-gray-700 font-bold rounded shadow border border-gray-200 hover:bg-gray-50 transition flex items-center gap-2" title="Limpar todos os filtros do dashboard">
+                        <i data-lucide="filter-x" class="w-4 h-4"></i> Limpar filtros
+                    </button>
+                    <button id="btn-toggle-chart-labels" onclick="toggleChartLabels()" class="px-4 py-2 bg-white text-gray-700 font-bold rounded shadow border border-gray-200 hover:bg-gray-50 transition flex items-center gap-2" title="Mostrar ou ocultar valores nos gráficos">
+                        <i data-lucide="tags" class="w-4 h-4"></i> Mostrar rótulos dos gráficos
+                    </button>
+                    <button id="btn-report-a4" onclick="openReportHeaderModal()" class="px-4 py-2 bg-slate-800 text-white font-bold rounded shadow hover:bg-slate-900 transition flex items-center gap-2" title="Gerar relatório oficial em A4 para fiscalização (Ministério do Trabalho)">
+                        <i data-lucide="file-text" class="w-4 h-4"></i> Relatório A4 (Oficial)
+                    </button>
+                    <button onclick="closeDashboard()" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded shadow hover:bg-gray-300 transition flex items-center gap-2">
+                        <i data-lucide="x" class="w-4 h-4"></i> Fechar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Barra de Filtros Inteligentes -->
+            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6" data-html2canvas-ignore>
+                <div>
+                    <label class="text-xs text-gray-500 font-bold uppercase mb-1 block">Período de Avaliação</label>
+                    <select id="filter-periodo" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium bg-gray-50" onchange="applyFilters()">
+                        <option value="all">Todo o Histórico</option>
+                        <option value="today">Apenas Hoje</option>
+                        <option value="7d">Últimos 7 dias (Semana)</option>
+                        <option value="30d">Últimos 30 dias (Mês)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 font-bold uppercase mb-1 block">Calendário</label>
+                    <div class="flex items-center gap-2 rounded border border-gray-300 bg-gray-50 p-1.5 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
+                        <i data-lucide="calendar-range" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+                        <input type="date" id="filter-data-inicio" class="min-w-0 flex-1 bg-transparent text-sm font-medium text-gray-700 outline-none" title="Data inicial" onchange="handleCalendarFilterChange()">
+                        <span class="text-xs font-bold text-gray-400">até</span>
+                        <input type="date" id="filter-data-fim" class="min-w-0 flex-1 bg-transparent text-sm font-medium text-gray-700 outline-none" title="Data final" onchange="handleCalendarFilterChange()">
+                        <button type="button" onclick="clearCalendarFilter()" class="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition" title="Limpar calendário">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 font-bold uppercase mb-1 block">Procedimento (POP)</label>
+                    <select id="filter-pop" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium bg-gray-50" onchange="updateQuestionFilter(); applyFilters()">
+                        <option value="all">Todos os POPs</option>
+                        <!-- Injetado via JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 font-bold uppercase mb-1 block">Pergunta Específica</label>
+                    <select id="filter-pergunta" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium bg-gray-50" onchange="applyFilters()">
+                        <option value="all">Todas as Perguntas</option>
+                        <!-- Injetado via JS -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Container de Alertas IA (Reincidência) -->
+            <div id="ai-alerts-container" class="mb-6 space-y-2"></div>
+
+            <!-- Cards Resumo & KPIs -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 xl:gap-6 mb-6">
+                <!-- Gauge Meta -->
+                <div class="bg-white p-4 xl:p-6 rounded-lg shadow-sm border-t-4 border-emerald-500 col-span-2 md:col-span-1 flex flex-col justify-between items-center relative overflow-hidden">
+                    <p class="text-[10px] xl:text-xs text-gray-500 font-bold uppercase text-center w-full mb-2">Conformidade Geral</p>
+                    <div class="relative w-full h-[100px] xl:h-[130px] flex items-end justify-center">
+                        <canvas id="chartGauge"></canvas>
+                        <div class="absolute bottom-0 text-center flex flex-col items-center">
+                            <span id="dash-conformidade" class="text-2xl xl:text-3xl font-black text-gray-800 leading-none">0%</span>
+                            <span class="text-[9px] xl:text-[10px] text-gray-400 font-bold uppercase tracking-wider">Meta: 95%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-4 xl:p-6 rounded-lg shadow-sm border-l-4 border-green-600 flex flex-col justify-center">
+                    <p class="text-xs xl:text-sm text-gray-500 font-bold uppercase">Total Avaliações</p>
+                    <p class="text-3xl xl:text-4xl font-black text-gray-800 mt-1" id="dash-total-av">0</p>
+                </div>
+                <div class="bg-white p-4 xl:p-6 rounded-lg shadow-sm border-l-4 border-green-400 flex flex-col justify-center">
+                    <p class="text-xs xl:text-sm text-gray-500 font-bold uppercase">Perguntas Conformes (C)</p>
+                    <p class="text-[10px] xl:text-xs text-gray-400 font-medium leading-tight mt-0.5">Qtd. de perguntas respondidas em conformidade</p>
+                    <p class="text-3xl xl:text-4xl font-black text-gray-800 mt-1" id="dash-total-c">0</p>
+                </div>
+                <div class="bg-white p-4 xl:p-6 rounded-lg shadow-sm border-l-4 border-red-500 flex flex-col justify-center">
+                    <p class="text-xs xl:text-sm text-gray-500 font-bold uppercase">Perguntas Não Conformes</p>
+                    <p class="text-[10px] xl:text-xs text-gray-400 font-medium leading-tight mt-0.5">Qtd. de perguntas com não conformidade</p>
+                    <p class="text-3xl xl:text-4xl font-black text-gray-800 mt-1" id="dash-total-nc">0</p>
+                </div>
+                <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 xl:p-6 rounded-lg shadow-sm flex flex-col justify-center text-white col-span-2 md:col-span-1">
+                    <p class="text-xs xl:text-sm text-emerald-100 font-bold uppercase flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Dias Limpos</p>
+                    <div class="flex items-baseline gap-1 mt-1">
+                        <p class="text-3xl xl:text-4xl font-black" id="dash-streak">0</p>
+                        <span class="text-xs xl:text-sm text-emerald-100 font-medium">dias seguidos sem falhas</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Gerencial de Ocorrências -->
+            <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100 mb-6">
+                <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-1 flex items-center gap-2"><i data-lucide="clipboard-list" class="w-4 h-4 text-green-600"></i> KPI Principal de Ocorrências</h3>
+                <p class="text-[10px] xl:text-xs text-gray-400 mb-4">Visão rápida do que precisa de ação imediata no período filtrado.</p>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 xl:gap-4 mb-4">
+                    <div class="rounded-lg border border-red-200 bg-red-50 p-3 xl:p-4">
+                        <p class="text-[10px] xl:text-xs uppercase font-bold text-red-700">Ocorrências a Corrigir</p>
+                        <p class="text-2xl xl:text-3xl font-black text-red-700 mt-1" id="kpi-ocorrencias-corrigir">0</p>
+                    </div>
+                    <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 xl:p-4">
+                        <p class="text-[10px] xl:text-xs uppercase font-bold text-amber-700">Pendentes</p>
+                        <p class="text-2xl xl:text-3xl font-black text-amber-700 mt-1" id="kpi-ocorrencias-pendente">0</p>
+                    </div>
+                    <div class="rounded-lg border border-green-600 bg-green-50 p-3 xl:p-4">
+                        <p class="text-[10px] xl:text-xs uppercase font-bold text-blue-700">Em Andamento</p>
+                        <p class="text-2xl xl:text-3xl font-black text-blue-700 mt-1" id="kpi-ocorrencias-andamento">0</p>
+                    </div>
+                    <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 xl:p-4">
+                        <p class="text-[10px] xl:text-xs uppercase font-bold text-emerald-700">Resolvidas</p>
+                        <p class="text-2xl xl:text-3xl font-black text-emerald-700 mt-1" id="kpi-ocorrencias-resolvidas">0</p>
+                    </div>
+                </div>
+                <div class="w-full h-[220px] xl:h-[300px]">
+                    <canvas id="chartStatusOverview"></canvas>
+                </div>
+            </div>
+
+            <!-- Gráficos de Inteligência Temporal & Setores -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:gap-8 mb-6">
+                <!-- Heatmap Dias da Semana -->
+                <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100">
+                    <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-1 flex items-center gap-2"><i data-lucide="calendar-days" class="w-4 h-4 text-green-600"></i> Mapa de Calor de Falhas (Dias da Semana)</h3>
+                    <p class="text-[10px] xl:text-xs text-gray-400 mb-4">Volume histórico de Não Conformidades baseado no dia de operação.</p>
+                    <div class="w-full h-[220px] xl:h-[300px]">
+                        <canvas id="chartHeatmap"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tendência no Tempo (Linha) -->
+                <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100">
+                    <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-1 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-green-600"></i> Tendência de Auditoria</h3>
+                    <p class="text-[10px] xl:text-xs text-gray-400 mb-4">Acompanhe se a operação está melhorando ou piorando dia após dia.</p>
+                    <div class="w-full h-[220px] xl:h-[300px]">
+                        <canvas id="chartTrend"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ranking Setores e Auditores -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-8 mb-6">
+                <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100 lg:col-span-2">
+                    <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-4 flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-emerald-500"></i> Desempenho por Setor (Conformes vs NCs)</h3>
+                    <div class="w-full h-[250px] xl:h-[340px]">
+                        <canvas id="chartSector"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100 flex flex-col">
+                    <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-2 flex items-center gap-2 border-b pb-2"><i data-lucide="users" class="w-4 h-4 text-emerald-500"></i> Auditores Ativos</h3>
+                    <p class="text-[10px] xl:text-xs text-gray-400 mb-3">Ranking de volume de avaliações realizadas.</p>
+                    <div id="auditor-list" class="flex-1 flex flex-col gap-2 overflow-y-auto xl:min-h-[300px]">
+                        <!-- Injetado via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pontos Fortes de Conformidade -->
+            <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100 mb-6">
+                <h3 class="text-sm xl:text-base font-bold text-gray-700 mb-1 flex items-center gap-2"><i data-lucide="badge-check" class="w-4 h-4 text-green-600"></i> Onde Estamos Acertando (Conformidades)</h3>
+                <p class="text-[10px] xl:text-xs text-gray-400 mb-4">Quantidade de perguntas respondidas em conformidade por procedimento, considerando os filtros atuais.</p>
+                <div class="w-full h-[280px] xl:h-[360px]">
+                    <canvas id="chartConformityWins"></canvas>
+                </div>
+            </div>
+
+            <!-- Análise de Foco (Pizzas) -->
+            <div class="bg-red-50 border border-red-100 p-5 xl:p-7 rounded-lg shadow-sm mb-6 print:break-inside-avoid">
+                <h3 class="text-lg xl:text-xl font-bold text-red-800 mb-1 flex items-center gap-2">
+                    <i data-lucide="target" class="w-5 h-5"></i> Origem dos Problemas (Foco das NCs)
+                </h3>
+                <p class="text-[11px] xl:text-xs text-red-600 mb-4 font-medium">Gráficos compostos por dados de Não Conformidade (Se 100% OK, exibe barra verde).</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-4 xl:p-6 rounded shadow-sm flex flex-col items-center">
+                        <h4 class="text-xs xl:text-sm font-bold text-gray-500 mb-3 uppercase">Volume de Falhas por POP</h4>
+                        <div class="w-full max-w-[220px] xl:max-w-[280px] h-[220px] xl:h-[280px]">
+                            <canvas id="chartPiePopNC"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 xl:p-6 rounded shadow-sm flex flex-col items-center">
+                        <h4 class="text-xs xl:text-sm font-bold text-gray-500 mb-3 uppercase">Perguntas Recorrentes (Top Erros)</h4>
+                        <div class="w-full max-w-[220px] xl:max-w-[280px] h-[220px] xl:h-[280px]">
+                            <canvas id="chartPieQuestionNC"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pareto e Plano de Ação -->
+            <div class="bg-white p-5 xl:p-7 rounded-lg shadow-sm border border-gray-100 mb-2 print:break-inside-avoid">
+                <h3 class="text-lg xl:text-xl font-bold text-gray-800 mb-1">Top Ofensores & Plano de Ação</h3>
+                <p class="text-xs xl:text-sm text-gray-500 mb-6">Gráfico de Pareto e histórico de ações tomadas pelas equipes de campo.</p>
+
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    <!-- Pareto -->
+                    <div class="w-full h-[450px] xl:h-[520px]">
+                        <canvas id="chartPareto"></canvas>
+                    </div>
+
+                    <!-- Lista Expansível com IA -->
+                    <div class="flex flex-col h-[450px] xl:h-[520px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div class="sticky top-0 z-40 bg-white pt-2 pb-3 border-b shadow-sm">
+                            <h4 class="text-sm font-bold text-gray-700 mb-3">Detalhamento e Sugestões do Sistema</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Ordem das Ocorrências</label>
+                                    <select id="detail-sort" class="w-full p-2 border border-gray-300 rounded text-xs font-semibold bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500" onchange="applyFilters()">
+                                        <option value="recentes">Mais Recentes</option>
+                                        <option value="antigas">Mais Antigas</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Status</label>
+                                    <select id="detail-status" class="w-full p-2 border border-gray-300 rounded text-xs font-semibold bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500" onchange="applyFilters()">
+                                        <option value="all">Todos</option>
+                                        <option value="PENDENTE" selected>Pendentes</option>
+                                        <option value="EM_ANDAMENTO">Em Andamento</option>
+                                        <option value="RESOLVIDO">Resolvidos</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="ncs-accordion-list" class="space-y-3 pt-3 pb-4">
+                            <!-- Injetado via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RELATÓRIO OFICIAL A4 (Somente para impressão - gerado dinamicamente) -->
+    <div id="dashboard-print-report" class="print-report-only"></div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO DO GOOGLE APPS SCRIPT
+        // ==========================================
+        // Os dados ficam no Supabase (banco.js)
+        
+        let dashboardData = []; 
+        let showChartLabels = false;
+        let currentPOP = 'pop01';
+        let currentVisibleGroups = []; 
+
+        // Instâncias de Gráficos
+        let chartGaugeInstance = null;
+        let chartTrendInstance = null;
+        let chartHeatmapInstance = null;
+        let chartSectorInstance = null;
+        let chartStatusOverviewInstance = null;
+        let chartConformityWinsInstance = null;
+        let chartPiePopNCInstance = null;
+        let chartPieQuestionNCInstance = null;
+        let chartParetoInstance = null;
+        let printFieldBackup = null;
+
+        const chartValueLabelsPlugin = {
+            id: 'chartValueLabels',
+            afterDatasetsDraw(chart, args, pluginOptions) {
+                if (!showChartLabels || pluginOptions.display === false) return;
+
+                const { ctx, chartArea } = chart;
+                ctx.save();
+                ctx.font = 'bold 10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = pluginOptions.color || '#111827';
+
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    if (meta.hidden) return;
+
+                    meta.data.forEach((element, index) => {
+                        const rawValue = dataset.data[index];
+                        const numberValue = Number(rawValue);
+                        if (rawValue === null || rawValue === undefined || rawValue === '' || Number.isNaN(numberValue)) return;
+                        if (numberValue === 0 && pluginOptions.hideZero !== false) return;
+
+                        const label = Number.isInteger(numberValue) ? String(numberValue) : numberValue.toFixed(1);
+                        const position = element.tooltipPosition();
+                        let x = position.x;
+                        let y = position.y;
+
+                        if (chart.config.type === 'bar') {
+                            if (chart.options.indexAxis === 'y') {
+                                x = Math.min(Math.max(position.x + 16, chartArea.left + 14), chartArea.right - 14);
+                            } else {
+                                y = Math.max(position.y - 10, chartArea.top + 10);
+                            }
+                        } else if (chart.config.type === 'line') {
+                            y = Math.max(position.y - 12, chartArea.top + 10);
+                        }
+
+                        ctx.fillText(label, x, y);
+                    });
+                });
+
+                ctx.restore();
+            }
+        };
+
+        if (window.Chart) Chart.register(chartValueLabelsPlugin);
+
+        // ==========================================
+        // MOTOR DE IA OFFLINE (Base de Conhecimento)
+        // ==========================================
+        const AIOfflineRules = {
+            // POP 01
+            'p01_q1': 'Verificar agenda da clínica de saúde ocupacional. Afastar colaborador da manipulação direta até renovação do ASO.',
+            'p01_q2': 'Dispensar manipulador do dia com atestado médico obrigatório. Investigar possível surto de contaminação cruzada.',
+            'p01_q3': 'Providenciar curativo impermeável visível (cor viva) ou luva protetora. Afastar se lesão for grave.',
+            'p01_q4': 'Solicitar troca imediata de uniforme e fornecer advertência. Revisar processo da lavanderia industrial.',
+            'p01_q5': 'Solicitar correção imediata da touca para cobrir todo o cabelo (inclusive franja). Reforçar treinamento.',
+            'p01_q6': 'Acionar RH/Segurança do Trabalho para reposição de EPI/botas. Proibir entrada na área molhada.',
+            'p01_q7': 'Exigir remoção imediata dos adornos e armazenamento em armário. Risco físico grave em máquinas e de contaminação.',
+            'p01_q8': 'Obrigatória a remoção imediata de esmalte com removedor. Cortar unhas antes de tocar em embalagens.',
+            'p01_q9': 'Afastar da produção até que a barba seja feita. Barbas aumentam a carga microbiológica sobre vegetais.',
+            'p01_q10': 'Orientar sobre proibição de cosméticos na área limpa para evitar contaminação química e odores.',
+            'p01_q14': 'Paralisar operação, realizar lavagem técnica supervisionada. Promover DDS focado em higienização das mãos.',
+            // POP 02
+            'p02_q1': 'Contatar setor de suprimentos em caráter de urgência. Avaliar uso de estoque reserva central.',
+            'p02_q8': 'Programar limpeza profunda imediata antes de continuar. Desincrustar ralos para evitar atração de pragas.',
+            'p02_q11': 'Suspender uso da máquina/câmara. Desmontar partes removíveis, realizar lavagem CIP/manual com agente homologado.',
+            // POP 03
+            'p03_q1': 'Requisitar novas lixeiras com sistema de pedal. Evitar contaminação das mãos na tampa.',
+            'p03_q6': 'Remoção imediata de resíduos para área de descarte externo para impedir bactérias e chorume.',
+            // POP 04
+            'p04_q1': 'Acionar Manutenção predial para instalar telas milimétricas e fechamento de ralos escamoteáveis.',
+            'p04_q7': 'EMERGÊNCIA SANITÁRIA. Isolar a área. Descartar lotes com risco de contato. Acionar serviço de desratização urgente.',
+            'p04_q8': 'Acionar dedetização antecipada da empresa terceirizada. Limpar focos de umidade ou acúmulo de caixas.',
+            // POP 05
+            'p05_q4': 'Providenciar coleta laboratorial terceirizada urgente. A água da rede pode estar fora dos padrões.',
+            // POP 06
+            'p06_q2': 'Segregar imediatamente o lote reprovado, etiquetar em vermelho, bloquear no sistema de estoque e acionar o fornecedor.',
+            // POP 07
+            'p07_q4': 'Suspender o uso da balança imediatamente para evitar problemas de peso líquido com cliente final. Utilizar balança reserva.',
+            'p07_q5': 'Suspender uso do termômetro. Risco grave de quebra da cadeia de frio.',
+            // Fallback
+            'default': 'Acompanhar correção diretamente na área. Orientar colaborador envolvido e registrar falha em planilha de melhoria contínua.'
+        };
+
+        const popsData = {
+            'pop01': {
+                title: "HIGIENE E SAÚDE DOS MANIPULADORES", subtitle: "Baseado no POP 01 - Revisão 00", date: "22/11/2025", rev: "00",
+                groups: [
+                    { title: "1. Saúde e Documentação", questions: [{ id: 'p01_q1', text: 'ASO dos manipuladores está em dia (Admissional/Periódico)?' }, { id: 'p01_q2', text: 'Manipuladores sem sinais de infecções, febre, vômitos ou diarreia?' }, { id: 'p01_q3', text: 'Ausência de feridas, cortes ou lesões expostas nas mãos e braços?' }] },
+                    { title: "2. Higiene Pessoal e Uniformes", questions: [{ id: 'p01_q4', text: 'Uniforme completo (blusa, calça) e limpo?' }, { id: 'p01_q5', text: 'Uso correto de toucas (cabelos totalmente protegidos)?' }, { id: 'p01_q6', text: 'Calçados fechados (botas brancas) em bom estado de conservação?' }, { id: 'p01_q7', text: 'Ausência de adornos (anéis, alianças, relógios, pulseiras, brincos)?' }, { id: 'p01_q8', text: 'Unhas curtas, limpas e sem esmalte ou base?' }, { id: 'p01_q9', text: 'Ausência de barba e bigode?' }, { id: 'p01_q10', text: 'Manipuladores sem maquiagem e sem perfume forte?' }] },
+                    { title: "3. Comportamento Operacional", questions: [{ id: 'p01_q11', text: 'Funcionários não fumam, tossem, espirram ou cospem próximo aos alimentos?' }, { id: 'p01_q12', text: 'Funcionários evitam falar excessivamente sobre os alimentos?' }, { id: 'p01_q13', text: 'Manipuladores não manipulam dinheiro durante o serviço?' }, { id: 'p01_q14', text: 'Realizam a lavagem das mãos corretamente após riscos de contaminação?' }] },
+                    { title: "4. Instalações e Visitantes", questions: [{ id: 'p01_q15', text: 'Pia exclusiva para mãos abastecida (sabão bactericida, papel toalha)?' }, { id: 'p01_q16', text: 'Cartazes orientativos de lavagem de mãos fixados e visíveis?' }, { id: 'p01_q17', text: 'Visitantes cumprem as regras (touca, sem adornos, sem tocar nos alimentos)?' }] }
+                ]
+            },
+            'pop02': {
+                title: "HIGIENIZAÇÃO DAS INSTALAÇÕES, MÓVEIS E UTENSÍLIOS", subtitle: "Baseado no POP 02 - Revisão 00", date: "22/11/2025", rev: "00",
+                groups: [
+                    { title: "1. Disponibilidade de Materiais", questions: [{ id: 'p02_q1', text: 'Detergentes e sanitizantes estão disponíveis em quantidade suficiente?' }, { id: 'p02_q2', text: 'Utensílios de limpeza estão disponíveis e em bom estado?' }, { id: 'p02_q3', text: 'Instalações possuem água fria em quantidade suficiente?' }] },
+                    { title: "2. Aquisição, Estocagem e Identificação", questions: [{ id: 'p02_q4', text: 'Produtos de higiene possuem registro no Ministério da Saúde?' }, { id: 'p02_q5', text: 'Produtos são sem odorizantes (sem cheiro forte)?' }, { id: 'p02_q6', text: 'Produtos estão armazenados corretamente no almoxarifado?' }, { id: 'p02_q7', text: 'Utensílios de limpeza são separados e identificados por área?' }] },
+                    { title: "3. Higienização Diária", questions: [{ id: 'p02_q8', text: 'Pisos, rodapés e ralos estão limpos?' }, { id: 'p02_q9', text: 'Pias e tanques estão limpos?' }, { id: 'p02_q10', text: 'Banheiros/Sanitários estão higienizados?' }, { id: 'p02_q11', text: 'Equipamentos e utensílios estão limpos e sanitizados?' }, { id: 'p02_q12', text: 'Coletores de lixo estão limpos e tampados?' }] },
+                    { title: "4. Higienização Semanal e Mensal", questions: [{ id: 'p02_q13', text: 'Paredes, portas e janelas estão limpas? (Semanal)' }, { id: 'p02_q14', text: 'Prateleiras estão limpas e organizedas? (Semanal)' }, { id: 'p02_q15', text: 'Luminárias, teto ou forro estão limpos? (Mensal)' }, { id: 'p02_q16', text: 'Caixas de isopor (se houver) estão limpas?' }] }
+                ]
+            },
+            'pop03': {
+                title: "MANEJO DE RESÍDUOS", subtitle: "Baseado no POP 03 - Revisão 00", date: "24/11/2025", rev: "00",
+                groups: [
+                    { title: "1. Acondicionamento e Coleta", questions: [{ id: 'p03_q1', text: 'Lixeiras de áreas críticas possuem pedal e tampa?' }, { id: 'p03_q2', text: 'Lixo de escritório está acondicionado em sacos plásticos resistentes?' }, { id: 'p03_q3', text: 'Resíduos orgânicos são separados em caixas plásticas específicas?' }, { id: 'p03_q4', text: 'Resíduos recicláveis são coletados e separados em local determinado?' }] },
+                    { title: "2. Higiene e Frequência", questions: [{ id: 'p03_q5', text: 'Lixeiras são lavadas diariamente ou quando necessário?' }, { id: 'p03_q6', text: 'Lixo orgânico é descartado diariamente?' }, { id: 'p03_q7', text: 'Áreas internas e externas estão limpas e sem acúmulo de lixo?' }] },
+                    { title: "3. Controle de Instalações (Preventivo)", questions: [{ id: 'p03_q8', text: 'Instalações mantidas fechadas para evitar insetos/roedores?' }, { id: 'p03_q9', text: 'Ausência de lixo derramado fora das lixeiras?' }] }
+                ]
+            },
+            'pop04': {
+                title: "CONTROLE INTEGRADO DE VETORES E PRAGAS", subtitle: "Baseado no POP 04 - Revisão 00", date: "24/11/2025", rev: "00",
+                groups: [
+                    { title: "1. Instalações e Acesso", questions: [{ id: 'p04_q1', text: 'Ralos, portas e aberturas estão protegidos para evitar entrada de pragas?' }, { id: 'p04_q2', text: 'As instalações estão livres de buracos ou frestas que sirvam de abrigo?' }, { id: 'p04_q3', text: 'Área externa está livre de acúmulo de sucatas, ninhos ou água parada?' }] },
+                    { title: "2. Controle de Resíduos e Ambiente", questions: [{ id: 'p04_q4', text: 'Resíduos são removidos diariamente?' }, { id: 'p04_q5', text: 'Lixeiras e local de armazenamento de lixo estão higienizados?' }, { id: 'p04_q6', text: 'Ausência de animais domésticos na área da empresa?' }] },
+                    { title: "3. Monitoramento Visual", questions: [{ id: 'p04_q7', text: 'AUSÊNCIA de sinais de roedores (fezes, roídos, trilhas)?' }, { id: 'p04_q8', text: 'AUSÊNCIA de baratas, formigas ou outros insetos?' }, { id: 'p04_q9', text: 'AUSÊNCIA de cupins nas estruturas?' }] },
+                    { title: "4. Empresa Terceirizada", questions: [{ id: 'p04_q10', text: 'Serviço de desinsetização/desratização está em dia (Trimestral)?' }, { id: 'p04_q11', text: 'A empresa terceirizada possui licença sanitária válida?' }, { id: 'p04_q12', text: 'Certificados e ordem de serviço dos produtos utilizados estão arquivados?' }] }
+                ]
+            },
+            'pop05': {
+                title: "CONTROLE DA POTABILIDADE DE ÁGUA", subtitle: "Baseado no POP 05 - Revisão 00", date: "25/11/2025", rev: "00",
+                groups: [
+                    { title: "1. Higienização de Reservatórios", questions: [{ id: 'p05_q1', text: 'A limpeza da caixa d\'água foi realizada nos últimos 6 meses (Semestral)?' }, { id: 'p05_q2', text: 'A caixa d\'água está devidamente tampada e protegida contra animais?' }, { id: 'p05_q3', text: 'Existe registro (planilha/ficha) assinado da última limpeza realizada?' }] },
+                    { title: "2. Análises Laboratoriais", questions: [{ id: 'p05_q4', text: 'A empresa possui laudo de análise microbiológica dentro da validade (Semestral)?' }, { id: 'p05_q5', text: 'A empresa possui laudo de análise físico-química dentro da validade (Anual)?' }, { id: 'p05_q6', text: 'Os laudos atestam que a água está própria para consumo (satisfatória)?' }] }
+                ]
+            },
+            'pop06': {
+                title: "SELEÇÃO DE MATÉRIAS-PRIMAS E EMBALAGENS", subtitle: "Baseado no POP 06 - Revisão 00", date: "29/11/2025", rev: "00",
+                groups: [
+                    { title: "1. Avaliação de Matéria-Prima", questions: [{ id: 'p06_q1', text: 'Hortifruti seguem o padrão de qualidade visual da empresa?' }, { id: 'p06_q2', text: 'Ausência de sinais de deterioração, podridão ou pragas nos vegetais?' }] },
+                    { title: "2. Avaliação de Embalagens", questions: [{ id: 'p06_q3', text: 'A Nota Fiscal e destinatário foram conferidos e estão corretos?' }, { id: 'p06_q4', text: 'O número de volumes físico confere com a nota fiscal?' }, { id: 'p06_q5', text: 'As embalagens/volumes estão íntegros e sem sinais de violação?' }, { id: 'p06_q6', text: 'As informações conferem com a mercadoria física?' }] },
+                    { title: "3. Ações Corretivas", questions: [{ id: 'p06_q7', text: 'Produtos fora do padrão foram devolvidos ou segregados imediatamente?' }] }
+                ]
+            },
+            'pop07': {
+                title: "MANUTENÇÃO PREVENTIVA E CALIBRAÇÃO", subtitle: "Baseado no POP 07 - Revisão 00", date: "01/12/2025", rev: "00",
+                groups: [
+                    { title: "1. Manutenção de Equipamentos", questions: [{ id: 'p07_q1', text: 'A manutenção é realizada conforme necessidade (corretiva ou preventiva)?' }, { id: 'p07_q2', text: 'Manutenção de Câmaras Frias está em dia?' }, { id: 'p07_q3', text: 'As Ordens de Serviço (OS) e Notas Fiscais das manutenções estão arquivadas?' }] },
+                    { title: "2. Calibração", questions: [{ id: 'p07_q4', text: 'Calibração das Balanças está em dia (Anual)?' }, { id: 'p07_q5', text: 'Calibração dos Termômetros está em dia (Anual)?' }, { id: 'p07_q6', text: 'Possui os Certificados/Laudos de Calibração emitidos pelo Inmetro?' }] },
+                    { title: "3. Ações Corretivas e Verificação", questions: [{ id: 'p07_q7', text: 'Equipamentos descalibrados tiveram operação suspensa imediatamente?' }, { id: 'p07_q8', text: 'Foi realizada substituição ou manutenção de equipamento com defeito?' }] }
+                ]
+            }
+        };
+
+        function showAlert(message, type = 'info', title = 'Aviso') {
+            const modal = document.getElementById('custom-alert');
+            const box = document.getElementById('custom-alert-box');
+            const icon = document.getElementById('custom-alert-icon');
+            const iconContainer = document.getElementById('custom-alert-icon-container');
+            const titleEl = document.getElementById('custom-alert-title');
+            const messageEl = document.getElementById('custom-alert-message');
+            const buttonsEl = document.getElementById('custom-alert-buttons');
+            
+            titleEl.innerText = title;
+            messageEl.innerText = message;
+            titleEl.style.color = '';
+            messageEl.style.color = '';
+            icon.style.color = '';
+            iconContainer.style.backgroundColor = '';
+            
+            // Configurar cores baseado no tipo
+            if(type === 'error') {
+                iconContainer.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4';
+                icon.className = 'w-8 h-8 text-red-600';
+                icon.setAttribute('data-lucide', 'x-circle');
+            } else if(type === 'success') {
+                iconContainer.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-emerald-100 mb-4';
+                icon.className = 'w-8 h-8 text-emerald-600';
+                icon.setAttribute('data-lucide', 'check-circle');
+                titleEl.style.color = '#1f2937';
+                messageEl.style.color = '#1f2937';
+                icon.style.color = '#16a34a';
+                iconContainer.style.backgroundColor = '#dcfce7';
+            } else if(type === 'warning') {
+                iconContainer.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4';
+                icon.className = 'w-8 h-8 text-yellow-600';
+                icon.setAttribute('data-lucide', 'alert-triangle');
+            } else {
+                iconContainer.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4';
+                icon.className = 'w-8 h-8 text-blue-600';
+                icon.setAttribute('data-lucide', 'info');
+            }
+
+            buttonsEl.innerHTML = `<button onclick="closeCustomAlert()" class="w-full px-4 py-2.5 bg-emerald-600 text-white font-bold rounded-md hover:bg-emerald-700 transition">OK</button>`;
+            
+            lucide.createIcons();
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function showConfirmAlert(message, onConfirm, title = 'Confirmação') {
+            const modal = document.getElementById('custom-alert');
+            const box = document.getElementById('custom-alert-box');
+            const icon = document.getElementById('custom-alert-icon');
+            const iconContainer = document.getElementById('custom-alert-icon-container');
+            const titleEl = document.getElementById('custom-alert-title');
+            const messageEl = document.getElementById('custom-alert-message');
+            const buttonsEl = document.getElementById('custom-alert-buttons');
+
+            titleEl.innerText = title;
+            messageEl.innerText = message;
+            iconContainer.className = 'mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-100 mb-4';
+            icon.className = 'w-8 h-8 text-amber-600';
+            icon.setAttribute('data-lucide', 'alert-triangle');
+
+            buttonsEl.innerHTML = `
+                <button onclick="closeCustomAlert()" class="w-full px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-md hover:bg-gray-200 transition border border-gray-200">Cancelar</button>
+                <button id="btn-confirm-reset" class="w-full px-4 py-2.5 bg-red-600 text-white font-bold rounded-md hover:bg-red-700 transition">Limpar</button>
+            `;
+
+            const confirmBtn = document.getElementById('btn-confirm-reset');
+            confirmBtn.onclick = () => {
+                closeCustomAlert();
+                if (typeof onConfirm === 'function') onConfirm();
+            };
+
+            lucide.createIcons();
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                box.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeCustomAlert() {
+            const modal = document.getElementById('custom-alert');
+            const box = document.getElementById('custom-alert-box');
+            modal.classList.add('opacity-0');
+            box.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        function preparePrintBlankFields() {
+            if (printFieldBackup) return;
+            const idsToBlank = [
+                'responsavel-print',
+                'data-print',
+                'aprovado-print',
+                'assinatura-print',
+                'aprovado-por',
+                'aprovado-por-outro',
+                'assinatura-digital',
+                'assinatura-digital-outro'
+            ];
+
+            printFieldBackup = {};
+            idsToBlank.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                printFieldBackup[id] = el.value;
+                el.value = '';
+            });
+        }
+
+        function restorePrintBlankFields() {
+            if (!printFieldBackup) return;
+            Object.entries(printFieldBackup).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.value = value;
+            });
+            printFieldBackup = null;
+        }
+
+        function printChecklistBlankFields() {
+            preparePrintBlankFields();
+            window.print();
+            setTimeout(restorePrintBlankFields, 100);
+        }
+
+        window.addEventListener('beforeprint', preparePrintBlankFields);
+        window.addEventListener('afterprint', restorePrintBlankFields);
+
+        function promptResetForm() {
+            showConfirmAlert(`Tem certeza que deseja limpar as respostas do ${currentPOP.toUpperCase()}?`, () => {
+                localStorage.removeItem(`data_${currentPOP}`);
+                changePOP(); 
+            }, 'Limpar formulário');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            const lastPOP = localStorage.getItem('last_selected_pop');
+            if (lastPOP && popsData[lastPOP]) document.getElementById('popSelect').value = lastPOP;
+            changePOP();
+            document.getElementById('btnDashboardPop').classList.toggle('hidden', !window.SPG_POP.podeVerDashboard());
+            syncDashboardData();
+        });
+
+        let syncInterval;
+        async function syncDashboardData() {
+            if (!window.SPG_POP.podeVerDashboard()) return;
+
+            const loaderUi = document.getElementById('header-loader');
+            const percentText = document.getElementById('sync-percent');
+            const topBarContainer = document.getElementById('top-progress-container');
+            const topBar = document.getElementById('top-progress-bar');
+            
+            loaderUi.classList.remove('hidden');
+            loaderUi.classList.add('flex');
+            topBarContainer.classList.remove('hidden');
+            topBar.style.width = '0%';
+            topBar.style.opacity = '1';
+
+            let progress = 0;
+            
+            // Simulação fluida da barra de progresso e porcentagem
+            syncInterval = setInterval(() => {
+                let increment = progress < 50 ? 8 : (progress < 85 ? 3 : 0.5);
+                if (progress < 95) {
+                    progress += increment;
+                    percentText.innerText = Math.floor(progress);
+                    topBar.style.width = `${progress}%`;
+                }
+            }, 100);
+
+            try {
+                dashboardData = await window.SPG_POP.listar();
+                progress = 100;
+            } catch (error) {
+                console.error("Erro ao sincronizar dados:", error);
+                progress = 100;
+            } finally {
+                clearInterval(syncInterval);
+                percentText.innerText = '100';
+                topBar.style.width = '100%';
+                
+                // Desaparece suavemente ao atingir 100%
+                setTimeout(() => {
+                    topBar.style.opacity = '0';
+                    loaderUi.classList.remove('flex');
+                    loaderUi.classList.add('hidden');
+                    setTimeout(() => topBarContainer.classList.add('hidden'), 300);
+                }, 800);
+            }
+        }
+
+        async function enviarDados() {
+            const dataStr = localStorage.getItem(`data_${currentPOP}`);
+            if(!dataStr) {
+                showAlert("Nenhum dado salvo no formulário atual para enviar.", "warning"); return;
+            }
+            
+            const btn = document.getElementById('btn-enviar');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader" class="w-5 h-5 animate-spin"></i> Enviando...`;
+            btn.disabled = true; lucide.createIcons();
+            
+            const data = JSON.parse(dataStr);
+            const popInfo = popsData[currentPOP];
+            const rows = [];
+            
+            const metaBase = [
+                currentPOP.toUpperCase(), popInfo.title, data.meta.data || '', 
+                data.meta.responsavel || '', normalizeSetorValue(data.meta.setor), data.meta.aprovadoPor || '', data.meta.assinaturaDigital || ''
+            ];
+
+            if(data.answers) {
+                popInfo.groups.forEach(group => {
+                    group.questions.forEach(q => {
+                        const ans = data.answers[q.id];
+                        if(ans) rows.push([...metaBase, group.title, q.id, q.text, ans.val || '', ans.obs || '', crypto.randomUUID(), 'PENDENTE']);
+                    });
+                });
+            }
+            if(data.meta.obsGeral) rows.push([...metaBase, 'Geral', 'OBS_GERAL', 'Observações Gerais', 'NC', data.meta.obsGeral, crypto.randomUUID(), 'PENDENTE']);
+
+            if(rows.length === 0) {
+                showAlert("Preencha ao menos uma resposta antes de enviar.", "warning");
+                btn.innerHTML = originalHtml; btn.disabled = false; return;
+            }
+
+            const submissionId = crypto.randomUUID();
+
+            try {
+                const result = await window.SPG_POP.salvar(rows, submissionId);
+                if(result.success) {
+                    showAlert("Dados enviados com sucesso", "success", "Concluído");
+                    syncDashboardData();
+                } else {
+                    showAlert("Erro ao enviar: " + result.error, "error", "Falha no Envio");
+                }
+            } catch (error) {
+                showAlert("Erro de conexão ao enviar os dados. Verifique sua internet.", "error", "Falha de Conexão");
+            } finally {
+                btn.innerHTML = originalHtml; btn.disabled = false; lucide.createIcons();
+            }
+        }
+
+        // O acesso ao dashboard é definido em Cadastro de Usuários
+        function abrirDashboardPop() {
+            if (!window.SPG_POP.podeVerDashboard()) {
+                showAlert("Seu usuário não tem acesso ao Dashboard. Fale com o administrador.", "warning");
+                return;
+            }
+            showDashboard();
+        }
+
+        function showDashboard() {
+            document.getElementById('app-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            initFilters(); applyFilters(); 
+        }
+
+        function closeDashboard() {
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // RELATÓRIO OFICIAL A4 (IMPRESSÃO PARA FISCALIZAÇÃO)
+        // ==========================================
+        function fillReportHeaderForm(cfg) {
+            document.getElementById('report-empresa').value = cfg.empresa || '';
+            document.getElementById('report-cnpj').value = cfg.cnpj || '';
+            document.getElementById('report-endereco').value = cfg.endereco || '';
+            document.getElementById('report-responsavel').value = cfg.responsavel || '';
+            document.getElementById('report-cargo').value = cfg.cargo || '';
+        }
+
+        function renderReportPopCheckboxes(selectedPops) {
+            const container = document.getElementById('report-pop-checkboxes');
+            const pops = Object.keys(popsData);
+            container.innerHTML = pops.map(p => {
+                const checked = selectedPops.includes(p) ? 'checked' : '';
+                return `<label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer p-1 rounded hover:bg-white">
+                    <input type="checkbox" class="report-pop-checkbox w-3.5 h-3.5 accent-green-600 shrink-0" value="${p}" ${checked}>
+                    <span>${p.toUpperCase()} - ${escapeHtml(popsData[p].title)}</span>
+                </label>`;
+            }).join('');
+        }
+
+        function toggleAllReportPops() {
+            const boxes = document.querySelectorAll('.report-pop-checkbox');
+            const allChecked = Array.from(boxes).every(cb => cb.checked);
+            boxes.forEach(cb => { cb.checked = !allChecked; });
+        }
+
+        function clearReportCustomDates() {
+            document.getElementById('report-data-inicio').value = '';
+            document.getElementById('report-data-fim').value = '';
+        }
+
+        function handleReportCustomDateChange() {
+            document.getElementById('report-periodo').value = 'all';
+        }
+
+        function getReportFilterSelections() {
+            return {
+                fPeriod: document.getElementById('report-periodo').value,
+                fStartDate: document.getElementById('report-data-inicio').value,
+                fEndDate: document.getElementById('report-data-fim').value,
+                selectedPops: Array.from(document.querySelectorAll('.report-pop-checkbox:checked')).map(cb => cb.value)
+            };
+        }
+
+        function getFilteredDataForReport(sel) {
+            const fStartDate = parseDashboardDate(sel.fStartDate);
+            const fEndDate = parseDashboardDate(sel.fEndDate);
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const allPopsSelected = sel.selectedPops.length >= Object.keys(popsData).length;
+
+            return dashboardData.filter(row => {
+                const rowPop = row[0]; const rowDateRaw = row[2];
+                if (!allPopsSelected && !sel.selectedPops.includes(rowPop)) return false;
+                const rowDate = parseDashboardDate(rowDateRaw);
+                if ((fStartDate || fEndDate) && !rowDate) return false;
+                if (fStartDate && rowDate < fStartDate) return false;
+                if (fEndDate && rowDate > fEndDate) return false;
+                if (sel.fPeriod !== 'all') {
+                    if (!rowDate) return false;
+                    const diffDays = Math.ceil((today - rowDate) / (1000 * 60 * 60 * 24));
+                    if (sel.fPeriod === 'today' && diffDays !== 0) return false;
+                    if (sel.fPeriod === '7d' && (diffDays > 7 || diffDays < 0)) return false;
+                    if (sel.fPeriod === '30d' && (diffDays > 30 || diffDays < 0)) return false;
+                }
+                return true;
+            });
+        }
+
+        async function openReportHeaderModal() {
+            if (!dashboardData || dashboardData.length === 0) {
+                showAlert('Não há dados sincronizados para gerar o relatório. Clique em "Atualizar dados" antes de imprimir.', 'warning');
+                return;
+            }
+
+            const localCfg = JSON.parse(localStorage.getItem('report_header_config') || '{}');
+            fillReportHeaderForm(localCfg);
+
+            document.getElementById('report-periodo').value = document.getElementById('filter-periodo').value;
+            document.getElementById('report-data-inicio').value = document.getElementById('filter-data-inicio').value;
+            document.getElementById('report-data-fim').value = document.getElementById('filter-data-fim').value;
+            const currentFilterPop = document.getElementById('filter-pop').value;
+            const initialSelectedPops = currentFilterPop === 'all' ? Object.keys(popsData) : [currentFilterPop];
+            renderReportPopCheckboxes(initialSelectedPops);
+
+            document.getElementById('report-header-modal').classList.remove('hidden');
+            document.body.classList.add('modal-open');
+            lucide.createIcons();
+
+            const btn = document.getElementById('btn-report-a4');
+            const originalHtml = btn ? btn.innerHTML : null;
+            if (btn) { btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Carregando dados...`; btn.disabled = true; lucide.createIcons(); }
+
+            try {
+                const config = await window.SPG_POP.lerConfig();
+                if (config && Object.values(config).some(v => v)) {
+                    localStorage.setItem('report_header_config', JSON.stringify(config));
+                    fillReportHeaderForm(config);
+                }
+            } catch (error) {
+                // Sem conexão: mantém os dados salvos localmente neste navegador.
+            } finally {
+                if (btn) { btn.innerHTML = originalHtml; btn.disabled = false; lucide.createIcons(); }
+            }
+        }
+
+        function closeReportHeaderModal() {
+            document.getElementById('report-header-modal').classList.add('hidden');
+            document.body.classList.remove('modal-open');
+        }
+
+        async function confirmReportHeaderAndPrint() {
+            const sel = getReportFilterSelections();
+            if (sel.selectedPops.length === 0) {
+                showAlert('Selecione ao menos um Procedimento (POP) para gerar o relatório.', 'warning');
+                return;
+            }
+
+            const cfg = {
+                empresa: document.getElementById('report-empresa').value.trim(),
+                cnpj: document.getElementById('report-cnpj').value.trim(),
+                endereco: document.getElementById('report-endereco').value.trim(),
+                responsavel: document.getElementById('report-responsavel').value.trim(),
+                cargo: document.getElementById('report-cargo').value.trim()
+            };
+            localStorage.setItem('report_header_config', JSON.stringify(cfg));
+            closeReportHeaderModal();
+            printDashboardReport(cfg, sel);
+
+            try {
+                await window.SPG_POP.salvarConfig(cfg);
+            } catch (error) {
+                // Falha silenciosa: os dados continuam salvos neste navegador e serão reenviados na próxima impressão.
+            }
+        }
+
+        function computeComplianceReportStats(dataToRender) {
+            let totalC = 0, totalNC = 0, totalNA = 0;
+            const avaliacoesSet = new Set();
+            const popStats = {};
+            const sectorStats = {};
+            const statusOcorrencias = { PENDENTE: 0, EM_ANDAMENTO: 0, RESOLVIDO: 0 };
+            const ncRecords = [];
+
+            dataToRender.forEach(row => {
+                const pop = row[0]; const dataAv = row[2]; const resp = row[3] || 'N/A';
+                const setor = normalizeSetorValue(row[4]) || 'N/A';
+                const qText = row[9]; const resposta = row[10];
+                const observacao = row[11] ? String(row[11]).trim() : '';
+
+                let dateStr = 'Sem Data';
+                if (dataAv) {
+                    const d = new Date(dataAv);
+                    if (!isNaN(d.getTime())) dateStr = d.toISOString().split('T')[0];
+                }
+
+                if (pop && dataAv && resposta) {
+                    avaliacoesSet.add(`${pop}_${dateStr}_${resp}_${setor}`);
+                }
+
+                if (!popStats[pop]) popStats[pop] = { c: 0, nc: 0, na: 0 };
+                if (!sectorStats[setor]) sectorStats[setor] = { c: 0, nc: 0 };
+
+                if (resposta === 'C') {
+                    totalC++; popStats[pop].c++; sectorStats[setor].c++;
+                } else if (resposta === 'NC') {
+                    totalNC++; popStats[pop].nc++; sectorStats[setor].nc++;
+                    const statusRaw = (row[13] || 'PENDENTE').toString().toUpperCase();
+                    const status = (statusRaw === 'EM_ANDAMENTO' || statusRaw === 'RESOLVIDO') ? statusRaw : 'PENDENTE';
+                    statusOcorrencias[status] = (statusOcorrencias[status] || 0) + 1;
+                    ncRecords.push({
+                        data: dataAv, pop, setor, qText, observacao, responsavel: resp, status,
+                        dataResolucao: row[16] || '', obsResolucao: row[17] || ''
+                    });
+                } else if (resposta === 'NA') {
+                    totalNA++; popStats[pop].na++;
+                }
+            });
+
+            const totalRespondidas = totalC + totalNC;
+            const conformidadeGeral = totalRespondidas === 0 ? 0 : Math.round((totalC / totalRespondidas) * 100);
+
+            ncRecords.sort((a, b) => {
+                const dA = parseDashboardDate(a.data)?.getTime() || 0;
+                const dB = parseDashboardDate(b.data)?.getTime() || 0;
+                return dB - dA;
+            });
+
+            return { totalAvaliacoes: avaliacoesSet.size, totalC, totalNC, totalNA, conformidadeGeral, popStats, sectorStats, statusOcorrencias, ncRecords };
+        }
+
+        function getReportPeriodLabel(sel) {
+            const labels = { all: 'Todo o Histórico Disponível', today: 'Hoje', '7d': 'Últimos 7 dias', '30d': 'Últimos 30 dias' };
+            let periodo = labels[sel.fPeriod] || 'Todo o Histórico Disponível';
+            if (sel.fStartDate || sel.fEndDate) {
+                const fmt = (v) => v ? new Date(`${v}T00:00:00`).toLocaleDateString('pt-BR') : '...';
+                periodo = `${fmt(sel.fStartDate)} até ${fmt(sel.fEndDate)}`;
+            }
+            const allPopsSelected = sel.selectedPops.length >= Object.keys(popsData).length;
+            const popLabel = allPopsSelected
+                ? 'Todos os Procedimentos (POPs)'
+                : sel.selectedPops.map(p => `${p.toUpperCase()} - ${popsData[p] ? popsData[p].title : ''}`).join('; ');
+            return { periodo, popLabel };
+        }
+
+        function printDashboardReport(cfg, sel) {
+            cfg = cfg || JSON.parse(localStorage.getItem('report_header_config') || '{}');
+            sel = sel || getReportFilterSelections();
+            const stats = computeComplianceReportStats(getFilteredDataForReport(sel));
+            const { periodo, popLabel } = getReportPeriodLabel(sel);
+            const now = new Date();
+            const emissao = `${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+            const docCode = `REL-POP-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
+            const fmtDate = (v) => {
+                if (!v) return '-';
+                const d = parseDashboardDate(v);
+                return d ? d.toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : String(v);
+            };
+
+            const popRows = Object.entries(stats.popStats).map(([pop, s]) => {
+                const total = s.c + s.nc;
+                const pct = total === 0 ? '-' : `${Math.round((s.c / total) * 100)}%`;
+                const title = popsData[pop] ? popsData[pop].title : '';
+                return `<tr><td>${escapeHtml(pop ? pop.toUpperCase() : 'N/A')}</td><td>${escapeHtml(title)}</td><td class="text-center">${s.c}</td><td class="text-center">${s.nc}</td><td class="text-center">${s.na}</td><td class="text-center">${pct}</td></tr>`;
+            }).join('') || '<tr><td colspan="6" class="text-center">Sem dados no período selecionado.</td></tr>';
+
+            const sectorRows = Object.entries(stats.sectorStats).map(([setor, s]) => {
+                const total = s.c + s.nc;
+                const pct = total === 0 ? '-' : `${Math.round((s.c / total) * 100)}%`;
+                return `<tr><td>${escapeHtml(setor)}</td><td class="text-center">${s.c}</td><td class="text-center">${s.nc}</td><td class="text-center">${pct}</td></tr>`;
+            }).join('') || '<tr><td colspan="4" class="text-center">Sem dados no período selecionado.</td></tr>';
+
+            const ncRows = stats.ncRecords.map(r => {
+                const statusLabel = { PENDENTE: 'Pendente', EM_ANDAMENTO: 'Em Andamento', RESOLVIDO: 'Resolvido' }[r.status] || r.status;
+                return `<tr>
+                    <td>${fmtDate(r.data)}</td>
+                    <td>${escapeHtml(r.pop ? r.pop.toUpperCase() : '-')}</td>
+                    <td>${escapeHtml(r.setor)}</td>
+                    <td>${escapeHtml(r.qText || '')}</td>
+                    <td>${escapeHtml(r.observacao) || '<span class="muted">Sem observação</span>'}</td>
+                    <td>${escapeHtml(r.responsavel)}</td>
+                    <td>${statusLabel}</td>
+                    <td>${r.status === 'RESOLVIDO' ? fmtDate(r.dataResolucao) : '-'}</td>
+                    <td>${r.status === 'RESOLVIDO' ? (escapeHtml(r.obsResolucao) || '-') : '-'}</td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="9" class="text-center">Nenhuma não conformidade registrada no período selecionado.</td></tr>';
+
+            const html = `
+                <div class="dash-report-header">
+                    <img src="logo-pop.png" alt="Logo" class="dash-report-logo">
+                    <div class="dash-report-titles">
+                        <h1>Relatório de Conformidade de Procedimentos Operacionais Padronizados (POP)</h1>
+                        <p>Documento de autocontrole para fins de comprovação perante órgãos fiscalizadores (Ministério do Trabalho e Emprego, Vigilância Sanitária e demais auditorias).</p>
+                    </div>
+                    <div class="dash-report-doc-meta">
+                        <span>Documento nº: <strong>${escapeHtml(docCode)}</strong></span>
+                        <span>Emitido em: <strong>${escapeHtml(emissao)}</strong></span>
+                    </div>
+                </div>
+
+                <table class="dash-report-info-table">
+                    <tr>
+                        <td class="label">Empresa / Razão Social:</td><td>${escapeHtml(cfg.empresa) || '&nbsp;'}</td>
+                        <td class="label">CNPJ:</td><td>${escapeHtml(cfg.cnpj) || '&nbsp;'}</td>
+                    </tr>
+                    <tr><td class="label">Endereço / Unidade:</td><td colspan="3">${escapeHtml(cfg.endereco) || '&nbsp;'}</td></tr>
+                    <tr>
+                        <td class="label">Responsável Técnico:</td><td>${escapeHtml(cfg.responsavel) || '&nbsp;'}</td>
+                        <td class="label">Cargo:</td><td>${escapeHtml(cfg.cargo) || '&nbsp;'}</td>
+                    </tr>
+                    <tr><td class="label">Período analisado:</td><td colspan="3">${escapeHtml(periodo)}</td></tr>
+                    <tr><td class="label">Procedimento(s):</td><td colspan="3">${escapeHtml(popLabel)}</td></tr>
+                </table>
+
+                <h2 class="dash-report-section-title">1. Resumo Executivo de Conformidade</h2>
+                <table class="dash-report-kpi-table">
+                    <tr>
+                        <td><span class="kpi-value">${stats.totalAvaliacoes}</span><span class="kpi-label">Avaliações Realizadas</span></td>
+                        <td><span class="kpi-value">${stats.conformidadeGeral}%</span><span class="kpi-label">Conformidade Geral</span></td>
+                        <td><span class="kpi-value">${stats.totalC}</span><span class="kpi-label">Itens Conformes</span></td>
+                        <td><span class="kpi-value">${stats.totalNC}</span><span class="kpi-label">Itens Não Conformes</span></td>
+                        <td><span class="kpi-value">${stats.totalNA}</span><span class="kpi-label">Itens Não Avaliados</span></td>
+                    </tr>
+                </table>
+                <table class="dash-report-kpi-table">
+                    <tr>
+                        <td><span class="kpi-value">${stats.statusOcorrencias.PENDENTE || 0}</span><span class="kpi-label">Ocorrências Pendentes</span></td>
+                        <td><span class="kpi-value">${stats.statusOcorrencias.EM_ANDAMENTO || 0}</span><span class="kpi-label">Em Andamento</span></td>
+                        <td><span class="kpi-value">${stats.statusOcorrencias.RESOLVIDO || 0}</span><span class="kpi-label">Resolvidas</span></td>
+                    </tr>
+                </table>
+
+                <h2 class="dash-report-section-title">2. Desempenho por Procedimento (POP)</h2>
+                <table class="dash-report-table">
+                    <thead><tr><th>POP</th><th>Descrição</th><th>Conformes</th><th>Não Conformes</th><th>Não Avaliados</th><th>% Conformidade</th></tr></thead>
+                    <tbody>${popRows}</tbody>
+                </table>
+
+                <h2 class="dash-report-section-title">3. Desempenho por Setor</h2>
+                <table class="dash-report-table">
+                    <thead><tr><th>Setor</th><th>Conformes</th><th>Não Conformes</th><th>% Conformidade</th></tr></thead>
+                    <tbody>${sectorRows}</tbody>
+                </table>
+
+                <h2 class="dash-report-section-title">4. Registro Detalhado de Não Conformidades e Ações Corretivas</h2>
+                <table class="dash-report-table dash-report-nc-table">
+                    <thead><tr><th>Data</th><th>POP</th><th>Setor</th><th>Item Verificado</th><th>Observação</th><th>Responsável</th><th>Status</th><th>Data Resolução</th><th>Ação Corretiva</th></tr></thead>
+                    <tbody>${ncRows}</tbody>
+                </table>
+
+                <div class="dash-report-declaration">
+                    <p>Declaramos, para os devidos fins, que as informações constantes neste relatório refletem fielmente os registros de autocontrole de Procedimentos Operacionais Padronizados (POPs) realizados no período acima indicado, gerados automaticamente pelo Sistema de Gestão de Qualidade da unidade.</p>
+                </div>
+
+                <div class="dash-report-signatures">
+                    <div class="sig-block">
+                        <span class="sig-line"></span>
+                        <span class="sig-label">Responsável Técnico / Elaborado por</span>
+                        <span class="sig-sub">${escapeHtml(cfg.responsavel) || ''}${cfg.cargo ? ' - ' + escapeHtml(cfg.cargo) : ''}</span>
+                    </div>
+                    <div class="sig-block">
+                        <span class="sig-line"></span>
+                        <span class="sig-label">Aprovado por (Gestão)</span>
+                        <span class="sig-sub">Data: ___/___/______</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('dashboard-print-report').innerHTML = html;
+            document.body.classList.add('printing-dashboard-report');
+            setTimeout(() => window.print(), 50);
+        }
+
+        window.addEventListener('afterprint', () => {
+            document.body.classList.remove('printing-dashboard-report');
+        });
+
+        async function handleManualSync() {
+            const btn = document.getElementById('btn-sync-dash');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Atualizando...`;
+            btn.disabled = true;
+            lucide.createIcons();
+
+            await syncDashboardData();
+            applyFilters();
+
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+            lucide.createIcons();
+        }
+
+        function initFilters() {
+            const popsList = [...new Set(dashboardData.map(r => r[0]).filter(Boolean))];
+            const popSelect = document.getElementById('filter-pop');
+            popSelect.innerHTML = '<option value="all">Todos os POPs</option>' + popsList.map(p => `<option value="${p}">${p.toUpperCase()}</option>`).join('');
+            updateQuestionFilter();
+        }
+
+        function updateQuestionFilter() {
+            const selectedPop = document.getElementById('filter-pop').value;
+            const qSelect = document.getElementById('filter-pergunta');
+            const questionsMap = new Map(); 
+            
+            dashboardData.forEach(row => {
+                const rPop = row[0]; const rId = row[8]; const rText = row[9];
+                if (rId && rId !== 'OBS_GERAL') {
+                    if (selectedPop === 'all' || rPop === selectedPop) questionsMap.set(rId, rText);
+                }
+            });
+            qSelect.innerHTML = '<option value="all">Todas as Perguntas</option>';
+            questionsMap.forEach((text, id) => {
+                const shortText = text.length > 50 ? text.substring(0, 50) + '...' : text;
+                qSelect.innerHTML += `<option value="${id}">${shortText}</option>`;
+            });
+        }
+
+        function parseDashboardDate(value) {
+            if (!value) return null;
+            if (value instanceof Date && !isNaN(value.getTime())) {
+                const parsedDate = new Date(value);
+                parsedDate.setHours(0,0,0,0);
+                return parsedDate;
+            }
+
+            const rawValue = String(value).trim();
+            const brDateMatch = rawValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (brDateMatch) {
+                const parsedDate = new Date(Number(brDateMatch[3]), Number(brDateMatch[2]) - 1, Number(brDateMatch[1]));
+                parsedDate.setHours(0,0,0,0);
+                return isNaN(parsedDate.getTime()) ? null : parsedDate;
+            }
+
+            const isoDateMatch = rawValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (isoDateMatch) {
+                const parsedDate = new Date(Number(isoDateMatch[1]), Number(isoDateMatch[2]) - 1, Number(isoDateMatch[3]));
+                parsedDate.setHours(0,0,0,0);
+                return isNaN(parsedDate.getTime()) ? null : parsedDate;
+            }
+
+            const parsedDate = new Date(rawValue);
+            parsedDate.setHours(0,0,0,0);
+            return isNaN(parsedDate.getTime()) ? null : parsedDate;
+        }
+
+        function handleCalendarFilterChange() {
+            document.getElementById('filter-periodo').value = 'all';
+            applyFilters();
+        }
+
+        function clearCalendarFilter() {
+            document.getElementById('filter-data-inicio').value = '';
+            document.getElementById('filter-data-fim').value = '';
+            applyFilters();
+        }
+
+        function clearDashboardFilters() {
+            document.getElementById('filter-periodo').value = 'all';
+            document.getElementById('filter-data-inicio').value = '';
+            document.getElementById('filter-data-fim').value = '';
+            document.getElementById('filter-pop').value = 'all';
+            updateQuestionFilter();
+            document.getElementById('filter-pergunta').value = 'all';
+            const detailStatus = document.getElementById('detail-status');
+            if (detailStatus) detailStatus.value = 'PENDENTE';
+            applyFilters();
+        }
+
+        function updateChartLabelsButton() {
+            const button = document.getElementById('btn-toggle-chart-labels');
+            if (!button) return;
+
+            button.classList.toggle('bg-emerald-600', showChartLabels);
+            button.classList.toggle('text-white', showChartLabels);
+            button.classList.toggle('border-emerald-600', showChartLabels);
+            button.classList.toggle('bg-white', !showChartLabels);
+            button.classList.toggle('text-gray-700', !showChartLabels);
+            button.classList.toggle('border-gray-200', !showChartLabels);
+            button.innerHTML = showChartLabels
+                ? '<i data-lucide="tags" class="w-4 h-4"></i> Ocultar rótulos dos gráficos'
+                : '<i data-lucide="tags" class="w-4 h-4"></i> Mostrar rótulos dos gráficos';
+            lucide.createIcons();
+        }
+
+        function toggleChartLabels() {
+            showChartLabels = !showChartLabels;
+            updateChartLabelsButton();
+            [chartGaugeInstance, chartTrendInstance, chartHeatmapInstance, chartSectorInstance, chartStatusOverviewInstance, chartConformityWinsInstance, chartPiePopNCInstance, chartPieQuestionNCInstance, chartParetoInstance]
+                .forEach(chart => { if (chart) chart.update(); });
+        }
+
+        function getFilteredDashboardData() {
+            const fPeriod = document.getElementById('filter-periodo').value;
+            const fPop = document.getElementById('filter-pop').value;
+            const fQuestion = document.getElementById('filter-pergunta').value;
+            const fStartDate = parseDashboardDate(document.getElementById('filter-data-inicio').value);
+            const fEndDate = parseDashboardDate(document.getElementById('filter-data-fim').value);
+            const today = new Date(); today.setHours(0,0,0,0);
+
+            return dashboardData.filter(row => {
+                const rowPop = row[0]; const rowDateRaw = row[2]; const rowId = row[8];
+                if (fPop !== 'all' && rowPop !== fPop) return false;
+                if (fQuestion !== 'all' && rowId !== fQuestion) return false;
+                const rowDate = parseDashboardDate(rowDateRaw);
+                if ((fStartDate || fEndDate) && !rowDate) return false;
+                if (fStartDate && rowDate < fStartDate) return false;
+                if (fEndDate && rowDate > fEndDate) return false;
+                if (fPeriod !== 'all') {
+                    if (!rowDate) return false;
+                    const diffDays = Math.ceil((today - rowDate) / (1000 * 60 * 60 * 24));
+                    if (fPeriod === 'today' && diffDays !== 0) return false;
+                    if (fPeriod === '7d' && (diffDays > 7 || diffDays < 0)) return false;
+                    if (fPeriod === '30d' && (diffDays > 30 || diffDays < 0)) return false;
+                }
+                return true;
+            });
+        }
+
+        function applyFilters() {
+            renderDashboardCardsAndCharts(getFilteredDashboardData());
+        }
+
+        function renderDashboardCardsAndCharts(dataToRender) {
+            let totalC = 0; let totalNC = 0; let totalNA = 0;
+            const avaliacoesSet = new Set(); 
+            const popConformidade = {}; 
+            const questionStats = {}; 
+            const ncByPopCount = {};
+            const ncByQuestionCount = {};
+            
+            const trendStats = {}; 
+            const sectorStats = {};
+            const auditorStats = {};
+            const dayOfWeekNCs = { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0 }; 
+            const daysWithData = {}; 
+            const statusOcorrencias = { PENDENTE: 0, EM_ANDAMENTO: 0, RESOLVIDO: 0 };
+
+            dataToRender.forEach(row => {
+                const pop = row[0]; const dataAv = row[2]; const resp = row[3] || 'N/A'; 
+                const setorNormalizado = normalizeSetorValue(row[4]);
+                const setor = setorNormalizado || 'N/A'; const qId = row[8]; const qText = row[9]; 
+                const resposta = row[10]; const observacao = row[11];
+                const observacaoLimpa = observacao ? String(observacao).trim() : '';
+
+                let dateStr = 'Sem Data'; let dayOfWeek = -1;
+                if(dataAv) {
+                    const d = new Date(dataAv);
+                    if(!isNaN(d.getTime())) {
+                        dateStr = d.toISOString().split('T')[0];
+                        dayOfWeek = d.getDay(); // 0(Dom) a 6(Sáb)
+                    }
+                }
+
+                if(pop && dataAv && resp) {
+                    const avKey = `${pop}_${dateStr}_${resp}_${setor}`;
+                    if(!avaliacoesSet.has(avKey)) {
+                        avaliacoesSet.add(avKey);
+                        auditorStats[resp] = (auditorStats[resp] || 0) + 1;
+                    }
+                }
+
+                if (!popConformidade[pop]) popConformidade[pop] = { c: 0, nc: 0, na: 0 };
+                if (!trendStats[dateStr]) trendStats[dateStr] = { c: 0, nc: 0 };
+                if (!sectorStats[setor]) sectorStats[setor] = { c: 0, nc: 0 };
+                if (!daysWithData[dateStr]) daysWithData[dateStr] = { ncCount: 0, cCount: 0, ncs: [] };
+
+                if (qId) {
+                    if (!questionStats[qId]) questionStats[qId] = { pop: pop, id: qId, text: qText, c: 0, nc: 0, na: 0, historico: [] };
+                    if (resposta === 'C') questionStats[qId].c++;
+                    else if (resposta === 'NC') {
+                        questionStats[qId].nc++;
+                        questionStats[qId].historico.push({
+                            data: dataAv,
+                            setor: setor,
+                            obs: observacaoLimpa,
+                            responsavel: resp,
+                            idUnico: row[12],
+                            status: row[13] || 'PENDENTE',
+                            dataResolucao: row[16] || '',
+                            obsResolucao: row[17] || ''
+                        });
+                    }
+                    else if (resposta === 'NA') questionStats[qId].na++;
+                }
+
+                if (resposta === 'C') { 
+                    totalC++; popConformidade[pop].c++; trendStats[dateStr].c++; sectorStats[setor].c++;
+                    if(dateStr !== 'Sem Data') daysWithData[dateStr].cCount++;
+                } else if (resposta === 'NC') { 
+                    totalNC++; popConformidade[pop].nc++; trendStats[dateStr].nc++; sectorStats[setor].nc++;
+                    const statusRaw = (row[13] || 'PENDENTE').toString().toUpperCase();
+                    const statusNormalizado = statusRaw === 'EM_ANDAMENTO' || statusRaw === 'RESOLVIDO' ? statusRaw : 'PENDENTE';
+                    statusOcorrencias[statusNormalizado] = (statusOcorrencias[statusNormalizado] || 0) + 1;
+                    if(dayOfWeek >= 0) dayOfWeekNCs[dayOfWeek]++;
+                    if(dateStr !== 'Sem Data') {
+                        daysWithData[dateStr].ncCount++;
+                        if(qId && qId !== 'OBS_GERAL') daysWithData[dateStr].ncs.push(qId);
+                    }
+                    ncByPopCount[pop] = (ncByPopCount[pop] || 0) + 1;
+                    if (qId && qId !== 'OBS_GERAL') {
+                        const shortText = qText.length > 25 ? qText.substring(0, 25) + '...' : qText;
+                        ncByQuestionCount[shortText] = (ncByQuestionCount[shortText] || 0) + 1;
+                    }
+                } else if (resposta === 'NA') { totalNA++; popConformidade[pop].na++; }
+            });
+
+            const totalRespondidas = totalC + totalNC;
+            const porcentagemGeral = totalRespondidas === 0 ? 0 : Math.round((totalC / totalRespondidas) * 100);
+            
+            document.getElementById('dash-total-av').innerText = avaliacoesSet.size;
+            document.getElementById('dash-conformidade').innerText = `${porcentagemGeral}%`;
+            document.getElementById('dash-total-c').innerText = totalC;
+            document.getElementById('dash-total-nc').innerText = totalNC;
+            const qtdPendente = statusOcorrencias.PENDENTE || 0;
+            const qtdAndamento = statusOcorrencias.EM_ANDAMENTO || 0;
+            const qtdResolvido = statusOcorrencias.RESOLVIDO || 0;
+            const qtdCorrigir = qtdPendente + qtdAndamento;
+            document.getElementById('kpi-ocorrencias-corrigir').innerText = qtdCorrigir;
+            document.getElementById('kpi-ocorrencias-pendente').innerText = qtdPendente;
+            document.getElementById('kpi-ocorrencias-andamento').innerText = qtdAndamento;
+            document.getElementById('kpi-ocorrencias-resolvidas').innerText = qtdResolvido;
+
+            let streak = 0;
+            const sortedDates = Object.keys(daysWithData).filter(d => d !== 'Sem Data').sort((a, b) => b.localeCompare(a));
+            for(let d of sortedDates) {
+                if(daysWithData[d].ncCount === 0 && daysWithData[d].cCount > 0) {
+                    streak++;
+                } else if (daysWithData[d].ncCount > 0) {
+                    break; 
+                }
+            }
+            document.getElementById('dash-streak').innerText = streak;
+
+            [chartGaugeInstance, chartTrendInstance, chartHeatmapInstance, chartSectorInstance, chartStatusOverviewInstance, chartConformityWinsInstance, chartPiePopNCInstance, chartPieQuestionNCInstance, chartParetoInstance].forEach(c => { if(c) c.destroy(); });
+
+            chartGaugeInstance = new Chart(document.getElementById('chartGauge').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Conformidade Atual', 'Falta p/ 100%'],
+                    datasets: [{ data: [porcentagemGeral, 100 - porcentagemGeral], backgroundColor: [porcentagemGeral >= 95 ? '#10b981' : (porcentagemGeral >= 80 ? '#f59e0b' : '#ef4444'), '#e5e7eb'], borderWidth: 0, borderRadius: [4, 0] }]
+                },
+                options: { rotation: -90, circumference: 180, cutout: '75%', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false }, chartValueLabels: { display: false } } }
+            });
+
+            chartHeatmapInstance = new Chart(document.getElementById('chartHeatmap').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+                    datasets: [{ label: 'Não Conformidades', data: Object.values(dayOfWeekNCs), backgroundColor: '#3b82f6', borderRadius: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
+            });
+
+            const trendLabels = sortedDates.reverse().map(d => { const p = d.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}` : d; });
+            const trendDataC = sortedDates.map(d => trendStats[d].c);
+            const trendDataNC = sortedDates.map(d => trendStats[d].nc);
+            
+            const ctxTrend = document.getElementById('chartTrend').getContext('2d');
+            const gradientC = ctxTrend.createLinearGradient(0, 0, 0, 220);
+            gradientC.addColorStop(0, 'rgba(16, 185, 129, 0.4)'); 
+            gradientC.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+            const gradientNC = ctxTrend.createLinearGradient(0, 0, 0, 220);
+            gradientNC.addColorStop(0, 'rgba(239, 68, 68, 0.4)'); 
+            gradientNC.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+            chartTrendInstance = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: trendLabels,
+                    datasets: [
+                        { label: 'Conformes', data: trendDataC, borderColor: '#10b981', backgroundColor: gradientC, tension: 0.4, borderWidth: 3, fill: true, pointRadius: 0, pointHoverRadius: 6 },
+                        { label: 'Não Conformes', data: trendDataNC, borderColor: '#ef4444', backgroundColor: gradientNC, tension: 0.4, borderWidth: 3, fill: true, pointRadius: 0, pointHoverRadius: 6 }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, 
+                    plugins: { legend: { position: 'top', labels: { usePointStyle: false, boxWidth: 16, boxHeight: 3 } }, tooltip: { backgroundColor: 'rgba(17, 24, 39, 0.9)', titleFont: { size: 13, family: 'Inter, sans-serif' }, bodyFont: { size: 12, family: 'Inter, sans-serif' }, padding: 10, cornerRadius: 8, displayColors: true } },
+                    scales: { y: { beginAtZero: true, grid: { color: 'rgba(226, 232, 240, 0.6)', drawBorder: false }, ticks: { color: '#64748b' } }, x: { grid: { display: false, drawBorder: false }, ticks: { color: '#64748b' } } } 
+                }
+            });
+
+            const sortedSectors = Object.entries(sectorStats).map(([s, counts]) => {
+                const total = counts.c + counts.nc;
+                return { setor: s, c: counts.c, nc: counts.nc, total: total };
+            }).sort((a, b) => b.total - a.total).slice(0, 8); 
+
+            chartSectorInstance = new Chart(document.getElementById('chartSector').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: sortedSectors.map(s => s.setor),
+                    datasets: [
+                        { label: 'Conformes', data: sortedSectors.map(s => s.c), backgroundColor: '#10b981', borderRadius: 4 },
+                        { label: 'Não Conformes', data: sortedSectors.map(s => s.nc), backgroundColor: '#ef4444', borderRadius: 4 }
+                    ]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }, y: { stacked: true } } }
+            });
+
+            chartStatusOverviewInstance = new Chart(document.getElementById('chartStatusOverview').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendente', 'Em Andamento', 'Resolvido'],
+                    datasets: [{ data: [qtdPendente, qtdAndamento, qtdResolvido], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+            });
+
+            const sortedAuditors = Object.entries(auditorStats).sort((a,b) => b[1] - a[1]);
+            let auditorHtml = '';
+            sortedAuditors.slice(0, 6).forEach((aud, idx) => {
+                const medal = idx === 0 ? '🏆' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : ''));
+                auditorHtml += `<div class="flex justify-between items-center p-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition"><span class="text-sm text-gray-700 font-medium flex items-center gap-2">${medal} ${aud[0]}</span><span class="font-bold text-xs text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full shadow-sm">${aud[1]} val.</span></div>`;
+            });
+            document.getElementById('auditor-list').innerHTML = auditorHtml || '<p class="text-sm text-gray-400 p-2">Nenhum dado.</p>';
+
+            const conformityWins = Object.entries(popConformidade).map(([pop, counts]) => ({ pop: pop ? pop.toUpperCase() : 'N/A', conformes: counts.c || 0 })).filter(item => item.conformes > 0).sort((a, b) => b.conformes - a.conformes).slice(0, 8);
+
+            chartConformityWinsInstance = new Chart(document.getElementById('chartConformityWins').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: conformityWins.length ? conformityWins.map(item => item.pop) : ['Sem dados'],
+                    datasets: [{ label: 'Perguntas Conformes', data: conformityWins.length ? conformityWins.map(item => item.conformes) : [0], backgroundColor: '#2563eb', borderRadius: 6 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { display: false } } }
+            });
+
+            const paletaCoresFoco = ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#06b6d4', '#3b82f6', '#8b5cf6'];
+            
+            let piePopLabels = Object.keys(ncByPopCount).map(p => p.toUpperCase());
+            let piePopData = Object.values(ncByPopCount);
+            let piePopBg = paletaCoresFoco;
+            if (piePopData.length === 0) { piePopLabels = ['100% Conforme (Sem Falhas)']; piePopData = [1]; piePopBg = ['#10b981']; }
+
+            chartPiePopNCInstance = new Chart(document.getElementById('chartPiePopNC').getContext('2d'), { type: 'pie', data: { labels: piePopLabels, datasets: [{ data: piePopData, backgroundColor: piePopBg }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } } } } });
+            
+            const topQForPie = Object.entries(ncByQuestionCount).sort((a,b) => b[1] - a[1]).slice(0,6);
+            let pieQLabels = topQForPie.map(i => i[0]);
+            let pieQData = topQForPie.map(i => i[1]);
+            let pieQBg = paletaCoresFoco;
+            if (pieQData.length === 0) { pieQLabels = ['Nenhuma pergunta com falha']; pieQData = [1]; pieQBg = ['#10b981']; }
+
+            chartPieQuestionNCInstance = new Chart(document.getElementById('chartPieQuestionNC').getContext('2d'), { type: 'pie', data: { labels: pieQLabels, datasets: [{ data: pieQData, backgroundColor: pieQBg }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } } } } });
+
+            const alertsContainer = document.getElementById('ai-alerts-container');
+            let alertsHtml = '';
+            const last3Dates = Object.keys(daysWithData).filter(d => d !== 'Sem Data').sort((a, b) => b.localeCompare(a)).slice(0, 3);
+            if(last3Dates.length === 3) {
+                const d1 = daysWithData[last3Dates[0]].ncs; const d2 = daysWithData[last3Dates[1]].ncs; const d3 = daysWithData[last3Dates[2]].ncs;
+                const uniqueRecurring = [...new Set(d1.filter(value => d2.includes(value) && d3.includes(value)))];
+                
+                uniqueRecurring.forEach(qId => {
+                     const qText = questionStats[qId] ? questionStats[qId].text : qId;
+                     alertsHtml += `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg shadow-sm text-sm text-yellow-800 flex items-start gap-3 print:break-inside-avoid"><i data-lucide="bot" class="w-5 h-5 text-yellow-600 mt-0.5 shrink-0"></i> <div><strong class="block uppercase tracking-wider text-xs mb-1">Alerta da IA de Reincidência Crítica</strong>A falha <i>"${qText}"</i> ocorreu em 3 dias distintos recentes. Necessário plano de ação imediato para quebra de rotina errada.</div></div>`;
+                });
+            }
+            alertsContainer.innerHTML = alertsHtml;
+
+            let rankingNcs = Object.values(questionStats).filter(q => q.nc > 0).map(q => { q.taxaErro = (q.nc / (q.c + q.nc)) * 100; return q; });
+            rankingNcs.sort((a, b) => { if (b.nc !== a.nc) return b.nc - a.nc; return b.taxaErro - a.taxaErro; });
+
+            const topOfensores = rankingNcs.slice(0, 10);
+            
+            let paretoLabels = topOfensores.map(q => q.text.length > 35 ? q.text.substring(0, 35) + '...' : q.text);
+            let paretoData = topOfensores.map(q => q.nc);
+            let paretoBg = '#ef4444';
+
+            if (paretoData.length === 0) { paretoLabels = ['Tudo Conforme no período selecionado!']; paretoData = [1]; paretoBg = '#10b981'; }
+
+            chartParetoInstance = new Chart(document.getElementById('chartPareto').getContext('2d'), {
+                type: 'bar',
+                data: { labels: paretoLabels, datasets: [{ label: 'Qtd Não Conformidades', data: paretoData, backgroundColor: paretoBg, borderRadius: 4 }] },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { tooltip: { callbacks: { title: function(ctx) { return topOfensores.length ? topOfensores[ctx[0].dataIndex].text : 'Nenhum erro reportado'; } } } } }
+            });
+            updateChartLabelsButton();
+
+            const accordionContainer = document.getElementById('ncs-accordion-list');
+            accordionContainer.innerHTML = ''; 
+            
+            const detalheSort = document.getElementById('detail-sort')?.value || 'recentes';
+            const detalheStatus = document.getElementById('detail-status')?.value || 'PENDENTE';
+            const ncsComObservacao = rankingNcs
+                .map(q => {
+                    const historicoFiltrado = q.historico
+                        .filter(h => {
+                            const status = (typeof h.status === 'string') ? h.status.toUpperCase() : (h.status === true ? 'RESOLVIDO' : 'PENDENTE');
+                            return detalheStatus === 'all' || status === detalheStatus;
+                        })
+                        .sort((a, b) => {
+                            const dA = parseDashboardDate(a.data)?.getTime() || 0;
+                            const dB = parseDashboardDate(b.data)?.getTime() || 0;
+                            return detalheSort === 'antigas' ? dA - dB : dB - dA;
+                        });
+                    const refDate = historicoFiltrado.length > 0 ? (parseDashboardDate(historicoFiltrado[0].data)?.getTime() || 0) : (detalheSort === 'antigas' ? Number.MAX_SAFE_INTEGER : -1);
+                    return { ...q, historico: historicoFiltrado, refDate };
+                })
+                .filter(q => q.historico.length > 0)
+                .sort((a, b) => detalheSort === 'antigas' ? a.refDate - b.refDate : b.refDate - a.refDate);
+
+            if (ncsComObservacao.length === 0) {
+                accordionContainer.innerHTML = `<div class="text-emerald-600 font-medium text-sm p-4 bg-emerald-50 rounded border border-emerald-100 flex items-center gap-2"><i data-lucide="check-circle" class="w-5 h-5"></i> Nenhuma ação com observação registrada no período selecionado.</div>`;
+            } else {
+                ncsComObservacao.forEach((q) => {
+                    const iaSuggestionText = AIOfflineRules[q.id] || AIOfflineRules['default'];
+                    const iaBlock = `<div class="bg-indigo-50 border border-indigo-100 rounded p-3 mb-4 flex items-start gap-3"><div class="bg-indigo-200 p-1.5 rounded-full shrink-0"><i data-lucide="sparkles" class="w-4 h-4 text-indigo-700"></i></div><div><h6 class="text-xs font-bold text-indigo-800 uppercase tracking-wide mb-1">Guia de Solução da IA</h6><p class="text-sm text-indigo-900">${iaSuggestionText}</p></div></div>`;
+
+                    let historicoHtml = '';
+                    q.historico.forEach(h => {
+                        let dF = h.data; if(dF.includes('T') || dF.includes('-')) dF = new Date(dF).toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+                        const status = (typeof h.status === 'string') ? h.status.toUpperCase() : (h.status === true ? 'RESOLVIDO' : 'PENDENTE');
+                        let statusColor = status === 'RESOLVIDO' ? 'emerald' : (status === 'EM_ANDAMENTO' ? 'blue' : 'red');
+
+                        let selectHtml = '';
+                        if (h.idUnico) {
+                            selectHtml = `<div class="mt-2"><label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Status desta ocorrência</label><select data-previous="${status}" onchange="onStatusSelectChange('${h.idUnico}', this.value, this)" class="status-select text-${statusColor}-700"><option value="PENDENTE" ${status === 'PENDENTE' ? 'selected' : ''}>PENDENTE</option><option value="EM_ANDAMENTO" ${status === 'EM_ANDAMENTO' ? 'selected' : ''}>EM ANDAMENTO</option><option value="RESOLVIDO" ${status === 'RESOLVIDO' ? 'selected' : ''}>RESOLVIDO</option></select></div>`;
+                        } else {
+                            selectHtml = `<div class="mt-2 text-[10px] font-bold uppercase tracking-wide text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1 w-fit">Sem ID para atualizar status</div>`;
+                        }
+
+                        const statusBadge = `<span class="text-[10px] font-bold uppercase rounded px-2 py-1 bg-${statusColor}-50 text-${statusColor}-700 border border-${statusColor}-200">${status.replace('_', ' ')}</span>`;
+                        const obsHtml = h.obs ? `<p class="text-xs text-gray-700 italic border-l-2 border-${statusColor}-400 pl-2 ml-1 mt-2">"${h.obs}"</p>` : `<p class="text-xs text-gray-400 italic border-l-2 border-gray-300 pl-2 ml-1 mt-2">Sem observação informada.</p>`;
+
+                        let resolucaoHtml = '';
+                        if (status === 'RESOLVIDO') {
+                            let dRes = h.dataResolucao || '';
+                            if (dRes && (dRes.includes('T') || dRes.includes('-'))) dRes = new Date(dRes).toLocaleDateString('pt-BR', {timeZone: 'UTC'});
+                            const dResStr = dRes ? `<span class="font-bold">${dRes}</span>` : '<span class="text-gray-400">Não informada</span>';
+                            const oResStr = h.obsResolucao ? `<span class="italic">"${escapeHtml(h.obsResolucao)}"</span>` : '<span class="text-gray-400 italic">Não informada</span>';
+                            resolucaoHtml = `<div class="mt-2 bg-emerald-50 border border-emerald-200 rounded p-2 text-xs text-emerald-800"><div class="font-bold text-emerald-700 uppercase text-[10px] tracking-wide mb-1">Resolução</div><div class="flex flex-col gap-0.5"><span>Data: ${dResStr}</span><span>Como foi solucionado: ${oResStr}</span></div></div>`;
+                        }
+
+                        historicoHtml += `<div class="mb-3 pb-3 border-b border-gray-100 last:border-0 last:mb-0 last:pb-0"><div class="flex justify-between items-start mb-1 gap-2"><div class="flex flex-col gap-1"><span class="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded w-fit">${dF} | ${h.setor || 'N/A'}</span><span class="text-[10px] text-gray-400">Resp: ${h.responsavel || 'N/A'}</span></div><div class="shrink-0">${statusBadge}</div></div>${obsHtml}${resolucaoHtml}${selectHtml}</div>`;
+                    });
+
+                    const itemHtml = `<div class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm print:break-inside-avoid print:border-gray-300 print:mb-2"><button onclick="toggleAccordion('${q.id}')" class="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex justify-between items-center transition text-left"><div class="pr-4"><span class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">${q.pop}</span><h5 class="text-sm font-bold text-gray-800 leading-snug">${q.text}</h5></div><div class="flex items-center gap-3 shrink-0 print:hidden"><div class="flex flex-col items-end"><span class="bg-red-100 text-red-800 text-xs font-bold px-2 py-1 rounded-full">${q.historico.length} Ocorrências</span></div><i data-lucide="chevron-down" id="acc-icon-${q.id}" class="w-5 h-5 text-gray-400 transition-transform duration-200"></i></div></button><div id="acc-content-${q.id}" class="hidden print:block p-4 bg-white border-t border-gray-100">${iaBlock}<h6 class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Anotações Anteriores:</h6>${historicoHtml}</div></div>`;
+                    accordionContainer.insertAdjacentHTML('beforeend', itemHtml);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        function toggleAccordion(id) {
+            const el = document.getElementById(`acc-content-${id}`);
+            const icon = document.getElementById(`acc-icon-${id}`);
+            if (el.classList.contains('hidden')) { el.classList.remove('hidden'); icon.style.transform = 'rotate(180deg)'; } 
+            else { el.classList.add('hidden'); icon.style.transform = 'rotate(0deg)'; }
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function normalizeSetorValue(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            const normalizedUpper = raw.toUpperCase().replace(/\s+/g, ' ');
+            if (normalizedUpper === 'PACKING HOUSE') return 'Packing House';
+            return raw;
+        }
+
+        function getQuestionHelpText(questionText) {
+            const q = String(questionText || '').trim();
+            const base = q.replace(/\?+$/, '');
+
+            if (/ASO/i.test(q)) return 'Confirme se o exame médico ocupacional dos colaboradores está válido e dentro do prazo.';
+            if (/detergentes|sanitizantes/i.test(q)) return 'Veja se há produto de limpeza e desinfecção suficiente para trabalhar o turno sem faltar material.';
+            if (/unhas/i.test(q)) return 'Verifique se as unhas estão curtas e limpas, sem esmalte, para reduzir risco de contaminação.';
+            if (/touca|cabelo/i.test(q)) return 'Confira se o cabelo está totalmente protegido para não cair no alimento.';
+            if (/adornos|anéis|alianças|relógios|pulseiras|brincos|correntes/i.test(q)) return 'Ninguém deve usar acessórios durante o trabalho com alimentos.';
+            if (/lixeiras|resíduos|lixo/i.test(q)) return 'Confirme se o descarte está correto, em local apropriado e sem acúmulo.';
+            if (/pragas|roedores|insetos|baratas|formigas|cupins/i.test(q)) return 'Verifique sinais de pragas e se a área está protegida.';
+            if (/calibração|balanças|termômetros/i.test(q)) return 'Confirme se os equipamentos foram calibrados no prazo e podem ser usados com segurança.';
+            if (/água|potabilidade/i.test(q)) return 'Confira se a água usada está dentro do padrão de segurança.';
+            if (/visitantes/i.test(q)) return 'Veja se visitantes estão seguindo as mesmas regras de higiene da equipe.';
+            if (/observações gerais/i.test(q)) return 'Registre aqui problemas, ações corretivas e informações importantes que não cabem em uma pergunta específica.';
+
+            return `Verifique se "${base}" está sendo cumprido corretamente na rotina.`;
+        }
+
+        function syncInputs(type, value) {
+            document.getElementById(`${type}-print`).value = value;
+            document.getElementById(`${type}-screen`).value = value;
+            saveProgress();
+        }
+
+        function setSelectOrOutro(selectId, outroId, value) {
+            const select = document.getElementById(selectId);
+            const outroInput = document.getElementById(outroId);
+            if (!value) {
+                select.value = "";
+                outroInput.classList.add('hidden');
+                select.classList.remove('print:hidden');
+                outroInput.value = "";
+                return;
+            }
+            
+            let exists = Array.from(select.options).some(opt => opt.value === value);
+            if (exists && value !== 'outra') {
+                select.value = value;
+                outroInput.classList.add('hidden');
+                select.classList.remove('print:hidden');
+                outroInput.value = "";
+            } else {
+                select.value = "outra";
+                outroInput.classList.remove('hidden');
+                select.classList.add('print:hidden');
+                outroInput.value = value;
+            }
+        }
+
+        function checkOutro(selectId, outroId, syncKey) {
+            const sel = document.getElementById(selectId);
+            const out = document.getElementById(outroId);
+            let finalValue = sel.value;
+
+            if (sel.value === 'outra') {
+                out.classList.remove('hidden');
+                sel.classList.add('print:hidden');
+                out.focus();
+                finalValue = out.value;
+            } else {
+                out.classList.add('hidden');
+                sel.classList.remove('print:hidden');
+                out.value = '';
+            }
+
+            if (syncKey === 'responsavel') {
+                document.getElementById('responsavel-print').value = finalValue;
+            }
+
+            saveProgress();
+        }
+
+        function changePOP() {
+            currentPOP = document.getElementById('popSelect').value;
+            localStorage.setItem('last_selected_pop', currentPOP);
+            const savedData = JSON.parse(localStorage.getItem(`data_${currentPOP}`));
+            currentVisibleGroups = savedData?.meta?.visibleGroups || []; 
+            renderSubSelection(); renderPOP();
+            if (savedData) fillFormData(savedData);
+            updateStats();
+        }
+
+        function renderSubSelection() {
+            const list = document.getElementById('sub-selection-list'); list.innerHTML = ''; 
+            popsData[currentPOP].groups.forEach((group, index) => {
+                const isChecked = currentVisibleGroups.includes(index) ? 'checked' : '';
+                list.insertAdjacentHTML('beforeend', `<label class="flex items-center gap-2 cursor-pointer bg-white px-3 py-2 rounded-lg border border-slate-200 hover:bg-green-50 transition select-none shadow-sm"><input type="checkbox" class="w-5 h-5 text-green-600 rounded focus:ring-green-500" value="${index}" onchange="toggleGroup(${index})" ${isChecked}><span class="text-gray-700 font-medium text-sm">${group.title}</span></label>`);
+            });
+            document.getElementById('sub-selection-container').classList.remove('hidden');
+        }
+
+        function toggleGroup(index) {
+            saveProgress(); 
+            const cb = document.querySelector(`input[type="checkbox"][value="${index}"]`);
+            if (cb.checked && !currentVisibleGroups.includes(index)) currentVisibleGroups.push(index);
+            else if (!cb.checked) currentVisibleGroups = currentVisibleGroups.filter(i => i !== index);
+            currentVisibleGroups.sort((a, b) => a - b); 
+            renderPOP();
+            const savedData = JSON.parse(localStorage.getItem(`data_${currentPOP}`));
+            if(savedData) fillFormData(savedData);
+            saveProgress();
+        }
+
+        function renderPOP() {
+            const data = popsData[currentPOP];
+            document.getElementById('report-title').innerText = data.title;
+            document.getElementById('report-subtitle').innerText = data.subtitle;
+            document.getElementById('pop-date').innerText = data.date;
+            document.getElementById('pop-rev').innerText = data.rev;
+            document.getElementById('current-pop-label').innerText = currentPOP.toUpperCase();
+            const contentDiv = document.getElementById('dynamic-content'); contentDiv.innerHTML = '';
+
+            data.groups.forEach((group, index) => {
+                if (!currentVisibleGroups.includes(index)) return; 
+                let gHtml = `<section class="mb-8 print:mb-4"><h3 class="text-lg font-bold text-slate-800 border-l-4 border-green-600 pl-3 mb-4 bg-green-50 py-2 rounded-r-lg">${group.title}</h3><div class="space-y-4 print:space-y-2">`;
+                group.questions.forEach(q => {
+                    const helpText = escapeHtml(getQuestionHelpText(q.text));
+                    gHtml += `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 hover:shadow-md transition-shadow question-container">
+                        <div class="flex items-start gap-2 mb-2">
+                            <p class="font-medium text-gray-800 text-sm md:text-base flex-1">${q.text}</p>
+                            <span class="question-help print:hidden">?
+                                <span class="question-help-tooltip">${helpText}</span>
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mb-3 print:mb-1">
+                            <label class="cursor-pointer px-4 py-2 rounded border border-gray-300 text-sm font-bold text-gray-600 hover:bg-gray-100 transition select-none flex items-center gap-1 radio-label"><input type="radio" name="${q.id}" id="${q.id}_C" value="C" class="hidden radio-option" onchange="saveProgress()"><i data-lucide="check-circle" class="w-4 h-4 print:hidden"></i> C</label>
+                            <label class="cursor-pointer px-4 py-2 rounded border border-gray-300 text-sm font-bold text-gray-600 hover:bg-red-50 transition select-none flex items-center gap-1 radio-label"><input type="radio" name="${q.id}" id="${q.id}_NC" value="NC" class="hidden radio-option" onchange="saveProgress()"><i data-lucide="x-circle" class="w-4 h-4 print:hidden"></i> NC</label>
+                            <label class="cursor-pointer px-4 py-2 rounded border border-gray-300 text-sm font-bold text-gray-600 hover:bg-gray-100 transition select-none radio-label"><input type="radio" name="${q.id}" id="${q.id}_NA" value="NA" class="hidden radio-option" onchange="saveProgress()">NA</label>
+                        </div>
+                        <div class="mt-2"><label for="obs_${q.id}" class="text-xs text-gray-500 font-semibold mb-1 block print:text-black">Observações:</label><textarea id="obs_${q.id}" rows="2" class="modern-input w-full text-sm p-2 border rounded focus:border-green-600 focus:ring-1 outline-none bg-gray-50" oninput="saveProgress()"></textarea></div>
+                    </div>`;
+                });
+                gHtml += `</div></section>`;
+                contentDiv.insertAdjacentHTML('beforeend', gHtml);
+            });
+            lucide.createIcons(); updateStats();
+        }
+
+        function fillFormData(data) {
+            if(data.meta) {
+                setSelectOrOutro('responsavel-screen', 'responsavel-outro', data.meta.responsavel);
+                document.getElementById('responsavel-print').value = data.meta.responsavel || '';
+
+                document.getElementById('setor-screen').value = data.meta.setor || '';
+                document.getElementById('setor-print').value = data.meta.setor || '';
+                
+                const dVal = data.meta.data || '';
+                document.getElementById('data-screen').value = dVal; document.getElementById('data-print').value = dVal;
+                document.getElementById('obs-geral').value = data.meta.obsGeral || '';
+                
+                setSelectOrOutro('aprovado-por', 'aprovado-por-outro', data.meta.aprovadoPor);
+                setSelectOrOutro('assinatura-digital', 'assinatura-digital-outro', data.meta.assinaturaDigital);
+            }
+            if(data.answers) {
+                Object.keys(data.answers).forEach(k => {
+                    const item = data.answers[k];
+                    const radio = document.getElementById(`${k}_${item.val}`); if(radio) radio.checked = true;
+                    const obsInput = document.getElementById(`obs_${k}`); if(obsInput && item.obs) obsInput.value = item.obs;
+                });
+            }
+            updateAnswerButtonStyles();
+        }
+
+        function updateAnswerButtonStyles() {
+            document.querySelectorAll('.radio-label').forEach(label => {
+                label.classList.remove('answer-selected', 'answer-c', 'answer-nc', 'answer-na');
+                const radio = label.querySelector('.radio-option');
+                if (!radio || !radio.checked) return;
+
+                label.classList.add('answer-selected');
+                if (radio.value === 'C') label.classList.add('answer-c');
+                else if (radio.value === 'NC') label.classList.add('answer-nc');
+                else if (radio.value === 'NA') label.classList.add('answer-na');
+            });
+        }
+
+        function saveProgress() {
+            updateAnswerButtonStyles();
+            const dateVal = document.getElementById('data-screen').value;
+            const newAnswers = { ...JSON.parse(localStorage.getItem(`data_${currentPOP}`))?.answers }; 
+            popsData[currentPOP].groups.forEach((g, i) => {
+                if(currentVisibleGroups.includes(i)) {
+                    g.questions.forEach(q => {
+                        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+                        const obs = document.getElementById(`obs_${q.id}`)?.value;
+                        if (sel || obs) newAnswers[q.id] = { val: sel?.value || null, obs: obs };
+                        else delete newAnswers[q.id];
+                    });
+                }
+            });
+
+            let respVal = document.getElementById('responsavel-screen').value;
+            if (respVal === 'outra') respVal = document.getElementById('responsavel-outro').value;
+
+            let aprovVal = document.getElementById('aprovado-por').value;
+            if (aprovVal === 'outra') aprovVal = document.getElementById('aprovado-por-outro').value;
+
+            let assVal = document.getElementById('assinatura-digital').value;
+            if (assVal === 'outra') assVal = document.getElementById('assinatura-digital-outro').value;
+
+            localStorage.setItem(`data_${currentPOP}`, JSON.stringify({
+                meta: { responsavel: respVal, setor: normalizeSetorValue(document.getElementById('setor-screen').value), data: dateVal, obsGeral: document.getElementById('obs-geral').value, aprovadoPor: aprovVal, assinaturaDigital: assVal, visibleGroups: currentVisibleGroups },
+                answers: newAnswers
+            }));
+            updateStats();
+        }
+
+        function updateStats() {
+            updateAnswerButtonStyles();
+            let t = 0, c = 0, nc = 0;
+            popsData[currentPOP].groups.forEach((g, i) => {
+                if (!currentVisibleGroups.includes(i)) return;
+                g.questions.forEach(q => {
+                    const s = document.querySelector(`input[name="${q.id}"]:checked`);
+                    if (s) { t++; if (s.value === 'C') c++; else if (s.value === 'NC') nc++; }
+                });
+            });
+            const p = t === 0 ? 0 : Math.round((c / t) * 100);
+            const sEl = document.getElementById('score-display');
+            sEl.innerText = `${p}%`;
+            sEl.className = `text-2xl font-bold ${p >= 90 ? 'text-green-600' : (p >= 70 ? 'text-green-600' : 'text-red-600')}`;
+            document.getElementById('count-c').innerText = c; document.getElementById('count-nc').innerText = nc;
+        }
+
+        let _pendingResolve = null;
+
+        function onStatusSelectChange(idUnico, novoStatus, selectEl) {
+            if (novoStatus === 'RESOLVIDO') {
+                const prev = selectEl.dataset.previous || 'PENDENTE';
+                _pendingResolve = { idUnico, selectEl, previousValue: prev };
+                selectEl.dataset.previous = novoStatus;
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('resolve-date').value = today;
+                document.getElementById('resolve-obs').value = '';
+                const modal = document.getElementById('resolve-modal');
+                modal.classList.remove('hidden');
+                lucide.createIcons();
+            } else {
+                selectEl.dataset.previous = novoStatus;
+                atualizarStatusNC(idUnico, novoStatus, selectEl);
+            }
+        }
+
+        function cancelarResolucao() {
+            if (_pendingResolve) {
+                _pendingResolve.selectEl.value = _pendingResolve.previousValue;
+                _pendingResolve = null;
+            }
+            document.getElementById('resolve-modal').classList.add('hidden');
+        }
+
+        async function confirmarResolucao() {
+            const dataResolucao = document.getElementById('resolve-date').value;
+            const obsResolucao = document.getElementById('resolve-obs').value.trim();
+
+            if (!dataResolucao) {
+                showAlert('Informe a data de resolução.', 'warning');
+                return;
+            }
+            if (!obsResolucao) {
+                showAlert('Informe como a ocorrência foi solucionada.', 'warning');
+                return;
+            }
+
+            document.getElementById('resolve-modal').classList.add('hidden');
+            const { idUnico, selectEl } = _pendingResolve;
+            _pendingResolve = null;
+
+            await atualizarStatusNC(idUnico, 'RESOLVIDO', selectEl, dataResolucao, obsResolucao);
+        }
+
+        async function atualizarStatusNC(idUnico, novoStatus, selectEl, dataResolucao = '', obsResolucao = '') {
+            selectEl.disabled = true;
+            selectEl.classList.add('opacity-50', 'animate-pulse');
+
+            try {
+                const result = await window.SPG_POP.atualizarNC(idUnico, novoStatus, dataResolucao, obsResolucao);
+                if(result.success) {
+                    let color = novoStatus === 'RESOLVIDO' ? 'emerald' : (novoStatus === 'EM_ANDAMENTO' ? 'blue' : 'red');
+                    selectEl.className = `status-select text-${color}-700`;
+                    selectEl.dataset.previous = novoStatus;
+                    const container = selectEl.closest('.mb-3');
+                    if (container) {
+                        const badgeEl = container.querySelector('span[class*="uppercase rounded"]');
+                        if (badgeEl) {
+                            badgeEl.className = `text-[10px] font-bold uppercase rounded px-2 py-1 bg-${color}-50 text-${color}-700 border border-${color}-200`;
+                            badgeEl.textContent = novoStatus.replace('_', ' ');
+                        }
+                        if (novoStatus === 'RESOLVIDO') {
+                            let resolveBlock = container.querySelector('.resolve-info-block');
+                            if (!resolveBlock) {
+                                resolveBlock = document.createElement('div');
+                                resolveBlock.className = 'resolve-info-block mt-2 bg-emerald-50 border border-emerald-200 rounded p-2 text-xs text-emerald-800';
+                                const selectWrapper = selectEl.closest('.mt-2') || selectEl.parentElement;
+                                container.insertBefore(resolveBlock, selectWrapper);
+                            }
+                            const dFormatted = dataResolucao ? new Date(dataResolucao + 'T00:00:00').toLocaleDateString('pt-BR') : 'Não informada';
+                            resolveBlock.innerHTML = `<div class="font-bold text-emerald-700 uppercase text-[10px] tracking-wide mb-1">Resolução</div><div class="flex flex-col gap-0.5"><span>Data: <span class="font-bold">${dFormatted}</span></span><span>Como foi solucionado: <span class="italic">"${escapeHtml(obsResolucao)}"</span></span></div>`;
+                        }
+                    }
+
+                    const rowIndex = dashboardData.findIndex(row => row[12] === idUnico);
+                    if (rowIndex !== -1) {
+                        dashboardData[rowIndex][13] = novoStatus;
+                        if (dataResolucao) dashboardData[rowIndex][16] = dataResolucao;
+                        if (obsResolucao) dashboardData[rowIndex][17] = obsResolucao;
+                        applyFilters();
+                    }
+                } else {
+                    showAlert("Erro: " + result.error, "error");
+                    syncDashboardData();
+                }
+            } catch (error) {
+                showAlert("Erro de conexão ao atualizar status.", "error");
+                syncDashboardData();
+            } finally {
+                selectEl.disabled = false;
+                selectEl.classList.remove('opacity-50', 'animate-pulse');
+            }
+        }
+    </script>
+</body>
+</html>
