@@ -17,9 +17,10 @@
     function avisar(texto, erro) {
         const a = el('avisoGeral');
         a.textContent = texto;
-        a.className = `rounded-2xl p-3 text-sm font-semibold ${erro ? 'bg-rose-50 text-rose-800' : 'bg-emerald-50 text-emerald-800'}`;
+        // Fixo na tela: o botão que gerou o aviso costuma estar bem abaixo do topo da página
+        a.className = `fixed z-50 top-16 left-3 right-3 sm:left-auto sm:w-96 rounded-2xl p-3 text-sm font-semibold shadow-xl border ${erro ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`;
         clearTimeout(avisar.t);
-        avisar.t = setTimeout(() => a.classList.add('hidden'), 6000);
+        avisar.t = setTimeout(() => a.classList.add('hidden'), erro ? 9000 : 7000);
     }
     const interruptor = (attr, ligado, rotulo) => `<button type="button" role="switch" aria-checked="${ligado}" aria-label="${esc(rotulo)}" ${attr} class="relative w-11 h-6 rounded-full shrink-0 transition-colors ${ligado ? 'bg-emerald-600' : 'bg-slate-300'}"><span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${ligado ? 'translate-x-5' : ''}"></span></button>`;
 
@@ -117,12 +118,19 @@
         if (e.target.closest('[data-aviso-cancelar]')) { abertoAviso = null; desenharSites(); return; }
         const testar = e.target.closest('[data-testar]');
         if (testar) {
+            const tipo = tipos.find(t => t.id === testar.dataset.testar);
             testar.disabled = true;
+            testar.textContent = 'Testando…';
+            testar.classList.add('opacity-60');
             try {
                 const r = await chamar({ acao: 'testar_tipo', tipo: testar.dataset.testar });
-                avisar(r.semDados ? 'Hoje não há dados para este aviso, então nada foi enviado.' : 'Prévia enviada para os seus aparelhos.');
+                avisar(r.semDados
+                    ? `${tipo ? tipo.nome : 'Este aviso'}: hoje não há dados, então nenhuma notificação foi enviada. Para testar o celular, use "Enviar teste" no sino do menu.`
+                    : 'Prévia enviada para os seus aparelhos. Deve chegar em instantes.');
             } catch (err) { avisar(err.message, true); }
             testar.disabled = false;
+            testar.textContent = 'Testar';
+            testar.classList.remove('opacity-60');
         }
     });
 
