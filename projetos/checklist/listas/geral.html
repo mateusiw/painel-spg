@@ -120,18 +120,15 @@
 <body class="text-slate-800 min-h-screen pb-20 select-none">
 
     <!-- Navbar -->
-    <div class="tema-nav px-4 py-2.5 flex justify-between items-center sticky top-0 z-40">
-        <div class="flex items-center gap-3">
-            <div class="relative shrink-0">
-                <img src="logo-geral.png" alt="Logo SPG" class="w-9 h-9 object-contain">
-                <span class="pulse-dot absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white"></span>
-            </div>
-            <div>
-                <h1 class="text-sm sm:text-[15px] font-extrabold text-slate-900 leading-tight tracking-tight">SPG SEDE</h1>
-                <p class="text-[10px] text-slate-400 font-semibold tracking-wide">Frota & Equipamentos</p>
+    <div class="barra-lista">
+        <div class="barra-lista-marca">
+            <img src="../../../icone-app.png" alt="">
+            <div class="barra-lista-textos">
+                <h1 class="barra-lista-titulo">Veículos e Equipamentos</h1>
+                <p class="barra-lista-sub">SPG Sede</p>
             </div>
         </div>
-        <div class="flex gap-2">
+        <div class="barra-lista-acoes">
             <button id="installAppBtn" type="button" onclick="installApp()" class="tema-btn-claro hidden items-center gap-1.5 px-3 py-2 text-xs font-bold transition-all active:scale-95">
                 <i data-lucide="download" class="w-3.5 h-3.5"></i>
                 <span>Instalar</span>

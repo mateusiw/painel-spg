@@ -68,6 +68,30 @@
         .contador-online[data-zero] { background: rgba(255,255,255,.12); color: rgba(236,244,226,.7); }
         #lateral.recolhida .contador-online { position: absolute; top: 2px; right: 8px; min-width: 1rem; height: 1rem; padding: 0 .25rem; font-size: .6rem; margin: 0; }
 
+        /* Abas dos projetos abertos, como num navegador */
+        #barraAbas { position: sticky; top: 0; z-index: 30; background: #e4eadc; border-bottom: 1px solid #d3dbc7; }
+        #listaAbas { scrollbar-width: none; }
+        #listaAbas::-webkit-scrollbar { display: none; }
+        .aba-projeto { position: relative; display: flex; align-items: center; flex: none; max-width: 13rem; height: 2.35rem; border-radius: .75rem .75rem 0 0; color: #475569; transition: background-color .15s, color .15s; }
+        .aba-projeto:hover { background: rgba(255,255,255,.55); color: #0f172a; }
+        .aba-projeto.ativa { background: #fff; color: #0f172a; box-shadow: 0 -1px 0 #d3dbc7, 1px 0 0 #d3dbc7, -1px 0 0 #d3dbc7; margin-bottom: -1px; height: calc(2.35rem + 1px); }
+        .aba-projeto.ativa::before { content: ''; position: absolute; left: .7rem; right: .7rem; top: 0; height: 3px; border-radius: 0 0 3px 3px; background: var(--limao); }
+        .aba-link { display: flex; align-items: center; gap: .5rem; min-width: 0; height: 100%; padding: 0 .35rem 0 .7rem; font-size: .78rem; font-weight: 700; outline: none; }
+        .aba-link:focus-visible { outline: 2px solid #4a7c3a; outline-offset: -2px; border-radius: .6rem; }
+        .aba-inicio .aba-link { padding-right: .8rem; }
+        .aba-icone { width: 1.3rem; height: 1.3rem; border-radius: .4rem; display: flex; align-items: center; justify-content: center; color: #fff; flex: none; }
+        .aba-fechar { width: 1.5rem; height: 1.5rem; margin-right: .3rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #94a3b8; flex: none; }
+        .aba-fechar:hover { background: #e2e8f0; color: #0f172a; }
+        .aba-fechar:focus-visible { outline: 2px solid #4a7c3a; }
+        @media (max-width: 1023px) {
+            #barraAbas { position: static; }
+            .aba-projeto { max-width: 10rem; height: 2.15rem; }
+            .aba-projeto.ativa { height: calc(2.15rem + 1px); }
+            .aba-inicio .rotulo-aba { display: none; }
+        }
+        .item-lateral .aberto-ponto { width: .4rem; height: .4rem; border-radius: 999px; background: var(--limao); margin-left: auto; flex: none; }
+        #lateral.recolhida .item-lateral .aberto-ponto { position: absolute; bottom: 6px; right: 10px; margin: 0; }
+
         .cartao-projeto { position: relative; display: flex; flex-direction: column; min-height: 11.5rem; padding: 1.25rem; background: #fff; border: 1px solid rgb(226 232 240 / .9); border-radius: 1.25rem; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
         .cartao-projeto:hover { transform: translateY(-3px); border-color: rgb(203 213 225); box-shadow: 0 18px 40px -22px rgba(18,42,30,.45); }
         .cartao-projeto:focus-visible { outline: 2px solid #4a7c3a; outline-offset: 2px; }
@@ -173,9 +197,13 @@
                         <button type="button" data-gaveta title="Abrir menu" aria-label="Abrir menu" class="foco p-2 rounded-lg hover:bg-white/10"><i data-lucide="menu" class="w-5 h-5"></i></button>
                         <img src="./logo.png" alt="" class="w-8 h-8 object-cover rounded-full">
                         <p id="tituloMobile" class="flex-1 min-w-0 text-[15px] font-extrabold truncate">Painel SPG</p>
-                        <button type="button" data-sair title="Sair" aria-label="Sair" class="foco p-2 rounded-lg text-emerald-100/80 hover:bg-white/10"><i data-lucide="log-out" class="w-5 h-5"></i></button>
                     </div>
                 </header>
+
+                <!-- Abas dos projetos abertos (estilo navegador) -->
+                <nav id="barraAbas" class="hidden shrink-0" aria-label="Projetos abertos">
+                    <div id="listaAbas" role="tablist" class="flex items-end gap-1 overflow-x-auto px-2 pt-1.5"></div>
+                </nav>
 
                 <div id="areaProjeto" class="hidden relative flex-1 min-h-0 bg-slate-50">
                     <div id="carregandoProjeto" class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-[#f5f7f2]" role="status">
@@ -376,6 +404,7 @@
                 </section>`;
             }).join('');
 
+            restaurarAbas();
             mostrarTela('telaMenu');
             rotear();
             atualizarContadorOnline();
@@ -406,10 +435,86 @@
         setInterval(() => { if (document.visibilityState === 'visible' && API.usuarioAtual()) atualizarContadorOnline(); }, 60 * 1000);
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && API.usuarioAtual()) atualizarContadorOnline(); });
 
-        // --- PROJETOS DENTRO DO PAINEL ---
-        // O endereço guarda o projeto aberto (#/irrigacao): voltar, recarregar e link direto funcionam.
-        let projetoAberto = null;
-        let quadro = null;
+        // --- PROJETOS DENTRO DO PAINEL, EM ABAS (estilo navegador) ---
+        // Cada projeto aberto ganha uma aba com o seu próprio quadro; trocar de aba não recarrega o projeto.
+        // O endereço guarda a aba ativa (#/irrigacao): voltar, recarregar e link direto funcionam.
+        // As abas abertas ficam guardadas por usuário e voltam ao recarregar (só carregam quando tocadas).
+        const MAX_ABAS = 6;               // mais que isso pesa no celular: fecha a usada há mais tempo
+        let projetoAberto = null;         // id da aba ativa (null = Início)
+        let abas = [];                    // [{ id, p, quadro, carregado, usadoEm }]
+
+        const chaveAbas = () => 'spg_abas_' + ((API.usuarioAtual() || {}).id || '');
+        function salvarAbas() {
+            try { localStorage.setItem(chaveAbas(), JSON.stringify(abas.map(a => a.id))); } catch (e) { /* só não lembra as abas */ }
+        }
+        function restaurarAbas() {
+            let ids = [];
+            try { ids = JSON.parse(localStorage.getItem(chaveAbas())) || []; } catch (e) { /* começa sem abas */ }
+            const projetos = API.projetosDoUsuario();
+            ids.forEach(id => {
+                const p = projetos.find(x => x.id === id);
+                if (p && !abas.some(a => a.id === id)) abas.push({ id, p, quadro: null, carregado: false, usadoEm: 0 });
+            });
+            abas = abas.slice(0, MAX_ABAS);
+        }
+
+        function renderAbas() {
+            el('barraAbas').classList.toggle('hidden', !abas.length);
+            const inicio = `<div class="aba-projeto aba-inicio ${projetoAberto ? '' : 'ativa'}">
+                <a href="#/" role="tab" aria-selected="${!projetoAberto}" title="Início" class="aba-link"><i data-lucide="house" class="w-4 h-4 shrink-0"></i><span class="rotulo-aba">Início</span></a>
+            </div>`;
+            el('listaAbas').innerHTML = inicio + abas.map(a => {
+                const ativa = a.id === projetoAberto;
+                const icone = a.quadro && !a.carregado
+                    ? '<i data-lucide="loader-circle" class="w-4 h-4 shrink-0 animate-spin text-[#4a7c3a]"></i>'
+                    : `<span class="aba-icone bg-gradient-to-br ${a.p.gradiente}"><i data-lucide="${a.p.icone}" class="w-3 h-3"></i></span>`;
+                return `<div class="aba-projeto ${ativa ? 'ativa' : ''}" data-aba="${esc(a.id)}">
+                    <a href="#/${esc(a.id)}" role="tab" aria-selected="${ativa}" title="${esc(a.p.nome)}" class="aba-link">${icone}<span class="truncate">${esc(a.p.nome)}</span></a>
+                    <button type="button" data-fechar-aba="${esc(a.id)}" title="Fechar ${esc(a.p.nome)}" aria-label="Fechar ${esc(a.p.nome)}" class="aba-fechar"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                </div>`;
+            }).join('');
+            // Ponto no menu lateral: projetos que estão abertos em alguma aba
+            document.querySelectorAll('#navLateral a[data-projeto]').forEach(a => {
+                const aberto = abas.some(x => x.id === a.dataset.projeto);
+                let ponto = a.querySelector('.aberto-ponto');
+                if (aberto && !ponto) { ponto = document.createElement('span'); ponto.className = 'aberto-ponto'; ponto.title = 'Aberto numa aba'; a.appendChild(ponto); }
+                if (!aberto && ponto) ponto.remove();
+            });
+            icones();
+            const ativa = el('listaAbas').querySelector('.ativa');
+            if (ativa) ativa.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+
+        function criarQuadro(aba) {
+            const novo = document.createElement('iframe');
+            novo.title = aba.p.nome;
+            novo.dataset.aba = aba.id;
+            novo.className = 'block w-full h-full border-0';
+            novo.addEventListener('load', () => aoCarregarQuadro(aba));
+            novo.src = aba.p.caminho;
+            aba.quadro = novo;
+            aba.carregado = false;
+            el('areaProjeto').appendChild(novo);
+        }
+
+        function fecharAba(id) {
+            const i = abas.findIndex(a => a.id === id);
+            if (i < 0) return;
+            const [aba] = abas.splice(i, 1);
+            if (aba.quadro) aba.quadro.remove();
+            salvarAbas();
+            if (projetoAberto === id) {
+                // Como no navegador: vai para a aba ao lado; sem abas, volta ao Início
+                const prox = abas[i] || abas[i - 1];
+                if (prox) { history.replaceState(null, '', '#/' + prox.id); ativarAba(prox); }
+                else { history.replaceState(null, '', location.pathname + location.search); voltarInicio(); if (API.informarPagina) API.informarPagina('', ''); }
+            } else renderAbas();
+        }
+
+        function fecharTodasAbas() {
+            abas.forEach(a => { if (a.quadro) a.quadro.remove(); });
+            abas = [];
+        }
 
         function aplicarLateral() {
             let pref = null;
@@ -433,50 +538,75 @@
             marcarAtual(p.id);
         }
 
+        // Abre o projeto numa aba nova ou, se já estiver aberto, só troca para a aba dele
         function abrirProjeto(p) {
-            if (projetoAberto === p.id) return;
-            registrarRecente(p.id);
-            nomearProjeto(p);
+            let aba = abas.find(a => a.id === p.id);
+            if (!aba) {
+                aba = { id: p.id, p, quadro: null, carregado: false, usadoEm: 0 };
+                abas.push(aba);
+                // Passou do limite: fecha a aba usada há mais tempo (nunca a que está abrindo)
+                while (abas.length > MAX_ABAS) {
+                    const velha = abas.filter(a => a !== aba).sort((a, b) => a.usadoEm - b.usadoEm)[0];
+                    if (velha.quadro) velha.quadro.remove();
+                    abas.splice(abas.indexOf(velha), 1);
+                }
+                salvarAbas();
+            }
+            ativarAba(aba);
+        }
+
+        function ativarAba(aba) {
+            const jaVisivel = projetoAberto === aba.id && aba.quadro && !el('areaProjeto').classList.contains('hidden');
+            aba.usadoEm = Date.now();
+            if (jaVisivel) { renderAbas(); return; }
+            registrarRecente(aba.id);
+            nomearProjeto(aba.p);
             document.body.classList.add('modo-projeto');
             el('areaInicio').classList.add('hidden');
             el('areaProjeto').classList.remove('hidden');
-            el('carregandoTexto').innerText = `Abrindo ${p.nome}...`;
-            el('carregandoProjeto').classList.remove('hidden');
+            if (!aba.quadro) criarQuadro(aba);
+            else if (aba.carregado && API.informarPagina) API.informarPagina(aba.p.nome, '');   // Usuários online: em qual projeto está
+            abas.forEach(a => { if (a.quadro) a.quadro.classList.toggle('hidden', a !== aba); });
+            el('carregandoTexto').innerText = `Abrindo ${aba.p.nome}...`;
+            el('carregandoProjeto').classList.toggle('hidden', aba.carregado);
             aplicarLateral();
-            icones();
-            if (quadro) quadro.remove();
-            // Um quadro novo a cada projeto: trocar não acumula passos no botão Voltar
-            const novo = document.createElement('iframe');
-            novo.id = 'quadroProjeto';
-            novo.title = p.nome;
-            novo.className = 'block w-full h-full border-0';
-            novo.addEventListener('load', () => aoCarregarQuadro(novo));
-            novo.src = p.caminho;
-            quadro = novo;
-            el('areaProjeto').appendChild(novo);
+            renderAbas();
         }
 
-        function aoCarregarQuadro(f) {
-            if (f !== quadro) return;
-            el('carregandoProjeto').classList.add('hidden');
+        function aoCarregarQuadro(aba) {
+            if (!abas.includes(aba)) return;
+            aba.carregado = true;
+            if (aba.id === projetoAberto) el('carregandoProjeto').classList.add('hidden');
             let doc, caminho;
-            try { doc = f.contentDocument; caminho = f.contentWindow.location.pathname; } catch (e) { return; }
+            try { doc = aba.quadro.contentDocument; caminho = aba.quadro.contentWindow.location.pathname; } catch (e) { renderAbas(); return; }
             // O menu do Painel já fica à vista: o atalho de cada projeto seria repetido
             const estilo = doc.createElement('style');
             estilo.textContent = '#btnMenuProjetos, a[title="Menu de projetos"] { display: none !important; }';
             doc.head.appendChild(estilo);
-            // Um link dentro do projeto pode levar a outro (ex.: Irrigação > Usuários)
-            const p = API.projetosDoUsuario().find(x => caminho.endsWith(x.caminho));
-            if (p && p.id !== projetoAberto) {
-                registrarRecente(p.id);
-                nomearProjeto(p);
-                history.replaceState(null, '', '#/' + p.id);
+            // Um link dentro do projeto pode levar a outro (ex.: Irrigação > Usuários): a aba passa a ser dele
+            const p = API.projetosDoUsuario().find(x => decodeURIComponent(caminho).endsWith(x.caminho));
+            if (p && p.id !== aba.id) {
+                const repetida = abas.find(a => a.id === p.id && a !== aba);
+                if (repetida) { if (repetida.quadro) repetida.quadro.remove(); abas.splice(abas.indexOf(repetida), 1); }
+                const ativa = aba.id === projetoAberto;
+                aba.id = p.id; aba.p = p;
+                aba.quadro.dataset.aba = p.id;
+                aba.quadro.title = p.nome;
+                salvarAbas();
+                if (ativa) {
+                    registrarRecente(p.id);
+                    nomearProjeto(p);
+                    history.replaceState(null, '', '#/' + p.id);
+                }
             }
+            renderAbas();
         }
 
         function voltarInicio() {
             projetoAberto = null;
-            if (quadro) { quadro.remove(); quadro = null; }
+            // As abas continuam abertas (só escondidas), como num navegador
+            abas.forEach(a => { if (a.quadro) a.quadro.classList.add('hidden'); });
+            renderAbas();
             document.body.classList.remove('modo-projeto');
             el('areaProjeto').classList.add('hidden');
             el('areaInicio').classList.remove('hidden');
@@ -596,6 +726,8 @@
         });
 
         document.addEventListener('click', async e => {
+            const fechar = e.target.closest('[data-fechar-aba]');
+            if (fechar) { e.preventDefault(); fecharAba(fechar.dataset.fecharAba); return; }
             const projeto = e.target.closest('[data-projeto]');
             if (projeto) { alternarGaveta(false); return; }
             const botaoLocal = e.target.closest('[data-local-menu]');
@@ -618,6 +750,7 @@
             }
             if (e.target.closest('[data-sair]')) {
                 await API.logout();
+                fecharTodasAbas();
                 history.replaceState(null, '', location.pathname + location.search);
                 voltarInicio();
                 mostrarLogin();
@@ -668,6 +801,11 @@
         }
 
         el('buscaProjetos').addEventListener('input', filtrar);
+        // Botão do meio do mouse fecha a aba, como no navegador
+        el('listaAbas').addEventListener('auxclick', e => {
+            const aba = e.button === 1 && e.target.closest('[data-aba]');
+            if (aba) { e.preventDefault(); fecharAba(aba.dataset.aba); }
+        });
         window.addEventListener('hashchange', () => { if (!el('telaMenu').classList.contains('hidden')) rotear(); });
         document.addEventListener('keydown', e => {
             const digitando = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);

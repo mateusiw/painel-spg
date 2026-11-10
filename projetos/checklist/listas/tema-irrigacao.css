@@ -56,3 +56,46 @@
         box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
     }
 }
+
+/* Barra do topo de cada check-list: mesmo padrão do cabeçalho da Irrigação
+   (ícone + título + local à esquerda, ações à direita, fio colorido no topo). */
+@media screen {
+    .barra-lista {
+        position: sticky; top: 0; z-index: 40;
+        display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+        padding: .625rem 1rem;
+        padding-top: max(.625rem, env(safe-area-inset-top));
+        background: rgba(255, 255, 255, 0.78);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        backdrop-filter: blur(18px) saturate(180%);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 6px 24px -18px rgba(15, 23, 42, 0.35);
+        font-family: 'Segoe UI', system-ui, -apple-system, Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .barra-lista::before {
+        content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none;
+        background: linear-gradient(90deg, #10b981, #14b8a6 35%, #0ea5e9 70%, #6366f1);
+    }
+    .barra-lista-marca { display: flex; align-items: center; gap: .625rem; min-width: 0; }
+    .barra-lista-marca img {
+        width: 2rem; height: 2rem; flex-shrink: 0; border-radius: .75rem; object-fit: cover;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, .05), 0 0 0 1px rgba(0, 0, 0, .05);
+    }
+    .barra-lista-textos { min-width: 0; }
+    .barra-lista-titulo {
+        margin: 0; font-size: .875rem; font-weight: 800; line-height: 1.25; letter-spacing: -.015em; color: #0f172a;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .barra-lista-sub {
+        margin: 0; font-size: 10px; font-weight: 600; letter-spacing: .025em; color: #94a3b8;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .barra-lista-acoes { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+    @media (min-width: 640px) {
+        .barra-lista-marca img { width: 2.25rem; height: 2.25rem; }
+        .barra-lista-titulo { font-size: 15px; }
+    }
+}
+@media print {
+    .barra-lista { display: none !important; }
+}

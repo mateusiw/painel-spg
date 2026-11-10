@@ -10,8 +10,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tema-irrigacao.css">
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* A barra do topo encosta nas bordas, apesar do recuo do body */
+    .barra-lista { margin: -24px -16px 24px; }
 
     :root {
         --bg: #f8fafc;
@@ -56,7 +59,7 @@
         flex: 1 1 480px;
         min-width: 320px;
         position: sticky;
-        top: 24px;
+        top: 84px; /* abaixo da barra do topo */
     }
 
     .preview-vazio {
@@ -427,9 +430,19 @@
 </head>
 <body>
 
+<div class="barra-lista">
+    <div class="barra-lista-marca">
+        <img src="../../../icone-app.png" alt="">
+        <div class="barra-lista-textos">
+            <h1 class="barra-lista-titulo">Cronograma de Limpeza</h1>
+            <p class="barra-lista-sub">Escala mensal em folha A4</p>
+        </div>
+    </div>
+</div>
+
 <div class="layout-principal">
 <div class="painel" id="painel">
-    <h1>Cronograma de Limpeza</h1>
+    <h1>Dados do Cronograma</h1>
     <p class="sub">Preencha os dados abaixo e clique em "Gerar Cronograma". O mês é dividido em 4 tabelas
         semanais, todas numa única folha A4 (paisagem) — funcionário por linha, dias nas colunas.</p>
 

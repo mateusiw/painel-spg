@@ -32,7 +32,14 @@
             #cabecalho > div:first-child { padding-bottom: .65rem; }
             body.com-barra-abas { padding-bottom: 0 !important; }
             body.com-barra-abas #checklistArea { margin-bottom: calc(88px + env(safe-area-inset-bottom)); }
+            /* Dentro do Painel o topo dele já mostra "Check List" e o menu tem o Sair: sem cabeçalho repetido */
+            html.no-painel #cabecalho { display: none; }
         }
+    </style>
+    <script>
+        try { if (window.top !== window.self) document.documentElement.classList.add('no-painel'); } catch (e) { document.documentElement.classList.add('no-painel'); }
+    </script>
+    <style>
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 h-[100dvh] flex flex-col overflow-hidden">

@@ -71,21 +71,39 @@
         .chip-modern { padding: 7px 10px; font-size: 11px; font-weight: 600; color: #334155; background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; transition: all .15s ease; }
         .chip-modern:hover { border-color: #bbf7d0; background: #ecfdf3; color: #14532d; }
         @media (prefers-reduced-motion: reduce) { .msel-menu, .msel-chevron, .msel-trigger { animation: none !important; transition: none !important; } }
+
+        /* ===== CABEÇALHO: vidro claro com um fio de cor no topo (padrão da Irrigação) ===== */
+        #navbar {
+            padding-top: max(.625rem, env(safe-area-inset-top));
+            background: rgba(255,255,255,0.78);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            backdrop-filter: blur(18px) saturate(180%);
+            border-bottom: 1px solid rgba(226,232,240,0.9);
+            box-shadow: 0 6px 24px -18px rgba(15,23,42,0.35);
+        }
+        #navbar::before {
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none;
+            background: linear-gradient(90deg, #10b981, #14b8a6 35%, #0ea5e9 70%, #6366f1);
+        }
+        @media print { #navbar { display: none !important; } }
     </style>
     <script src="../../lista-moderna.js"></script>
     <script src="../../trava-fundo.js"></script>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen pb-20 select-none">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-20 select-none">
 
-    <div class="bg-white border-b border-slate-200 px-4 py-3 flex flex-col md:flex-row justify-between items-center shadow-sm sticky top-0 z-40 gap-3">
-        <div class="flex items-center gap-3 w-full md:w-auto">
-            <img src="../../favicon.png" alt="Logo SPG" class="w-9 h-9 object-contain shrink-0">
-            <div>
-                <h1 class="text-sm font-bold text-slate-800 leading-tight">SPG RESUMO OPERACIONAL</h1>
-                <p class="text-[10px] text-slate-500 font-medium">Gestão de Operações Agrícolas</p>
+    <!-- Navbar: mesmo padrão do cabeçalho da Irrigação -->
+    <div id="navbar" class="text-slate-900 px-4 py-2.5 flex justify-between items-center gap-3 sticky top-0 z-40">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <a id="btnMenuProjetos" href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" style="display:none" class="w-8 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>
+            <img src="../../icone-app.png" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
+            <div class="min-w-0">
+                <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 truncate">Aplicações Fitossanitárias</h1>
+                <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">Gestão de operações agrícolas</p>
             </div>
         </div>
-        <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+
+        <div class="flex gap-2 items-center shrink-0">
             <div id="initialDataLoadingBadge" class="hidden flex items-center gap-1 px-2 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-[10px] font-bold whitespace-nowrap">
                 <span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
                 <span id="initialDataLoadingText">Carregando dados... 0%</span>
@@ -94,21 +112,17 @@
                 <i data-lucide="cloud-off" class="w-3.5 h-3.5"></i>
                 <span id="spgAguardandoTexto"></span>
             </div>
-            <a id="btnMenuProjetos" href="../../index.html" title="Menu de projetos" style="display:none" class="items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold whitespace-nowrap">
-                <i data-lucide="layout-grid" class="w-4 h-4"></i>
-                <span>Menu</span>
-            </a>
-            <button id="btnSairSistema" onclick="sairDoSistema()" style="display:none" class="items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold whitespace-nowrap">
-                <i data-lucide="log-out" class="w-4 h-4"></i>
-                <span>Sair</span>
-            </button>
-            <button id="btnAbrirDashboard" onclick="showDashboardInPage()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold shadow-lg shadow-slate-700/20 transition-all active:scale-95 whitespace-nowrap">
+            <button id="btnAbrirDashboard" onclick="showDashboardInPage()" title="Dashboard" class="flex items-center justify-center gap-2 px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-xl ring-1 ring-slate-200 shadow-sm transition-all active:scale-95 font-bold text-xs whitespace-nowrap">
                 <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                <span>Dashboard</span>
+                <span class="hidden sm:inline">Dashboard</span>
             </button>
-            <button id="btnEnviarRelatorio" onclick="showConfirmSendModal()" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold shadow-lg shadow-green-600/20 transition-all active:scale-95 active:bg-green-800 whitespace-nowrap">
+            <button id="btnEnviarRelatorio" onclick="showConfirmSendModal()" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl shadow-md shadow-emerald-600/25 ring-1 ring-emerald-700/20 transition-all active:scale-95 font-bold text-xs whitespace-nowrap">
                 <i data-lucide="send" class="w-4 h-4"></i>
-                <span>Enviar para o WhatsApp</span>
+                <span class="hidden sm:inline">Enviar para o WhatsApp</span>
+                <span class="sm:hidden">Enviar</span>
+            </button>
+            <button id="btnSairSistema" onclick="sairDoSistema()" title="Sair" aria-label="Sair" style="display:none" class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 shrink-0">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
             </button>
         </div>
     </div>

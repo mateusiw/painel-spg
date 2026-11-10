@@ -71,15 +71,15 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen">
 
     <!-- Navbar (Não aparece na impressão) -->
-    <div class="tema-nav px-4 py-2.5 flex justify-between items-center sticky top-0 z-40 print:hidden">
-        <div class="flex items-center gap-3">
-            <img src="../../../favicon.png" alt="Logo SPG" class="w-9 h-9 object-contain">
-            <div>
-                <h1 class="text-sm sm:text-[15px] font-extrabold text-slate-900 leading-tight tracking-tight">SPG Packing - Check-list</h1>
-                <p class="text-[10px] text-slate-400 font-semibold tracking-wide">Gerador de Checklists</p>
+    <div class="barra-lista print:hidden">
+        <div class="barra-lista-marca">
+            <img src="../../../icone-app.png" alt="">
+            <div class="barra-lista-textos">
+                <h1 class="barra-lista-titulo">Embarque e Armazenamento</h1>
+                <p class="barra-lista-sub">SPG Packing</p>
             </div>
         </div>
-        <div class="flex gap-2">
+        <div class="barra-lista-acoes">
             <button type="button" onclick="window.print()" class="tema-btn-verde flex items-center gap-2 px-4 py-2.5 text-xs font-bold active:scale-95">
                 <i data-lucide="printer" class="w-4 h-4"></i>
                 <span class="hidden sm:inline">Imprimir Formulário</span>
