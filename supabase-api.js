@@ -374,6 +374,12 @@
               ['visaogeral', 'Visão Geral', 'layout-dashboard'], ['programacao', 'Programação', 'clipboard-list'], ['equipes', 'Equipes', 'users-round'],
               ['produtividade', 'Produtividade', 'trending-up'], ['caixas', 'Caixas', 'package-check'],
               ['servicos', 'Serviços', 'wrench'], ['calendario', 'Calendário', 'calendar'], ['relatorios', 'Relatórios', 'bar-chart-3'], ['historico', 'Histórico', 'history']]) }] },
+        { id: 'estoque', nome: 'Estoque de Produtos', descricao: 'Cadastro, lançamentos, compras, custos e inventário', icone: 'boxes', grupo: 'Operação', gradiente: 'from-emerald-600 to-green-800',
+          cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/estoque/index.html',
+          areas: [{ modulo: 'estoque', nome: 'Acesso ao Estoque', recursos: recursos('estoque', [
+              ['resumo', 'Resumo', 'layout-dashboard'], ['cadastro', 'Cadastro', 'package'], ['lancamentos', 'Lançamentos', 'arrow-left-right'],
+              ['compras', 'Compras', 'shopping-cart'], ['custos', 'Custos', 'calculator'], ['inventario', 'Inventário', 'clipboard-list'],
+              ['relatorio', 'Relatório', 'file-text'], ['fornecedores', 'Fornecedores', 'truck']]) }] },
         { id: 'checklist', nome: 'Check List', descricao: 'Veículos, embarque, limpeza e POP', icone: 'clipboard-check', grupo: 'Operação', gradiente: 'from-teal-500 to-emerald-700',
           cor: 'bg-teal-50 text-teal-700', caminho: 'projetos/checklist/index.html',
           areas: [{ modulo: 'checklist', nome: 'Acesso ao Check List', recursos: recursos('checklist', [
