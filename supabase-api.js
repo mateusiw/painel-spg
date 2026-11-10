@@ -350,6 +350,13 @@
               { modulo: 'pesagem_oasis', nome: 'Pesagem', recursos: [] },
               { modulo: 'lancamentos_oasis', nome: 'Lançamentos', recursos: recursos('lancar', [['colheita', 'Colheita', 'tractor'], ['previsao', 'Calendário', 'calendar-days'], ['descarte', 'Descarte', 'trash-2']]) }
           ] },
+        { id: 'resumo-colheita-estufa', nome: 'Resumo da Colheita Estufa', descricao: 'Pepino: campo, colheita, pesagem e lançamentos', icone: 'tractor', grupo: 'Operação', gradiente: 'from-teal-500 to-cyan-700',
+          cor: 'bg-teal-50 text-teal-700', caminho: 'projetos/resumo-colheita-estufa/index.html', local: 'estufa',
+          areas: [
+              { modulo: 'colheita_estufa', nome: 'Campo e Colheita', recursos: recursos('colheita_estufa', [['campo', 'Campo', 'truck'], ['colheita', 'Colheita', 'tractor']]) },
+              { modulo: 'pesagem_estufa', nome: 'Pesagem', recursos: [] },
+              { modulo: 'lancamentos_estufa', nome: 'Lançamentos', recursos: recursos('lancar_estufa', [['colheita', 'Colheita', 'tractor'], ['previsao', 'Calendário', 'calendar-days'], ['descarte', 'Descarte', 'trash-2']]) }
+          ] },
         { id: 'producao-oasis', nome: 'Produção Oásis', descricao: 'Previsões, produtividade, calendário, ranking e análise', icone: 'bar-chart-3', grupo: 'Indicadores', gradiente: 'from-indigo-500 to-violet-600',
           cor: 'bg-indigo-50 text-indigo-700', caminho: 'projetos/producao-oasis/index.html', local: 'oasis',
           areas: [{ modulo: 'producao_oasis', nome: 'Acesso à Produção', recursos: recursos('producao', [

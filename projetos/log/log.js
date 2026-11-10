@@ -70,7 +70,11 @@
 
     let projetos = API.projetosDoUsuario();
     const projetoPorId = id => projetos.find(p => p.id === id);
-    const projetoDe = l => projetoPorId(PROJETO_DA_TABELA[l.tabela]) || null;
+    const projetoDe = l => {
+        const id = PROJETO_DA_TABELA[l.tabela];
+        if (id === 'resumo-colheita-oasis' && l.local === 'estufa') return projetoPorId('resumo-colheita-estufa') || null;
+        return projetoPorId(id) || null;
+    };
 
     let perfis = [];
     const nomeDe = (id, reserva) => {
