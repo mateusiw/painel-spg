@@ -929,22 +929,11 @@
 
     function diasEntre(de, ate) { return Math.round((new Date(ate + 'T12:00:00Z') - new Date(de + 'T12:00:00Z')) / 86400000); }
 
-    // Mesmo visual do "Resumo da Produção": cabeçalho verde, faixa de totais, um cartão por bloco e próximas colheitas
+    // Visual do "Resumo da Produção": cabeçalho verde, faixa de totais e um cartão por bloco
     const IMG = {
         fonte: "'Segoe UI',Tahoma,Geneva,Verdana,sans-serif",
-        icone: (nome, tam, cor) => `<i data-lucide="${nome}" width="${tam}" height="${tam}" stroke-width="2.2" style="color:${cor};flex-shrink:0;"></i>`,
-        rotulo: (icone, texto, extra) => `<div style="display:flex;align-items:center;gap:7px;margin-bottom:12px;">
-            ${IMG.icone(icone, 13, '#94a3b8')}<span style="font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.14em;">${texto}</span>${extra ? `<span style="font-size:11px;color:#94a3b8;font-weight:600;">· ${extra}</span>` : ''}
-        </div>`,
-        caixa: (icone, valor, rotulo, c) => `<div style="flex:1;background:${c.fundo};border-radius:14px;padding:16px 8px;text-align:center;">
-            <div style="display:flex;justify-content:center;margin-bottom:8px;">${IMG.icone(icone, 16, c.icone)}</div>
-            <div style="font-size:18px;font-weight:800;color:${c.valor};line-height:1.2;">${esc(valor)}</div>
-            <div style="font-size:10px;font-weight:600;color:${c.icone};text-transform:uppercase;letter-spacing:.08em;margin-top:3px;">${rotulo}</div>
-        </div>`
+        icone: (nome, tam, cor) => `<i data-lucide="${nome}" width="${tam}" height="${tam}" stroke-width="2.2" style="color:${cor};flex-shrink:0;"></i>`
     };
-    const COR_VERDE = { fundo: '#ecfdf5', icone: '#059669', valor: '#065f46' };
-    const COR_CINZA = { fundo: '#f8fafc', icone: '#64748b', valor: '#334155' };
-    const COR_ROSA = { fundo: '#fff1f2', icone: '#e11d48', valor: '#9f1239' };
 
     function resumoPlantio(regs) {
         const plantado = soma(regs, 'total_plantas');
@@ -955,159 +944,83 @@
         return { plantado, mudas: comMudas.length ? mudas : null, perdas, sucesso };
     }
 
-    const semanasEDias = d => d >= 7 ? `${Math.floor(d / 7)} sem.${d % 7 ? ` e ${d % 7}d` : ''}` : '';
+    // Imagem resumida: mudas recebidas, plantado, perdas e idade da muda, por bloco e variedade
+    const pctPerda = v => v.perdas != null && v.mudas ? ` <span style="font-size:11px;font-weight:700;color:#f43f5e;">(${n(100 - v.sucesso)}%)</span>` : '';
+    const COLUNAS = 'display:grid;grid-template-columns:minmax(0,1fr) 92px 92px 112px;gap:8px;align-items:center;';
 
-    function cartaoBlocoImagem(itens) {
-        const a = itens[0];
-        const rotulo = ehPepino(a.cultura) ? 'Setor' : 'Bloco';
-        const base = itens.find(r => r.colaboradores || r.hora_inicio) || a;
-        const inicio = itens.map(r => r.inicio_colheita).filter(Boolean).sort()[0] || '';
-        const ciclo = inicio && a.data_plantio ? diasEntre(a.data_plantio, inicio) : null;
-        const res = resumoPlantio(itens);
-
-        const equipe = [
-            base.colaboradores ? `${IMG.icone('users', 14, '#64748b')}<span>${n(base.colaboradores)} colaboradores</span>` : '',
-            base.hora_inicio || base.hora_fim ? `${IMG.icone('clock', 14, '#64748b')}<span>${esc(base.hora_inicio || '--:--')} › ${esc(base.hora_fim || '--:--')}</span>` : '',
-            base.intervalo ? `${IMG.icone('coffee', 14, '#64748b')}<span>${esc(base.intervalo)}</span>` : '',
-            base.duracao ? `${IMG.icone('timer', 14, '#64748b')}<span>${esc(base.duracao)}</span>` : ''
-        ].filter(Boolean).map(x => `<span style="display:inline-flex;align-items:center;gap:6px;">${x}</span>`).join('');
-
-        const frase = res.mudas
-            ? `De <b style="color:#1e293b;">${n(res.mudas)} mudas</b>, foram plantadas <b style="color:#047857;">${n(res.plantado)} plantas</b> <span style="color:#94a3b8;">(${n(res.sucesso)}%)</span>, com <b style="color:#dc2626;">${n(res.perdas)} perdas</b> <span style="color:#94a3b8;">(${n(100 - res.sucesso)}%)</span>`
-            : `Foram plantadas <b style="color:#047857;">${n(res.plantado)} plantas</b> em ${itens.length === 1 ? '1 variedade' : itens.length + ' variedades'}`;
-
-        const variedades = itens.map(r => {
-            const v = resumoPlantio([r]);
-            return `<div style="margin-top:14px;">
-                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;">
-                    <span style="font-size:15px;font-weight:800;color:#334155;">${esc(r.cultura)} <span style="color:#94a3b8;font-weight:600;">${esc(r.variedade || '')}</span></span>
-                    ${r.idade_dias ? `<span style="font-size:12px;font-weight:600;color:#94a3b8;">Idade da muda: ${n(r.idade_dias)} dias</span>` : ''}
+    function linhaVariedade(r, mostrarData) {
+        const v = resumoPlantio([r]);
+        return `<div style="${COLUNAS}padding:10px 0;border-top:1px solid #f1f5f9;">
+            <div style="min-width:0;display:flex;align-items:center;gap:10px;">
+                ${mostrarData ? `<div style="flex-shrink:0;width:50px;text-align:center;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:9px;padding:4px 0;">
+                    <div style="font-size:15px;font-weight:900;color:#047857;line-height:1.1;">${r.data_plantio.slice(8, 10)}/${r.data_plantio.slice(5, 7)}</div>
+                    <div style="font-size:9px;font-weight:700;color:#059669;">${r.data_plantio.slice(0, 4)}</div>
+                </div>` : ''}
+                <div style="min-width:0;">
+                <div style="font-size:14px;font-weight:800;color:#334155;">${esc(r.cultura)} <span style="color:#64748b;font-weight:600;">${esc(r.variedade || '')}</span></div>
+                <div style="font-size:12px;font-weight:600;color:#94a3b8;margin-top:1px;">${r.idade_dias ? `Idade da muda: <b style="color:#475569;">${n(r.idade_dias)} dias</b>` : 'Idade da muda: -'}</div>
                 </div>
-                <div style="display:flex;gap:10px;">
-                    ${IMG.caixa('flower-2', n(v.plantado), 'Plantado', COR_VERDE)}
-                    ${IMG.caixa('sprout', v.mudas != null ? n(v.mudas) : '-', r.bandejas ? `Mudas · ${n(r.bandejas)} bandejas` : 'Mudas', COR_CINZA)}
-                    ${IMG.caixa('trending-down', v.perdas != null ? `${n(v.perdas)} (${n(100 - v.sucesso)}%)` : '-', 'Perdas', COR_ROSA)}
-                </div>
-                ${r.observacoes ? `<div style="font-size:12px;color:#64748b;margin-top:6px;">Obs.: ${esc(r.observacoes)}</div>` : ''}
-            </div>`;
-        }).join('');
-
-        const faltam = inicio ? diasEntre(hoje(), inicio) : null;
-        const previsao = inicio ? `<div style="display:flex;align-items:center;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;font-size:15px;color:#334155;">
-            ${IMG.icone('calendar-check', 15, '#3b82f6')}<span>Início da colheita em <b style="color:#2563eb;">${emPt(inicio)}</b>${faltam > 0 ? `: faltam <b style="color:#2563eb;">${textoDias(faltam)}</b>` : faltam === 0 ? ': <b style="color:#2563eb;">hoje</b>' : ` <span style="color:#94a3b8;">(começou há ${textoDias(-faltam)})</span>`}</span>
-        </div>` : '';
-
-        return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:18px;margin:0 16px 16px;overflow:hidden;">
-            <div style="padding:16px 18px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;gap:12px;">
-                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;">
-                    <span style="font-size:22px;font-weight:900;color:#0f172a;">${rotulo} ${esc(a.bloco)}</span>
-                    ${a.ciclo ? `<span style="font-size:12px;font-weight:700;background:#e2e8f0;color:#334155;padding:3px 10px;border-radius:99px;">Ciclo ${esc(a.ciclo)}</span>` : ''}
-                    <span style="font-size:14px;color:#64748b;">transplantado em <b style="color:#059669;">${emPt(a.data_plantio)}</b>${inicio ? ` · colheita em <b style="color:#2563eb;">${emPt(inicio)}</b> <span style="color:#94a3b8;">(${textoDias(ciclo)})</span>` : ''}</span>
-                </div>
-                ${base.status ? `<span style="flex-shrink:0;font-size:11px;font-weight:900;color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;padding:4px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.06em;">${esc(base.status)}</span>` : ''}
             </div>
-            <div style="padding:16px 18px;border-bottom:1px solid #f1f5f9;">
-                ${IMG.rotulo('grid-2x2', rotulo, 'Todas as variedades')}
-                <div style="font-size:15px;color:#334155;line-height:1.5;">${frase}</div>
-                ${res.sucesso != null ? `<div style="height:7px;background:#f1f5f9;border-radius:99px;margin-top:10px;overflow:hidden;"><div style="height:100%;width:${Math.max(0, Math.min(100, res.sucesso)).toFixed(1)}%;background:#10b981;border-radius:99px;"></div></div>` : ''}
-                ${equipe ? `<div style="display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:13px;font-weight:600;color:#475569;">${equipe}</div>` : ''}
-            </div>
-            <div style="padding:16px 18px;">
-                ${IMG.rotulo('leaf', itens.length === 1 ? 'Variedade' : `Variedades (${itens.length})`)}
-                <div style="margin-top:-14px;">${variedades}</div>
-                ${previsao}
-            </div>
+            <div style="text-align:right;font-size:15px;font-weight:800;color:#334155;">${v.mudas != null ? n(v.mudas) : '-'}</div>
+            <div style="text-align:right;font-size:15px;font-weight:800;color:#047857;">${n(v.plantado)}</div>
+            <div style="text-align:right;font-size:15px;font-weight:800;color:#be123c;">${v.perdas != null ? n(v.perdas) + pctPerda(v) : '-'}</div>
         </div>`;
     }
 
-    // Próximas colheitas: blocos de todo o calendário mais perto de começar a colher (a partir de hoje)
-    const MAX_PROXIMAS = 8;
-    async function proximasColheitas() {
-        const porId = new Map();
-        try {
-            const { data: linhas, error } = await API.cliente.from('colheita_previsao').select('*').eq('local', LOCAL)
-                .gte('inicio_colheita', hoje()).order('inicio_colheita', { ascending: true }).limit(300);
-            if (error) throw error;
-            (linhas || []).forEach(r => porId.set(r.id, r));
-        } catch (e) { console.warn('Próximas colheitas (usando só as da tela):', e.message || e); }
-        // A versão da tela vale mais: pode ter alteração ainda aguardando envio
-        lista.forEach(r => porId.set(r.id, r));
-        const porBloco = new Map();
-        [...porId.values()]
-            .filter(r => r.inicio_colheita && r.inicio_colheita >= hoje() && r.bloco && !CICLO_ENCERRADO.test(r.status || ''))
-            .forEach(r => {
-                const k = limparBloco(r.bloco).toLowerCase() + '|' + String(r.ciclo || '').toLowerCase();
-                const atual = porBloco.get(k);
-                if (!atual || r.inicio_colheita < atual.inicio) porBloco.set(k, { a: r, inicio: r.inicio_colheita });
-            });
-        return [...porBloco.values()].sort((x, y) => x.inicio.localeCompare(y.inicio)).slice(0, MAX_PROXIMAS);
+    function cartaoBlocoImagem(itens, mostrarData) {
+        const a = itens[0];
+        const rotulo = ehPepino(a.cultura) ? 'Setor' : 'Bloco';
+        const res = resumoPlantio(itens);
+        const cab = t => `<div style="text-align:right;font-size:10px;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">${t}</div>`;
+        return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;margin:0 16px 12px;padding:14px 18px 6px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:19px;font-weight:900;color:#0f172a;">${rotulo} ${esc(a.bloco)}</span>
+                    ${a.ciclo ? `<span style="font-size:11px;font-weight:700;background:#e2e8f0;color:#334155;padding:2px 9px;border-radius:99px;">Ciclo ${esc(a.ciclo)}</span>` : ''}
+                </div>
+            </div>
+            <div style="${COLUNAS}padding-bottom:6px;"><div></div>${cab('Mudas')}${cab('Plantado')}${cab('Perdas')}</div>
+            ${itens.map(r => linhaVariedade(r, mostrarData)).join('')}
+            ${itens.length > 1 ? `<div style="${COLUNAS}padding:10px 0;border-top:2px solid #e2e8f0;">
+                <div style="font-size:13px;font-weight:900;color:#475569;text-transform:uppercase;letter-spacing:.04em;">Total do ${rotulo.toLowerCase()}</div>
+                <div style="text-align:right;font-size:15px;font-weight:900;color:#0f172a;">${res.mudas != null ? n(res.mudas) : '-'}</div>
+                <div style="text-align:right;font-size:15px;font-weight:900;color:#047857;">${n(res.plantado)}</div>
+                <div style="text-align:right;font-size:15px;font-weight:900;color:#be123c;">${res.perdas != null ? n(res.perdas) + pctPerda(res) : '-'}</div>
+            </div>` : ''}
+        </div>`;
     }
 
-    function htmlDaImagem(datas, regs, logo, listaProximas) {
+    function htmlDaImagem(datas, regs, logo) {
         const porBloco = new Map();
-        regs.forEach(r => { const k = r.data_plantio + '|' + r.bloco + '|' + (r.ciclo || ''); if (!porBloco.has(k)) porBloco.set(k, []); porBloco.get(k).push(r); });
-        const blocos = [...porBloco.values()];
+        regs.forEach(r => { const k = limparBloco(r.bloco).toLowerCase() + '|' + String(r.ciclo || '').toLowerCase(); if (!porBloco.has(k)) porBloco.set(k, []); porBloco.get(k).push(r); });
+        const blocos = [...porBloco.values()]
+            .map(itens => itens.sort((x, y) => String(x.data_plantio).localeCompare(String(y.data_plantio)) || String(x.variedade || '').localeCompare(String(y.variedade || ''), 'pt-BR')))
+            .sort((x, y) => String(x[0].bloco).localeCompare(String(y[0].bloco), 'pt-BR', { numeric: true }) || String(x[0].ciclo || '').localeCompare(String(y[0].ciclo || ''), 'pt-BR', { numeric: true }));
         const res = resumoPlantio(regs);
         const umaData = datas.length === 1;
         const diaSemana = d => { const s = new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }); return s.charAt(0).toUpperCase() + s.slice(1); };
-        const titulo = umaData ? `Resumo do Transplantio · ${diaSemana(datas[0])}` : 'Resumo do Transplantio';
         const subtitulo = umaData
-            ? `${esc(API.nomeLocal(LOCAL))} · ${emPt(datas[0])} · Semana ${getWeekNumber(new Date(datas[0] + 'T12:00:00'))}`
-            : `${esc(API.nomeLocal(LOCAL))} · ${datas.length} datas: ${datas.map(emPt).join(', ')}`;
-        const chip = (icone, texto) => `<span style="display:inline-flex;align-items:center;gap:6px;">${IMG.icone(icone, 15, '#a7f3d0')}<span>${texto}</span></span>`;
-        const metricas = [
-            chip('grid-2x2', blocos.length === 1 ? '1 bloco' : `${blocos.length} blocos`),
-            chip('leaf', regs.length === 1 ? '1 variedade' : `${regs.length} variedades`),
-            umaData ? '' : chip('calendar-days', `${datas.length} datas`)
-        ].filter(Boolean).join('<span style="color:rgba(255,255,255,.3);">|</span>');
+            ? `${esc(API.nomeLocal(LOCAL))} · ${emPt(datas[0])} · ${diaSemana(datas[0])}`
+            : `${esc(API.nomeLocal(LOCAL))} · ${datas.map(emPt).join(', ')}`;
         const totais = [
-            ['sprout', 'Mudas', res.mudas != null ? n(res.mudas) : '-'],
-            ['flower-2', 'Plantado', n(res.plantado)],
-            ['trending-down', 'Perdas', res.perdas != null ? n(res.perdas) : '-'],
-            ['percent', '% Sucesso', res.sucesso != null ? n(res.sucesso, 1) + '%' : '-']
-        ].map(([icone, rotulo, valor], i) => `<div style="flex:1;padding:16px 8px;text-align:center;${i ? 'border-left:1px solid #d1fae5;' : ''}">
-            <div style="display:flex;justify-content:center;">${IMG.icone(icone, 15, '#10b981')}</div>
-            <div style="font-size:10px;font-weight:900;color:#059669;text-transform:uppercase;letter-spacing:.12em;margin-top:8px;">${rotulo}</div>
-            <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:2px;">${valor}</div>
+            ['sprout', 'Mudas recebidas', res.mudas != null ? n(res.mudas) : '-', '#0f172a', ''],
+            ['flower-2', 'Plantado', n(res.plantado), '#047857', res.sucesso != null ? `${n(res.sucesso, 1)}% de sucesso` : ''],
+            ['trending-down', 'Perdas', res.perdas != null ? n(res.perdas) : '-', '#be123c', res.sucesso != null ? `${n(100 - res.sucesso, 1)}% de perdas` : '']
+        ].map(([icone, rotulo, valor, cor, detalhe], i) => `<div style="flex:1;padding:14px 8px;text-align:center;${i ? 'border-left:1px solid #d1fae5;' : ''}">
+            <div style="display:flex;justify-content:center;align-items:center;gap:5px;">${IMG.icone(icone, 13, '#10b981')}<span style="font-size:10px;font-weight:900;color:#059669;text-transform:uppercase;letter-spacing:.1em;">${rotulo}</span></div>
+            <div style="font-size:24px;font-weight:900;color:${cor};margin-top:4px;">${valor}</div>
+            ${detalhe ? `<div style="font-size:11px;font-weight:700;color:#64748b;">${detalhe}</div>` : ''}
         </div>`).join('');
 
-        // Próximas colheitas: um cartão por bloco, do mais perto de começar para o mais longe
-        const proximas = (listaProximas || []).map(({ a, inicio }) => {
-                const d = diasEntre(hoje(), inicio);
-                const c = d < 0 ? { fundo: '#ecfdf5', borda: '#a7f3d0', topo: '#10b981', valor: '#047857' }
-                    : d <= 14 ? { fundo: '#eff6ff', borda: '#bfdbfe', topo: '#3b82f6', valor: '#1d4ed8' }
-                    : { fundo: '#fff', borda: '#e2e8f0', topo: '#cbd5e1', valor: '#334155' };
-                return `<div style="width:112px;background:${c.fundo};border:1px solid ${c.borda};border-top:4px solid ${c.topo};border-radius:12px;padding:10px 6px;text-align:center;">
-                    <div style="font-size:13px;font-weight:800;color:#1e293b;">${ehPepino(a.cultura) ? 'Setor' : 'Bloco'} ${esc(a.bloco)}</div>
-                    <div style="font-size:11px;color:#64748b;margin-top:2px;">${emPt(inicio)}</div>
-                    <div style="font-size:19px;font-weight:900;color:${c.valor};margin-top:6px;">${d < 0 ? 'Colhendo' : d === 0 ? 'Hoje' : textoDias(d)}</div>
-                    <div style="font-size:10px;color:#94a3b8;min-height:13px;">${d < 0 ? `há ${textoDias(-d)}` : semanasEDias(d)}</div>
-                </div>`;
-            }).join('');
-
-        return `<div style="width:800px;background:#f8fafc;font-family:${IMG.fonte};">
-            <div style="background:linear-gradient(135deg,#047857,#064e3b);padding:22px 24px;color:#fff;">
-                <div style="display:flex;align-items:center;gap:14px;">
-                    ${logo ? `<img src="${logo}" alt="" style="width:52px;height:52px;background:#fff;border-radius:50%;padding:2px;">` : ''}
-                    <div><div style="font-size:24px;font-weight:900;line-height:1.15;">${titulo}</div>
-                    <div style="font-size:14px;font-weight:600;color:#a7f3d0;margin-top:4px;">${subtitulo}</div></div>
-                </div>
-                <div style="height:1px;background:rgba(255,255,255,.18);margin:16px 0 14px;"></div>
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:14px;font-weight:700;">${metricas}</div>
-                    <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:8px 16px;">
-                        <span style="font-size:14px;font-weight:700;color:#d1fae5;">Total plantado</span>
-                        <span style="font-size:26px;font-weight:900;">${n(res.plantado)}</span>
-                    </div>
-                </div>
+        return `<div style="width:640px;background:#f8fafc;font-family:${IMG.fonte};">
+            <div style="background:linear-gradient(135deg,#047857,#064e3b);padding:18px 22px;color:#fff;display:flex;align-items:center;gap:14px;">
+                ${logo ? `<img src="${logo}" alt="" style="width:46px;height:46px;background:#fff;border-radius:50%;padding:2px;">` : ''}
+                <div><div style="font-size:21px;font-weight:900;line-height:1.15;">Resumo do Transplantio</div>
+                <div style="font-size:13px;font-weight:600;color:#a7f3d0;margin-top:3px;">${subtitulo}</div></div>
             </div>
-            <div style="display:flex;background:#ecfdf5;border-bottom:1px solid #d1fae5;margin-bottom:16px;">${totais}</div>
-            ${blocos.map(cartaoBlocoImagem).join('')}
-            ${proximas ? `<div style="background:#fff;border-top:1px solid #e2e8f0;padding:16px;">
-                ${IMG.rotulo('calendar-clock', 'Próximas colheitas')}
-                <div style="display:flex;flex-wrap:wrap;gap:8px;">${proximas}</div>
-            </div>` : ''}
-            <div style="background:#f1f5f9;border-top:1px solid #e2e8f0;padding:12px;text-align:center;font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">SPG ${esc(API.nomeLocal(LOCAL))} • Dados oficiais</div>
+            <div style="display:flex;background:#ecfdf5;border-bottom:1px solid #d1fae5;margin-bottom:14px;">${totais}</div>
+            ${blocos.map(itens => cartaoBlocoImagem(itens, !umaData)).join('')}
+            <div style="background:#f1f5f9;border-top:1px solid #e2e8f0;margin-top:4px;padding:10px;text-align:center;font-size:10px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">${esc(/^spg\b/i.test(API.nomeLocal(LOCAL)) ? API.nomeLocal(LOCAL) : 'SPG ' + API.nomeLocal(LOCAL))} • Dados oficiais</div>
         </div>`;
     }
 
@@ -1122,8 +1035,7 @@
             const regs = (await transplantiosDasDatas(datas)).filter(r => !ocultos.has(r.id));
             if (!regs.length) { aviso(datas.length > 1 ? 'Todos os blocos destas datas estão ocultos da imagem.' : 'Todos os blocos deste dia estão ocultos da imagem.'); return; }
             const datasComDados = datas.filter(d => regs.some(r => r.data_plantio === d));
-            const [logo, proximas] = await Promise.all([logoEmDados(), proximasColheitas()]);
-            host.innerHTML = htmlDaImagem(datasComDados, regs, logo, proximas);
+            host.innerHTML = htmlDaImagem(datasComDados, regs, await logoEmDados());
             document.body.appendChild(host);
             iconesAgora();
             const opcoesImg = { pixelRatio: 2, backgroundColor: '#f8fafc', skipFonts: true };
