@@ -56,6 +56,11 @@
             body { overscroll-behavior: none; }
             body::before { content: ''; position: fixed; z-index: 2147483000; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--mata); pointer-events: none; }
             body:has(#telaMenu:not(.hidden)) { height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+            /* O iOS pinta a faixa do relógio com um degradê da COR DE FUNDO DA PÁGINA (body), por cima
+               do cabeçalho. Com o fundo cinza-claro, ficava uma névoa branca em cima do verde. O fundo
+               da página passa a ser verde, e o cinza-claro fica só na área do conteúdo. */
+            body:has(#telaMenu:not(.hidden)) { background-color: var(--mata) !important; }
+            #colunaConteudo { background-color: #f5f7f2; }
             #telaMenu > div { min-height: 0; height: 100dvh; }
             #colunaConteudo { height: 100dvh; overflow: hidden; }
             #areaInicio { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
