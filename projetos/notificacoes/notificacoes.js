@@ -13,6 +13,16 @@
     const modulosDe = p => p.areas.filter(a => !a.extra).map(a => a.modulo);
 
     let sites = new Map(), tipos = [], abertoAviso = null;
+    let usuarios = [], filtroUsuarios = 'todos';
+
+    const ICONE_TIPO = { Celular: 'smartphone', Tablet: 'tablet', Chromebook: 'laptop', Computador: 'monitor' };
+    const ESTADOS = {
+        ativas: ['Ativadas', 'bg-emerald-50 text-emerald-700'],
+        nao_ativadas: ['Não ativadas', 'bg-amber-50 text-amber-700'],
+        bloqueadas: ['Bloqueadas', 'bg-rose-50 text-rose-700'],
+        precisa_instalar: ['Falta instalar', 'bg-amber-50 text-amber-700'],
+        sem_suporte: ['Navegador não aceita', 'bg-slate-100 text-slate-600'],
+    };
 
     function avisar(texto, erro) {
         const a = el('avisoGeral');
@@ -77,6 +87,48 @@
         </div>`).join('') || '<p class="p-4 text-sm text-slate-400">Nenhum envio ainda.</p>';
     }
 
+    function desenharAparelhos() {
+        const ativaram = usuarios.filter(u => u.ativou).length;
+        el('resumoAparelhos').textContent = `${ativaram} de ${usuarios.length} usuário(s) ativaram as notificações em algum aparelho.`;
+        el('filtroAparelhos').innerHTML = [['todos', 'Todos'], ['sim', 'Ativaram'], ['nao', 'Não ativaram']].map(([id, nome]) =>
+            `<button type="button" data-filtro-usuarios="${id}" class="px-2.5 py-1 rounded-lg text-[11px] font-bold ${filtroUsuarios === id ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}">${nome}</button>`).join('');
+        const visiveis = usuarios.filter(u => filtroUsuarios === 'todos' || (filtroUsuarios === 'sim') === u.ativou);
+        el('listaAparelhos').innerHTML = visiveis.map(u => `<div class="p-3">
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-sm font-bold text-slate-800 truncate">${esc(u.nome)}</p>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${u.ativou ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${u.ativou ? 'Ativou' : 'Não ativou'}</span>
+            </div>
+            ${u.aparelhos.length ? u.aparelhos.map(a => {
+                const [rotulo, cor] = ESTADOS[a.estado] || ESTADOS.nao_ativadas;
+                const detalhes = [a.sistema, a.modelo, a.navegador, a.instalado ? 'App instalado' : ''].filter(Boolean).join(' · ');
+                return `<div class="flex items-start gap-2.5 mt-2">
+                    <span class="p-1.5 rounded-lg bg-slate-100 text-slate-500 shrink-0"><i data-lucide="${ICONE_TIPO[a.tipo] || 'monitor'}" class="w-3.5 h-3.5"></i></span>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-bold text-slate-700">${esc(a.tipo || 'Aparelho')} <span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${cor}">${rotulo}</span></p>
+                        <p class="text-[11px] text-slate-500 break-words">${esc(detalhes)}</p>
+                        <p class="text-[11px] text-slate-400">Visto em ${new Date(a.visto_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                </div>`;
+            }).join('') : '<p class="text-[11px] text-slate-400 mt-1">Ainda não abriu o Painel depois desta atualização, então o aparelho é desconhecido.</p>'}
+        </div>`).join('') || '<p class="p-4 text-sm text-slate-400">Nenhum usuário neste filtro.</p>';
+        lucide.createIcons();
+    }
+
+    async function carregarAparelhos() {
+        const [perfis, disp] = await Promise.all([API.listarPerfis(true).catch(() => []), sb.from('notif_dispositivos').select('*').order('visto_em', { ascending: false })]);
+        if (disp.error) {
+            el('resumoAparelhos').textContent = '';
+            el('filtroAparelhos').innerHTML = '';
+            el('listaAparelhos').innerHTML = '<p class="p-4 text-sm font-semibold text-amber-900 bg-amber-50">Rode o arquivo supabase/notificacoes_dispositivos.sql no Supabase para ver os aparelhos.</p>';
+            return;
+        }
+        usuarios = (perfis || []).filter(p => p.ativo).map(p => {
+            const aparelhos = disp.data.filter(d => d.usuario === p.id);
+            return { nome: p.nome_curto || p.nome, ativou: aparelhos.some(a => a.estado === 'ativas'), aparelhos };
+        }).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+        desenharAparelhos();
+    }
+
     async function carregar() {
         const [s, t] = await Promise.all([sb.from('notif_sites').select('*'), sb.from('notif_tipos').select('*').order('ordem')]);
         if (s.error || t.error) {
@@ -88,6 +140,7 @@
         desenharSites();
         lucide.createIcons();
         carregarEnvios();
+        carregarAparelhos();
     }
 
     async function salvarTipo(id, valores) {
@@ -98,6 +151,8 @@
     }
 
     document.addEventListener('click', async e => {
+        const filtro = e.target.closest('[data-filtro-usuarios]');
+        if (filtro) { filtroUsuarios = filtro.dataset.filtroUsuarios; desenharAparelhos(); return; }
         const site = e.target.closest('[data-site]');
         if (site) {
             const ligar = sites.get(site.dataset.site) !== true;
