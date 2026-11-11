@@ -147,6 +147,7 @@
     let ofertaImagem = null;
     let gerandoImagem = false;
     let imagemAtual = null;
+    const datasSel = new Set();   // datas do calendário marcadas para sair juntas na mesma imagem
     let rascunho = null;
     let mudasManual = false;
     let aCadastrar = null;
@@ -325,18 +326,36 @@
             <span class="text-xs font-semibold text-slate-500 text-center">Página <b class="text-slate-800">${pagina}</b> de ${totalPaginas} <span class="text-slate-400">· ${itens.length.toLocaleString('pt-BR')} lançamentos</span></span>
             <button type="button" data-acao="paginaLanc" data-valor="${pagina + 1}"${pagina === totalPaginas ? ' disabled' : ''} class="inline-flex items-center gap-1 pl-3 pr-2 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">Próxima<i data-lucide="chevron-right" class="w-4 h-4"></i></button>
         </nav>` : '';
-        alvo.innerHTML = [...grupos.entries()].map(([data, regs]) => `
+        alvo.innerHTML = barraSelecao() + [...grupos.entries()].map(([data, regs]) => `
             <section>
                 <header class="flex items-center justify-between px-1 mb-1.5">
                     <h4 class="text-[11px] font-black text-slate-500 uppercase tracking-wider">${tipoAtual === 'previsao' ? (data ? 'Transplantio ' + emPt(data) : 'Sem data de transplantio') : emPt(data)}</h4>
                     <div class="flex items-center gap-2">
                         <span class="text-[11px] font-bold text-slate-400">${esc(t.total(doDia(data)))}</span>
-                        ${t.imagem && doDia(data).some(t.imagem) ? `<button type="button" data-acao="imagem" data-valor="${esc(data)}" title="Gerar imagem com todas as variedades transplantadas neste dia" class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg"><i data-lucide="image" class="w-3.5 h-3.5"></i>Gerar imagem</button>` : ''}
+                        ${t.imagem && data && doDia(data).some(t.imagem) ? `<button type="button" data-acao="selData" data-valor="${esc(data)}" aria-pressed="${datasSel.has(data)}" title="Marcar para juntar várias datas na mesma imagem" class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1.5 rounded-lg border ${datasSel.has(data) ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}"><i data-lucide="${datasSel.has(data) ? 'square-check' : 'square'}" class="w-3.5 h-3.5"></i>Selecionar</button>
+                        <button type="button" data-acao="imagem" data-valor="${esc(data)}" title="Gerar imagem com todas as variedades transplantadas neste dia" class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg"><i data-lucide="image" class="w-3.5 h-3.5"></i>Imagem</button>` : ''}
                     </div>
                 </header>
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-2">${regs.map(r => cartao(r, t)).join('')}</div>
             </section>`).join('') + paginacao + (lista.length >= 1000 ? `<p class="text-[11px] text-amber-700 bg-amber-50 rounded-lg p-2 text-center">Mostrando os 1.000 mais recentes. Reduza o período para ver os demais.</p>` : '');
         iconesAgora();
+    }
+
+    // Calendário: datas marcadas para gerar uma imagem só
+    function barraSelecao() {
+        if (tipoAtual !== 'previsao') return '';
+        if (!datasSel.size) return `<p class="flex items-center gap-2 text-[11px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"><i data-lucide="info" class="w-3.5 h-3.5 shrink-0 text-slate-400"></i>Para juntar várias datas na mesma imagem, toque em "Selecionar" em cada data.</p>`;
+        const datas = [...datasSel].sort();
+        return `<div class="bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 space-y-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+                <span class="text-[11px] font-black text-emerald-800 uppercase tracking-wider mr-1">${datas.length} ${datas.length === 1 ? 'data selecionada' : 'datas selecionadas'}</span>
+                ${datas.map(d => `<button type="button" data-acao="selData" data-valor="${esc(d)}" aria-label="Tirar ${emPt(d)} da seleção" class="inline-flex items-center gap-1 bg-white border border-emerald-200 text-emerald-800 text-[11px] font-bold pl-2 pr-1.5 py-1 rounded-lg">${emPt(d)}<i data-lucide="x" class="w-3 h-3"></i></button>`).join('')}
+            </div>
+            <div class="flex gap-2">
+                <button type="button" data-acao="imagemSel" class="flex-1 inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg"><i data-lucide="image" class="w-3.5 h-3.5"></i>Gerar imagem das ${datas.length === 1 ? 'data selecionada' : datas.length + ' datas'}</button>
+                <button type="button" data-acao="limparSel" class="inline-flex items-center gap-1 bg-white border border-slate-200 text-slate-600 text-xs font-bold px-3 py-2 rounded-lg"><i data-lucide="eraser" class="w-3.5 h-3.5"></i>Limpar</button>
+            </div>
+        </div>`;
     }
 
     const textoDias = n => `${n} ${n === 1 ? 'dia' : 'dias'}`;
@@ -573,7 +592,10 @@
 
     // Outro bloco no mesmo dia: repete a equipe e os horários já lançados, sem apagar o que foi digitado
     function preencherEquipeDoDia() {
-        const base = transplantiosDoDia(valorCampo('data_plantio')).find(r => r.colaboradores || r.hora_inicio);
+        const data = valorCampo('data_plantio');
+        const doDia = lista.filter(r => r.data_plantio === data);
+        if (ultimoTransplantio && ultimoTransplantio.data_plantio === data) doDia.push(ultimoTransplantio);
+        const base = data && doDia.find(r => r.colaboradores || r.hora_inicio);
         if (!base) return;
         ['colaboradores', 'hora_inicio', 'hora_fim', 'intervalo'].forEach(id => { const c = el('lanc_' + id); if (c && !c.value && base[id]) c.value = base[id]; });
         atualizarDuracao();
@@ -779,6 +801,14 @@
             renderLista();
         } else if (acao === 'imagem') {
             gerarImagem(valor);
+        } else if (acao === 'selData') {
+            if (datasSel.has(valor)) datasSel.delete(valor); else datasSel.add(valor);
+            renderLista();
+        } else if (acao === 'imagemSel') {
+            gerarImagem([...datasSel]);
+        } else if (acao === 'limparSel') {
+            datasSel.clear();
+            renderLista();
         } else if (acao === 'imagemCompartilhar') {
             compartilharImagem();
         } else if (acao === 'imagemBaixar') {
@@ -876,18 +906,20 @@
     }
 
     // ---------- Imagem do transplantio (para enviar à equipe) ----------
-    // Todas as variedades transplantadas no dia, mesmo as que estão fora do período filtrado na tela
-    async function transplantiosDoDia(data) {
+    // Todas as variedades transplantadas nas datas escolhidas, mesmo as que estão fora do período filtrado na tela
+    async function transplantiosDasDatas(datas) {
+        const querem = new Set(datas);
         const porId = new Map();
         try {
-            const { data: linhas, error } = await API.cliente.from('colheita_previsao').select('*').eq('local', LOCAL).eq('data_plantio', data);
+            const { data: linhas, error } = await API.cliente.from('colheita_previsao').select('*').eq('local', LOCAL).in('data_plantio', datas);
             if (error) throw error;
             (linhas || []).forEach(r => porId.set(r.id, r));
-        } catch (e) { console.warn('Transplantios do dia (usando só os da tela):', e.message || e); }
+        } catch (e) { console.warn('Transplantios das datas (usando só os da tela):', e.message || e); }
         // A versão da tela vale mais: pode ter alteração ainda aguardando envio
-        lista.forEach(r => { if (porId.has(r.id) || r.data_plantio === data) porId.set(r.id, r); });
-        if (ultimoTransplantio && (porId.has(ultimoTransplantio.id) || ultimoTransplantio.data_plantio === data)) porId.set(ultimoTransplantio.id, ultimoTransplantio);
-        return [...porId.values()].filter(r => r.data_plantio === data).sort((a, b) => String(a.bloco).localeCompare(String(b.bloco), 'pt-BR', { numeric: true }));
+        lista.forEach(r => { if (porId.has(r.id) || querem.has(r.data_plantio)) porId.set(r.id, r); });
+        if (ultimoTransplantio && (porId.has(ultimoTransplantio.id) || querem.has(ultimoTransplantio.data_plantio))) porId.set(ultimoTransplantio.id, ultimoTransplantio);
+        return [...porId.values()].filter(r => querem.has(r.data_plantio)).sort((a, b) =>
+            String(a.data_plantio).localeCompare(String(b.data_plantio)) || String(a.bloco).localeCompare(String(b.bloco), 'pt-BR', { numeric: true }));
     }
 
     async function logoEmDados() {
@@ -900,90 +932,212 @@
 
     function diasEntre(de, ate) { return Math.round((new Date(ate + 'T12:00:00Z') - new Date(de + 'T12:00:00Z')) / 86400000); }
 
-    function caixaImagem(rotulo, valor, detalhe, cores, grande) {
-        return `<div style="flex:1;background:${cores.fundo};border:1px solid ${cores.borda};border-radius:10px;padding:10px 12px;text-align:center;">
-            <div style="font-size:11px;font-weight:800;color:${cores.titulo};text-transform:uppercase;letter-spacing:.04em;">${rotulo}</div>
-            <div style="font-size:${grande ? 28 : 22}px;font-weight:900;color:${cores.valor};line-height:1.2;">${esc(valor)}</div>
-            ${detalhe ? `<div style="font-size:12px;font-weight:600;color:${cores.titulo};">${esc(detalhe)}</div>` : ''}
-        </div>`;
-    }
+    // Mesmo visual do "Resumo da Produção": cabeçalho verde, faixa de totais, um cartão por bloco e próximas colheitas
+    const IMG = {
+        fonte: "'Segoe UI',Tahoma,Geneva,Verdana,sans-serif",
+        icone: (nome, tam, cor) => `<i data-lucide="${nome}" width="${tam}" height="${tam}" stroke-width="2.2" style="color:${cor};flex-shrink:0;"></i>`,
+        rotulo: (icone, texto, extra) => `<div style="display:flex;align-items:center;gap:7px;margin-bottom:12px;">
+            ${IMG.icone(icone, 13, '#94a3b8')}<span style="font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.14em;">${texto}</span>${extra ? `<span style="font-size:11px;color:#94a3b8;font-weight:600;">· ${extra}</span>` : ''}
+        </div>`,
+        caixa: (icone, valor, rotulo, c) => `<div style="flex:1;background:${c.fundo};border-radius:14px;padding:16px 8px;text-align:center;">
+            <div style="display:flex;justify-content:center;margin-bottom:8px;">${IMG.icone(icone, 16, c.icone)}</div>
+            <div style="font-size:18px;font-weight:800;color:${c.valor};line-height:1.2;">${esc(valor)}</div>
+            <div style="font-size:10px;font-weight:600;color:${c.icone};text-transform:uppercase;letter-spacing:.08em;margin-top:3px;">${rotulo}</div>
+        </div>`
+    };
+    const COR_VERDE = { fundo: '#ecfdf5', icone: '#059669', valor: '#065f46' };
+    const COR_CINZA = { fundo: '#f8fafc', icone: '#64748b', valor: '#334155' };
+    const COR_ROSA = { fundo: '#fff1f2', icone: '#e11d48', valor: '#9f1239' };
 
-    const CORES_PLANTADO = { fundo: '#f0fdf4', borda: '#bbf7d0', titulo: '#16a34a', valor: '#15803d' };
-    const CORES_PERDAS = { fundo: '#fff1f2', borda: '#fecaca', titulo: '#dc2626', valor: '#b91c1c' };
-
-    function caixasPlantio(regs, grande) {
+    function resumoPlantio(regs) {
         const plantado = soma(regs, 'total_plantas');
         const comMudas = regs.filter(r => Number(r.mudas) > 0 && Number(r.total_plantas) > 0);
-        if (!comMudas.length) return caixaImagem('Plantado', n(plantado), '', CORES_PLANTADO, grande);
         const mudas = soma(comMudas, 'mudas');
-        const perdas = mudas - soma(comMudas, 'total_plantas');
-        return caixaImagem('Plantado', n(plantado), `${n(100 - (perdas / mudas) * 100)}% de sucesso`, CORES_PLANTADO, grande)
-            + caixaImagem('Perdas', n(perdas), `${n((perdas / mudas) * 100)}% de perdas`, CORES_PERDAS, grande);
+        const perdas = comMudas.length ? mudas - soma(comMudas, 'total_plantas') : null;
+        const sucesso = comMudas.length ? (soma(comMudas, 'total_plantas') / mudas) * 100 : null;
+        return { plantado, mudas: comMudas.length ? mudas : null, perdas, sucesso };
     }
 
-    function htmlDaImagem(data, regs, logo) {
-        const diaSemana = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' });
-        const porBloco = new Map();
-        regs.forEach(r => { const k = r.bloco + '|' + (r.ciclo || ''); if (!porBloco.has(k)) porBloco.set(k, []); porBloco.get(k).push(r); });
-        const blocos = [...porBloco.values()].map(itens => {
-            const a = itens[0];
-            const rotulo = ehPepino(a.cultura) ? 'Setor' : 'Bloco';
-            const base = itens.find(r => r.colaboradores || r.hora_inicio) || a;
-            const horario = base.hora_inicio || base.hora_fim ? `${base.hora_inicio || '--:--'} - ${base.hora_fim || '--:--'}${base.duracao ? ` (${base.duracao})` : ''}` : '';
-            const meta = [base.colaboradores ? `${n(base.colaboradores)} colaboradores` : '', horario].filter(Boolean).join(' • ');
-            const variedades = itens.map(r => {
-                const dias = r.inicio_colheita ? diasEntre(data, r.inicio_colheita) : null;
-                return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-top:8px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;">
-                        <span style="font-size:15px;font-weight:700;color:#334155;">${esc(r.cultura)} <span style="color:#94a3b8;font-weight:500;">${esc(r.variedade)}</span></span>
-                        ${r.idade_dias ? `<span style="font-size:12px;font-weight:600;color:#94a3b8;">Idade: ${n(r.idade_dias)} dias</span>` : ''}
-                    </div>
-                    <div style="display:flex;gap:8px;">${caixasPlantio([r])}</div>
-                    ${r.inicio_colheita ? `<div style="font-size:12px;font-weight:600;color:#64748b;margin-top:8px;">Início da colheita: <b style="color:#1d4ed8;">${emPt(r.inicio_colheita)}</b> · ${n(dias)} dias até colher</div>` : ''}
-                    ${r.observacoes ? `<div style="font-size:12px;font-weight:500;color:#64748b;margin-top:4px;">Obs.: ${esc(r.observacoes)}</div>` : ''}
-                </div>`;
-            }).join('');
-            const totalBloco = itens.length > 1 ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px dashed #e2e8f0;font-size:13px;font-weight:800;color:#475569;"><span>Total ${rotulo} ${esc(a.bloco)}</span><span style="color:#15803d;">${n(soma(itens, 'total_plantas'))} plantados</span></div>` : '';
-            return `<div style="padding:16px 24px;border-bottom:1px solid #f1f5f9;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:20px;font-weight:800;color:#1e293b;">${rotulo} ${esc(a.bloco)}</span>
-                    ${a.ciclo ? `<span style="font-size:12px;font-weight:700;background:#e8f4ee;color:#0d5c3a;padding:3px 10px;border-radius:99px;border:1px solid #c5ddd4;">Ciclo ${esc(a.ciclo)}</span>` : ''}
+    const semanasEDias = d => d >= 7 ? `${Math.floor(d / 7)} sem.${d % 7 ? ` e ${d % 7}d` : ''}` : '';
+
+    function cartaoBlocoImagem(itens) {
+        const a = itens[0];
+        const rotulo = ehPepino(a.cultura) ? 'Setor' : 'Bloco';
+        const base = itens.find(r => r.colaboradores || r.hora_inicio) || a;
+        const inicio = itens.map(r => r.inicio_colheita).filter(Boolean).sort()[0] || '';
+        const ciclo = inicio && a.data_plantio ? diasEntre(a.data_plantio, inicio) : null;
+        const res = resumoPlantio(itens);
+
+        const equipe = [
+            base.colaboradores ? `${IMG.icone('users', 14, '#64748b')}<span>${n(base.colaboradores)} colaboradores</span>` : '',
+            base.hora_inicio || base.hora_fim ? `${IMG.icone('clock', 14, '#64748b')}<span>${esc(base.hora_inicio || '--:--')} › ${esc(base.hora_fim || '--:--')}</span>` : '',
+            base.intervalo ? `${IMG.icone('coffee', 14, '#64748b')}<span>${esc(base.intervalo)}</span>` : '',
+            base.duracao ? `${IMG.icone('timer', 14, '#64748b')}<span>${esc(base.duracao)}</span>` : ''
+        ].filter(Boolean).map(x => `<span style="display:inline-flex;align-items:center;gap:6px;">${x}</span>`).join('');
+
+        const frase = res.mudas
+            ? `De <b style="color:#1e293b;">${n(res.mudas)} mudas</b>, foram plantadas <b style="color:#047857;">${n(res.plantado)} plantas</b> <span style="color:#94a3b8;">(${n(res.sucesso)}%)</span>, com <b style="color:#dc2626;">${n(res.perdas)} perdas</b> <span style="color:#94a3b8;">(${n(100 - res.sucesso)}%)</span>`
+            : `Foram plantadas <b style="color:#047857;">${n(res.plantado)} plantas</b> em ${itens.length === 1 ? '1 variedade' : itens.length + ' variedades'}`;
+
+        const variedades = itens.map(r => {
+            const v = resumoPlantio([r]);
+            return `<div style="margin-top:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px;">
+                    <span style="font-size:15px;font-weight:800;color:#334155;">${esc(r.cultura)} <span style="color:#94a3b8;font-weight:600;">${esc(r.variedade || '')}</span></span>
+                    ${r.idade_dias ? `<span style="font-size:12px;font-weight:600;color:#94a3b8;">Idade da muda: ${n(r.idade_dias)} dias</span>` : ''}
                 </div>
-                ${meta ? `<div style="font-size:12px;font-weight:600;color:#94a3b8;margin-top:2px;">${esc(meta)}</div>` : ''}
-                ${variedades}${totalBloco}
+                <div style="display:flex;gap:10px;">
+                    ${IMG.caixa('flower-2', n(v.plantado), 'Plantado', COR_VERDE)}
+                    ${IMG.caixa('sprout', v.mudas != null ? n(v.mudas) : '-', r.bandejas ? `Mudas · ${n(r.bandejas)} bandejas` : 'Mudas', COR_CINZA)}
+                    ${IMG.caixa('trending-down', v.perdas != null ? `${n(v.perdas)} (${n(100 - v.sucesso)}%)` : '-', 'Perdas', COR_ROSA)}
+                </div>
+                ${r.observacoes ? `<div style="font-size:12px;color:#64748b;margin-top:6px;">Obs.: ${esc(r.observacoes)}</div>` : ''}
             </div>`;
         }).join('');
-        return `<div style="width:640px;background:#fff;font-family:'Segoe UI',Tahoma,Arial,sans-serif;">
-            <div style="background:linear-gradient(to right,#059669,#047857);padding:22px 24px;display:flex;align-items:center;gap:16px;color:#fff;">
-                ${logo ? `<img src="${logo}" alt="" style="width:68px;height:68px;background:#fff;border-radius:50%;padding:2px;">` : ''}
-                <div><div style="font-size:26px;font-weight:800;line-height:1.15;">Resumo do Transplantio</div>
-                <div style="font-size:15px;font-weight:600;opacity:.92;margin-top:4px;">${esc(API.nomeLocal(LOCAL))} · ${emPt(data)} · ${esc(diaSemana)}</div></div>
+
+        const faltam = inicio ? diasEntre(hoje(), inicio) : null;
+        const previsao = inicio ? `<div style="display:flex;align-items:center;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;font-size:15px;color:#334155;">
+            ${IMG.icone('calendar-check', 15, '#3b82f6')}<span>Início da colheita em <b style="color:#2563eb;">${emPt(inicio)}</b>${faltam > 0 ? `: faltam <b style="color:#2563eb;">${textoDias(faltam)}</b>` : faltam === 0 ? ': <b style="color:#2563eb;">hoje</b>' : ` <span style="color:#94a3b8;">(começou há ${textoDias(-faltam)})</span>`}</span>
+        </div>` : '';
+
+        return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:18px;margin:0 16px 16px;overflow:hidden;">
+            <div style="padding:16px 18px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;">
+                    <span style="font-size:22px;font-weight:900;color:#0f172a;">${rotulo} ${esc(a.bloco)}</span>
+                    ${a.ciclo ? `<span style="font-size:12px;font-weight:700;background:#e2e8f0;color:#334155;padding:3px 10px;border-radius:99px;">Ciclo ${esc(a.ciclo)}</span>` : ''}
+                    <span style="font-size:14px;color:#64748b;">transplantado em <b style="color:#059669;">${emPt(a.data_plantio)}</b>${inicio ? ` · colheita em <b style="color:#2563eb;">${emPt(inicio)}</b> <span style="color:#94a3b8;">(${textoDias(ciclo)})</span>` : ''}</span>
+                </div>
+                ${base.status ? `<span style="flex-shrink:0;font-size:11px;font-weight:900;color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;padding:4px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.06em;">${esc(base.status)}</span>` : ''}
             </div>
-            <div style="padding:16px 24px;display:flex;gap:10px;border-bottom:1px solid #e2e8f0;">${caixasPlantio(regs, true)}</div>
-            ${blocos}
-            <div style="padding:14px 24px;display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#475569;background:#f8faf9;">
-                <span>${porBloco.size === 1 ? '1 bloco' : porBloco.size + ' blocos'}</span><span style="color:#94a3b8;">Painel SPG</span>
+            <div style="padding:16px 18px;border-bottom:1px solid #f1f5f9;">
+                ${IMG.rotulo('grid-2x2', rotulo, 'Todas as variedades')}
+                <div style="font-size:15px;color:#334155;line-height:1.5;">${frase}</div>
+                ${res.sucesso != null ? `<div style="height:7px;background:#f1f5f9;border-radius:99px;margin-top:10px;overflow:hidden;"><div style="height:100%;width:${Math.max(0, Math.min(100, res.sucesso)).toFixed(1)}%;background:#10b981;border-radius:99px;"></div></div>` : ''}
+                ${equipe ? `<div style="display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:13px;font-weight:600;color:#475569;">${equipe}</div>` : ''}
+            </div>
+            <div style="padding:16px 18px;">
+                ${IMG.rotulo('leaf', itens.length === 1 ? 'Variedade' : `Variedades (${itens.length})`)}
+                <div style="margin-top:-14px;">${variedades}</div>
+                ${previsao}
             </div>
         </div>`;
     }
 
-    async function gerarImagem(data) {
-        if (gerandoImagem || !data) return;
+    // Próximas colheitas: blocos de todo o calendário mais perto de começar a colher (a partir de hoje)
+    const MAX_PROXIMAS = 8;
+    async function proximasColheitas() {
+        const porId = new Map();
+        try {
+            const { data: linhas, error } = await API.cliente.from('colheita_previsao').select('*').eq('local', LOCAL)
+                .gte('inicio_colheita', hoje()).order('inicio_colheita', { ascending: true }).limit(300);
+            if (error) throw error;
+            (linhas || []).forEach(r => porId.set(r.id, r));
+        } catch (e) { console.warn('Próximas colheitas (usando só as da tela):', e.message || e); }
+        // A versão da tela vale mais: pode ter alteração ainda aguardando envio
+        lista.forEach(r => porId.set(r.id, r));
+        const porBloco = new Map();
+        [...porId.values()]
+            .filter(r => r.inicio_colheita && r.inicio_colheita >= hoje() && r.bloco && !CICLO_ENCERRADO.test(r.status || ''))
+            .forEach(r => {
+                const k = limparBloco(r.bloco).toLowerCase() + '|' + String(r.ciclo || '').toLowerCase();
+                const atual = porBloco.get(k);
+                if (!atual || r.inicio_colheita < atual.inicio) porBloco.set(k, { a: r, inicio: r.inicio_colheita });
+            });
+        return [...porBloco.values()].sort((x, y) => x.inicio.localeCompare(y.inicio)).slice(0, MAX_PROXIMAS);
+    }
+
+    function htmlDaImagem(datas, regs, logo, listaProximas) {
+        const porBloco = new Map();
+        regs.forEach(r => { const k = r.data_plantio + '|' + r.bloco + '|' + (r.ciclo || ''); if (!porBloco.has(k)) porBloco.set(k, []); porBloco.get(k).push(r); });
+        const blocos = [...porBloco.values()];
+        const res = resumoPlantio(regs);
+        const umaData = datas.length === 1;
+        const diaSemana = d => { const s = new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }); return s.charAt(0).toUpperCase() + s.slice(1); };
+        const titulo = umaData ? `Resumo do Transplantio · ${diaSemana(datas[0])}` : 'Resumo do Transplantio';
+        const subtitulo = umaData
+            ? `${esc(API.nomeLocal(LOCAL))} · ${emPt(datas[0])} · Semana ${getWeekNumber(new Date(datas[0] + 'T12:00:00'))}`
+            : `${esc(API.nomeLocal(LOCAL))} · ${datas.length} datas: ${datas.map(emPt).join(', ')}`;
+        const chip = (icone, texto) => `<span style="display:inline-flex;align-items:center;gap:6px;">${IMG.icone(icone, 15, '#a7f3d0')}<span>${texto}</span></span>`;
+        const metricas = [
+            chip('grid-2x2', blocos.length === 1 ? '1 bloco' : `${blocos.length} blocos`),
+            chip('leaf', regs.length === 1 ? '1 variedade' : `${regs.length} variedades`),
+            umaData ? '' : chip('calendar-days', `${datas.length} datas`)
+        ].filter(Boolean).join('<span style="color:rgba(255,255,255,.3);">|</span>');
+        const totais = [
+            ['sprout', 'Mudas', res.mudas != null ? n(res.mudas) : '-'],
+            ['flower-2', 'Plantado', n(res.plantado)],
+            ['trending-down', 'Perdas', res.perdas != null ? n(res.perdas) : '-'],
+            ['percent', '% Sucesso', res.sucesso != null ? n(res.sucesso, 1) + '%' : '-']
+        ].map(([icone, rotulo, valor], i) => `<div style="flex:1;padding:16px 8px;text-align:center;${i ? 'border-left:1px solid #d1fae5;' : ''}">
+            <div style="display:flex;justify-content:center;">${IMG.icone(icone, 15, '#10b981')}</div>
+            <div style="font-size:10px;font-weight:900;color:#059669;text-transform:uppercase;letter-spacing:.12em;margin-top:8px;">${rotulo}</div>
+            <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:2px;">${valor}</div>
+        </div>`).join('');
+
+        // Próximas colheitas: um cartão por bloco, do mais perto de começar para o mais longe
+        const proximas = (listaProximas || []).map(({ a, inicio }) => {
+                const d = diasEntre(hoje(), inicio);
+                const c = d < 0 ? { fundo: '#ecfdf5', borda: '#a7f3d0', topo: '#10b981', valor: '#047857' }
+                    : d <= 14 ? { fundo: '#eff6ff', borda: '#bfdbfe', topo: '#3b82f6', valor: '#1d4ed8' }
+                    : { fundo: '#fff', borda: '#e2e8f0', topo: '#cbd5e1', valor: '#334155' };
+                return `<div style="width:112px;background:${c.fundo};border:1px solid ${c.borda};border-top:4px solid ${c.topo};border-radius:12px;padding:10px 6px;text-align:center;">
+                    <div style="font-size:13px;font-weight:800;color:#1e293b;">${ehPepino(a.cultura) ? 'Setor' : 'Bloco'} ${esc(a.bloco)}</div>
+                    <div style="font-size:11px;color:#64748b;margin-top:2px;">${emPt(inicio)}</div>
+                    <div style="font-size:19px;font-weight:900;color:${c.valor};margin-top:6px;">${d < 0 ? 'Colhendo' : d === 0 ? 'Hoje' : textoDias(d)}</div>
+                    <div style="font-size:10px;color:#94a3b8;min-height:13px;">${d < 0 ? `há ${textoDias(-d)}` : semanasEDias(d)}</div>
+                </div>`;
+            }).join('');
+
+        return `<div style="width:800px;background:#f8fafc;font-family:${IMG.fonte};">
+            <div style="background:linear-gradient(135deg,#047857,#064e3b);padding:22px 24px;color:#fff;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    ${logo ? `<img src="${logo}" alt="" style="width:52px;height:52px;background:#fff;border-radius:50%;padding:2px;">` : ''}
+                    <div><div style="font-size:24px;font-weight:900;line-height:1.15;">${titulo}</div>
+                    <div style="font-size:14px;font-weight:600;color:#a7f3d0;margin-top:4px;">${subtitulo}</div></div>
+                </div>
+                <div style="height:1px;background:rgba(255,255,255,.18);margin:16px 0 14px;"></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:14px;font-weight:700;">${metricas}</div>
+                    <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:8px 16px;">
+                        <span style="font-size:14px;font-weight:700;color:#d1fae5;">Total plantado</span>
+                        <span style="font-size:26px;font-weight:900;">${n(res.plantado)}</span>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;background:#ecfdf5;border-bottom:1px solid #d1fae5;margin-bottom:16px;">${totais}</div>
+            ${blocos.map(cartaoBlocoImagem).join('')}
+            ${proximas ? `<div style="background:#fff;border-top:1px solid #e2e8f0;padding:16px;">
+                ${IMG.rotulo('calendar-clock', 'Próximas colheitas')}
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">${proximas}</div>
+            </div>` : ''}
+            <div style="background:#f1f5f9;border-top:1px solid #e2e8f0;padding:12px;text-align:center;font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">SPG ${esc(API.nomeLocal(LOCAL))} • Dados oficiais</div>
+        </div>`;
+    }
+
+    async function gerarImagem(datasPedidas) {
+        const datas = [...new Set([].concat(datasPedidas).filter(Boolean))].sort();
+        if (gerandoImagem || !datas.length) return;
         gerandoImagem = true;
         aviso('Gerando imagem...');
         const host = document.createElement('div');
         host.style.cssText = 'position:fixed;left:-10000px;top:0;';
         try {
-            const regs = (await transplantiosDoDia(data)).filter(r => !ocultos.has(r.id));
-            if (!regs.length) { aviso('Todos os blocos deste dia estão ocultos da imagem.'); return; }
-            host.innerHTML = htmlDaImagem(data, regs, await logoEmDados());
+            const regs = (await transplantiosDasDatas(datas)).filter(r => !ocultos.has(r.id));
+            if (!regs.length) { aviso(datas.length > 1 ? 'Todos os blocos destas datas estão ocultos da imagem.' : 'Todos os blocos deste dia estão ocultos da imagem.'); return; }
+            const datasComDados = datas.filter(d => regs.some(r => r.data_plantio === d));
+            const [logo, proximas] = await Promise.all([logoEmDados(), proximasColheitas()]);
+            host.innerHTML = htmlDaImagem(datasComDados, regs, logo, proximas);
             document.body.appendChild(host);
-            const opcoesImg = { pixelRatio: 2, backgroundColor: '#ffffff', skipFonts: true };
+            iconesAgora();
+            const opcoesImg = { pixelRatio: 2, backgroundColor: '#f8fafc', skipFonts: true };
             // A primeira captura pode sair sem a logo em alguns celulares; vale a segunda
             await htmlToImage.toBlob(host.firstElementChild, opcoesImg);
             const blob = await htmlToImage.toBlob(host.firstElementChild, opcoesImg);
             if (!blob) throw new Error('imagem vazia');
-            imagemAtual = { url: URL.createObjectURL(blob), nome: `Transplantio_${data}.png`, texto: `Transplantio realizado em ${emPt(data)}`, arquivo: new File([blob], `Transplantio_${data}.png`, { type: 'image/png' }) };
+            const primeira = datasComDados[0], ultima = datasComDados[datasComDados.length - 1];
+            const nome = datasComDados.length === 1 ? `Transplantio_${primeira}.png` : `Transplantio_${primeira}_a_${ultima}.png`;
+            const texto = datasComDados.length === 1 ? `Transplantio realizado em ${emPt(primeira)}` : `Transplantios de ${datasComDados.map(emPt).join(', ')}`;
+            imagemAtual = { url: URL.createObjectURL(blob), nome, texto, arquivo: new File([blob], nome, { type: 'image/png' }) };
             mostrarImagem();
             el('lancAviso').classList.add('hidden');
         } catch (e) {
