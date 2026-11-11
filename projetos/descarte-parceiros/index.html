@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Descarte de Parceiros | Painel SPG</title>
+    <link rel="icon" type="image/png" href="../../favicon.png">
+    <link rel="apple-touch-icon" href="../../icone-app.png">
+    <link rel="manifest" href="../../manifest.json">
+
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Descarte SPG">
+    
+    <!-- Bibliotecas Externas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            300: '#6ee7b7',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../../supabase-config.js"></script>
+    <script src="../../supabase-api.js"></script>
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        input, select, textarea { line-height: 1.5; }
+        .animate-fade-in-down { animation: fadeInDown 0.3s ease-out forwards; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        input, select, textarea { user-select: text; }
+
+        /* Mesmo visual da Irrigação: barra de vidro claro com um fio de cor no topo */
+        #navbar {
+            background: rgba(255,255,255,0.78);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            backdrop-filter: blur(18px) saturate(180%);
+            border-bottom: 1px solid rgba(226,232,240,0.9);
+            box-shadow: 0 6px 24px -18px rgba(15,23,42,0.35);
+            padding-top: max(.625rem, env(safe-area-inset-top));
+        }
+        #navbar::before {
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none;
+            background: linear-gradient(90deg, #10b981, #14b8a6 35%, #0ea5e9 70%, #6366f1);
+        }
+        @media (min-width: 1024px) {
+            #navbar { padding-left: max(1rem, calc((100% - 1400px) / 2 + 1rem)); padding-right: max(1rem, calc((100% - 1400px) / 2 + 1rem)); }
+        }
+        /* Rótulos e campos dos formulários */
+        .rotulo { display: flex; align-items: center; gap: .375rem; margin-bottom: .625rem; font-size: .75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+        .campo { background: #f8fafc; border: 2px solid #e2e8f0; border-radius: .75rem; padding: .75rem 1rem; font-size: .875rem; font-weight: 500; color: #1e293b; transition: all .15s; }
+        .campo:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+        input[type=date].campo { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; min-height: 2.75rem; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #4ade80 !important; background-color: #fff !important; box-shadow: 0 0 0 3px rgba(74,222,128,0.15); }
+        .btn-primary { transition: transform 0.1s, background-color 0.15s, filter .15s; }
+        .btn-primary:active { transform: scale(0.97); }
+        #submitBtn.bg-blue-600 { background-color: #2563eb; box-shadow: 0 4px 6px -1px rgba(37,99,235,.2); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen pb-24 select-none">
+
+    <!-- Barra do topo (mesmo visual da Irrigação: vidro claro com um fio de cor) -->
+    <div id="navbar" class="text-slate-900 px-4 py-2.5 flex justify-between items-center sticky top-0 z-40">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <a id="btnMenuProjetos" href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="hidden w-8 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>
+            <img src="../../icone-app.png" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
+            <div class="min-w-0">
+                <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 truncate">Descarte de Parceiros</h1>
+                <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">SPG Sede · Registro de descarte</p>
+            </div>
+        </div>
+        <div class="flex gap-2 items-center">
+            <button id="importarBtn" type="button" onclick="importarHistoricoPlanilha()" title="Copia para o sistema os descartes que estão na planilha (só administrador)" class="hidden items-center gap-2 px-3 py-2.5 bg-white text-slate-600 rounded-xl shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 transition-all active:scale-95 font-bold text-xs disabled:opacity-50">
+                <i data-lucide="database" class="w-4 h-4 text-emerald-600"></i>
+                <span class="hidden sm:inline">Importar histórico</span>
+            </button>
+            <button id="sendBtn" type="button" onclick="confirmBeforeSend()" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl shadow-md shadow-emerald-600/25 ring-1 ring-emerald-700/20 transition-all active:scale-95 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span class="hidden sm:inline-block">Enviar para o WhatsApp</span>
+                <span class="sm:hidden">Enviar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Usuário logado + status de sincronização -->
+    <div id="statusBar" class="max-w-md lg:max-w-[1400px] mx-auto px-5 pt-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+        <div class="flex items-center gap-1.5 min-w-0 max-w-full">
+            <i data-lucide="user-circle" class="w-4 h-4 text-slate-400 shrink-0"></i>
+            <span id="userNameLabel" class="text-xs font-bold text-slate-600 truncate"></span>
+            <span id="userRoleBadge" class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0"></span>
+        </div>
+        <button type="button" id="syncStatusBtn" onclick="SPG_API.sincronizar(true)" title="Sincronizar agora"
+            class="flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full border border-slate-200 bg-white text-slate-500 ml-auto">
+            <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-slate-300"></span>
+            <span id="syncStatusText">—</span>
+        </button>
+    </div>
+
+    <!-- Abas: registrar um descarte / ver os recentes (com as fotos) -->
+    <div class="max-w-md lg:max-w-[1400px] mx-auto px-4 pt-3">
+        <div id="abasDescarte" role="tablist" aria-label="Seções" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1 lg:max-w-sm">
+            <button type="button" role="tab" data-aba="registrar" aria-selected="true" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700">
+                <i data-lucide="clipboard-pen" class="w-3.5 h-3.5"></i> Registrar
+            </button>
+            <button type="button" role="tab" data-aba="recentes" aria-selected="false" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-500">
+                <i data-lucide="images" class="w-3.5 h-3.5"></i> Recentes
+            </button>
+        </div>
+    </div>
+
+    <div id="conteudo" class="mx-auto p-4 space-y-6 max-w-md lg:max-w-[1400px] lg:grid lg:grid-cols-[420px_minmax(0,1fr)] lg:gap-6 lg:space-y-0 lg:items-start lg:pt-5">
+
+        <!-- COLUNA DA ESQUERDA: CONTROLES -->
+        <div class="space-y-6">
+
+            <!-- 1. DATA DO RECEBIMENTO -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-green-50 px-4 py-2.5 border-b border-green-100 flex items-center gap-2">
+                    <div class="bg-green-100 p-1.5 rounded-lg"><i data-lucide="calendar" class="w-4 h-4 text-green-700"></i></div>
+                    <label for="reportDate" class="text-xs font-bold text-green-800 uppercase tracking-wider">Recebimento da colheita</label>
+                </div>
+                <div class="px-4 py-3">
+                    <input type="date" id="reportDate" onchange="updateDynamicTitle(); checkProductionData();" class="campo w-full font-bold">
+                </div>
+            </div>
+
+            <!-- 2. REGISTRAR DESCARTE -->
+            <div id="formContainer" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-300">
+                <div class="bg-gradient-to-r from-green-600 to-green-700 px-5 py-4 flex justify-between items-center">
+                    <h2 id="formTitle" class="text-base font-bold text-white flex items-center gap-2">
+                        <i data-lucide="trash-2" class="w-5 h-5 opacity-90"></i> Registrar Descarte
+                    </h2>
+                    <button type="button" onclick="clearBlockForm()" class="flex items-center gap-1 text-xs font-bold text-white/80 hover:text-white bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
+                        <i data-lucide="eraser" class="w-3 h-3"></i> Limpar
+                    </button>
+                </div>
+
+                <form id="discardForm" onsubmit="addItem(event)" class="divide-y divide-slate-100">
+
+                    <!-- Cultura e parceiro -->
+                    <div class="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                        <div>
+                            <label for="culture" class="rotulo"><i data-lucide="sprout" class="w-3.5 h-3.5 text-green-500"></i> Cultura</label>
+                            <select id="culture" onchange="updateDynamicFields(); checkProductionData();" required class="campo w-full">
+                                <option value="">Selecione a cultura...</option>
+                                <option value="Brócolis">Brócolis</option>
+                                <option value="Couve-Flor">Couve-Flor</option>
+                                <option value="Tomate Cereja">Tomate Cereja</option>
+                                <option value="Pepino">Pepino</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="partnerName" class="rotulo"><i data-lucide="handshake" class="w-3.5 h-3.5 text-green-500"></i> Parceiro</label>
+                            <select id="partnerName" onchange="checkProductionData();" required class="campo w-full">
+                                <option value="">Selecione a cultura primeiro...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Produção e descarte -->
+                    <div class="px-5 py-4 grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="productionQuantity" class="rotulo"><i data-lucide="scale" class="w-3.5 h-3.5 text-green-500"></i> Produção (kg)</label>
+                            <input type="text" id="productionQuantity" inputmode="decimal" oninput="formatDecimalInput(this)" placeholder="Ex: 10,5" class="campo w-full font-bold bg-brand-50 transition-colors">
+                            <label id="productionInProgressLabel" class="flex items-center gap-2 mt-2 text-xs font-bold text-slate-500 cursor-pointer select-none transition-opacity">
+                                <input type="checkbox" id="productionInProgress" onchange="toggleProductionInProgress()" class="w-4 h-4 accent-emerald-600 rounded disabled:cursor-not-allowed flex-shrink-0">
+                                Em andamento
+                            </label>
+                        </div>
+                        <div>
+                            <label for="discardQuantity" class="rotulo"><i data-lucide="trash" class="w-3.5 h-3.5 text-rose-500"></i> Descarte (kg)</label>
+                            <input type="text" id="discardQuantity" inputmode="decimal" oninput="formatDecimalInput(this)" required placeholder="Ex: 15,5" class="campo w-full font-bold">
+                        </div>
+                    </div>
+
+                    <!-- Motivo -->
+                    <div class="px-5 py-4">
+                        <label for="discardReason" class="rotulo"><i data-lucide="message-square-warning" class="w-3.5 h-3.5 text-green-500"></i> Motivo do descarte</label>
+                        <select id="discardReason" onchange="toggleCustomReason()" required class="campo w-full">
+                            <option value="">Selecione a cultura primeiro...</option>
+                        </select>
+                        <div id="customReasonContainer" class="hidden animate-fade-in-down mt-2">
+                            <input type="text" id="customReason" placeholder="Especifique o motivo..." onblur="aplicarCorretorMotivo()" oninput="document.getElementById('customReasonHint').classList.add('hidden')" class="campo w-full">
+                            <p id="customReasonHint" class="hidden mt-1.5 text-xs font-semibold text-emerald-700"></p>
+                        </div>
+                    </div>
+
+                    <!-- Fotos -->
+                    <div class="px-5 py-4">
+                        <div class="rotulo justify-between">
+                            <span class="flex items-center gap-1.5"><i data-lucide="camera" class="w-3.5 h-3.5 text-green-500"></i> Fotos (máx. 5)</span>
+                            <span id="photoCounter" class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full normal-case tracking-normal">0/5</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="document.getElementById('discardPhotoCamera').click()" class="flex flex-col items-center justify-center gap-1.5 py-3.5 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 text-xs font-bold text-slate-500 hover:border-green-400 hover:text-green-700 transition-all active:scale-[.98] select-none">
+                                <i data-lucide="camera" class="w-6 h-6"></i> Câmera
+                            </button>
+                            <button type="button" onclick="document.getElementById('discardPhotoGallery').click()" class="flex flex-col items-center justify-center gap-1.5 py-3.5 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 text-xs font-bold text-slate-500 hover:border-green-400 hover:text-green-700 transition-all active:scale-[.98] select-none">
+                                <i data-lucide="image-plus" class="w-6 h-6"></i> Galeria
+                            </button>
+                        </div>
+                        <input type="file" id="discardPhotoCamera" accept="image/*" capture="environment" onchange="handleImageUpload(event)" class="hidden">
+                        <input type="file" id="discardPhotoGallery" accept="image/*" multiple onchange="handleImageUpload(event)" class="hidden">
+                        <div id="photoPreviewContainer" class="hidden grid grid-cols-3 sm:grid-cols-5 gap-2 mt-3 animate-fade-in-down"></div>
+                    </div>
+
+                    <div class="px-5 py-4">
+                        <button type="submit" id="submitBtn" class="btn-primary w-full bg-emerald-600 hover:brightness-95 text-white font-bold py-3.5 rounded-xl flex justify-center items-center gap-2 text-sm shadow-md shadow-emerald-600/20">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> <span>Adicionar ao Relatório</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 3. REGISTROS ADICIONADOS -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-100 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <div class="bg-slate-100 p-1.5 rounded-lg"><i data-lucide="list" class="w-4 h-4 text-slate-600"></i></div>
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Registros adicionados</h3>
+                    </div>
+                    <button id="clearAllBtn" onclick="clearAll()" class="text-xs font-bold text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition-all">Limpar Tudo</button>
+                </div>
+                <ul id="itemsList" class="p-3 space-y-2 text-sm text-slate-600"></ul>
+            </div>
+        </div>
+
+        <!-- COLUNA DA DIREITA: PRÉVIA DO RELATÓRIO -->
+        <section class="space-y-3">
+            <h2 class="flex items-center gap-1.5 px-1 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <i data-lucide="eye" class="w-3.5 h-3.5 text-green-500"></i> Prévia do relatório
+            </h2>
+            <div id="report-card" class="w-full flex flex-col bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative lg:min-h-[calc(100vh-11rem)]">
+
+                <div class="bg-gradient-to-r from-green-600 to-green-700 px-6 pt-5 pb-5 text-white relative overflow-hidden shrink-0">
+                    <div class="relative z-10 w-full flex flex-col gap-3">
+                        <h2 id="reportTitle" class="text-lg font-bold leading-snug tracking-normal"></h2>
+                        <div id="headerDateTime" class="flex flex-col gap-1 border-t border-white/20 pt-3 text-xs text-white/80 font-medium"></div>
+                    </div>
+                </div>
+
+                <div id="summaryStats" class="bg-white shrink-0"></div>
+
+                <div id="reportContent" class="divide-y divide-slate-100 flex-1 overflow-y-auto">
+                    <div class="p-8 text-center text-slate-400 text-xs italic leading-relaxed h-full flex items-center justify-center">Adicione registros no formulário ao lado.</div>
+                </div>
+
+                <div class="bg-slate-50 p-3 text-center border-t border-slate-100 shrink-0">
+                    <div class="flex justify-center items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
+                        SPG Sede • Controle de Descarte
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- RECENTES: descartes já registrados, com foto e detalhes -->
+    <div id="viewRecentes" class="hidden mx-auto p-4 space-y-4 max-w-md lg:max-w-[1400px] lg:pt-5">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-wrap items-end gap-3">
+            <div class="flex-1 min-w-[150px]">
+                <label for="recPeriodo" class="rotulo"><i data-lucide="calendar-range" class="w-3.5 h-3.5 text-green-500"></i> Período</label>
+                <select id="recPeriodo" class="campo w-full">
+                    <option value="1">Hoje</option>
+                    <option value="7" selected>Últimos 7 dias</option>
+                    <option value="30">Últimos 30 dias</option>
+                    <option value="90">Últimos 90 dias</option>
+                </select>
+            </div>
+            <div class="flex-1 min-w-[150px]">
+                <label for="recBusca" class="rotulo"><i data-lucide="search" class="w-3.5 h-3.5 text-green-500"></i> Buscar</label>
+                <input type="search" id="recBusca" placeholder="Parceiro, cultura, motivo, ID..." class="campo w-full">
+            </div>
+            <label class="flex items-center gap-2 text-xs font-bold text-slate-500 cursor-pointer py-3">
+                <input type="checkbox" id="recSoFotos" class="w-4 h-4 accent-emerald-600"> Só com foto
+            </label>
+            <button type="button" id="recAtualizar" class="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-white ring-1 ring-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Atualizar
+            </button>
+        </div>
+        <div id="recResumo" class="grid grid-cols-3 gap-3"></div>
+        <div id="recLista" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 items-start"></div>
+    </div>
+
+    <!-- Foto ampliada -->
+    <div id="fotoAmpliada" class="fixed inset-0 z-[80] hidden bg-slate-950/90 flex-col items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Foto do descarte">
+        <button type="button" data-foto-fechar aria-label="Fechar" class="absolute top-4 right-4 p-2.5 rounded-full bg-white/10 text-white hover:bg-white/20" style="top:max(1rem,env(safe-area-inset-top))"><i data-lucide="x" class="w-6 h-6"></i></button>
+        <button type="button" data-foto-passo="-1" aria-label="Foto anterior" class="absolute left-2 sm:left-6 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/10 text-white hover:bg-white/20"><i data-lucide="chevron-left" class="w-7 h-7"></i></button>
+        <img id="fotoAmpliadaImg" alt="" class="max-w-full max-h-[80vh] rounded-xl shadow-2xl object-contain">
+        <button type="button" data-foto-passo="1" aria-label="Próxima foto" class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/10 text-white hover:bg-white/20"><i data-lucide="chevron-right" class="w-7 h-7"></i></button>
+        <p id="fotoAmpliadaInfo" class="mt-3 text-xs font-bold text-white/80 text-center"></p>
+    </div>
+
+    <!-- MODAL DE CARREGAMENTO (LOADING) -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/30 z-[100] hidden flex-col justify-center items-center backdrop-blur-[2px] transition-opacity duration-300">
+        <div class="bg-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 border border-slate-100">
+            <i data-lucide="loader-2" class="w-6 h-6 text-brand-500 animate-spin"></i>
+            <span class="text-sm font-bold text-slate-700 tracking-wide">Consultando produção...</span>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE ENVIO -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/60 z-[60] hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all scale-100">
+            <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-brand-50 mb-4">
+                <i data-lucide="help-circle" class="h-8 w-8 text-brand-600"></i>
+            </div>
+            <h3 class="text-xl font-black text-slate-800 text-center">Conferiu os dados?</h3>
+            <p class="text-sm text-slate-500 mt-3 text-center leading-relaxed font-medium">
+                Você conferiu todas as informações? Se sim, toque para enviar.<br><br>
+                <span class="text-amber-600 font-bold">Caso tenha enviado alguma informação errada, informe ao responsável para que ele possa corrigir no sistema.</span>
+            </p>
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button onclick="hideConfirmModal()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-sm transition-colors uppercase">
+                    Cancelar
+                </button>
+                <button onclick="executeSend()" class="px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-brand-600/20 active:scale-95 uppercase">
+                    Enviar Agora
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE MENSAGEM -->
+    <div id="messageModal" class="fixed inset-0 bg-black/50 z-[70] hidden flex justify-center items-center backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-sm transform transition-all scale-100 text-center">
+            <div id="msgIconContainer" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"></div>
+            <h3 id="msgTitle" class="text-lg font-bold text-slate-800"></h3>
+            <!-- ADICIONADO whitespace-pre-wrap e leading-relaxed para formatar o texto como na imagem! -->
+            <p id="msgText" class="text-sm text-slate-500 mt-2 mb-4 whitespace-pre-wrap leading-relaxed"></p>
+            <button onclick="hideMessageModal()" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg text-sm transition-colors">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Faz parte do Painel SPG: precisa estar logado e ter o módulo "Descarte de Parceiros"
+        const SPG_API = window.IrrigacaoAPI;
+        if (!SPG_API.usuarioAtual() || !SPG_API.temModulo('descarte_parceiros')) location.replace('../../index.html');
+        if (SPG_API.isAdmin()) { const b = document.getElementById('importarBtn'); b.classList.remove('hidden'); b.classList.add('flex'); }
+        // O administrador pode ter tirado o acesso desde o último login
+        (async () => {
+            if (!navigator.onLine) return;
+            if (!await SPG_API.sessaoValida()) { location.replace('../../index.html'); return; }
+            try { await SPG_API.atualizarPerfil(); } catch (e) { return; }
+            if (!SPG_API.temModulo('descarte_parceiros')) location.replace('../../index.html');
+        })();
+
+        (function iniciarBarraStatus() {
+            const u = SPG_API.usuarioAtual();
+            if (!u) return;
+            document.getElementById('userNameLabel').textContent = SPG_API.nomeUsuario(u);
+            document.getElementById('userRoleBadge').textContent = SPG_API.isAdmin() ? 'Administrador' : (u.papel === 'gestor' ? 'Gestor' : 'Colaborador');
+            const menu = document.getElementById('btnMenuProjetos');
+            if (SPG_API.projetosDoUsuario().length > 1 && window.top === window.self) { menu.classList.remove('hidden'); menu.classList.add('flex'); }
+            SPG_API.onStatus(st => {
+                const dot = document.getElementById('syncStatusDot'), txt = document.getElementById('syncStatusText');
+                let cor = 'bg-emerald-500', texto = 'Sincronizado';
+                if (!st.online) { cor = 'bg-slate-400'; texto = st.pendentes ? `Sem internet · ${st.pendentes} no aparelho` : 'Sem internet'; }
+                else if (st.falhas) { cor = 'bg-red-500'; texto = `${st.falhas} recusado(s)`; }
+                else if (st.sincronizando || st.pendentes) { cor = 'bg-amber-400'; texto = st.pendentes ? `Enviando ${st.pendentes}...` : 'Sincronizando...'; }
+                dot.className = 'w-2 h-2 rounded-full ' + cor;
+                txt.textContent = texto;
+            });
+        })();
+
+
+        console.log("Aplicação 'Registro de Descarte SPG' inicializada.");
+
+        let discardData = JSON.parse(localStorage.getItem('spg_discardData_v2')) || [];
+        let editingIndex = -1;
+        let clearConfirmTimer;
+        let currentPhotos = [];
+        let isSending = false;
+        let isConsulting = false;
+        let fetchAbortController = null;
+
+        // --- URL DO APPS SCRIPT (code_unificado.gs) ---
+        // Continua sendo usado SÓ para consultar a produção do parceiro (GET ?action=getProduction)
+        // e, pelo administrador, para ler o histórico da planilha na importação.
+        // O descarte em si é gravado no Supabase (tabela descarte_parceiros).
+        const URL_DESCARTE = "https://script.google.com/macros/s/AKfycbyPIxMm4DWJdIo3GPwoKAoiZWjejE9I6ySZRJvCDOuEldNr1g_yVkeDlb265DiYgt2h/exec";
+        const URL_PRODUCAO = URL_DESCARTE;
+
+        // --- RELAÇÃO CULTURAS x PARCEIROS ---
+        const partnersData = {
+            "Brócolis": ["Fazenda Oásis", "Sítio Valdir", "Sítio Leitão", "Sítio Márcia", "Sítio Filho", "Sítio Evandro", "Sítio Edivan", "Sítio Araçá", "Agrotech Pinheiro"],
+            "Couve-Flor": ["Fazenda Oásis", "Agrotech Pinheiro", "Hélio", "Júnior Viçosa"],
+            "Tomate Cereja": ["Raimundo", "Nelinho", "Gutenberg"],
+            "Pepino": ["SPG Estufa 1"]
+        };
+
+        const commonBrocolisCouveFlor = [
+            "Amarelado e Lagartas", "Amarelado e Lodando", "Fungo e Amarelado", "Traça e Amarelado",
+            "Lodando Traça e Amarelado", "Amarelado e Passado", "Deformado e Passado", "Passado e Deformado",
+            "Passado e Traça", "Passado e Talo Fungo", "Amarelado, Lodado e Manchas", "Talo com Fungo e Passado",
+            "Pulgão", "Cabeça Amarelada", "Manchas", "Fungos", "Peso abaixo da média e Estragado",
+            "Talo com Fungo", "Traça", "Lagartas", "Amarelado", "Passado", "Deformado", "Manchas Escuras e Passado", "Furado e Rachado"
+        ];
+
+        const reasonsData = {
+            "Tomate Cereja": ["Furado", "Passado e Furado", "Estragado", "Rachado", "Rachado e Estragado", "Outros"],
+            "Brócolis": ["Talos", "Peso abaixo da média", ...commonBrocolisCouveFlor, "Outros"],
+            "Couve-Flor": ["Folhas Couve-Flor", ...commonBrocolisCouveFlor, "Outros"],
+            "Pepino": ["Fora do Padrão", "Curvados", "Estragado", "Danificado", "Manchas", "Fungos", "Pequeno", "Outros"]
+        };
+
+        lucide.createIcons();
+        
+        setTimeout(() => {
+            const dateInput = document.getElementById('reportDate');
+            if (dateInput && !dateInput.value) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${yyyy}-${mm}-${dd}`;
+            }
+            clearBlockForm();
+            renderList(); 
+            updateDynamicTitle();
+            renderReport(); 
+        }, 100);
+
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        function getSelectedDate() {
+            const dateInput = document.getElementById('reportDate');
+            if (dateInput && dateInput.value) {
+                const parts = dateInput.value.split('-');
+                return new Date(parts[0], parts[1] - 1, parts[2]);
+            }
+            return new Date();
+        }
+
+        function generateReportID(item) {
+            return item.uniqueSuffix || "0000";
+        }
+
+        function updateDynamicTitle() {
+            const reportDate = getSelectedDate();
+            const now = new Date(); 
+            const day = String(reportDate.getDate()).padStart(2, '0');
+            const month = String(reportDate.getMonth() + 1).padStart(2, '0');
+            const year = reportDate.getFullYear();
+            const weekNumber = getWeekNumber(reportDate);
+            
+            let partnerDisplay = "";
+            let addedAtDisplay = "";
+            let idDisplay = "";
+
+            if (discardData && discardData.length > 0) {
+                const reportId = generateReportID(discardData[0]);
+                partnerDisplay = ` — <span class="font-black text-white">${discardData[0].partnerName}</span>`;
+                if (discardData[0].addedAt) {
+                    addedAtDisplay = `<div><span class="opacity-60">Descarte: </span><span class="font-bold text-white">${discardData[0].addedAt}</span></div>`;
+                    idDisplay = `<div class="font-mono tracking-widest text-[11px] opacity-50">ID: ${reportId}</div>`;
+                }
+            }
+
+            const titleEl = document.getElementById('reportTitle');
+            if (titleEl) titleEl.innerHTML = `Registro de Descarte${partnerDisplay}`;
+
+            const dateEl = document.getElementById('headerDateTime');
+            if (dateEl) dateEl.innerHTML = `<div><span class="opacity-60">Colheita: </span><span class="font-bold text-white">${day}/${month}/${year} &nbsp;·&nbsp; Semana ${weekNumber}</span></div>${addedAtDisplay}${idDisplay}`;
+        }
+
+        function updateDynamicFields(selectedPartner = "", selectedReason = "") {
+            const cultureSelect = document.getElementById('culture');
+            const partnerSelect = document.getElementById('partnerName');
+            const reasonSelect = document.getElementById('discardReason');
+            const selectedCulture = cultureSelect.value;
+            partnerSelect.innerHTML = '<option value="">Selecione o parceiro...</option>';
+            reasonSelect.innerHTML = '<option value="">Selecione o motivo...</option>';
+            if (selectedCulture) {
+                if (partnersData[selectedCulture]) {
+                    partnerSelect.disabled = false;
+                    partnersData[selectedCulture].forEach(partner => {
+                        const option = document.createElement('option');
+                        option.value = partner; option.textContent = partner;
+                        partnerSelect.appendChild(option);
+                    });
+                    if (selectedPartner) partnerSelect.value = selectedPartner;
+                }
+                if (reasonsData[selectedCulture]) {
+                    reasonSelect.disabled = false;
+                    reasonsData[selectedCulture].forEach(reason => {
+                        const option = document.createElement('option');
+                        option.value = reason; option.textContent = reason;
+                        reasonSelect.appendChild(option);
+                    });
+                    if (selectedReason) reasonSelect.value = selectedReason;
+                }
+            } else {
+                partnerSelect.innerHTML = '<option value="">Selecione a cultura primeiro...</option>'; partnerSelect.disabled = true;
+                reasonSelect.innerHTML = '<option value="">Selecione a cultura primeiro...</option>'; reasonSelect.disabled = true;
+            }
+            toggleCustomReason();
+        }
+
+        function toggleCustomReason() {
+            const reasonSelect = document.getElementById('discardReason');
+            const customContainer = document.getElementById('customReasonContainer');
+            const customInput = document.getElementById('customReason');
+            if (reasonSelect.value === 'Outros') { customContainer.classList.remove('hidden'); customInput.setAttribute('required', 'required'); }
+            else { customContainer.classList.add('hidden'); customInput.removeAttribute('required'); }
+            document.getElementById('customReasonHint').classList.add('hidden');
+        }
+
+        // --- CORRETOR DO MOTIVO "OUTROS" ---
+        // Corrige erros de digitação comparando cada palavra com as palavras dos motivos
+        // cadastrados (reasonsData) + as extras abaixo. Ex.: "Traçar" -> "Traça",
+        // "pulgao" -> "Pulgão", "lagata" -> "Lagarta".
+        const PALAVRAS_EXTRAS_MOTIVO = [
+            "Traça", "Lagarta", "Pulgão", "Podre", "Mofo", "Mofado", "Bichado", "Murcho", "Murcha",
+            "Queimado", "Queimada", "Quebrado", "Quebrada", "Machucado", "Amassado", "Pisado",
+            "Maduro", "Verde", "Folha", "Folhas", "Talo", "Talos", "Fungo", "Mancha", "Rachadura",
+            "Podridão", "Lodo", "Lodado", "Frio", "Chuva", "Sol", "Doença", "Inseto", "Insetos"
+        ];
+        // Erros que a comparação automática não pegaria (ou pegaria errado): escreva aqui
+        // a forma errada SEM acento e em minúsculas.
+        const CORRECOES_FIXAS_MOTIVO = {
+            "tracar": "Traça", "trasa": "Traça", "trassa": "Traça", "trasar": "Traça", "tracas": "Traças"
+        };
+
+        const semAcento = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+        let vocabularioMotivo = null;
+        function getVocabularioMotivo() {
+            if (vocabularioMotivo) return vocabularioMotivo;
+            const todas = [...Object.values(reasonsData).flat(), ...PALAVRAS_EXTRAS_MOTIVO]
+                .join(' ').split(/[\s,]+/).filter(p => p.length >= 4 && p !== 'Outros');
+            vocabularioMotivo = new Map(); // "traca" -> "Traça"
+            todas.forEach(p => {
+                const chave = semAcento(p);
+                if (!vocabularioMotivo.has(chave)) vocabularioMotivo.set(chave, p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+            });
+            return vocabularioMotivo;
+        }
+
+        function distanciaEdicao(a, b) {
+            const linha = Array.from({ length: b.length + 1 }, (_, j) => j);
+            for (let i = 1; i <= a.length; i++) {
+                let anterior = linha[0]; linha[0] = i;
+                for (let j = 1; j <= b.length; j++) {
+                    const temp = linha[j];
+                    linha[j] = Math.min(linha[j] + 1, linha[j - 1] + 1, anterior + (a[i - 1] === b[j - 1] ? 0 : 1));
+                    anterior = temp;
+                }
+            }
+            return linha[b.length];
+        }
+
+        function corrigirPalavraMotivo(palavra) {
+            const chave = semAcento(palavra);
+            if (chave.length < 4) return palavra; // "e", "com", "de"... ficam como estão
+            if (CORRECOES_FIXAS_MOTIVO[chave]) return CORRECOES_FIXAS_MOTIVO[chave];
+
+            const vocab = getVocabularioMotivo();
+            if (vocab.has(chave)) return vocab.get(chave); // só faltava acento/maiúscula
+
+            // Aceita até 1 letra errada (2 em palavras longas). Se duas palavras
+            // diferentes empatarem, não mexe: melhor deixar do que trocar errado.
+            const limite = chave.length >= 9 ? 2 : 1;
+            let melhor = null, melhorDist = Infinity, empate = false;
+            vocab.forEach((correta, c) => {
+                if (Math.abs(c.length - chave.length) > limite) return;
+                const d = distanciaEdicao(chave, c);
+                if (d < melhorDist) { melhor = correta; melhorDist = d; empate = false; }
+                else if (d === melhorDist && correta !== melhor) empate = true;
+            });
+            if (!melhor || melhorDist > limite || empate) return palavra;
+            // Só mudou o final (masculino/feminino, singular/plural: "Passada", "escura",
+            // "Deformados")? Então a palavra está certa, não mexe.
+            const radical = (s) => s.replace(/(as|os|a|o|s)$/, '');
+            if (radical(chave) === radical(semAcento(melhor))) return palavra;
+            return melhor;
+        }
+
+        function corrigirMotivo(texto) {
+            const corrigido = texto.trim().replace(/\s+/g, ' ')
+                .replace(/[A-Za-zÀ-ÿ]+/g, (p, pos) => {
+                    const nova = corrigirPalavraMotivo(p);
+                    if (nova === p) return p;
+                    // Mantém minúscula no meio da frase se o usuário escreveu assim.
+                    return (pos > 0 && p.charAt(0) === p.charAt(0).toLowerCase()) ? nova.toLowerCase() : nova;
+                });
+            return corrigido.charAt(0).toUpperCase() + corrigido.slice(1);
+        }
+
+        function aplicarCorretorMotivo() {
+            const input = document.getElementById('customReason');
+            const hint = document.getElementById('customReasonHint');
+            const original = input.value.trim();
+            if (!original) return;
+            const corrigido = corrigirMotivo(original);
+            if (corrigido !== original) {
+                input.value = corrigido;
+                if (semAcento(corrigido) !== semAcento(original)) {
+                    hint.textContent = `Corrigido: "${original}" → "${corrigido}"`;
+                    hint.classList.remove('hidden');
+                }
+            }
+        }
+
+        function formatDecimalInput(input) {
+            let value = input.value.replace(/[^0-9,]/g, ''); 
+            const parts = value.split(',');
+            if (parts.length > 2) { value = parts[0] + ',' + parts.slice(1).join(''); }
+            let [integerPart, decimalPart] = value.split(',');
+            if (integerPart) { integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
+            if (decimalPart !== undefined) { input.value = integerPart + ',' + decimalPart; } else { input.value = integerPart; }
+        }
+
+        function formatSmart(value) {
+            if (value === 0 || value === '0') return "0";
+            const num = typeof value === 'string' ? parsePTBRNumber(value) : value;
+            if (isNaN(num)) return value;
+            return num.toLocaleString('pt-BR', {minimumFractionDigits: 0, maximumFractionDigits: 3});
+        }
+
+        function parsePTBRNumber(val) {
+            if (!val) return 0;
+            if (typeof val === 'number') return val;
+            return parseFloat(val.toString().replace(/\./g, '').replace(',', '.')) || 0;
+        }
+
+        function toggleProductionInProgress(autoCheck = false) {
+            const checkbox = document.getElementById('productionInProgress');
+            if (autoCheck) checkbox.checked = true;
+            
+            const prodInput = document.getElementById('productionQuantity');
+            if (checkbox.checked) {
+                prodInput.value = '';
+                prodInput.placeholder = "Em andamento...";
+                prodInput.disabled = true;
+                prodInput.classList.add('bg-slate-100', 'text-slate-400');
+                prodInput.classList.remove('bg-brand-50', 'text-slate-700');
+            } else {
+                prodInput.disabled = false;
+                prodInput.readOnly = false;
+                prodInput.classList.remove('cursor-not-allowed');
+                prodInput.placeholder = "Ex: 10,5";
+                prodInput.classList.remove('bg-slate-100', 'text-slate-400');
+                prodInput.classList.add('bg-brand-50', 'text-slate-700');
+            }
+        }
+
+        // Nova função para habilitar/desabilitar a caixinha visualmente
+        function setCheckboxEnabled(enabled) {
+            const checkbox = document.getElementById('productionInProgress');
+            const label = document.getElementById('productionInProgressLabel');
+            checkbox.disabled = !enabled;
+            if (enabled) {
+                if(label) {
+                    label.classList.remove('opacity-50', 'cursor-not-allowed');
+                    label.classList.add('cursor-pointer');
+                }
+            } else {
+                if(label) {
+                    label.classList.add('opacity-50', 'cursor-not-allowed');
+                    label.classList.remove('cursor-pointer');
+                }
+            }
+        }
+
+        // Produção do parceiro na cópia do Supabase (tabela producao_parceiros, enviada pelo
+        // Apps Script a cada 5 min). Compara os nomes como o Apps Script: minúsculas, sem
+        // acento e sem espaços nas pontas. Devolve no mesmo formato da resposta do Apps Script,
+        // ou null quando não achou (aí a consulta cai no Apps Script).
+        const normalizarNome = s => String(s || '').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        // Nome no app -> nomes na planilha de produção (a produção é a soma deles), como no Apps Script
+        const PARCEIROS_DIVIDIDOS = { 'sitio leitao': ['sitio rafael', 'sitio reginaldo'] };
+        async function producaoNoSistema(dataISO, cultura, parceiro) {
+            if (!navigator.onLine) return null;
+            try {
+                const p = normalizarNome(parceiro);
+                const nomes = PARCEIROS_DIVIDIDOS[p] || [p];
+                const { data, error } = await SPG_API.cliente.from('producao_parceiros')
+                    .select('parceiro_norm, producao_kg')
+                    .eq('data', dataISO).eq('cultura_norm', normalizarNome(cultura)).in('parceiro_norm', nomes);
+                if (error || !data || !data.length) return null;
+                const comPeso = data.filter(r => r.producao_kg !== null && r.producao_kg !== undefined);
+                if (!comPeso.length) return { production: '' }; // achou, mas o peso ainda está vazio: em andamento
+                return { production: comPeso.reduce((s, r) => s + Number(r.producao_kg), 0) };
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function checkProductionData(isBackground = false) {
+            const dateInput = document.getElementById('reportDate').value;
+            const cultureVal = document.getElementById('culture').value;
+            const partnerVal = document.getElementById('partnerName').value;
+            const prodInput = document.getElementById('productionQuantity');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const sendBtn = document.getElementById('sendBtn');
+
+            if (dateInput && cultureVal && partnerVal) {
+                // Cancela busca anterior se o usuário clicar/mudar muito rápido
+                if (fetchAbortController) {
+                    fetchAbortController.abort();
+                }
+                fetchAbortController = new AbortController();
+                
+                isConsulting = true;
+                if(sendBtn) sendBtn.disabled = true;
+                
+                const parts = dateInput.split('-');
+                const dateBR = `${parts[2]}/${parts[1]}/${parts[0]}`; 
+                
+                prodInput.disabled = true;
+                prodInput.readOnly = false;
+                prodInput.classList.remove('cursor-not-allowed');
+
+                if (!isBackground) {
+                    prodInput.placeholder = "Buscando...";
+                    prodInput.value = "";
+                    // Mostra a tela de carregamento congelando a página
+                    loadingOverlay.classList.remove('hidden');
+                    loadingOverlay.classList.add('flex');
+                } else {
+                    // Mantém o valor se houver, mas indica que está atualizando
+                    if (!prodInput.value) prodInput.placeholder = "Atualizando...";
+                }
+
+                try {
+                    // 1º: a produção já copiada para o Supabase (instantâneo). Só se ainda não tiver
+                    // chegado lá (o Apps Script manda a cada 5 minutos) pergunta direto ao Apps Script.
+                    let data = await producaoNoSistema(dateInput, cultureVal, partnerVal);
+                    if (!data) {
+                    const url = `${URL_PRODUCAO}?action=getProduction&date=${encodeURIComponent(dateBR)}&culture=${encodeURIComponent(cultureVal)}&partner=${encodeURIComponent(partnerVal)}`;
+
+                    // Faz até 2 tentativas: a 1ª chamada do dia costuma "acordar" o Apps Script
+                    // (pode estourar o tempo do lado do cliente), mas o script continua rodando
+                    // no servidor mesmo depois do timeout e deixa o cache pronto — então a 2ª
+                    // tentativa, logo em seguida, normalmente volta quase instantânea.
+                    const MAX_ATTEMPTS = 2;
+                    const ATTEMPT_TIMEOUT = 25000;
+                    let textResponse = null;
+                    let lastError = null;
+
+                    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                        fetchAbortController = new AbortController();
+                        const timeoutId = setTimeout(() => {
+                            if (fetchAbortController) fetchAbortController.abort();
+                        }, ATTEMPT_TIMEOUT);
+
+                        try {
+                            const response = await fetch(url, { signal: fetchAbortController.signal });
+                            clearTimeout(timeoutId);
+                            textResponse = await response.text();
+                            lastError = null;
+                            break;
+                        } catch (attemptError) {
+                            clearTimeout(timeoutId);
+                            lastError = attemptError;
+                            if (attempt < MAX_ATTEMPTS) {
+                                console.log(`Consulta de produção falhou na tentativa ${attempt} (${attemptError.name}). Tentando novamente...`);
+                            }
+                        }
+                    }
+
+                    if (lastError) throw lastError;
+
+                    try {
+                        data = JSON.parse(textResponse);
+                    } catch (e) {
+                        setCheckboxEnabled(true);
+                        if (!isBackground) prodInput.placeholder = "Ex: 100,000";
+                        return;
+                    }
+                    }
+
+                    if (data && data.error === "Debug") {
+                        setCheckboxEnabled(true);
+                        toggleProductionInProgress(true);
+                        
+                        if (!isBackground) {
+                            showMessageModal(
+                                'Produção Não Encontrada', 
+                                'Não encontramos nenhuma entrega registrada para este parceiro na data informada.\n\nPor favor, verifique se a data selecionada está correta.\n\nCaso o parceiro tenha entregado recentemente, você precisa levar o caderno e pedir para o responsável preencher a produção na planilha.\n\nA opção "Produção em Andamento" foi marcada automaticamente para você poder continuar registrando o descarte normalmente.', 
+                                'info'
+                            );
+                        }
+                    } else if (data && (data.production === "" || data.production === 0 || data.production === "0")) {
+                        setCheckboxEnabled(true);
+                        toggleProductionInProgress(true);
+                        
+                        if (!isBackground) {
+                            showMessageModal(
+                                'Entregas em Andamento', 
+                                'O registro deste parceiro foi localizado na planilha, mas o peso total da produção ainda está vazio ou zerado.\n\nVocê pode continuar registrando o descarte normalmente. O campo da produção ficará com o status de "Entregas em Andamento" aguardando o fechamento do lote.', 
+                                'info'
+                            );
+                        }
+                    } else if (data && data.production !== null && data.production !== undefined) {
+                        document.getElementById('productionInProgress').checked = false;
+                        toggleProductionInProgress(); 
+                        setCheckboxEnabled(false); 
+                        
+                        const formattedProduction = formatSmart(data.production);
+                        prodInput.value = formattedProduction;
+                        prodInput.placeholder = "Produção encontrada";
+                        
+                        prodInput.readOnly = true;
+                        prodInput.classList.add('cursor-not-allowed');
+                        
+                        if (!isBackground) {
+                            showMessageModal(
+                                'Produção Localizada!', 
+                                `A produção foi encontrada com sucesso!\n\nData da Colheita: ${dateBR}\nParceiro: ${partnerVal}\nCultura: ${cultureVal}\nTotal: ${formattedProduction} kg`, 
+                                'success'
+                            );
+                        }
+                    } else {
+                        setCheckboxEnabled(true);
+                        if (!isBackground) {
+                            prodInput.value = '';
+                            prodInput.placeholder = "Não encontrado na planilha";
+                        }
+                    }
+                } catch (error) {
+                    if (!isBackground) {
+                        if (error.name === 'AbortError') {
+                            prodInput.placeholder = "Tempo excedido";
+                        } else {
+                            prodInput.placeholder = "Ex: 100,000";
+                        }
+                        setCheckboxEnabled(true);
+                        prodInput.value = '';
+                    }
+                } finally {
+                    try {
+                        if (!document.getElementById('productionInProgress').checked) {
+                            prodInput.disabled = false;
+                        }
+                        
+                        if (!isBackground) {
+                            loadingOverlay.classList.add('hidden');
+                            loadingOverlay.classList.remove('flex');
+                        }
+                        
+                        isConsulting = false;
+                        if(sendBtn) sendBtn.disabled = false;
+                    } catch (e) {
+                        loadingOverlay.classList.add('hidden');
+                        loadingOverlay.classList.remove('flex');
+                        isConsulting = false;
+                        if(sendBtn) sendBtn.disabled = false;
+                    }
+                }
+            }
+        }
+
+        async function handleImageUpload(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+
+            if (currentPhotos.length + files.length > 5) {
+                showMessageModal('Limite Excedido', 'Você pode enviar no máximo 5 fotos por registro.', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            // No Android, a permissão para ler a foto escolhida pode "vencer" poucos
+            // segundos depois (principalmente fotos da galeria/nuvem). Por isso a leitura
+            // de TODAS as fotos começa aqui, na hora, antes de qualquer outro passo.
+            const leituras = files.map(f => lerBytes(f));
+
+            const galleryInput = document.getElementById('discardPhotoGallery');
+            const cameraInput = document.getElementById('discardPhotoCamera');
+            galleryInput.disabled = true;
+            cameraInput.disabled = true;
+
+            // try/finally: aconteça o que acontecer com as fotos, os botões voltam a
+            // funcionar. Antes, uma foto que falhasse deixava Galeria/Câmera travados.
+            const falhas = [];
+            let semPermissao = false;
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const lido = await leituras[i];
+                    if (lido.erro) {
+                        if (lido.erro.name === 'NotReadableError' || lido.erro.name === 'NotFoundError') semPermissao = true;
+                        falhas.push(`${files[i].type || 'tipo desconhecido'} - leitura: ${lido.erro.message || lido.erro}`);
+                        continue;
+                    }
+                    const resultado = await processImage(lido.blob);
+                    if (resultado.dataUrl) currentPhotos.push(resultado.dataUrl);
+                    else falhas.push(resultado.detalhe);
+                }
+            } finally {
+                galleryInput.value = '';
+                cameraInput.value = '';
+                galleryInput.disabled = false;
+                cameraInput.disabled = false;
+                renderPhotoPreviews();
+            }
+
+            if (semPermissao) {
+                showMessageModal(
+                    'Foto não carregada',
+                    `O celular não liberou a leitura ${falhas.length === 1 ? 'dessa foto' : 'de ' + falhas.length + ' fotos'}.\n\nIsso costuma acontecer com fotos que estão no Google Fotos / nuvem, ou que acabaram de ser tiradas e ainda estão sendo salvas.\n\nTente:\n• Tocar em Galeria de novo e escolher a mesma foto\n• Escolher a foto pelo app "Galeria" ou "Arquivos" (não pelo Google Fotos)\n• Ou tirar a foto direto pelo botão Câmera`,
+                    'error'
+                );
+            } else if (falhas.length > 0) {
+                showMessageModal(
+                    'Foto não carregada',
+                    `${falhas.length === 1 ? 'Uma foto não pôde ser carregada' : falhas.length + ' fotos não puderam ser carregadas'}.\n\nTente tirar a foto pela Câmera ou escolher outra foto.\n\nDetalhe: ${falhas.join(' | ')}`,
+                    'error'
+                );
+            }
+        }
+
+        // Copia o conteúdo da foto para a memória do app. Depois disso o arquivo original
+        // não é mais tocado, então a permissão do Android não importa mais.
+        // Devolve { blob } ou { erro }.
+        async function lerBytes(file) {
+            try {
+                if (!file.size) throw Object.assign(new Error('arquivo vazio (a foto pode estar só na nuvem)'), { name: 'NotReadableError' });
+                const buffer = file.arrayBuffer ? await file.arrayBuffer() : await lerComoArrayBuffer(file);
+                return { blob: new Blob([buffer], { type: file.type || 'image/jpeg' }), nome: file.name };
+            } catch (err) {
+                return { erro: err };
+            }
+        }
+
+        function lerComoArrayBuffer(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('falha ao ler arquivo'));
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+
+        const FOTO_MAX_LADO = 1200;
+        const FOTO_TIMEOUT_MS = 45000;
+
+        // Reduz a foto para no máx. 1200px e devolve { dataUrl } em JPEG (base64), ou
+        // { detalhe } com o motivo da falha. Tenta vários jeitos de ler a imagem, porque
+        // cada celular/navegador falha num ponto diferente (HEIC, fotos enormes de 50MP+,
+        // pouca memória...).
+        async function processImage(file) {
+            const info = `${file.type || 'tipo desconhecido'}, ${(file.size / 1048576).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB`;
+            if (!file.size) return { detalhe: `arquivo vazio (${info}) - a foto pode estar só na nuvem` };
+
+            const erros = [];
+            const comTempo = (promessa) => Promise.race([
+                promessa,
+                new Promise((_, rej) => setTimeout(() => rej(new Error('tempo esgotado')), FOTO_TIMEOUT_MS))
+            ]);
+
+            let origem = file;
+            // Samsung/iPhone podem salvar em HEIC/HEIF, que o Chrome não abre: converte antes.
+            if (/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name || '')) {
+                try {
+                    origem = await comTempo(converterHeic(file));
+                } catch (err) {
+                    erros.push('heic: ' + (err && err.message || err));
+                }
+            }
+
+            const tentativas = [
+                ['bitmap', () => desenharReduzido(async () => {
+                    const bmp = await createImageBitmap(origem);
+                    return { fonte: bmp, largura: bmp.width, altura: bmp.height, liberar: () => bmp.close && bmp.close() };
+                })],
+                ['img', () => desenharReduzido(async () => {
+                    const url = URL.createObjectURL(origem);
+                    try {
+                        const img = await carregarImg(url);
+                        return { fonte: img, largura: img.naturalWidth, altura: img.naturalHeight, liberar: () => URL.revokeObjectURL(url) };
+                    } catch (err) { URL.revokeObjectURL(url); throw err; }
+                })],
+                ['leitor', () => desenharReduzido(async () => {
+                    const img = await carregarImg(await lerComoDataUrl(origem));
+                    return { fonte: img, largura: img.naturalWidth, altura: img.naturalHeight, liberar: () => {} };
+                })]
+            ];
+
+            for (const [nome, tentar] of tentativas) {
+                if (nome === 'bitmap' && typeof createImageBitmap !== 'function') continue;
+                try {
+                    return { dataUrl: await comTempo(tentar()) };
+                } catch (err) {
+                    erros.push(nome + ': ' + (err && err.message || err));
+                }
+            }
+            return { detalhe: `${info} - ${erros.join('; ')}` };
+        }
+
+        async function desenharReduzido(abrir) {
+            const { fonte, largura, altura, liberar } = await abrir();
+            try {
+                if (!largura || !altura) throw new Error('imagem sem tamanho');
+                const escala = Math.min(1, FOTO_MAX_LADO / Math.max(largura, altura));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(largura * escala);
+                canvas.height = Math.round(altura * escala);
+                canvas.getContext('2d').drawImage(fonte, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                canvas.width = canvas.height = 0; // libera a memória do canvas no celular
+                if (!dataUrl || dataUrl.length < 100) throw new Error('canvas vazio');
+                return dataUrl;
+            } finally {
+                liberar();
+            }
+        }
+
+        function carregarImg(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('formato não suportado'));
+                img.src = src;
+            });
+        }
+
+        function lerComoDataUrl(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('falha ao ler arquivo'));
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        // Carrega o conversor de HEIC só quando precisa (é pesado).
+        let heicLib = null;
+        function converterHeic(file) {
+            if (!heicLib) {
+                heicLib = new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+                    s.onload = () => resolve(window.heic2any);
+                    s.onerror = () => { heicLib = null; reject(new Error('sem internet para converter')); };
+                    document.head.appendChild(s);
+                });
+            }
+            return heicLib.then(heic2any => heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 }))
+                .then(r => Array.isArray(r) ? r[0] : r);
+        }
+
+        function renderPhotoPreviews() {
+            const container = document.getElementById('photoPreviewContainer');
+            const counter = document.getElementById('photoCounter');
+            counter.innerText = `${currentPhotos.length}/5`;
+            if (currentPhotos.length === 0) { container.classList.add('hidden'); container.innerHTML = ''; return; }
+            container.classList.remove('hidden');
+            container.innerHTML = currentPhotos.map((photo, index) => `
+                <div class="relative inline-block w-full">
+                    <img src="${photo}" class="w-full h-16 object-cover rounded-lg border border-slate-200 shadow-sm">
+                    <button type="button" onclick="removePhoto(${index})" class="absolute -top-2 -right-2 bg-white border border-slate-200 text-brand-500 rounded-full p-0.5 shadow-md hover:bg-brand-50 transition-colors">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function removePhoto(index) { currentPhotos.splice(index, 1); renderPhotoPreviews(); }
+
+        function saveData() { 
+            try { localStorage.setItem('spg_discardData_v2', JSON.stringify(discardData)); } 
+            catch (e) { if (e.name === 'QuotaExceededError') { showMessageModal('Memória Cheia', 'Não é possível salvar mais fotos localmente.', 'error'); } }
+        }
+
+        function addItem(e) {
+            e.preventDefault();
+            if (editingIndex === -1 && discardData.length >= 1) { showMessageModal('Limite Atingido', 'Permitido apenas 1 registro por relatório.', 'error'); return; }
+            let finalReason = document.getElementById('discardReason').value;
+            if (finalReason === 'Outros') { aplicarCorretorMotivo(); finalReason = document.getElementById('customReason').value.trim(); }
+            
+            const now = new Date();
+            const addedAt = `${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}`;
+            const suffix = Math.random().toString(36).substring(2, 8).toUpperCase(); 
+            
+            const inProgress = document.getElementById('productionInProgress').checked;
+            
+            const item = { 
+                id: Date.now(), 
+                partnerName: document.getElementById('partnerName').value.trim(), 
+                culture: document.getElementById('culture').value.trim(), 
+                quantity: document.getElementById('discardQuantity').value, 
+                productionQuantity: document.getElementById('productionQuantity').value,
+                inProgress: inProgress,
+                reason: finalReason, 
+                photos: [...currentPhotos],
+                addedAt: addedAt,
+                uniqueSuffix: suffix 
+            };
+            
+            if (editingIndex >= 0) { discardData[editingIndex] = item; } else { discardData.push(item); }
+            saveData(); clearBlockForm(); renderReport(); renderList();
+        }
+
+        function clearBlockForm() {
+            document.getElementById('culture').value = ''; updateDynamicFields();
+            document.getElementById('discardQuantity').value = ''; document.getElementById('customReason').value = '';
+            
+            const prodInput = document.getElementById('productionQuantity');
+            prodInput.value = '';
+            prodInput.readOnly = false;
+            prodInput.classList.remove('cursor-not-allowed');
+            
+            // Re-habilita a caixinha ao limpar
+            setCheckboxEnabled(true);
+            document.getElementById('productionInProgress').checked = false;
+            toggleProductionInProgress();
+            
+            toggleCustomReason(); currentPhotos = []; renderPhotoPreviews();
+            editingIndex = -1;
+            const btn = document.getElementById('submitBtn');
+            if (btn) { btn.innerHTML = '<i data-lucide="plus-circle" class="w-4 h-4"></i> <span>Adicionar ao Relatório</span>'; btn.classList.replace('bg-blue-600', 'bg-emerald-600'); }
+            lucide.createIcons();
+        }
+
+        function editItem(index) {
+            const item = discardData[index]; editingIndex = index;
+            document.getElementById('culture').value = item.culture; updateDynamicFields(item.partnerName); 
+            const reasonSelect = document.getElementById('discardReason'); let isCustomReason = true;
+            for (let i = 0; i < reasonSelect.options.length; i++) { if (reasonSelect.options[i].value === item.reason) { isCustomReason = false; break; } }
+            if (!isCustomReason) { reasonSelect.value = item.reason; toggleCustomReason(); } 
+            else { reasonSelect.value = 'Outros'; toggleCustomReason(); document.getElementById('customReason').value = item.reason; }
+            document.getElementById('discardQuantity').value = item.quantity;
+            
+            // Re-habilita a caixinha ao editar e aplica a condição salva no item
+            setCheckboxEnabled(true);
+            document.getElementById('productionInProgress').checked = !!item.inProgress;
+            toggleProductionInProgress();
+            document.getElementById('productionQuantity').value = item.productionQuantity || '';
+            
+            currentPhotos = item.photos ? [...item.photos] : []; renderPhotoPreviews();
+            const btn = document.getElementById('submitBtn'); btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> <span>Salvar</span>'; btn.classList.replace('bg-emerald-600', 'bg-blue-600');
+            lucide.createIcons();
+            
+            // CHAMA A CONSULTA AUTOMATICAMENTE AO EDITAR
+            // Assim ele traz o valor atualizado da planilha para a data que estiver selecionada no topo!
+            checkProductionData();
+        }
+
+        function removeItem(index) { if (editingIndex === index) clearBlockForm(); else if (editingIndex > index) editingIndex--; discardData.splice(index, 1); saveData(); renderReport(); renderList(); }
+
+        function clearAll() {
+            const btn = document.getElementById('clearAllBtn');
+            if (btn.innerText === "Confirmar?") { discardData = []; saveData(); clearBlockForm(); renderReport(); renderList(); btn.innerText = "Limpar Tudo"; } 
+            else { btn.innerText = "Confirmar?"; setTimeout(() => { btn.innerText = "Limpar Tudo"; }, 3000); }
+        }
+
+        function renderList() {
+            const list = document.getElementById('itemsList');
+            list.innerHTML = discardData.length ? '' : '<li class="text-center text-slate-400 italic py-2">Nenhum registro.</li>';
+            discardData.forEach((item, index) => {
+                const prodText = item.inProgress ? ` | Prod: Em andamento` : (item.productionQuantity ? ` | Prod: ${item.productionQuantity} kg` : '');
+                list.innerHTML += `<li class="flex justify-between items-center p-3 rounded border bg-slate-50">
+                    <div class="flex flex-col"><span class="font-bold text-sm">${item.partnerName}</span><span class="text-xs">${item.culture} - Desc: ${item.quantity} kg${prodText}</span></div>
+                    <div class="flex items-center"><button onclick="editItem(${index})" class="text-blue-500 mr-2"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="removeItem(${index})" class="text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
+                </li>`;
+            });
+            lucide.createIcons();
+        }
+
+        function renderReport() {
+            updateDynamicTitle();
+            const container = document.getElementById('reportContent');
+            const summaryStats = document.getElementById('summaryStats');
+            if (!discardData || discardData.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs italic leading-relaxed h-full flex items-center justify-center">Adicione registros no formulário ao lado.</div>`;
+                summaryStats.innerHTML = '';
+            } else {
+                const item = discardData[0];
+                const displayWeight = formatSmart(parsePTBRNumber(item.quantity));
+                const production = item.inProgress ? null : (item.productionQuantity ? parsePTBRNumber(item.productionQuantity) : 0);
+                const totalDiscard = parsePTBRNumber(item.quantity);
+                const percentHtml = (!item.inProgress && production > 0)
+                    ? `<div class="flex flex-col gap-0.5"><div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">% Descartado</div><div class="text-xl font-black text-rose-600 leading-none">${((totalDiscard / production) * 100).toLocaleString('pt-BR', {maximumFractionDigits: 1})}%</div></div>`
+                    : '';
+                const prodLabel = item.inProgress ? `<span class="text-amber-600 font-bold text-xs">Em andamento</span>` : (production > 0 ? `<span class="text-xl font-black text-slate-700 leading-none">${formatSmart(production)} <span class="text-xs font-bold text-slate-400">kg</span></span>` : `<span class="text-slate-300 text-xs">—</span>`);
+
+                summaryStats.innerHTML = `
+                    <div class="px-4 pt-4 pb-2">
+                        <div class="grid grid-cols-3 rounded-2xl overflow-hidden border border-slate-100 shadow-sm" style="gap:1px;background:#e2e8f0">
+                            <div class="bg-white p-3 flex flex-col gap-1">
+                                <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Descartado</div>
+                                <div class="text-2xl font-black text-brand-700 leading-none">${displayWeight}</div>
+                                <div class="text-[10px] font-bold text-brand-400 uppercase">kg</div>
+                            </div>
+                            <div class="bg-white p-3 flex flex-col gap-1">
+                                <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Cultura</div>
+                                <div class="text-sm font-black text-slate-700 leading-tight uppercase">${item.culture}</div>
+                            </div>
+                            <div class="bg-white p-3 flex flex-col gap-1">
+                                <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Motivo</div>
+                                <div class="text-sm font-black text-amber-700 leading-tight uppercase">${item.reason.replace(/\n/g, ' ')}</div>
+                            </div>
+                        </div>
+                        ${(production > 0 || item.inProgress) ? `
+                        <div class="grid grid-cols-2 rounded-2xl overflow-hidden border border-slate-100 shadow-sm mt-1" style="gap:1px;background:#e2e8f0">
+                            <div class="bg-white px-3 py-2.5 flex flex-col gap-0.5">
+                                <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Produção</div>
+                                ${prodLabel}
+                            </div>
+                            ${percentHtml ? `<div class="bg-white px-3 py-2.5">${percentHtml}</div>` : ''}
+                        </div>` : ''}
+                    </div>`;
+
+                let photoHtml = '';
+                if (item.photos && item.photos.length > 0) {
+                    const count = item.photos.length;
+                    if (count === 1) {
+                        photoHtml = `<img src="${item.photos[0]}" class="w-full object-cover" style="max-height:380px;min-height:200px">`;
+                    } else if (count === 2) {
+                        photoHtml = `<div class="grid grid-cols-2" style="gap:2px">${item.photos.map(p => `<img src="${p}" class="w-full object-cover" style="height:240px">`).join('')}</div>`;
+                    } else {
+                        const [first, ...rest] = item.photos;
+                        const restHtml = rest.map(p => `<img src="${p}" class="w-full object-cover" style="height:180px">`).join('');
+                        const cols = rest.length >= 2 ? 'grid-cols-2' : 'grid-cols-1';
+                        photoHtml = `<img src="${first}" class="w-full object-cover block" style="max-height:300px"><div class="grid ${cols}" style="gap:2px;margin-top:2px">${restHtml}</div>`;
+                    }
+                } else {
+                    photoHtml = `<div class="flex flex-col items-center justify-center gap-2 text-slate-300 py-10"><i data-lucide="image-off" class="w-8 h-8 opacity-40"></i><span class="text-[10px] uppercase tracking-wider font-bold opacity-60">Sem Fotos</span></div>`;
+                }
+                container.innerHTML = `<div>${photoHtml}</div>`;
+            }
+            lucide.createIcons();
+        }
+
+        function confirmBeforeSend() { 
+            if (isSending) return;
+            if (isConsulting) {
+                showMessageModal('Aguarde', 'A consulta de produção está em andamento. Aguarde concluir antes de enviar.', 'info');
+                return;
+            }
+            if (discardData.length === 0) { showMessageModal('Atenção', 'Adicione o registro primeiro.', 'error'); return; } 
+            document.getElementById('confirmModal').classList.remove('hidden'); 
+            lucide.createIcons(); 
+        }
+        function hideConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function executeSend() { 
+            if (isSending) return;
+            hideConfirmModal(); 
+            downloadImage(); 
+        }
+
+        function mergeImagesVertically(imagesBase64) {
+            return new Promise((resolve) => {
+                const imgObjects = [];
+                let loaded = 0;
+                imagesBase64.forEach((base64, index) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        loaded++;
+                        if (loaded === imagesBase64.length) {
+                            const canvasWidth = imgObjects[0].width;
+                            const sep = Math.round(canvasWidth * 0.012); // separador proporcional à largura
+                            const totalHeight = imgObjects.reduce((sum, i) => sum + Math.round(i.height * (canvasWidth / i.width)), 0) + sep * (imgObjects.length - 1);
+                            const canvas = document.createElement('canvas');
+                            canvas.width = canvasWidth;
+                            canvas.height = totalHeight;
+                            const ctx = canvas.getContext('2d');
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            let currentY = 0;
+                            imgObjects.forEach((i, idx) => {
+                                const drawH = Math.round(i.height * (canvasWidth / i.width));
+                                ctx.drawImage(i, 0, currentY, canvasWidth, drawH);
+                                currentY += drawH;
+                                if (idx < imgObjects.length - 1) {
+                                    ctx.fillStyle = '#cbd5e1';
+                                    ctx.fillRect(0, currentY, canvasWidth, sep);
+                                    currentY += sep;
+                                }
+                            });
+                            resolve(canvas.toDataURL('image/jpeg', 1.0));
+                        }
+                    };
+                    img.src = base64;
+                    imgObjects[index] = img;
+                });
+            });
+        }
+
+        async function downloadImage() {
+            if (isSending) return;
+            isSending = true;
+            const btnSpan = document.querySelector('button[onclick="confirmBeforeSend()"] span.hidden.sm\\:inline') || document.querySelector('button[onclick="confirmBeforeSend()"] span');
+            const originalText = btnSpan.innerText; btnSpan.innerText = "Enviando...";
+            try {
+                const reportDate = getSelectedDate();
+                const dateStr = reportDate.toLocaleDateString('pt-BR').replace(/\//g, '-');
+                const weekNum = getWeekNumber(reportDate);
+                const partnerNameForFile = discardData[0].partnerName;
+                const reportId = generateReportID(discardData[0]);
+
+                const itemsToSync = [];
+                discardData.forEach(d => {
+                    if (d.partnerName === "Sítio Leitão") {
+                        const totalWeight = parsePTBRNumber(d.quantity);
+                        const halfWeight = totalWeight / 2;
+                        const halfWeightFormatted = formatSmart(halfWeight);
+                        itemsToSync.push({ partnerName: "Sítio Rafael", culture: d.culture, quantity: halfWeightFormatted, reason: d.reason });
+                        itemsToSync.push({ partnerName: "Sítio Reginaldo", culture: d.culture, quantity: halfWeightFormatted, reason: d.reason });
+                    } else {
+                        itemsToSync.push({ partnerName: d.partnerName, culture: d.culture, quantity: d.quantity, reason: d.reason });
+                    }
+                });
+
+                salvarDescarteNoSistema(reportDate, reportId, itemsToSync, discardData[0]);
+
+                const weekday = reportDate.toLocaleDateString('pt-BR', { weekday: 'long' }).charAt(0).toUpperCase() + reportDate.toLocaleDateString('pt-BR', { weekday: 'long' }).slice(1);
+                const baseFilename = `Descarte - ${partnerNameForFile} - ${weekday} ${dateStr} Sem ${weekNum}`;
+
+                const dataAtual = new Date();
+                const dataDescarte = dataAtual.toLocaleDateString('pt-BR');
+                const horaDescarte = dataAtual.toLocaleTimeString('pt-BR');
+
+                const totalDiscard = discardData.reduce((acc, d) => acc + parsePTBRNumber(d.quantity), 0);
+                const totalDiscardFormatted = formatSmart(totalDiscard);
+                const production = discardData[0].productionQuantity ? parsePTBRNumber(discardData[0].productionQuantity) : 0;
+                const inProgress = discardData[0].inProgress;
+
+                let prodShareText = '';
+                let percentText = '';
+                if (inProgress) {
+                    prodShareText = `\n\n*Produção:* Em andamento (dados em breve)`;
+                } else if (production > 0) {
+                    prodShareText = `\n\n*Produção:* ${formatSmart(production)} kg`;
+                    percentText = `\n\n*Percentual Descartado:* ${((totalDiscard / production) * 100).toLocaleString('pt-BR', {maximumFractionDigits: 1})}%`;
+                }
+
+                const shareText = `\`Registro de Descarte\`\n\n*ID:* ${reportId}${prodShareText}\n\n*Parceiro:* ${partnerNameForFile}\n\n*Cultura:* ${discardData[0].culture}\n\n*Data da Colheita:* ${reportDate.toLocaleDateString('pt-BR')}\n\n*Data do Descarte:* ${dataDescarte} às ${horaDescarte}\n\n*Descarte:* ${totalDiscardFormatted} kg${percentText}\n\n*Motivo:* ${discardData[0].reason}`;
+
+                const photos = discardData[0].photos || [];
+
+                if (photos.length > 0) {
+                    let finalImageBase64 = photos[0];
+                    if (photos.length > 1) {
+                        btnSpan.innerText = "Mesclando Imagens...";
+                        finalImageBase64 = await mergeImagesVertically(photos);
+                    }
+
+                    const response = await fetch(finalImageBase64);
+                    const blob = await response.blob();
+                    const file = new File([blob], `${baseFilename}.jpg`, { type: 'image/jpeg' });
+
+                    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try { await navigator.share({ files: [file], text: shareText }); }
+                        catch (shareErr) { console.log("Compartilhamento cancelado ou falhou:", shareErr); }
+                    } else {
+                        downloadFile(finalImageBase64, file.name);
+                        setTimeout(() => { window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank'); }, 1500);
+                    }
+                } else {
+                    if (navigator.share) {
+                        try { await navigator.share({ text: shareText }); }
+                        catch (shareErr) { console.log("Compartilhamento cancelado ou falhou:", shareErr); }
+                    } else {
+                        window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                showMessageModal('Erro', 'Falha ao enviar.', 'error');
+            } finally {
+                if (btnSpan) btnSpan.innerText = originalText;
+                isSending = false;
+            }
+        }
+
+        function downloadFile(uri, name) { const link = document.createElement('a'); link.href = uri; link.download = name; document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+        
+        // ---------- GRAVAÇÃO NO SISTEMA (Supabase) ----------
+        // Vai pela fila do Painel: sem internet fica guardado no aparelho e é enviado sozinho
+        // quando o sinal voltar. O id é fixo por relatório + parceiro, então tocar em "Enviar"
+        // de novo para o mesmo registro atualiza a linha em vez de duplicar.
+        const isoDeData = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const slugParceiro = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+        function salvarDescarteNoSistema(reportDate, reportId, items, original) {
+            try {
+                const emAndamento = !!original.inProgress;
+                const producaoTotal = !emAndamento && original.productionQuantity ? parsePTBRNumber(original.productionQuantity) : null;
+                // Sítio Leitão vai dividido em dois (Rafael e Reginaldo): a produção também é dividida
+                const partes = items.length || 1;
+                const registradoEm = new Date().toISOString();
+                items.forEach(item => {
+                    SPG_API.enfileirar('descarte_parceiros', 'upsert', {
+                        id: `app-${reportId}-${slugParceiro(item.partnerName)}`,
+                        id_exclusivo: reportId,
+                        data_colheita: isoDeData(reportDate),
+                        parceiro: item.partnerName,
+                        cultura: item.culture,
+                        motivo: item.reason,
+                        descarte_kg: parsePTBRNumber(item.quantity),
+                        producao_kg: producaoTotal !== null && producaoTotal > 0 ? Math.round((producaoTotal / partes) * 1000) / 1000 : null,
+                        producao_em_andamento: emAndamento,
+                        registrado_em: registradoEm,
+                        criado_por_nome: SPG_API.nomeUsuario() || '',
+                        origem: 'app'
+                    });
+                });
+                // Fotos: sobem para o Google Drive em segundo plano (não atrasam o WhatsApp) e o
+                // endereço delas é gravado nos mesmos registros. Sem internet, esperam no aparelho.
+                if (original.photos && original.photos.length && window.guardarFotosDoDescarte) {
+                    window.guardarFotosDoDescarte({
+                        chave: reportId,
+                        ids: items.map(item => `app-${reportId}-${slugParceiro(item.partnerName)}`),
+                        nomeBase: `${isoDeData(reportDate)} ${original.partnerName} ${reportId}`,
+                        pasta: isoDeData(reportDate).slice(0, 7),
+                        fotos: original.photos.slice()
+                    });
+                }
+                if (!navigator.onLine) {
+                    showMessageModal('Salvo no aparelho', 'Sem internet agora. O descarte ficou guardado neste aparelho e será enviado ao sistema sozinho quando o sinal voltar.', 'info');
+                }
+            } catch (erro) {
+                console.error('Falha ao gravar o descarte:', erro);
+                showMessageModal('Falha ao salvar', 'Não foi possível salvar o descarte no sistema: ' + erro.message + '\n\nToque em "Enviar" de novo: o mesmo registro não é duplicado.', 'error');
+            }
+        }
+
+        // ---------- IMPORTAR O HISTÓRICO DA PLANILHA (só administrador) ----------
+        // Lê todos os descartes da aba "Descarte" pelo Apps Script (a mesma consulta do painel
+        // central) e grava no sistema. Cada linha ganha um id tirado do próprio conteúdo, então
+        // importar de novo atualiza o que já veio, sem duplicar.
+        function assinaturaLinha(texto) {
+            let h1 = 0x811c9dc5, h2 = 0x01000193;
+            for (let i = 0; i < texto.length; i++) {
+                const c = texto.charCodeAt(i);
+                h1 = Math.imul(h1 ^ c, 16777619) >>> 0;
+                h2 = Math.imul(h2 + c, 2654435761) >>> 0;
+            }
+            return h1.toString(36) + h2.toString(36);
+        }
+
+        async function importarHistoricoPlanilha() {
+            if (!SPG_API.isAdmin()) return;
+            if (!confirm('Copiar para o sistema todos os descartes que estão na planilha "Controle de Descarte Parceiros"?\n\nA planilha não é alterada. Pode repetir depois: o que já foi copiado é atualizado, sem duplicar.')) return;
+            const botao = document.getElementById('importarBtn');
+            const overlay = document.getElementById('loadingOverlay');
+            const textoOverlay = overlay.querySelector('span');
+            const textoOriginal = textoOverlay.textContent;
+            botao.disabled = true;
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
+            try {
+                textoOverlay.textContent = 'Lendo a planilha (pode levar até 1 minuto)...';
+                const controle = new AbortController();
+                const tempo = setTimeout(() => controle.abort(), 120000);
+                let dados;
+                try {
+                    const resp = await fetch(URL_DESCARTE, { signal: controle.signal });
+                    dados = JSON.parse(await resp.text());
+                } finally { clearTimeout(tempo); }
+                if (!dados || !dados.ok || !Array.isArray(dados.descarte)) throw new Error((dados && dados.erro) || 'O Apps Script não devolveu a lista de descartes.');
+
+                const vistos = new Map();
+                const agora = new Date().toISOString();
+                const linhas = dados.descarte.filter(r => r.parceiro).map(r => {
+                    const chave = [r.data, r.horaDescarte, r.idExclusivo, r.parceiro, r.descartadoKg, r.motivo, r.classe].join('|');
+                    const n = (vistos.get(chave) || 0) + 1; // linhas idênticas na planilha continuam separadas
+                    vistos.set(chave, n);
+                    return {
+                        id: 'planilha-' + assinaturaLinha(chave) + (n > 1 ? '-' + n : ''),
+                        id_exclusivo: r.idExclusivo || '',
+                        data_colheita: r.dataColheita || null,
+                        parceiro: r.parceiro,
+                        cultura: r.classe || '',
+                        motivo: r.motivo || '',
+                        descarte_kg: Number(r.descartadoKg) || 0,
+                        producao_kg: null,
+                        producao_em_andamento: false,
+                        registrado_em: `${r.data}T${r.horaDescarte || '00:00'}:00-03:00`,
+                        criado_por_nome: '',
+                        origem: 'planilha',
+                        importado_em: agora
+                    };
+                });
+                if (!linhas.length) throw new Error('A planilha não tem descartes para copiar.');
+
+                const LOTE = 500;
+                for (let i = 0; i < linhas.length; i += LOTE) {
+                    textoOverlay.textContent = `Gravando no sistema: ${Math.min(i + LOTE, linhas.length)} de ${linhas.length}...`;
+                    const { error } = await SPG_API.cliente.from('descarte_parceiros').upsert(linhas.slice(i, i + LOTE), { onConflict: 'id' });
+                    if (error) throw new Error(error.message);
+                }
+                showMessageModal('Histórico importado', `${linhas.length.toLocaleString('pt-BR')} descartes da planilha foram copiados para o sistema.`, 'success');
+            } catch (erro) {
+                console.error('Importação do histórico:', erro);
+                const msg = erro.name === 'AbortError' ? 'A planilha demorou demais para responder. Tente de novo em instantes.' : erro.message;
+                showMessageModal('Falha na importação', msg + '\n\nNada foi apagado. Pode tentar de novo.', 'error');
+            } finally {
+                textoOverlay.textContent = textoOriginal;
+                overlay.classList.add('hidden'); overlay.classList.remove('flex');
+                botao.disabled = false;
+            }
+        }
+
+        function showMessageModal(title, message, type) {
+            const modal = document.getElementById('messageModal'); const iconContainer = document.getElementById('msgIconContainer');
+            const titleEl = document.getElementById('msgTitle'); const textEl = document.getElementById('msgText');
+            titleEl.innerText = title; textEl.innerText = message;
+            if (type === 'error') { iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4"; iconContainer.innerHTML = '<i data-lucide="alert-circle" class="h-6 w-6 text-red-600"></i>'; } 
+            else if (type === 'success') { iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4"; iconContainer.innerHTML = '<i data-lucide="check-circle" class="h-6 w-6 text-green-600"></i>'; }
+            else { iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4"; iconContainer.innerHTML = '<i data-lucide="info" class="h-6 w-6 text-blue-600"></i>'; }
+            modal.classList.remove('hidden'); lucide.createIcons();
+        }
+        function hideMessageModal() { document.getElementById('messageModal').classList.add('hidden'); }
+
+        // --- SISTEMA DE ATUALIZAÇÃO POR INATIVIDADE ---
+        let lastActivityTime = Date.now();
+        const INACTIVITY_LIMIT = 2 * 60 * 1000; // 2 minutos em milissegundos
+
+        function handleUserActivity() {
+            const now = Date.now();
+            if (now - lastActivityTime > INACTIVITY_LIMIT) {
+                // Voltou de inatividade! Se os campos estiverem preenchidos, faz uma consulta silenciosa.
+                const dateInput = document.getElementById('reportDate')?.value;
+                const cultureVal = document.getElementById('culture')?.value;
+                const partnerVal = document.getElementById('partnerName')?.value;
+                
+                if (dateInput && cultureVal && partnerVal && !isConsulting) {
+                    console.log("Retorno de inatividade detectado. Realizando consulta em segundo plano para agilizar...");
+                    checkProductionData(true); // O 'true' faz a consulta silenciosa, sem bloquear a tela
+                }
+            }
+            lastActivityTime = now;
+        }
+
+        // Monitores de interação do usuário
+        ['touchstart', 'mousemove', 'keydown', 'scroll', 'click'].forEach(evt => {
+            window.addEventListener(evt, handleUserActivity, { passive: true });
+        });
+
+        // Caso o usuário troque de aba ou desligue a tela do celular e volte
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                handleUserActivity();
+            }
+        });
+
+        // --- CONSULTA AUTOMÁTICA PERIÓDICA (a cada 10 minutos) ---
+        // Consulta a planilha sozinho em segundo plano, sem precisar que o usuário clique,
+        // para detectar assim que a produção do parceiro for lançada.
+        const AUTO_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutos
+
+        setInterval(() => {
+            const dateInput = document.getElementById('reportDate')?.value;
+            const cultureVal = document.getElementById('culture')?.value;
+            const partnerVal = document.getElementById('partnerName')?.value;
+            const productionLocked = document.getElementById('productionQuantity')?.readOnly;
+
+            // Só consulta sozinho se os campos estiverem preenchidos, a produção ainda
+            // não tiver sido localizada (campo travado = já encontrada) e não houver
+            // outra consulta em andamento no momento.
+            if (dateInput && cultureVal && partnerVal && !productionLocked && !isConsulting) {
+                console.log("Verificação automática (10 min): consultando produção em segundo plano...");
+                checkProductionData(true); // 'true' = consulta silenciosa, sem travar a tela
+            }
+        }, AUTO_REFRESH_INTERVAL);
+    </script>
+    <script>
+    // =========================================================================
+    // FOTOS NO GOOGLE DRIVE + ABA "RECENTES"
+    // As fotos de cada descarte sobem para o Drive pela função "fotos-drive" do Supabase e o
+    // endereço delas é gravado nos registros (coluna fotos). Enquanto não sobem, ficam
+    // guardadas no aparelho (IndexedDB), e sobem sozinhas quando houver internet.
+    // =========================================================================
+    (function () {
+        'use strict';
+        const API = window.IrrigacaoAPI;
+        const el = id => document.getElementById(id);
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const num = (v, d = 1) => Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: d });
+        const semAcento = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+        // ---------- Fila das fotos no aparelho ----------
+        const BANCO = 'spg-descarte-fotos', LOJA = 'pendentes';
+        let memoria = []; // se o aparelho não tiver IndexedDB, a fila vale só enquanto a página estiver aberta
+        function abrirBanco() {
+            return new Promise((ok, erro) => {
+                const r = indexedDB.open(BANCO, 1);
+                r.onupgradeneeded = () => r.result.createObjectStore(LOJA, { keyPath: 'chave' });
+                r.onsuccess = () => ok(r.result);
+                r.onerror = () => erro(r.error);
+            });
+        }
+        async function idb(modo, acao) {
+            const db = await abrirBanco();
+            try {
+                return await new Promise((ok, erro) => {
+                    const tx = db.transaction(LOJA, modo);
+                    const req = acao(tx.objectStore(LOJA));
+                    let valor;
+                    req.onsuccess = () => { valor = req.result; };
+                    tx.oncomplete = () => ok(valor);
+                    tx.onerror = tx.onabort = () => erro(tx.error);
+                });
+            } finally { db.close(); }
+        }
+        const temIdb = typeof indexedDB !== 'undefined';
+        async function salvarPendente(p) {
+            if (temIdb) { try { await idb('readwrite', s => s.put(p)); return; } catch (e) { console.warn('Fotos: IndexedDB indisponível', e); } }
+            memoria = memoria.filter(x => x.chave !== p.chave).concat(p);
+        }
+        async function listarPendentes() {
+            let lista = [];
+            if (temIdb) { try { lista = await idb('readonly', s => s.getAll()) || []; } catch (e) { } }
+            return lista.concat(memoria.filter(m => !lista.some(x => x.chave === m.chave)));
+        }
+        async function apagarPendente(chave) {
+            memoria = memoria.filter(x => x.chave !== chave);
+            if (temIdb) { try { await idb('readwrite', s => s.delete(chave)); } catch (e) { } }
+        }
+
+        // Sobe a foto pela função "fotos-drive" do Supabase, que grava direto no Google Drive
+        async function subirFoto(dataUrl, nome, pasta) {
+            const { data, error } = await API.cliente.functions.invoke('fotos-drive', { body: { nome, pasta, dataUrl } });
+            if (error) {
+                let msg = error.message;
+                try { const j = await error.context.json(); if (j && j.erro) msg = j.erro; } catch (e) { /* mantém a mensagem */ }
+                throw new Error(msg);
+            }
+            if (!data || !data.ok) throw new Error((data && data.erro) || 'A foto não foi salva no Drive.');
+            return { id: data.id, url: data.url };
+        }
+
+        let processando = false;
+        async function processarPendentes() {
+            if (processando || !navigator.onLine) return;
+            processando = true;
+            try {
+                for (const p of await listarPendentes()) {
+                    p.enviadas = p.enviadas || [];
+                    for (let i = p.enviadas.length; i < p.fotos.length; i++) {
+                        p.enviadas.push(await subirFoto(p.fotos[i], `${p.nomeBase} ${i + 1}.jpg`, p.pasta));
+                        await salvarPendente(p); // guarda o progresso: se cair no meio, não reenvia as que já subiram
+                    }
+                    p.ids.forEach(id => API.enfileirar('descarte_parceiros', 'update', { id, valores: { fotos: p.enviadas } }));
+                    await apagarPendente(p.chave);
+                }
+            } catch (e) {
+                console.warn('Fotos do descarte: tenta de novo mais tarde.', e);
+            } finally {
+                processando = false;
+                mostrarAvisoFotos();
+            }
+        }
+
+        window.guardarFotosDoDescarte = async function (pacote) {
+            await salvarPendente(Object.assign({ enviadas: [] }, pacote));
+            mostrarAvisoFotos();
+            processarPendentes();
+        };
+
+        // Aviso na linha do status: quantas fotos ainda estão só no aparelho
+        async function mostrarAvisoFotos() {
+            const lista = await listarPendentes();
+            const faltam = lista.reduce((s, p) => s + p.fotos.length - (p.enviadas || []).length, 0);
+            let aviso = el('fotosPendentes');
+            if (!aviso) {
+                aviso = document.createElement('button');
+                aviso.type = 'button'; aviso.id = 'fotosPendentes';
+                aviso.title = 'Fotos guardadas no aparelho, aguardando enviar para o Google Drive. Toque para tentar agora.';
+                aviso.className = 'flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-700';
+                aviso.onclick = processarPendentes;
+                el('syncStatusBtn').before(aviso);
+            }
+            aviso.classList.toggle('hidden', !faltam);
+            aviso.innerHTML = `<i data-lucide="image-up" class="w-3.5 h-3.5"></i>${faltam} foto${faltam === 1 ? '' : 's'} para enviar`;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        addEventListener('online', processarPendentes);
+        setInterval(processarPendentes, 2 * 60 * 1000);
+        setTimeout(() => { mostrarAvisoFotos(); processarPendentes(); }, 3000);
+
+        // ---------- Abas ----------
+        function trocarAba(aba) {
+            document.querySelectorAll('#abasDescarte [data-aba]').forEach(b => {
+                const ativa = b.dataset.aba === aba;
+                b.setAttribute('aria-selected', ativa);
+                b.className = 'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all ' + (ativa ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500');
+            });
+            el('conteudo').classList.toggle('hidden', aba !== 'registrar');
+            el('viewRecentes').classList.toggle('hidden', aba !== 'recentes');
+            if (aba === 'recentes') carregarRecentes();
+            scrollTo(0, 0);
+        }
+        el('abasDescarte').addEventListener('click', e => { const b = e.target.closest('[data-aba]'); if (b) trocarAba(b.dataset.aba); });
+
+        // ---------- Recentes ----------
+        let grupos = [];
+        const dataBR = iso => iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : '—';
+        const horaBR = ts => new Date(ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+        // Sítio Leitão vira duas linhas (Rafael e Reginaldo) com o mesmo ID: aqui voltam a ser um cartão só
+        function agrupar(linhas) {
+            const mapa = new Map();
+            linhas.forEach(r => {
+                const k = r.origem === 'app' && r.id_exclusivo ? 'app|' + r.id_exclusivo : r.id;
+                let g = mapa.get(k);
+                if (!g) {
+                    g = { parceiros: [], cultura: r.cultura, motivo: r.motivo, data_colheita: r.data_colheita, registrado_em: r.registrado_em,
+                          criado_por_nome: r.criado_por_nome, id_exclusivo: r.id_exclusivo, origem: r.origem, descarte: 0, producao: null, andamento: false, fotos: [] };
+                    mapa.set(k, g);
+                }
+                g.parceiros.push(r.parceiro);
+                g.descarte += Number(r.descarte_kg) || 0;
+                if (r.producao_kg !== null && r.producao_kg !== undefined) g.producao = (g.producao || 0) + Number(r.producao_kg);
+                g.andamento = g.andamento || !!r.producao_em_andamento;
+                if (!g.fotos.length && Array.isArray(r.fotos) && r.fotos.length) g.fotos = r.fotos;
+            });
+            return [...mapa.values()];
+        }
+
+        async function carregarRecentes() {
+            const lista = el('recLista');
+            lista.innerHTML = '<div class="col-span-full py-12 flex justify-center"><i data-lucide="loader-circle" class="w-7 h-7 text-slate-300 animate-spin"></i></div>';
+            if (window.lucide) lucide.createIcons();
+            const dias = Number(el('recPeriodo').value) || 7;
+            const desde = new Date(); desde.setHours(0, 0, 0, 0); desde.setDate(desde.getDate() - (dias - 1));
+            const { data, error } = await API.cliente.from('descarte_parceiros').select('*')
+                .gte('registrado_em', desde.toISOString()).order('registrado_em', { ascending: false }).limit(1000);
+            if (error) {
+                lista.innerHTML = `<div class="col-span-full bg-white rounded-2xl border border-slate-200 p-6 text-center text-sm text-slate-500">Não foi possível carregar: ${esc(error.message)}</div>`;
+                return;
+            }
+            grupos = agrupar(data || []);
+            desenharRecentes();
+        }
+
+        function desenharRecentes() {
+            const termo = semAcento(el('recBusca').value.trim());
+            const soFotos = el('recSoFotos').checked;
+            const visiveis = grupos.filter(g => (!soFotos || g.fotos.length)
+                && (!termo || semAcento([g.parceiros.join(' '), g.cultura, g.motivo, g.id_exclusivo, g.criado_por_nome].join(' ')).includes(termo)));
+            const total = visiveis.reduce((s, g) => s + g.descarte, 0);
+            const tile = (rot, val, cor) => `<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3"><p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">${rot}</p><p class="text-xl font-black ${cor} tabular-nums mt-0.5">${val}</p></div>`;
+            el('recResumo').innerHTML = tile('Registros', num(visiveis.length, 0), 'text-slate-800') + tile('Descartado', num(total) + ' kg', 'text-rose-600') + tile('Com foto', num(visiveis.filter(g => g.fotos.length).length, 0), 'text-emerald-700');
+
+            el('recLista').innerHTML = visiveis.map(g => {
+                const i = grupos.indexOf(g);
+                const pct = !g.andamento && g.producao > 0 ? num(g.descarte / g.producao * 100) + '%' : '—';
+                const foto = g.fotos.length
+                    ? `<button type="button" data-ver-fotos="${i}" class="relative block w-full aspect-[4/3] bg-slate-100 overflow-hidden" aria-label="Ver fotos">
+                        <img src="${esc(g.fotos[0].url)}" alt="Foto do descarte de ${esc(g.parceiros.join(' e '))}" loading="lazy" referrerpolicy="no-referrer" class="w-full h-full object-cover">
+                        ${g.fotos.length > 1 ? `<span class="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-900/70 text-white text-[11px] font-bold px-2 py-1 rounded-lg"><i data-lucide="images" class="w-3.5 h-3.5"></i>${g.fotos.length}</span>` : ''}
+                      </button>`
+                    : `<div class="h-20 flex items-center justify-center gap-2 bg-slate-50 text-slate-300 text-[11px] font-bold uppercase tracking-wider"><i data-lucide="image-off" class="w-5 h-5"></i>Sem foto</div>`;
+                const producao = g.andamento ? '<span class="text-amber-600">Em andamento</span>' : g.producao > 0 ? num(g.producao) + ' kg' : '—';
+                return `<article class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    ${foto}
+                    <div class="p-4 space-y-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-extrabold text-slate-800 leading-tight">${esc(g.parceiros.join(' + '))}</h3>
+                                <p class="text-[11px] font-semibold text-slate-400 mt-0.5">Colheita ${dataBR(g.data_colheita)} · registrado ${horaBR(g.registrado_em)}</p>
+                            </div>
+                            <span class="shrink-0 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700">${esc(g.cultura || '—')}</span>
+                        </div>
+                        <div class="grid grid-cols-3 rounded-xl overflow-hidden border border-slate-100" style="gap:1px;background:#f1f5f9">
+                            <div class="bg-white p-2"><p class="text-[9px] font-black text-slate-400 uppercase">Descarte</p><p class="text-sm font-black text-rose-600 tabular-nums">${num(g.descarte)} kg</p></div>
+                            <div class="bg-white p-2"><p class="text-[9px] font-black text-slate-400 uppercase">Produção</p><p class="text-sm font-black text-slate-700 tabular-nums">${producao}</p></div>
+                            <div class="bg-white p-2"><p class="text-[9px] font-black text-slate-400 uppercase">% Desc.</p><p class="text-sm font-black text-slate-700 tabular-nums">${pct}</p></div>
+                        </div>
+                        <p class="text-xs text-slate-600"><span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Motivo</span><br>${esc(g.motivo || '—')}</p>
+                        <p class="pt-2 border-t border-slate-100 text-[10px] font-semibold text-slate-400 flex justify-between gap-2">
+                            <span class="truncate">${g.origem === 'planilha' ? 'Importado da planilha' : 'por ' + esc(g.criado_por_nome || '—')}</span>
+                            ${g.id_exclusivo ? `<span class="font-mono tracking-widest shrink-0">ID ${esc(g.id_exclusivo)}</span>` : ''}
+                        </p>
+                    </div>
+                </article>`;
+            }).join('') || '<div class="col-span-full bg-white rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-400">Nenhum descarte neste período.</div>';
+            if (window.lucide) lucide.createIcons();
+        }
+
+        el('recPeriodo').addEventListener('change', carregarRecentes);
+        el('recAtualizar').addEventListener('click', carregarRecentes);
+        el('recBusca').addEventListener('input', desenharRecentes);
+        el('recSoFotos').addEventListener('change', desenharRecentes);
+
+        // ---------- Foto ampliada ----------
+        let fotosAbertas = [], fotoAtual = 0, legenda = '';
+        function mostrarFoto() {
+            el('fotoAmpliadaImg').src = fotosAbertas[fotoAtual].url;
+            el('fotoAmpliadaInfo').textContent = `${legenda}${fotosAbertas.length > 1 ? ` · ${fotoAtual + 1} de ${fotosAbertas.length}` : ''}`;
+            document.querySelectorAll('#fotoAmpliada [data-foto-passo]').forEach(b => b.classList.toggle('hidden', fotosAbertas.length < 2));
+        }
+        el('recLista').addEventListener('click', e => {
+            const b = e.target.closest('[data-ver-fotos]'); if (!b) return;
+            const g = grupos[Number(b.dataset.verFotos)];
+            fotosAbertas = g.fotos; fotoAtual = 0; legenda = `${g.parceiros.join(' + ')} · ${dataBR(g.data_colheita)}`;
+            mostrarFoto();
+            const caixa = el('fotoAmpliada'); caixa.classList.remove('hidden'); caixa.classList.add('flex');
+            if (window.lucide) lucide.createIcons();
+        });
+        el('fotoAmpliada').addEventListener('click', e => {
+            const passo = e.target.closest('[data-foto-passo]');
+            if (passo) { fotoAtual = (fotoAtual + Number(passo.dataset.fotoPasso) + fotosAbertas.length) % fotosAbertas.length; mostrarFoto(); return; }
+            if (e.target.closest('[data-foto-fechar]') || e.target.id === 'fotoAmpliada') { const c = el('fotoAmpliada'); c.classList.add('hidden'); c.classList.remove('flex'); }
+        });
+        addEventListener('keydown', e => {
+            if (el('fotoAmpliada').classList.contains('hidden')) return;
+            if (e.key === 'Escape') { el('fotoAmpliada').classList.add('hidden'); el('fotoAmpliada').classList.remove('flex'); }
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { fotoAtual = (fotoAtual + (e.key === 'ArrowRight' ? 1 : -1) + fotosAbertas.length) % fotosAbertas.length; mostrarFoto(); }
+        });
+    })();
+    </script>
+</body>
+</html>

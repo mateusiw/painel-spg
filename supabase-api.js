@@ -391,6 +391,10 @@
         { id: 'aplicacoes-fitossanitarias', nome: 'Aplicações Fitossanitárias', descricao: 'Defensivos, laboratório, adubação e dashboard', icone: 'spray-can', grupo: 'Operação', gradiente: 'from-green-500 to-emerald-700',
           cor: 'bg-green-50 text-green-700', caminho: 'projetos/aplicacoes-fitossanitarias/index.html',
           areas: [{ modulo: 'aplicacoes_fitossanitarias', nome: 'Acesso às Aplicações', recursos: recursos('aplicacoes', [['registro', 'Registro', 'clipboard-pen'], ['dashboard', 'Dashboard', 'layout-dashboard']]) }] },
+        // Antigo "Registro de Descarte - SPG": grava no Supabase; a produção do parceiro ainda vem do Apps Script
+        { id: 'descarte-parceiros', nome: 'Descarte de Parceiros', descricao: 'Descarte da colheita recebida dos parceiros, com o percentual sobre a produção', icone: 'trash-2', grupo: 'Operação', gradiente: 'from-rose-500 to-red-700',
+          cor: 'bg-rose-50 text-rose-700', caminho: 'projetos/descarte-parceiros/index.html',
+          areas: [{ modulo: 'descarte_parceiros', nome: 'Acesso ao Descarte de Parceiros', recursos: [] }] },
         { id: 'organograma', nome: 'Organograma', descricao: 'Equipe, cargos, líderes, aniversários e tempo de casa', icone: 'network', grupo: 'Pessoas', gradiente: 'from-indigo-500 to-violet-700',
           cor: 'bg-indigo-50 text-indigo-700', caminho: 'projetos/organograma/index.html',
           areas: [{ modulo: 'organograma', nome: 'Acesso ao Organograma', recursos: [] },
