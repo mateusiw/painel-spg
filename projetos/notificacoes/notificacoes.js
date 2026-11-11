@@ -135,6 +135,33 @@
         };
         campoTexto = 'mensagem';
         desenharEditor(true);
+        if (p.local && geradoresDoSite(p).some(x => x.evento)) carregarReais(p.local);
+    }
+
+    // Prévia dos avisos de evento com os dados reais do último Campo / Pesagem deste local
+    async function carregarReais(local) {
+        const alvo = ed;
+        const { data } = await sb.from('colheita_sync').select('chave,dados').eq('local', local).in('chave', ['campo', 'pesagem']);
+        if (!ed || ed !== alvo) return;
+        if (!data) { ed.reais = {}; atualizarPrevia(); return; } // sem acesso aos dados: fica o exemplo
+        const setor = local === 'estufa';
+        const num = v => Math.round(Number(v) || 0).toLocaleString('pt-BR');
+        const somar = (l, c) => l.reduce((s, x) => s + (Number(x[c]) || 0), 0);
+        const blocos = l => {
+            const v = [...new Set(l.map(b => String(b ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
+            if (v.length > 6) return `${v.length} ${setor ? 'setores' : 'blocos'}`;
+            return `${v.length === 1 ? (setor ? 'Setor' : 'Bloco') : (setor ? 'Setores' : 'Blocos')} ${v.length <= 1 ? v.join('') : v.slice(0, -1).join(', ') + ' e ' + v[v.length - 1]}`;
+        };
+        const reais = {};
+        const campo = (data.find(l => l.chave === 'campo') || {}).dados;
+        const cargas = (campo && Array.isArray(campo.loads) ? campo.loads : []).filter(c => Array.isArray(c.entries) && c.entries.length);
+        const entradas = cargas.flatMap(c => c.entries);
+        if (entradas.length) reais.colheita_finalizada = { data: campo.date || '', vars: { blocos: blocos(entradas.map(e => e.bloco)), caixas: num(somar(entradas, 'caixas')), carregamentos: String(cargas.filter(c => c.closed).length || cargas.length) } };
+        const pes = (data.find(l => l.chave === 'pesagem') || {}).dados;
+        const itens = pes && pes.conferido && Array.isArray(pes.conferido.itens) ? pes.conferido.itens : [];
+        if (itens.length) reais.pesagem_concluida = { data: pes.conferido.date || pes.date || '', vars: { blocos: blocos(itens.map(i => i.bloco)), kg: num(somar(itens, 'kg')), unidades: num(somar(itens, 'unidades')), caixas: num(somar(itens, 'caixas')) } };
+        ed.reais = reais;
+        atualizarPrevia();
     }
     function fecharEditor() { ed = null; desenharEditor(); }
 
@@ -155,14 +182,20 @@
         const p = API.PROJETOS.find(x => x.id === ed.projeto) || {};
         const idLocal = g.local === 'escolher' ? ed.local : p.local;
         const doLocal = idLocal ? { local: API.nomeLocal(idLocal), ...(idLocal === 'estufa' && g.exemplo.blocos ? { blocos: 'Setores 1 e 2' } : {}) } : {};
-        const vars = { data: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), hora: g.evento ? new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ed.horario, ...g.exemplo, ...doLocal };
+        // Aviso de evento: usa os dados reais do último Campo / Pesagem do local, quando houver
+        const real = g.evento && ed.reais ? ed.reais[g.id] : null;
+        const quem = g.evento ? { quem: API.nomeUsuario() || g.exemplo.quem } : {};
+        const vars = { data: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), hora: g.evento ? new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ed.horario, ...g.exemplo, ...doLocal, ...(real ? real.vars : {}), ...quem };
         const preencher = t => String(t || '').replace(/\{(\w+)\}/g, (o, n) => vars[n] ?? o);
-        return { titulo: preencher(ed.titulo.trim() || g.titulo), corpo: preencher(ed.mensagem.trim() || g.mensagem) };
+        const fonte = !g.evento ? '' : real ? `Com os dados reais de ${real.data.split('-').reverse().slice(0, 2).join('/')} deste local.` : ed.reais ? 'Números de exemplo: ainda não há dados salvos deste local.' : 'Buscando os dados deste local...';
+        return { titulo: preencher(ed.titulo.trim() || g.titulo), corpo: preencher(ed.mensagem.trim() || g.mensagem), fonte };
     }
     function atualizarPrevia() {
         const p = textoPrevia();
         el('edPreviaTitulo').textContent = p.titulo;
         el('edPreviaCorpo').textContent = p.corpo;
+        const fonte = el('edPreviaFonte');
+        if (fonte) { fonte.textContent = p.fonte; fonte.classList.toggle('hidden', !p.fonte); }
     }
     function filtrarPessoas() {
         const termo = ed.busca.trim().toLowerCase();
@@ -221,7 +254,7 @@
                     <div><label class="rotulo" for="edTexto1">Título</label><input id="edTexto1" data-ed="titulo" maxlength="80" value="${esc(ed.titulo)}" class="campo w-full"></div>
                     <div><label class="rotulo" for="edTexto2">Mensagem</label><textarea id="edTexto2" data-ed="mensagem" maxlength="300" rows="3" class="campo w-full">${esc(ed.mensagem)}</textarea></div>
                     <div><p class="rotulo">Toque para incluir no texto</p><div class="flex flex-wrap gap-1.5">${variaveis.map(([n, d]) => `<button type="button" data-ed-var="${esc(n)}" title="{${esc(n)}}" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-600">${esc(d)}</button>`).join('')}</div></div>
-                    <div class="rounded-xl bg-slate-50 border border-slate-200 p-3"><p class="rotulo">Exemplo de como chega</p><p id="edPreviaTitulo" class="text-sm font-bold text-slate-800"></p><p id="edPreviaCorpo" class="text-xs text-slate-600 whitespace-pre-line"></p></div>
+                    <div class="rounded-xl bg-slate-50 border border-slate-200 p-3"><p class="rotulo">Exemplo de como chega</p><p id="edPreviaTitulo" class="text-sm font-bold text-slate-800"></p><p id="edPreviaCorpo" class="text-xs text-slate-600 whitespace-pre-line"></p><p id="edPreviaFonte" class="hidden text-[11px] font-semibold text-slate-400 mt-1.5"></p></div>
                 </section>
                 ${ed.id ? `<div class="border-t border-slate-100 pt-3"><button type="button" data-ed-excluir class="w-full text-xs font-bold py-2.5 rounded-xl text-red-600 hover:bg-red-50">${ed.confirmarExclusao ? 'Toque de novo para confirmar a exclusão' : 'Excluir este aviso'}</button></div>` : ''}
             </div>
