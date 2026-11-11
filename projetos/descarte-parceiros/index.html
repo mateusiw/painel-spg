@@ -38,6 +38,7 @@
         }
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="../../supabase-config.js"></script>
     <script src="../../supabase-api.js"></script>
@@ -79,6 +80,7 @@
         input:focus, select:focus, textarea:focus { outline: none; border-color: #4ade80 !important; background-color: #fff !important; box-shadow: 0 0 0 3px rgba(74,222,128,0.15); }
         .btn-primary { transition: transform 0.1s, background-color 0.15s, filter .15s; }
         .btn-primary:active { transform: scale(0.97); }
+        .aba-oculta { display: none !important; }
         #submitBtn.bg-blue-600 { background-color: #2563eb; box-shadow: 0 4px 6px -1px rgba(37,99,235,.2); }
     </style>
 </head>
@@ -281,26 +283,67 @@
 
     <!-- RECENTES: descartes já registrados, com foto e detalhes -->
     <div id="viewRecentes" class="hidden mx-auto p-4 space-y-4 max-w-md lg:max-w-[1400px] lg:pt-5">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-wrap items-end gap-3">
-            <div class="flex-1 min-w-[150px]">
-                <label for="recPeriodo" class="rotulo"><i data-lucide="calendar-range" class="w-3.5 h-3.5 text-green-500"></i> Período</label>
-                <select id="recPeriodo" class="campo w-full">
-                    <option value="1">Hoje</option>
-                    <option value="7" selected>Últimos 7 dias</option>
-                    <option value="30">Últimos 30 dias</option>
-                    <option value="90">Últimos 90 dias</option>
-                </select>
+        <!-- Filtros: período (atalhos ou calendário De/Até), por qual data, parceiro, cultura, motivo e busca -->
+        <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 space-y-3">
+            <div class="grid grid-cols-2 lg:grid-cols-[170px_150px_150px_170px_minmax(0,1fr)] gap-3 items-end">
+                <div class="col-span-2 lg:col-span-1">
+                    <label for="recPeriodo" class="rotulo"><i data-lucide="calendar-range" class="w-3.5 h-3.5 text-green-500"></i> Período</label>
+                    <select id="recPeriodo" class="campo w-full">
+                        <option value="hoje">Hoje</option>
+                        <option value="7" selected>Últimos 7 dias</option>
+                        <option value="30">Últimos 30 dias</option>
+                        <option value="mes">Este mês</option>
+                        <option value="mesPassado">Mês passado</option>
+                        <option value="90">Últimos 90 dias</option>
+                        <option value="personalizado">Personalizado</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="recDe" class="rotulo"><i data-lucide="calendar" class="w-3.5 h-3.5 text-green-500"></i> De</label>
+                    <input type="date" id="recDe" class="campo w-full">
+                </div>
+                <div>
+                    <label for="recAte" class="rotulo"><i data-lucide="calendar-check" class="w-3.5 h-3.5 text-green-500"></i> Até</label>
+                    <input type="date" id="recAte" class="campo w-full">
+                </div>
+                <div class="col-span-2 lg:col-span-1">
+                    <label for="recCampoData" class="rotulo"><i data-lucide="calendar-search" class="w-3.5 h-3.5 text-green-500"></i> Considerar a data</label>
+                    <select id="recCampoData" class="campo w-full">
+                        <option value="registrado_em">Do descarte</option>
+                        <option value="data_colheita">Da colheita</option>
+                    </select>
+                </div>
+                <div class="col-span-2 lg:col-span-1">
+                    <label for="recBusca" class="rotulo"><i data-lucide="search" class="w-3.5 h-3.5 text-green-500"></i> Buscar</label>
+                    <input type="search" id="recBusca" placeholder="ID, quem registrou, motivo..." class="campo w-full">
+                </div>
             </div>
-            <div class="flex-1 min-w-[150px]">
-                <label for="recBusca" class="rotulo"><i data-lucide="search" class="w-3.5 h-3.5 text-green-500"></i> Buscar</label>
-                <input type="search" id="recBusca" placeholder="Parceiro, cultura, motivo, ID..." class="campo w-full">
+            <div class="grid grid-cols-2 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto_auto] gap-3 items-end">
+                <div class="col-span-2 lg:col-span-1">
+                    <label for="recParceiro" class="rotulo"><i data-lucide="handshake" class="w-3.5 h-3.5 text-green-500"></i> Parceiro</label>
+                    <select id="recParceiro" class="campo w-full"><option value="">Todos os parceiros</option></select>
+                </div>
+                <div>
+                    <label for="recCultura" class="rotulo"><i data-lucide="sprout" class="w-3.5 h-3.5 text-green-500"></i> Cultura</label>
+                    <select id="recCultura" class="campo w-full"><option value="">Todas</option></select>
+                </div>
+                <div>
+                    <label for="recMotivo" class="rotulo"><i data-lucide="message-square-warning" class="w-3.5 h-3.5 text-green-500"></i> Motivo</label>
+                    <select id="recMotivo" class="campo w-full"><option value="">Todos os motivos</option></select>
+                </div>
+                <label class="flex items-center gap-2 text-xs font-bold text-slate-500 cursor-pointer py-3 whitespace-nowrap">
+                    <input type="checkbox" id="recSoFotos" class="w-4 h-4 accent-emerald-600"> Só com foto
+                </label>
+                <div class="flex gap-2 col-span-2 lg:col-span-1 justify-end">
+                    <button type="button" id="recLimpar" class="flex items-center gap-1.5 px-3 py-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">
+                        <i data-lucide="eraser" class="w-4 h-4"></i> Limpar
+                    </button>
+                    <button type="button" id="recAtualizar" class="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-white ring-1 ring-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Atualizar
+                    </button>
+                </div>
             </div>
-            <label class="flex items-center gap-2 text-xs font-bold text-slate-500 cursor-pointer py-3">
-                <input type="checkbox" id="recSoFotos" class="w-4 h-4 accent-emerald-600"> Só com foto
-            </label>
-            <button type="button" id="recAtualizar" class="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-white ring-1 ring-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Atualizar
-            </button>
+            <p id="recAvisoLimite" class="hidden text-[11px] font-bold text-amber-700 bg-amber-50 rounded-xl px-3 py-2"></p>
         </div>
         <div id="recResumo" class="grid grid-cols-3 gap-3"></div>
         <div id="recLista" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 items-start"></div>
@@ -313,6 +356,89 @@
         <img id="fotoAmpliadaImg" alt="" class="max-w-full max-h-[80vh] rounded-xl shadow-2xl object-contain">
         <button type="button" data-foto-passo="1" aria-label="Próxima foto" class="absolute right-2 sm:right-6 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/10 text-white hover:bg-white/20"><i data-lucide="chevron-right" class="w-7 h-7"></i></button>
         <p id="fotoAmpliadaInfo" class="mt-3 text-xs font-bold text-white/80 text-center"></p>
+    </div>
+
+    <!-- Editar descarte (dados e fotos) -->
+    <div id="editarDescarte" class="fixed inset-0 z-[75] hidden items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true" aria-labelledby="edTitulo">
+        <div class="bg-white w-full sm:max-w-lg max-h-[92dvh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 px-5 py-4 flex items-center justify-between gap-3 shrink-0">
+                <div class="min-w-0">
+                    <h2 id="edTitulo" class="text-base font-bold text-white flex items-center gap-2"><i data-lucide="pencil" class="w-4 h-4 opacity-90"></i> Editar descarte</h2>
+                    <p id="edSub" class="text-[11px] font-semibold text-green-100 truncate"></p>
+                </div>
+                <button type="button" data-ed-fechar aria-label="Fechar" class="p-1.5 rounded-lg text-white/80 hover:text-white bg-white/10 hover:bg-white/20"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100">
+                <div class="px-5 py-4 grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="edData" class="rotulo"><i data-lucide="calendar" class="w-3.5 h-3.5 text-green-500"></i> Colheita</label>
+                        <input type="date" id="edData" class="campo w-full">
+                    </div>
+                    <div>
+                        <label for="edCultura" class="rotulo"><i data-lucide="sprout" class="w-3.5 h-3.5 text-green-500"></i> Cultura</label>
+                        <select id="edCultura" class="campo w-full"></select>
+                    </div>
+                </div>
+                <div class="px-5 py-4 grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="edDescarte" class="rotulo"><i data-lucide="trash" class="w-3.5 h-3.5 text-rose-500"></i> Descarte (kg)</label>
+                        <input type="text" id="edDescarte" inputmode="decimal" oninput="formatDecimalInput(this)" class="campo w-full font-bold">
+                    </div>
+                    <div>
+                        <label for="edProducao" class="rotulo"><i data-lucide="scale" class="w-3.5 h-3.5 text-green-500"></i> Produção (kg)</label>
+                        <input type="text" id="edProducao" inputmode="decimal" oninput="formatDecimalInput(this)" class="campo w-full font-bold">
+                        <label class="flex items-center gap-2 mt-2 text-xs font-bold text-slate-500 cursor-pointer">
+                            <input type="checkbox" id="edAndamento" class="w-4 h-4 accent-emerald-600"> Em andamento
+                        </label>
+                    </div>
+                </div>
+                <div class="px-5 py-4">
+                    <label for="edMotivo" class="rotulo"><i data-lucide="message-square-warning" class="w-3.5 h-3.5 text-green-500"></i> Motivo</label>
+                    <input type="text" id="edMotivo" list="edMotivos" autocomplete="off" placeholder="Escolha ou digite o motivo" class="campo w-full">
+                    <datalist id="edMotivos"></datalist>
+                </div>
+                <div class="px-5 py-4">
+                    <div class="rotulo justify-between">
+                        <span class="flex items-center gap-1.5"><i data-lucide="images" class="w-3.5 h-3.5 text-green-500"></i> Fotos</span>
+                        <span id="edFotosConta" class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full normal-case tracking-normal">0/5</span>
+                    </div>
+                    <div id="edFotos" class="grid grid-cols-3 gap-2"></div>
+                    <input type="file" id="edFotoCamera" accept="image/*" capture="environment" class="hidden">
+                    <input type="file" id="edFotoGaleria" accept="image/*" multiple class="hidden">
+                    <p class="mt-2 text-[11px] text-slate-400">Foto excluída vai para a lixeira do Google Drive (dá para recuperar por 30 dias).</p>
+                </div>
+                <p id="edErro" role="alert" class="hidden mx-5 my-3 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2"></p>
+            </div>
+
+            <div class="shrink-0 border-t border-slate-200 bg-white px-5 py-3 flex flex-wrap items-center gap-2" style="padding-bottom:max(.75rem,env(safe-area-inset-bottom))">
+                <button type="button" id="edExcluir" class="hidden px-3 py-2.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50">Excluir descarte</button>
+                <div class="flex gap-2 ml-auto">
+                    <button type="button" data-ed-fechar class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold">Cancelar</button>
+                    <button type="button" id="edSalvar" class="btn-primary px-5 py-2.5 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white text-sm font-bold shadow-md shadow-emerald-600/25 disabled:opacity-60">Salvar alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reenviar ao parceiro: prévia da imagem + compartilhar -->
+    <div id="reenvioModal" class="fixed inset-0 z-[76] hidden items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true" aria-labelledby="reenvioTitulo">
+        <div class="bg-white w-full sm:max-w-md max-h-[92dvh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 px-5 py-4 flex items-center justify-between gap-3 shrink-0">
+                <div class="min-w-0">
+                    <h2 id="reenvioTitulo" class="text-base font-bold text-white flex items-center gap-2"><i data-lucide="send" class="w-4 h-4 opacity-90"></i> Reenviar ao parceiro</h2>
+                    <p id="reenvioSub" class="text-[11px] font-semibold text-green-100 truncate"></p>
+                </div>
+                <button type="button" data-reenvio-fechar aria-label="Fechar" class="p-1.5 rounded-lg text-white/80 hover:text-white bg-white/10 hover:bg-white/20"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex-1 min-h-0 overflow-y-auto bg-slate-100 p-3">
+                <img id="reenvioImg" alt="Prévia da imagem do descarte" class="w-full rounded-2xl shadow-sm">
+            </div>
+            <div class="shrink-0 border-t border-slate-200 bg-white px-5 py-3 flex gap-2" style="padding-bottom:max(.75rem,env(safe-area-inset-bottom))">
+                <button type="button" id="reenvioBaixar" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold"><i data-lucide="download" class="w-4 h-4"></i>Baixar</button>
+                <button type="button" id="reenvioCompartilhar" class="btn-primary flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white text-sm font-bold shadow-md shadow-emerald-600/25"><i data-lucide="share-2" class="w-4 h-4"></i>Compartilhar</button>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL DE CARREGAMENTO (LOADING) -->
@@ -1271,42 +1397,71 @@
             downloadImage(); 
         }
 
-        function mergeImagesVertically(imagesBase64) {
-            return new Promise((resolve) => {
-                const imgObjects = [];
-                let loaded = 0;
-                imagesBase64.forEach((base64, index) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        loaded++;
-                        if (loaded === imagesBase64.length) {
-                            const canvasWidth = imgObjects[0].width;
-                            const sep = Math.round(canvasWidth * 0.012); // separador proporcional à largura
-                            const totalHeight = imgObjects.reduce((sum, i) => sum + Math.round(i.height * (canvasWidth / i.width)), 0) + sep * (imgObjects.length - 1);
-                            const canvas = document.createElement('canvas');
-                            canvas.width = canvasWidth;
-                            canvas.height = totalHeight;
-                            const ctx = canvas.getContext('2d');
-                            ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(0, 0, canvas.width, canvas.height);
-                            let currentY = 0;
-                            imgObjects.forEach((i, idx) => {
-                                const drawH = Math.round(i.height * (canvasWidth / i.width));
-                                ctx.drawImage(i, 0, currentY, canvasWidth, drawH);
-                                currentY += drawH;
-                                if (idx < imgObjects.length - 1) {
-                                    ctx.fillStyle = '#cbd5e1';
-                                    ctx.fillRect(0, currentY, canvasWidth, sep);
-                                    currentY += sep;
-                                }
-                            });
-                            resolve(canvas.toDataURL('image/jpeg', 1.0));
-                        }
-                    };
-                    img.src = base64;
-                    imgObjects[index] = img;
-                });
-            });
+        // Imagem única do envio: cartão com os dados do descarte e, embaixo, as fotos anexadas.
+        // Desenhada fora da tela com estilos fixos e convertida em JPEG (html-to-image).
+        async function gerarImagemDescarte(d) {
+            const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const n = (v, casas = 1) => Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: casas });
+            const temProducao = !d.andamento && d.producao > 0;
+            const pct = temProducao ? n(d.descarte / d.producao * 100) + '%' : '—';
+            const quando = `${d.registradoEm.toLocaleDateString('pt-BR')} às ${d.registradoEm.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+            const caixa = (rot, val, cor, fundo) => `<div style="flex:1;background:${fundo};border-radius:14px;padding:14px 10px;text-align:center;">
+                <div style="font-size:11px;font-weight:900;color:${cor};text-transform:uppercase;letter-spacing:.08em;opacity:.8;">${rot}</div>
+                <div style="font-size:26px;font-weight:900;color:${cor};line-height:1.15;margin-top:3px;">${val}</div></div>`;
+            const info = (rot, val) => `<div style="flex:1;min-width:0;"><div style="font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">${rot}</div><div style="font-size:15px;font-weight:800;color:#1e293b;margin-top:2px;">${val}</div></div>`;
+            const fotos = (d.fotos || []).map(src => `<img src="${src}" style="display:block;width:100%;border-radius:14px;margin-top:12px;">`).join('');
+            const logo = new URL('../../icone-app.png', location.href).href;
+
+            const html = `<div style="width:720px;background:#f8fafc;font-family:'Segoe UI',Roboto,Arial,sans-serif;padding:20px;">
+                <div style="background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.08);border:1px solid #e2e8f0;">
+                    <div style="background:linear-gradient(135deg,#16a34a,#15803d);padding:22px 24px;color:#fff;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <img src="${logo}" style="width:44px;height:44px;border-radius:12px;background:#fff;">
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#bbf7d0;">Registro de Descarte</div>
+                                <div style="font-size:26px;font-weight:900;line-height:1.15;">${escH(d.parceiro)}</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;">${escH(d.cultura)}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:14px;padding:16px 24px;border-bottom:1px solid #f1f5f9;">
+                        ${info('Colheita', `${escH(d.dataColheita)} · Sem ${escH(d.semana)}`)}
+                        ${info('Descarte em', escH(quando))}
+                        ${info('ID', `<span style="font-family:Consolas,monospace;letter-spacing:.12em;">${escH(d.id)}</span>`)}
+                    </div>
+                    <div style="display:flex;gap:10px;padding:16px 24px 6px;">
+                        ${caixa('Descartado', n(d.descarte) + ' kg', '#be123c', '#fff1f2')}
+                        ${caixa('Produção', d.andamento ? 'Em andamento' : (d.producao > 0 ? n(d.producao) + ' kg' : '—'), '#334155', '#f8fafc')}
+                        ${caixa('% Descartado', pct, '#b45309', '#fffbeb')}
+                    </div>
+                    <div style="padding:12px 24px 18px;">
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px 14px;">
+                            <div style="font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Motivo</div>
+                            <div style="font-size:16px;font-weight:800;color:#1e293b;margin-top:2px;">${escH(d.motivo)}</div>
+                        </div>
+                        ${fotos}
+                    </div>
+                    <div style="background:#f8fafc;border-top:1px solid #f1f5f9;padding:10px;text-align:center;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;">
+                        SPG Sede • Controle de Descarte${d.quem ? ' • ' + escH(d.quem) : ''}
+                    </div>
+                </div>
+            </div>`;
+
+            const host = document.createElement('div');
+            host.style.cssText = 'position:fixed;left:-10000px;top:0;';
+            host.innerHTML = html;
+            document.body.appendChild(host);
+            try {
+                const alvo = host.firstElementChild;
+                await Promise.all([...alvo.querySelectorAll('img')].map(img => img.complete ? null : new Promise(r => { img.onload = img.onerror = r; })));
+                // Muitas fotos = imagem alta: reduz a nitidez para caber no limite do celular (iPhone)
+                const ratio = Math.max(1, Math.min(2, Math.sqrt(15e6 / (alvo.offsetWidth * alvo.offsetHeight))));
+                const opcoes = { pixelRatio: ratio, backgroundColor: '#f8fafc', quality: 0.9, skipFonts: true };
+                await htmlToImage.toJpeg(alvo, opcoes); // a primeira às vezes sai sem as imagens; vale a segunda
+                return await htmlToImage.toJpeg(alvo, opcoes);
+            } finally {
+                host.remove();
+            }
         }
 
         async function downloadImage() {
@@ -1339,53 +1494,32 @@
                 const weekday = reportDate.toLocaleDateString('pt-BR', { weekday: 'long' }).charAt(0).toUpperCase() + reportDate.toLocaleDateString('pt-BR', { weekday: 'long' }).slice(1);
                 const baseFilename = `Descarte - ${partnerNameForFile} - ${weekday} ${dateStr} Sem ${weekNum}`;
 
-                const dataAtual = new Date();
-                const dataDescarte = dataAtual.toLocaleDateString('pt-BR');
-                const horaDescarte = dataAtual.toLocaleTimeString('pt-BR');
-
+                // Só a imagem: os dados do descarte em cima e as fotos anexadas embaixo, tudo numa imagem
+                // (sem o texto longo no WhatsApp)
+                btnSpan.innerText = "Gerando imagem...";
                 const totalDiscard = discardData.reduce((acc, d) => acc + parsePTBRNumber(d.quantity), 0);
-                const totalDiscardFormatted = formatSmart(totalDiscard);
-                const production = discardData[0].productionQuantity ? parsePTBRNumber(discardData[0].productionQuantity) : 0;
-                const inProgress = discardData[0].inProgress;
+                const imagemDataUrl = await gerarImagemDescarte({
+                    id: reportId,
+                    parceiro: partnerNameForFile,
+                    cultura: discardData[0].culture,
+                    dataColheita: reportDate.toLocaleDateString('pt-BR'),
+                    semana: weekNum,
+                    registradoEm: new Date(),
+                    descarte: totalDiscard,
+                    producao: discardData[0].productionQuantity ? parsePTBRNumber(discardData[0].productionQuantity) : 0,
+                    andamento: !!discardData[0].inProgress,
+                    motivo: discardData[0].reason,
+                    quem: SPG_API.nomeUsuario() || '',
+                    fotos: discardData[0].photos || []
+                });
+                const blob = await (await fetch(imagemDataUrl)).blob();
+                const file = new File([blob], `${baseFilename}.jpg`, { type: 'image/jpeg' });
 
-                let prodShareText = '';
-                let percentText = '';
-                if (inProgress) {
-                    prodShareText = `\n\n*Produção:* Em andamento (dados em breve)`;
-                } else if (production > 0) {
-                    prodShareText = `\n\n*Produção:* ${formatSmart(production)} kg`;
-                    percentText = `\n\n*Percentual Descartado:* ${((totalDiscard / production) * 100).toLocaleString('pt-BR', {maximumFractionDigits: 1})}%`;
-                }
-
-                const shareText = `\`Registro de Descarte\`\n\n*ID:* ${reportId}${prodShareText}\n\n*Parceiro:* ${partnerNameForFile}\n\n*Cultura:* ${discardData[0].culture}\n\n*Data da Colheita:* ${reportDate.toLocaleDateString('pt-BR')}\n\n*Data do Descarte:* ${dataDescarte} às ${horaDescarte}\n\n*Descarte:* ${totalDiscardFormatted} kg${percentText}\n\n*Motivo:* ${discardData[0].reason}`;
-
-                const photos = discardData[0].photos || [];
-
-                if (photos.length > 0) {
-                    let finalImageBase64 = photos[0];
-                    if (photos.length > 1) {
-                        btnSpan.innerText = "Mesclando Imagens...";
-                        finalImageBase64 = await mergeImagesVertically(photos);
-                    }
-
-                    const response = await fetch(finalImageBase64);
-                    const blob = await response.blob();
-                    const file = new File([blob], `${baseFilename}.jpg`, { type: 'image/jpeg' });
-
-                    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try { await navigator.share({ files: [file], text: shareText }); }
-                        catch (shareErr) { console.log("Compartilhamento cancelado ou falhou:", shareErr); }
-                    } else {
-                        downloadFile(finalImageBase64, file.name);
-                        setTimeout(() => { window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank'); }, 1500);
-                    }
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try { await navigator.share({ files: [file] }); }
+                    catch (shareErr) { console.log("Compartilhamento cancelado ou falhou:", shareErr); }
                 } else {
-                    if (navigator.share) {
-                        try { await navigator.share({ text: shareText }); }
-                        catch (shareErr) { console.log("Compartilhamento cancelado ou falhou:", shareErr); }
-                    } else {
-                        window.open(`https://web.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-                    }
+                    downloadFile(imagemDataUrl, file.name);
                 }
             } catch (err) {
                 console.error(err);
@@ -1710,17 +1844,25 @@
                 b.setAttribute('aria-selected', ativa);
                 b.className = 'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all ' + (ativa ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500');
             });
-            el('conteudo').classList.toggle('hidden', aba !== 'registrar');
+            // .aba-oculta (display:none !important): no computador o "lg:grid" do formulário vencia o
+            // "hidden" e a tela de registro continuava aparecendo, com os Recentes lá embaixo
+            el('conteudo').classList.toggle('aba-oculta', aba !== 'registrar');
             el('viewRecentes').classList.toggle('hidden', aba !== 'recentes');
+            const hash = aba === 'recentes' ? '#recentes' : '';
+            if (location.hash !== hash) history.replaceState(null, '', location.pathname + location.search + hash);
             if (aba === 'recentes') carregarRecentes();
             scrollTo(0, 0);
         }
         el('abasDescarte').addEventListener('click', e => { const b = e.target.closest('[data-aba]'); if (b) trocarAba(b.dataset.aba); });
+        // Abrindo com #recentes no endereço (ou atualizando a página nos Recentes), já abre nela
+        if (location.hash === '#recentes') setTimeout(() => trocarAba('recentes'), 0);
 
         // ---------- Recentes ----------
         let grupos = [];
         const dataBR = iso => iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : '—';
         const horaBR = ts => new Date(ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const kgBR = v => Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+        const meuId = () => (API.usuarioAtual() || {}).id;
 
         // Sítio Leitão vira duas linhas (Rafael e Reginaldo) com o mesmo ID: aqui voltam a ser um cartão só
         function agrupar(linhas) {
@@ -1729,10 +1871,11 @@
                 const k = r.origem === 'app' && r.id_exclusivo ? 'app|' + r.id_exclusivo : r.id;
                 let g = mapa.get(k);
                 if (!g) {
-                    g = { parceiros: [], cultura: r.cultura, motivo: r.motivo, data_colheita: r.data_colheita, registrado_em: r.registrado_em,
+                    g = { rows: [], parceiros: [], cultura: r.cultura, motivo: r.motivo, data_colheita: r.data_colheita, registrado_em: r.registrado_em,
                           criado_por_nome: r.criado_por_nome, id_exclusivo: r.id_exclusivo, origem: r.origem, descarte: 0, producao: null, andamento: false, fotos: [] };
                     mapa.set(k, g);
                 }
+                g.rows.push({ id: r.id, criado_por: r.criado_por });
                 g.parceiros.push(r.parceiro);
                 g.descarte += Number(r.descarte_kg) || 0;
                 if (r.producao_kg !== null && r.producao_kg !== undefined) g.producao = (g.producao || 0) + Number(r.producao_kg);
@@ -1741,72 +1884,140 @@
             });
             return [...mapa.values()];
         }
+        // Edita: o administrador qualquer um; os demais, o que eles mesmos registraram no app
+        const podeEditar = g => API.isAdmin() || (g.origem === 'app' && g.rows.every(r => r.criado_por && r.criado_por === meuId()));
 
+        // Período: os atalhos preenchem o calendário De/Até; mexer nas datas vira "Personalizado"
+        const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        function aplicarAtalhoPeriodo() {
+            const v = el('recPeriodo').value;
+            if (v === 'personalizado') return;
+            const hoje = new Date(); let de = new Date(hoje), ate = new Date(hoje);
+            if (v === 'mes') de = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+            else if (v === 'mesPassado') { de = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1); ate = new Date(hoje.getFullYear(), hoje.getMonth(), 0); }
+            else if (v !== 'hoje') de.setDate(hoje.getDate() - (Number(v) - 1));
+            el('recDe').value = isoLocal(de);
+            el('recAte').value = isoLocal(ate);
+        }
+        aplicarAtalhoPeriodo();
+
+        const LIMITE_LINHAS = 3000;
         async function carregarRecentes() {
             const lista = el('recLista');
-            lista.innerHTML = '<div class="col-span-full py-12 flex justify-center"><i data-lucide="loader-circle" class="w-7 h-7 text-slate-300 animate-spin"></i></div>';
+            lista.innerHTML = '<div class="col-span-full py-16 flex justify-center"><i data-lucide="loader-circle" class="w-8 h-8 text-emerald-300 animate-spin"></i></div>';
             if (window.lucide) lucide.createIcons();
-            const dias = Number(el('recPeriodo').value) || 7;
-            const desde = new Date(); desde.setHours(0, 0, 0, 0); desde.setDate(desde.getDate() - (dias - 1));
-            const { data, error } = await API.cliente.from('descarte_parceiros').select('*')
-                .gte('registrado_em', desde.toISOString()).order('registrado_em', { ascending: false }).limit(1000);
+            let de = el('recDe').value, ate = el('recAte').value;
+            if (!de || !ate) { aplicarAtalhoPeriodo(); de = el('recDe').value; ate = el('recAte').value; }
+            if (de > ate) { [de, ate] = [ate, de]; el('recDe').value = de; el('recAte').value = ate; }
+            let q = API.cliente.from('descarte_parceiros').select('*');
+            if (el('recCampoData').value === 'data_colheita') {
+                q = q.gte('data_colheita', de).lte('data_colheita', ate).order('data_colheita', { ascending: false }).order('registrado_em', { ascending: false });
+            } else {
+                const fim = new Date(ate + 'T00:00:00'); fim.setDate(fim.getDate() + 1);
+                q = q.gte('registrado_em', new Date(de + 'T00:00:00').toISOString()).lt('registrado_em', fim.toISOString()).order('registrado_em', { ascending: false });
+            }
+            const { data, error } = await q.limit(LIMITE_LINHAS);
             if (error) {
-                lista.innerHTML = `<div class="col-span-full bg-white rounded-2xl border border-slate-200 p-6 text-center text-sm text-slate-500">Não foi possível carregar: ${esc(error.message)}</div>`;
+                lista.innerHTML = `<div class="col-span-full bg-white rounded-3xl ring-1 ring-slate-200 p-8 text-center text-sm text-slate-500">Não foi possível carregar: ${esc(error.message)}</div>`;
                 return;
             }
+            const aviso = el('recAvisoLimite');
+            aviso.classList.toggle('hidden', (data || []).length < LIMITE_LINHAS);
+            aviso.textContent = `Mostrando os ${LIMITE_LINHAS.toLocaleString('pt-BR')} registros mais recentes do período. Diminua o período para ver todos.`;
             grupos = agrupar(data || []);
+            preencherOpcoesFiltro();
             desenharRecentes();
+        }
+
+        // Parceiro, cultura e motivo: as opções são as que existem no período carregado
+        function preencherOpcoesFiltro() {
+            const opcoes = (id, valores, rotuloTodos) => {
+                const campo = el(id), atual = campo.value;
+                const lista = [...new Set(valores.map(v => String(v || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+                if (atual && !lista.includes(atual)) lista.unshift(atual); // mantém a escolha, mesmo sem registros agora
+                campo.innerHTML = `<option value="">${rotuloTodos}</option>` + lista.map(v => `<option value="${esc(v)}"${v === atual ? ' selected' : ''}>${esc(v)}</option>`).join('');
+            };
+            opcoes('recParceiro', grupos.flatMap(g => g.parceiros), 'Todos os parceiros');
+            opcoes('recCultura', grupos.map(g => g.cultura), 'Todas');
+            opcoes('recMotivo', grupos.map(g => g.motivo), 'Todos os motivos');
         }
 
         function desenharRecentes() {
             const termo = semAcento(el('recBusca').value.trim());
             const soFotos = el('recSoFotos').checked;
+            const parceiro = el('recParceiro').value, cultura = el('recCultura').value, motivo = el('recMotivo').value;
             const visiveis = grupos.filter(g => (!soFotos || g.fotos.length)
+                && (!parceiro || g.parceiros.includes(parceiro))
+                && (!cultura || String(g.cultura || '').trim() === cultura)
+                && (!motivo || String(g.motivo || '').trim() === motivo)
                 && (!termo || semAcento([g.parceiros.join(' '), g.cultura, g.motivo, g.id_exclusivo, g.criado_por_nome].join(' ')).includes(termo)));
             const total = visiveis.reduce((s, g) => s + g.descarte, 0);
-            const tile = (rot, val, cor) => `<div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3"><p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">${rot}</p><p class="text-xl font-black ${cor} tabular-nums mt-0.5">${val}</p></div>`;
-            el('recResumo').innerHTML = tile('Registros', num(visiveis.length, 0), 'text-slate-800') + tile('Descartado', num(total) + ' kg', 'text-rose-600') + tile('Com foto', num(visiveis.filter(g => g.fotos.length).length, 0), 'text-emerald-700');
+            const comProd = visiveis.filter(g => !g.andamento && g.producao > 0);
+            const pctMedio = comProd.length ? num(comProd.reduce((s, g) => s + g.descarte, 0) / comProd.reduce((s, g) => s + g.producao, 0) * 100) + '%' : '—';
+            const tile = (icone, rot, val, cor, fundo) => `<div class="bg-white rounded-2xl ring-1 ring-slate-200/80 shadow-sm p-3.5 flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl ${fundo} ${cor} flex items-center justify-center shrink-0"><i data-lucide="${icone}" class="w-5 h-5"></i></span>
+                <span class="min-w-0"><span class="block text-[10px] font-black text-slate-400 uppercase tracking-wider">${rot}</span><span class="block text-lg font-black text-slate-800 tabular-nums leading-tight truncate">${val}</span></span></div>`;
+            el('recResumo').className = 'grid grid-cols-2 lg:grid-cols-4 gap-3';
+            el('recResumo').innerHTML = tile('clipboard-list', 'Registros', num(visiveis.length, 0), 'text-slate-600', 'bg-slate-100')
+                + tile('trash-2', 'Descartado', num(total) + ' kg', 'text-rose-600', 'bg-rose-50')
+                + tile('percent', '% médio', pctMedio, 'text-amber-600', 'bg-amber-50')
+                + tile('images', 'Com foto', num(visiveis.filter(g => g.fotos.length).length, 0), 'text-emerald-600', 'bg-emerald-50');
 
             el('recLista').innerHTML = visiveis.map(g => {
                 const i = grupos.indexOf(g);
                 const pct = !g.andamento && g.producao > 0 ? num(g.descarte / g.producao * 100) + '%' : '—';
-                const foto = g.fotos.length
-                    ? `<button type="button" data-ver-fotos="${i}" class="relative block w-full aspect-[4/3] bg-slate-100 overflow-hidden" aria-label="Ver fotos">
-                        <img src="${esc(g.fotos[0].url)}" alt="Foto do descarte de ${esc(g.parceiros.join(' e '))}" loading="lazy" referrerpolicy="no-referrer" class="w-full h-full object-cover">
-                        ${g.fotos.length > 1 ? `<span class="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-900/70 text-white text-[11px] font-bold px-2 py-1 rounded-lg"><i data-lucide="images" class="w-3.5 h-3.5"></i>${g.fotos.length}</span>` : ''}
-                      </button>`
-                    : `<div class="h-20 flex items-center justify-center gap-2 bg-slate-50 text-slate-300 text-[11px] font-bold uppercase tracking-wider"><i data-lucide="image-off" class="w-5 h-5"></i>Sem foto</div>`;
-                const producao = g.andamento ? '<span class="text-amber-600">Em andamento</span>' : g.producao > 0 ? num(g.producao) + ' kg' : '—';
-                return `<article class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    ${foto}
+                const producao = g.andamento ? '<span class="text-amber-600 text-xs">Em andamento</span>' : g.producao > 0 ? num(g.producao) + ' kg' : '—';
+                const capa = g.fotos.length
+                    ? `<button type="button" data-ver-fotos="${i}" class="absolute inset-0 w-full h-full" aria-label="Ver fotos"><img src="${esc(g.fotos[0].url)}" alt="" loading="lazy" referrerpolicy="no-referrer" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"></button>`
+                    : `<div class="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/40"><i data-lucide="image-off" class="w-9 h-9"></i><span class="text-[10px] font-black uppercase tracking-widest">Sem foto</span></div>`;
+                return `<article class="group bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                    <div class="relative aspect-[16/10] bg-gradient-to-br from-emerald-600 to-green-800 overflow-hidden">
+                        ${capa}
+                        <div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pb-3.5 pt-12 text-white">
+                            <h3 class="text-[17px] font-extrabold leading-tight drop-shadow">${esc(g.parceiros.join(' + '))}</h3>
+                            <p class="text-[11px] font-semibold text-white/80 mt-0.5">Colheita ${dataBR(g.data_colheita)} · ${horaBR(g.registrado_em)}</p>
+                        </div>
+                        <span class="pointer-events-none absolute top-3 left-3 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/95 text-emerald-800 shadow-sm">${esc(g.cultura || '—')}</span>
+                        ${g.fotos.length > 1 ? `<span class="pointer-events-none absolute top-3 right-3 flex items-center gap-1 bg-black/55 backdrop-blur text-white text-[11px] font-bold px-2 py-1 rounded-full"><i data-lucide="images" class="w-3.5 h-3.5"></i>${g.fotos.length}</span>` : ''}
+                    </div>
                     <div class="p-4 space-y-3">
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="min-w-0">
-                                <h3 class="text-sm font-extrabold text-slate-800 leading-tight">${esc(g.parceiros.join(' + '))}</h3>
-                                <p class="text-[11px] font-semibold text-slate-400 mt-0.5">Colheita ${dataBR(g.data_colheita)} · registrado ${horaBR(g.registrado_em)}</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="rounded-2xl bg-rose-50 px-2.5 py-2"><p class="text-[9px] font-black text-rose-400 uppercase tracking-wider">Descarte</p><p class="text-[15px] font-black text-rose-700 tabular-nums leading-tight">${num(g.descarte)} kg</p></div>
+                            <div class="rounded-2xl bg-slate-50 px-2.5 py-2"><p class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Produção</p><p class="text-[15px] font-black text-slate-700 tabular-nums leading-tight">${producao}</p></div>
+                            <div class="rounded-2xl bg-amber-50 px-2.5 py-2"><p class="text-[9px] font-black text-amber-500 uppercase tracking-wider">% Desc.</p><p class="text-[15px] font-black text-amber-700 tabular-nums leading-tight">${pct}</p></div>
+                        </div>
+                        <div class="flex items-start gap-2 text-sm text-slate-700">
+                            <i data-lucide="message-square-warning" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i><span class="font-semibold leading-snug">${esc(g.motivo || '—')}</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+                            <div class="min-w-0 text-[11px] font-semibold text-slate-400 leading-tight">
+                                <p class="truncate">${g.origem === 'planilha' ? 'Importado da planilha' : 'por ' + esc(g.criado_por_nome || '—')}</p>
+                                ${g.id_exclusivo ? `<p class="font-mono tracking-widest text-[10px]">ID ${esc(g.id_exclusivo)}</p>` : ''}
                             </div>
-                            <span class="shrink-0 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700">${esc(g.cultura || '—')}</span>
+                            <div class="shrink-0 flex items-center gap-1.5">
+                                <button type="button" data-reenviar="${i}" title="Reenviar a imagem do descarte ao parceiro" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 text-xs font-bold active:scale-95 transition"><i data-lucide="send" class="w-3.5 h-3.5"></i>Reenviar</button>
+                                ${podeEditar(g) ? `<button type="button" data-editar="${i}" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-xs font-bold active:scale-95 transition"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>Editar</button>` : ''}
+                            </div>
                         </div>
-                        <div class="grid grid-cols-3 rounded-xl overflow-hidden border border-slate-100" style="gap:1px;background:#f1f5f9">
-                            <div class="bg-white p-2"><p class="text-[9px] font-black text-slate-400 uppercase">Descarte</p><p class="text-sm font-black text-rose-600 tabular-nums">${num(g.descarte)} kg</p></div>
-                            <div class="bg-white p-2"><p class="text-[9px] font-black text-slate-400 uppercase">Produção</p><p class="text-sm font-black text-slate-700 tabular-nums">${producao}</p></div>
-                            <div class="bg-white p-2"><p class="text-[9px] font-black text-slate-400 uppercase">% Desc.</p><p class="text-sm font-black text-slate-700 tabular-nums">${pct}</p></div>
-                        </div>
-                        <p class="text-xs text-slate-600"><span class="font-bold text-slate-400 uppercase text-[10px] tracking-wider">Motivo</span><br>${esc(g.motivo || '—')}</p>
-                        <p class="pt-2 border-t border-slate-100 text-[10px] font-semibold text-slate-400 flex justify-between gap-2">
-                            <span class="truncate">${g.origem === 'planilha' ? 'Importado da planilha' : 'por ' + esc(g.criado_por_nome || '—')}</span>
-                            ${g.id_exclusivo ? `<span class="font-mono tracking-widest shrink-0">ID ${esc(g.id_exclusivo)}</span>` : ''}
-                        </p>
                     </div>
                 </article>`;
-            }).join('') || '<div class="col-span-full bg-white rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-400">Nenhum descarte neste período.</div>';
+            }).join('') || `<div class="col-span-full bg-white rounded-3xl ring-1 ring-slate-200 p-10 text-center">
+                <i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-300"></i>
+                <p class="mt-2 text-sm font-semibold text-slate-400">Nenhum descarte neste período.</p></div>`;
             if (window.lucide) lucide.createIcons();
         }
 
-        el('recPeriodo').addEventListener('change', carregarRecentes);
+        el('recPeriodo').addEventListener('change', () => { aplicarAtalhoPeriodo(); carregarRecentes(); });
+        ['recDe', 'recAte'].forEach(id => el(id).addEventListener('change', () => { el('recPeriodo').value = 'personalizado'; carregarRecentes(); }));
+        el('recCampoData').addEventListener('change', carregarRecentes);
         el('recAtualizar').addEventListener('click', carregarRecentes);
         el('recBusca').addEventListener('input', desenharRecentes);
-        el('recSoFotos').addEventListener('change', desenharRecentes);
+        ['recSoFotos', 'recParceiro', 'recCultura', 'recMotivo'].forEach(id => el(id).addEventListener('change', desenharRecentes));
+        el('recLimpar').addEventListener('click', () => {
+            ['recParceiro', 'recCultura', 'recMotivo', 'recBusca'].forEach(id => { el(id).value = ''; });
+            el('recSoFotos').checked = false;
+            desenharRecentes();
+        });
 
         // ---------- Foto ampliada ----------
         let fotosAbertas = [], fotoAtual = 0, legenda = '';
@@ -1815,24 +2026,296 @@
             el('fotoAmpliadaInfo').textContent = `${legenda}${fotosAbertas.length > 1 ? ` · ${fotoAtual + 1} de ${fotosAbertas.length}` : ''}`;
             document.querySelectorAll('#fotoAmpliada [data-foto-passo]').forEach(b => b.classList.toggle('hidden', fotosAbertas.length < 2));
         }
-        el('recLista').addEventListener('click', e => {
-            const b = e.target.closest('[data-ver-fotos]'); if (!b) return;
-            const g = grupos[Number(b.dataset.verFotos)];
-            fotosAbertas = g.fotos; fotoAtual = 0; legenda = `${g.parceiros.join(' + ')} · ${dataBR(g.data_colheita)}`;
+        function abrirFotos(lista, inicio, texto) {
+            fotosAbertas = lista; fotoAtual = inicio || 0; legenda = texto || '';
             mostrarFoto();
             const caixa = el('fotoAmpliada'); caixa.classList.remove('hidden'); caixa.classList.add('flex');
             if (window.lucide) lucide.createIcons();
+        }
+        const fecharFotos = () => { const c = el('fotoAmpliada'); c.classList.add('hidden'); c.classList.remove('flex'); };
+        el('recLista').addEventListener('click', e => {
+            const ver = e.target.closest('[data-ver-fotos]');
+            if (ver) { const g = grupos[Number(ver.dataset.verFotos)]; abrirFotos(g.fotos, 0, `${g.parceiros.join(' + ')} · ${dataBR(g.data_colheita)}`); return; }
+            const editar = e.target.closest('[data-editar]');
+            if (editar) abrirEdicao(Number(editar.dataset.editar));
         });
         el('fotoAmpliada').addEventListener('click', e => {
             const passo = e.target.closest('[data-foto-passo]');
             if (passo) { fotoAtual = (fotoAtual + Number(passo.dataset.fotoPasso) + fotosAbertas.length) % fotosAbertas.length; mostrarFoto(); return; }
-            if (e.target.closest('[data-foto-fechar]') || e.target.id === 'fotoAmpliada') { const c = el('fotoAmpliada'); c.classList.add('hidden'); c.classList.remove('flex'); }
+            if (e.target.closest('[data-foto-fechar]') || e.target.id === 'fotoAmpliada') fecharFotos();
         });
         addEventListener('keydown', e => {
-            if (el('fotoAmpliada').classList.contains('hidden')) return;
-            if (e.key === 'Escape') { el('fotoAmpliada').classList.add('hidden'); el('fotoAmpliada').classList.remove('flex'); }
-            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { fotoAtual = (fotoAtual + (e.key === 'ArrowRight' ? 1 : -1) + fotosAbertas.length) % fotosAbertas.length; mostrarFoto(); }
+            if (!el('fotoAmpliada').classList.contains('hidden')) {
+                if (e.key === 'Escape') fecharFotos();
+                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { fotoAtual = (fotoAtual + (e.key === 'ArrowRight' ? 1 : -1) + fotosAbertas.length) % fotosAbertas.length; mostrarFoto(); }
+                return;
+            }
+            if (e.key === 'Escape' && ed) fecharEdicao();
         });
+
+        // ---------- Editar descarte (dados e fotos) ----------
+        const LIMITE_FOTOS = 5;
+        let ed = null; // { g, fotos, novas: ids enviadas nesta edição, removidas: ids a apagar ao salvar, subindo }
+
+        async function excluirFotoDrive(id) {
+            try { await API.cliente.functions.invoke('fotos-drive', { body: { acao: 'excluir', id } }); }
+            catch (e) { console.warn('Foto não foi para a lixeira do Drive:', e); }
+        }
+
+        function preencherCulturaEd(atual) {
+            const culturas = Object.keys(partnersData);
+            if (atual && !culturas.includes(atual)) culturas.push(atual);
+            el('edCultura').innerHTML = culturas.map(c => `<option value="${esc(c)}"${c === atual ? ' selected' : ''}>${esc(c)}</option>`).join('');
+            atualizarMotivosEd();
+        }
+        function atualizarMotivosEd() {
+            el('edMotivos').innerHTML = (reasonsData[el('edCultura').value] || []).filter(m => m !== 'Outros').map(m => `<option value="${esc(m)}"></option>`).join('');
+        }
+        function aplicarAndamentoEd() {
+            const and = el('edAndamento').checked, p = el('edProducao');
+            p.disabled = and;
+            if (and) p.value = '';
+            p.placeholder = and ? 'Em andamento' : 'Ex: 120,5';
+        }
+
+        function abrirEdicao(i) {
+            const g = grupos[i];
+            if (!g || !podeEditar(g)) return;
+            ed = { g, fotos: g.fotos.map(f => ({ ...f })), novas: [], removidas: [], subindo: 0 };
+            el('edSub').textContent = `${g.parceiros.join(' + ')}${g.id_exclusivo ? ' · ID ' + g.id_exclusivo : ''}`;
+            el('edData').value = g.data_colheita ? String(g.data_colheita).slice(0, 10) : '';
+            preencherCulturaEd(g.cultura);
+            el('edMotivo').value = g.motivo || '';
+            el('edDescarte').value = kgBR(g.descarte);
+            el('edAndamento').checked = !!g.andamento;
+            el('edProducao').value = g.producao > 0 ? kgBR(g.producao) : '';
+            aplicarAndamentoEd();
+            el('edErro').classList.add('hidden');
+            el('edExcluir').classList.toggle('hidden', !API.isAdmin());
+            el('edExcluir').dataset.confirmar = '';
+            el('edExcluir').textContent = 'Excluir descarte';
+            desenharFotosEd();
+            const m = el('editarDescarte'); m.classList.remove('hidden'); m.classList.add('flex');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function fecharEdicao() {
+            if (!ed) return;
+            if (ed.subindo) return; // espera a foto terminar de subir
+            const novas = ed.novas.slice();
+            ed = null;
+            const m = el('editarDescarte'); m.classList.add('hidden'); m.classList.remove('flex');
+            novas.forEach(excluirFotoDrive); // fotos enviadas nesta edição e não salvas: vão para a lixeira
+        }
+
+        function desenharFotosEd() {
+            const cheio = ed.fotos.length + ed.subindo >= LIMITE_FOTOS;
+            el('edFotosConta').textContent = `${ed.fotos.length}/${LIMITE_FOTOS}`;
+            el('edFotos').innerHTML = ed.fotos.map((f, i) => `<div class="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 ring-1 ring-slate-200">
+                    <button type="button" data-ed-ver="${i}" class="absolute inset-0" aria-label="Ampliar foto ${i + 1}"><img src="${esc(f.url)}" alt="" referrerpolicy="no-referrer" class="w-full h-full object-cover"></button>
+                    <button type="button" data-ed-remover="${i}" aria-label="Excluir foto ${i + 1}" title="Excluir foto" class="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-white/95 text-rose-600 shadow flex items-center justify-center hover:bg-rose-600 hover:text-white transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                </div>`).join('')
+                + Array.from({ length: ed.subindo }, () => `<div class="aspect-square rounded-2xl bg-slate-50 ring-1 ring-slate-200 flex flex-col items-center justify-center gap-1 text-slate-400"><i data-lucide="loader-circle" class="w-6 h-6 animate-spin"></i><span class="text-[10px] font-bold">Enviando</span></div>`).join('')
+                + (cheio ? '' : `<div class="aspect-square grid grid-rows-2 gap-1.5">
+                    <button type="button" data-ed-add="camera" class="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-slate-500 hover:border-emerald-400 hover:text-emerald-700 flex items-center justify-center gap-1.5 text-[11px] font-bold"><i data-lucide="camera" class="w-4 h-4"></i>Câmera</button>
+                    <button type="button" data-ed-add="galeria" class="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 text-slate-500 hover:border-emerald-400 hover:text-emerald-700 flex items-center justify-center gap-1.5 text-[11px] font-bold"><i data-lucide="image-plus" class="w-4 h-4"></i>Galeria</button>
+                </div>`);
+            el('edSalvar').disabled = ed.subindo > 0;
+            el('edSalvar').textContent = ed.subindo > 0 ? 'Aguarde a foto...' : 'Salvar alterações';
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function adicionarFotosEd(files) {
+            if (!ed || !files.length) return;
+            if (!navigator.onLine) { mostrarErroEd('Sem internet: para adicionar fotos aqui é preciso estar conectado.'); return; }
+            const vagas = LIMITE_FOTOS - ed.fotos.length - ed.subindo;
+            if (files.length > vagas) { mostrarErroEd(`Cabem só mais ${vagas} foto(s) (máximo ${LIMITE_FOTOS}).`); files = files.slice(0, vagas); }
+            const leituras = files.map(f => lerBytes(f)); // lê já, antes da permissão do Android "vencer"
+            const atual = ed;
+            for (let i = 0; i < files.length; i++) {
+                atual.subindo++; if (ed === atual) desenharFotosEd();
+                try {
+                    const lido = await leituras[i];
+                    if (lido.erro) throw lido.erro;
+                    const r = await processImage(lido.blob);
+                    if (!r.dataUrl) throw new Error(r.detalhe || 'não foi possível abrir a foto');
+                    const g = atual.g;
+                    const foto = await subirFoto(r.dataUrl, `${g.data_colheita || ''} ${g.parceiros[0]} ${g.id_exclusivo || 'descarte'} ed-${Date.now()}-${i + 1}.jpg`.trim(), String(g.data_colheita || '').slice(0, 7));
+                    atual.fotos.push(foto); atual.novas.push(foto.id);
+                } catch (e) {
+                    console.error('Foto na edição:', e);
+                    if (ed === atual) mostrarErroEd('Não foi possível enviar uma das fotos: ' + (e.message || e));
+                } finally {
+                    atual.subindo--; if (ed === atual) desenharFotosEd();
+                }
+            }
+            if (ed !== atual) atual.novas.forEach(excluirFotoDrive); // janela fechada no meio do envio
+        }
+
+        function mostrarErroEd(msg) { const e = el('edErro'); e.textContent = msg; e.classList.remove('hidden'); }
+
+        async function salvarEdicao() {
+            if (!ed || ed.subindo) return;
+            const descarte = parsePTBRNumber(el('edDescarte').value);
+            const andamento = el('edAndamento').checked;
+            const producao = andamento ? 0 : parsePTBRNumber(el('edProducao').value);
+            const motivo = el('edMotivo').value.trim();
+            if (!el('edData').value) return mostrarErroEd('Informe a data da colheita.');
+            if (!(descarte > 0)) return mostrarErroEd('Informe o peso descartado.');
+            if (!motivo) return mostrarErroEd('Informe o motivo.');
+            if (!navigator.onLine) return mostrarErroEd('Sem internet: conecte para salvar a alteração.');
+
+            const botao = el('edSalvar'); botao.disabled = true; botao.textContent = 'Salvando...';
+            const n = ed.g.rows.length; // Sítio Leitão: o total é dividido entre os dois nomes, como no registro
+            const valores = {
+                data_colheita: el('edData').value,
+                cultura: el('edCultura').value,
+                motivo,
+                descarte_kg: Math.round(descarte / n * 1000) / 1000,
+                producao_kg: !andamento && producao > 0 ? Math.round(producao / n * 1000) / 1000 : null,
+                producao_em_andamento: andamento,
+                fotos: ed.fotos
+            };
+            const { error } = await API.cliente.from('descarte_parceiros').update(valores).in('id', ed.g.rows.map(r => r.id));
+            if (error) { botao.disabled = false; botao.textContent = 'Salvar alterações'; return mostrarErroEd('Não foi possível salvar: ' + error.message); }
+            const removidas = ed.removidas.slice();
+            ed.novas = []; // agora fazem parte do descarte
+            await fecharEdicao();
+            removidas.forEach(excluirFotoDrive);
+            showMessageModal('Descarte atualizado', 'As alterações foram salvas.', 'success');
+            carregarRecentes();
+        }
+
+        async function excluirDescarte() {
+            if (!ed || !API.isAdmin()) return;
+            const b = el('edExcluir');
+            if (!b.dataset.confirmar) { b.dataset.confirmar = '1'; b.textContent = 'Toque de novo para excluir'; return; }
+            b.disabled = true;
+            const { error } = await API.cliente.from('descarte_parceiros').delete().in('id', ed.g.rows.map(r => r.id));
+            b.disabled = false;
+            if (error) return mostrarErroEd('Não foi possível excluir: ' + error.message);
+            const fotos = ed.fotos.map(f => f.id).concat(ed.removidas);
+            ed.novas = [];
+            await fecharEdicao();
+            fotos.forEach(excluirFotoDrive);
+            showMessageModal('Descarte excluído', 'O registro e as fotos foram removidos (as fotos ficam 30 dias na lixeira do Drive).', 'success');
+            carregarRecentes();
+        }
+
+        el('edCultura').addEventListener('change', atualizarMotivosEd);
+        el('edAndamento').addEventListener('change', aplicarAndamentoEd);
+        el('edSalvar').addEventListener('click', salvarEdicao);
+        el('edExcluir').addEventListener('click', excluirDescarte);
+        ['edFotoCamera', 'edFotoGaleria'].forEach(id => el(id).addEventListener('change', e => { const files = Array.from(e.target.files || []); e.target.value = ''; adicionarFotosEd(files); }));
+        el('editarDescarte').addEventListener('click', e => {
+            if (e.target.closest('[data-ed-fechar]') || e.target.id === 'editarDescarte') { fecharEdicao(); return; }
+            const add = e.target.closest('[data-ed-add]');
+            if (add) { el(add.dataset.edAdd === 'camera' ? 'edFotoCamera' : 'edFotoGaleria').click(); return; }
+            const remover = e.target.closest('[data-ed-remover]');
+            if (remover) {
+                const [foto] = ed.fotos.splice(Number(remover.dataset.edRemover), 1);
+                if (ed.novas.includes(foto.id)) { ed.novas = ed.novas.filter(x => x !== foto.id); excluirFotoDrive(foto.id); }
+                else ed.removidas.push(foto.id); // só sai do Drive depois de salvar
+                desenharFotosEd();
+                return;
+            }
+            const ver = e.target.closest('[data-ed-ver]');
+            if (ver) abrirFotos(ed.fotos, Number(ver.dataset.edVer), el('edSub').textContent);
+        });
+
+        // ---------- Reenviar o descarte ao parceiro ----------
+        // Monta de novo a mesma imagem do envio (dados + fotos). As fotos vêm do Drive pela função
+        // "fotos-drive" (ação baixar). A imagem aparece numa prévia: o toque em "Compartilhar"
+        // abre o WhatsApp (o celular só deixa compartilhar logo depois de um toque).
+        let reenvio = null; // { arquivo, url }
+
+        async function baixarFotoDrive(id) {
+            const { data, error } = await API.cliente.functions.invoke('fotos-drive', { body: { acao: 'baixar', id } });
+            if (error) {
+                let msg = error.message;
+                try { const j = await error.context.json(); if (j && j.erro) msg = j.erro; } catch (e) { /* mantém */ }
+                // A versão antiga da função não conhece "baixar" e responde "Foto inválida."
+                if (msg === 'Foto inválida.' && id) msg = 'A função fotos-drive publicada no Supabase está desatualizada (não sabe baixar fotos). Publique de novo o arquivo supabase/functions/fotos-drive/index.ts.';
+                throw new Error(msg);
+            }
+            if (!data || !data.ok) throw new Error((data && data.erro) || 'Foto não encontrada no Drive.');
+            if (!data.dataUrl) throw new Error('A função fotos-drive publicada no Supabase está desatualizada: publique de novo o arquivo supabase/functions/fotos-drive/index.ts.');
+            return data.dataUrl;
+        }
+
+        function fecharReenvio() {
+            if (reenvio) URL.revokeObjectURL(reenvio.url);
+            reenvio = null;
+            const m = el('reenvioModal'); m.classList.add('hidden'); m.classList.remove('flex');
+        }
+
+        async function reenviarDescarte(i) {
+            const g = grupos[i];
+            if (!g) return;
+            if (!navigator.onLine) { showMessageModal('Sem internet', 'Para reenviar é preciso estar conectado (as fotos vêm do Google Drive).', 'error'); return; }
+            const overlay = el('loadingOverlay'), texto = overlay.querySelector('span'), original = texto.textContent;
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
+            try {
+                const fotos = [];
+                for (let k = 0; k < g.fotos.length; k++) {
+                    texto.textContent = `Buscando foto ${k + 1} de ${g.fotos.length}...`;
+                    // O código da foto no Drive; se não estiver salvo, sai do próprio endereço (...?id=XXXX)
+                    const f = g.fotos[k];
+                    const idFoto = f.id || (/[?&]id=([A-Za-z0-9_-]+)/.exec(f.url || '') || [])[1] || '';
+                    fotos.push(await baixarFotoDrive(idFoto));
+                }
+                texto.textContent = 'Gerando imagem...';
+                const colheita = g.data_colheita ? new Date(String(g.data_colheita).slice(0, 10) + 'T12:00:00') : null;
+                // Sítio Leitão: os dois nomes (Rafael e Reginaldo) voltam a ser o nome mostrado ao parceiro
+                const parceiro = g.parceiros.length > 1 && g.parceiros.every(p => /rafael|reginaldo/i.test(p)) ? 'Sítio Leitão' : g.parceiros.join(' + ');
+                const dataUrl = await gerarImagemDescarte({
+                    id: g.id_exclusivo || '—',
+                    parceiro,
+                    cultura: g.cultura || '—',
+                    dataColheita: colheita ? colheita.toLocaleDateString('pt-BR') : '—',
+                    semana: colheita ? getWeekNumber(colheita) : '—',
+                    registradoEm: new Date(g.registrado_em),
+                    descarte: g.descarte,
+                    producao: g.producao || 0,
+                    andamento: g.andamento,
+                    motivo: g.motivo || '—',
+                    quem: g.criado_por_nome || '',
+                    fotos
+                });
+                const blob = await (await fetch(dataUrl)).blob();
+                const dia = colheita ? colheita.toLocaleDateString('pt-BR').replace(/\//g, '-') : 'sem-data';
+                const arquivo = new File([blob], `Descarte - ${parceiro} - ${dia}.jpg`, { type: 'image/jpeg' });
+                if (reenvio) URL.revokeObjectURL(reenvio.url);
+                reenvio = { arquivo, url: URL.createObjectURL(blob) };
+                el('reenvioImg').src = reenvio.url;
+                el('reenvioSub').textContent = `${parceiro} · colheita ${colheita ? colheita.toLocaleDateString('pt-BR') : '—'}`;
+                const podeCompartilhar = !!(navigator.canShare && navigator.canShare({ files: [arquivo] }));
+                el('reenvioCompartilhar').classList.toggle('hidden', !podeCompartilhar);
+                const m = el('reenvioModal'); m.classList.remove('hidden'); m.classList.add('flex');
+                if (window.lucide) lucide.createIcons();
+            } catch (e) {
+                console.error('Reenviar descarte:', e);
+                showMessageModal('Não foi possível reenviar', String(e.message || e), 'error');
+            } finally {
+                texto.textContent = original;
+                overlay.classList.add('hidden'); overlay.classList.remove('flex');
+            }
+        }
+
+        el('recLista').addEventListener('click', e => {
+            const b = e.target.closest('[data-reenviar]');
+            if (b) reenviarDescarte(Number(b.dataset.reenviar));
+        });
+        el('reenvioModal').addEventListener('click', e => {
+            if (e.target.closest('[data-reenvio-fechar]') || e.target.id === 'reenvioModal') fecharReenvio();
+        });
+        el('reenvioCompartilhar').addEventListener('click', async () => {
+            if (!reenvio) return;
+            try { await navigator.share({ files: [reenvio.arquivo] }); }
+            catch (err) { if (err && err.name !== 'AbortError') showMessageModal('Não foi possível compartilhar', 'Use o botão "Baixar" e envie a imagem pelo WhatsApp.', 'error'); }
+        });
+        el('reenvioBaixar').addEventListener('click', () => { if (reenvio) downloadFile(reenvio.url, reenvio.arquivo.name); });
+        addEventListener('keydown', e => { if (e.key === 'Escape' && reenvio) fecharReenvio(); });
     })();
     </script>
 </body>
