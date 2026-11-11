@@ -1884,8 +1884,10 @@
             });
             return [...mapa.values()];
         }
-        // Edita: o administrador qualquer um; os demais, o que eles mesmos registraram no app
-        const podeEditar = g => API.isAdmin() || (g.origem === 'app' && g.rows.every(r => r.criado_por && r.criado_por === meuId()));
+        // Editar/excluir QUALQUER descarte: administrador ou quem tem a permissão "Editar e excluir descartes"
+        // (ligada em Cadastro de Usuários). Os demais editam só o que eles mesmos registraram no app.
+        const podeGerenciar = () => API.isAdmin() || API.temModulo('descarte_parceiros_editar');
+        const podeEditar = g => podeGerenciar() || (g.origem === 'app' && g.rows.every(r => r.criado_por && r.criado_por === meuId()));
 
         // Período: os atalhos preenchem o calendário De/Até; mexer nas datas vira "Personalizado"
         const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -2091,7 +2093,7 @@
             el('edProducao').value = g.producao > 0 ? kgBR(g.producao) : '';
             aplicarAndamentoEd();
             el('edErro').classList.add('hidden');
-            el('edExcluir').classList.toggle('hidden', !API.isAdmin());
+            el('edExcluir').classList.toggle('hidden', !podeGerenciar());
             el('edExcluir').dataset.confirmar = '';
             el('edExcluir').textContent = 'Excluir descarte';
             desenharFotosEd();
@@ -2187,7 +2189,7 @@
         }
 
         async function excluirDescarte() {
-            if (!ed || !API.isAdmin()) return;
+            if (!ed || !podeGerenciar()) return;
             const b = el('edExcluir');
             if (!b.dataset.confirmar) { b.dataset.confirmar = '1'; b.textContent = 'Toque de novo para excluir'; return; }
             b.disabled = true;

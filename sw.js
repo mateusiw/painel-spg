@@ -1,4 +1,4 @@
-const CACHE = 'sistema-v165';
+const CACHE = 'sistema-v169';
 
 // Arquivos do próprio app. Este service worker fica na raiz e atende todos os projetos.
 const ARQUIVOS_APP = [
@@ -8,6 +8,7 @@ const ARQUIVOS_APP = [
   './supabase-config.js',
   './supabase-api.js',
   './lista-moderna.js',
+  './resumo-producao.js',
   './trava-fundo.js',
   './barra-abas.js',
   './catalogo-colheita.js',

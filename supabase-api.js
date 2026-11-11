@@ -360,12 +360,12 @@
         { id: 'producao-oasis', nome: 'Produção Oásis', descricao: 'Previsões, produtividade, calendário, ranking e análise', icone: 'bar-chart-3', grupo: 'Indicadores', gradiente: 'from-indigo-500 to-violet-600',
           cor: 'bg-indigo-50 text-indigo-700', caminho: 'projetos/producao-oasis/index.html', local: 'oasis',
           areas: [{ modulo: 'producao_oasis', nome: 'Acesso à Produção', recursos: recursos('producao', [
-              ['previsao', 'Previsões', 'calendar-days'], ['produtividade', 'Produtividade', 'layout-dashboard'], ['calendario', 'Calendário', 'list-todo'],
+              ['resumo', 'Resumo', 'sun'], ['previsao', 'Previsões', 'calendar-days'], ['produtividade', 'Produtividade', 'layout-dashboard'], ['calendario', 'Calendário', 'list-todo'],
               ['entregas', 'Entregas', 'package'], ['ranking', 'Ranking', 'trophy'], ['analise', 'Análise', 'microscope'], ['comparacao', 'Comparação', 'columns-2']]) }] },
         { id: 'producao-estufa', nome: 'Produção Estufa', descricao: 'Pepino: previsões, produtividade, descarte, ranking e simulador', icone: 'warehouse', grupo: 'Indicadores', gradiente: 'from-sky-500 to-blue-700',
           cor: 'bg-sky-50 text-sky-700', caminho: 'projetos/producao-estufa/index.html', local: 'estufa',
           areas: [{ modulo: 'producao_estufa', nome: 'Acesso à Produção Estufa', recursos: recursos('producao_estufa', [
-              ['previsao', 'Previsões', 'calendar-days'], ['produtividade', 'Produtividade', 'layout-dashboard'], ['bruta', 'Prod. Bruta', 'package'],
+              ['resumo', 'Resumo', 'sun'], ['previsao', 'Previsões', 'calendar-days'], ['produtividade', 'Produtividade', 'layout-dashboard'], ['bruta', 'Prod. Bruta', 'package'],
               ['calendario', 'Calendário', 'list-todo'], ['ranking', 'Ranking', 'trophy'], ['analise', 'Análise', 'microscope'],
               ['comparacao', 'Comparação', 'columns-2'], ['simulador', 'Simulador', 'calculator']]) }] },
         { id: 'programacao', nome: 'Programação de Trabalho', descricao: 'Programação da semana, equipes e produtividade', icone: 'calendar-range', grupo: 'Operação', gradiente: 'from-amber-500 to-orange-600',
@@ -394,7 +394,9 @@
         // Antigo "Registro de Descarte - SPG": grava no Supabase; a produção do parceiro ainda vem do Apps Script
         { id: 'descarte-parceiros', nome: 'Descarte de Parceiros', descricao: 'Descarte da colheita recebida dos parceiros, com o percentual sobre a produção', icone: 'trash-2', grupo: 'Operação', gradiente: 'from-rose-500 to-red-700',
           cor: 'bg-rose-50 text-rose-700', caminho: 'projetos/descarte-parceiros/index.html',
-          areas: [{ modulo: 'descarte_parceiros', nome: 'Acesso ao Descarte de Parceiros', recursos: [] }] },
+          areas: [{ modulo: 'descarte_parceiros', nome: 'Acesso ao Descarte de Parceiros', recursos: [] },
+              // Permissão extra, desligada por padrão: editar/excluir qualquer descarte e as fotos (sem ela, só o que a pessoa registrou)
+              { modulo: 'descarte_parceiros_editar', nome: 'Editar e excluir descartes', extra: true, requer: 'descarte_parceiros', recursos: [] }] },
         { id: 'organograma', nome: 'Organograma', descricao: 'Equipe, cargos, líderes, aniversários e tempo de casa', icone: 'network', grupo: 'Pessoas', gradiente: 'from-indigo-500 to-violet-700',
           cor: 'bg-indigo-50 text-indigo-700', caminho: 'projetos/organograma/index.html',
           areas: [{ modulo: 'organograma', nome: 'Acesso ao Organograma', recursos: [] },

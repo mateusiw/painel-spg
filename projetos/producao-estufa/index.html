@@ -16,6 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="../../supabase-config.js"></script>
     <script src="../../supabase-api.js"></script>
+    <script src="../../resumo-producao.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { brand: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e' }, prod: { green: '#749d83', yellow: '#e3d39e', grey: '#9ca3af', lightgreen: '#86b693' } }, boxShadow: { 'soft': '0 10px 40px -10px rgba(0,0,0,0.04)', 'float': '0 20px 40px -10px rgba(15,23,42,0.1)' } } } }
@@ -126,6 +127,7 @@
         .acao-topo svg { width: 16px; height: 16px; }
 
         /* Cor de cada aba (a aba ativa usa a sua) */
+        [data-tab="resumo"], [data-aba="resumo"] { --cor: 5, 150, 105; }
         [data-tab="previsao"], [data-aba="previsao"] { --cor: 2, 132, 199; }
         [data-tab="produtividade"], [data-aba="produtividade"] { --cor: 22, 163, 74; }
         [data-tab="calendario"], [data-aba="calendario"] { --cor: 217, 119, 6; }
@@ -288,7 +290,10 @@
         <div id="tabsBarWrapper" class="print-hide sticky z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/60">
             <div class="container mx-auto px-4 md:px-6 max-w-[1800px]">
                 <div id="tabsBar" class="flex items-center gap-6 sm:gap-8 overflow-x-auto hide-scrollbar pt-1">
-                    <button draggable="false" data-tab="previsao" onclick="switchTab('previsao')" id="tab-previsao" class="tab-btn active pb-3 text-sm uppercase tracking-wider flex items-center gap-2" >
+                    <button draggable="false" data-tab="resumo" onclick="switchTab('resumo')" id="tab-resumo" class="tab-btn active pb-3 text-sm uppercase tracking-wider flex items-center gap-2" >
+                        <i data-lucide="sun" class="w-4 h-4"></i> Resumo
+                    </button>
+                    <button draggable="false" data-tab="previsao" onclick="switchTab('previsao')" id="tab-previsao" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2" >
                         <i data-lucide="calendar-days" class="w-4 h-4"></i> Previsões
                     </button>
                     <button draggable="false" data-tab="produtividade" onclick="switchTab('produtividade')" id="tab-produtividade" class="tab-btn inactive pb-3 text-sm uppercase tracking-wider flex items-center gap-2" >
@@ -333,7 +338,10 @@
             <div id="mainContent">
                 
                 <!-- VIEW 1: PREVISÕES -->
-                <div id="viewPrevisao" class="flex flex-col gap-6 animate-fade-in-down">
+                <!-- VIEW 0: RESUMO (produção do dia e o que foi plantado recentemente; resumo-producao.js) -->
+                <div id="viewResumo" class="flex flex-col gap-6 animate-fade-in-down"><div id="resumoProducao"><p class="py-16 text-center text-sm font-semibold text-slate-400">Carregando o resumo...</p></div></div>
+
+                <div id="viewPrevisao" class="hidden flex-col gap-6 animate-fade-in-down">
                     <div class="print-hide bg-white p-4 sm:p-6 rounded-[24px] shadow-soft border border-slate-100 relative z-30">
                         <div class="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-4 items-end">
                             <div class="col-span-2 flex-auto w-full sm:w-auto min-w-[200px] lg:max-w-[260px] transition-all duration-300">
@@ -867,13 +875,13 @@
         const SPG_API = window.IrrigacaoAPI;
         const SPG_MENU_URL = '../../index.html';
         const spg_temAcesso = () => !!SPG_API && SPG_API.projetosDoUsuario().some(p => p.id === 'producao-estufa');
-        const SPG_ABAS = ['previsao', 'produtividade', 'bruta', 'calendario', 'ranking', 'analise', 'comparacao', 'simulador'];
+        const SPG_ABAS = ['resumo', 'previsao', 'produtividade', 'bruta', 'calendario', 'ranking', 'analise', 'comparacao', 'simulador'];
         const spg_abaLiberada = t => SPG_API.recursoLiberado('producao_estufa.' + t);
         const spg_bloqueiosIniciais = JSON.stringify(((SPG_API && SPG_API.usuarioAtual()) || {}).bloqueios || []);
         function spg_aplicarAbas() {
             SPG_ABAS.forEach(t => { const b = document.getElementById('tab-' + t); if (b) b.classList.toggle('hidden', !spg_abaLiberada(t)); });
             const primeira = SPG_ABAS.find(spg_abaLiberada);
-            if (!spg_abaLiberada('previsao') && primeira) switchTab(primeira);
+            if (!spg_abaLiberada('resumo') && primeira) switchTab(primeira);
         }
         // O administrador pode ter mudado as permissões desde o último acesso
         async function spg_conferirAcesso() {
@@ -1034,6 +1042,7 @@
                 
                 applyFiltersPrev(); applyFiltersProd(); applyFiltersCal(); applyFiltersRank(); applyFiltersAnalise(); applyFiltersBruta();
                 renderCompareCards(); initSimulatorDefaults(); applyWidgetVisibility();
+                if (window.ResumoProducao) ResumoProducao.desenhar(document.getElementById('resumoProducao'), cachedApiData, { local: 'SPG Estufa', unidades: 'Unidades', rotuloBloco: 'Setor' });
                 
                 loadingModal.classList.add('hidden');
             } catch (err) { 
@@ -1462,7 +1471,7 @@
             localStorage.removeItem(TAB_ORDER_KEY);
             const container = document.getElementById('tabsBar');
             if (!container) return;
-            const defaultOrder = ["previsao","produtividade","bruta","calendario","ranking","analise","comparacao","simulador"];
+            const defaultOrder = ["resumo","previsao","produtividade","bruta","calendario","ranking","analise","comparacao","simulador"];
             defaultOrder.forEach(tabKey => {
                 const btn = container.querySelector(`.tab-btn[data-tab="${tabKey}"]`);
                 if (btn) container.insertBefore(btn, getTabInsertAnchor());
@@ -1502,7 +1511,7 @@
 
         function switchTab(tabName) {
             if (!spg_abaLiberada(tabName)) return;
-            ["previsao", "produtividade", "bruta", "calendario", "ranking", "analise", "comparacao", "simulador"].forEach(t => {
+            ["resumo", "previsao", "produtividade", "bruta", "calendario", "ranking", "analise", "comparacao", "simulador"].forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 const view = document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1));
                 if (t === tabName) {
@@ -2643,8 +2652,8 @@
     <script>
     (function () {
         'use strict';
-        const NOMES = { previsao: 'Previsões', produtividade: 'Produtividade', bruta: 'Bruta', calendario: 'Calendário', ranking: 'Ranking', analise: 'Análise', comparacao: 'Comparar', simulador: 'Simulador' };
-        const ICONES = { previsao: 'calendar-days', produtividade: 'layout-dashboard', bruta: 'package', calendario: 'list-todo', ranking: 'trophy', analise: 'microscope', comparacao: 'columns-2', simulador: 'calculator' };
+        const NOMES = { resumo: 'Resumo', previsao: 'Previsões', produtividade: 'Produtividade', bruta: 'Bruta', calendario: 'Calendário', ranking: 'Ranking', analise: 'Análise', comparacao: 'Comparar', simulador: 'Simulador' };
+        const ICONES = { resumo: 'sun', previsao: 'calendar-days', produtividade: 'layout-dashboard', bruta: 'package', calendario: 'list-todo', ranking: 'trophy', analise: 'microscope', comparacao: 'columns-2', simulador: 'calculator' };
         const barra = document.getElementById('barraAbas');
         const mais = document.getElementById('maisAbas');
         const listaMais = document.getElementById('maisAbasLista');
