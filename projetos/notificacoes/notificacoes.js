@@ -286,7 +286,7 @@
 
     function cliqueNoEditor(e) {
         if (!ed) return false;
-        if (e.target === el('editorAviso') || e.target.closest('[data-ed-fechar]')) { fecharEditor(); return true; }
+        if (e.target.closest('[data-ed-fechar]')) { fecharEditor(); return true; }
         if (e.target.closest('[data-ed-salvar]')) { salvarEditor(); return true; }
         if (e.target.closest('[data-ed-excluir]')) { excluirEditor(); return true; }
         const dia = e.target.closest('[data-ed-dia]');
