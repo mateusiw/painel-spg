@@ -58,6 +58,10 @@
                da página passa a ser verde, e o cinza-claro fica só na área do conteúdo. */
             body:has(#telaMenu:not(.hidden)) { background-color: var(--mata) !important; }
             #colunaConteudo { background-color: #f5f7f2; }
+            /* Cabeçalho na mesma cor sólida da faixa do relógio (o degradê fazia uma "emenda" com ela);
+               fixo no topo, para o iOS usar a cor dele na barra de status; e um respiro a mais embaixo
+               do relógio, para o sino e o selo não ficarem dentro do efeito do iOS no topo. */
+            #cabecalhoMobile { background: var(--mata); position: sticky; top: 0; z-index: 30; padding-top: calc(env(safe-area-inset-top, 0px) + .625rem); }
             #telaMenu > div { min-height: 0; height: 100dvh; }
             #colunaConteudo { height: 100dvh; overflow: hidden; }
             #areaInicio { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
