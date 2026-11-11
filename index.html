@@ -49,6 +49,12 @@
            iPhone desenhava uma névoa cinza no topo; e com o menu aberto, arrastar o dedo
            rolava a página de trás. Assim o cabeçalho verde fica parado lá em cima. */
         @media (max-width: 1023px) {
+            /* Barra de status do iPhone (transparente): uma faixa verde fixa do tamanho dela, por cima
+               de tudo, em qualquer tela (login, Início, projeto aberto). Sem isso o que rolava por baixo
+               aparecia ali como uma névoa. E o "puxão" elástico do topo mostra verde, não branco. */
+            html { background: var(--mata); overscroll-behavior: none; }
+            body { overscroll-behavior: none; }
+            body::before { content: ''; position: fixed; z-index: 2147483000; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: var(--mata); pointer-events: none; }
             body:has(#telaMenu:not(.hidden)) { height: 100dvh; overflow: hidden; overscroll-behavior: none; }
             #telaMenu > div { min-height: 0; height: 100dvh; }
             #colunaConteudo { height: 100dvh; overflow: hidden; }
