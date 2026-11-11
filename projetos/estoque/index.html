@@ -1094,8 +1094,13 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--pa
 .geral-classes{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
 .geral-classes[hidden],.geral-lista[hidden]{display:none}
 .geral-classe{display:flex;flex-direction:column;gap:4px;padding:14px 16px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);cursor:pointer;transition:border-color .15s,background .15s}
-.geral-classe:hover{border-color:#059669;background:var(--brand-soft)}
-.geral-classe:active{transform:scale(.985)}
+/* Destaque de passar o mouse e de "apertar" só onde tem mouse: no celular ele
+   acendia o card ao rolar a página, parecendo que tinha clicado */
+@media (hover:hover){
+  .geral-classe:hover{border-color:#059669;background:var(--brand-soft)}
+  .geral-classe:active{transform:scale(.985)}
+}
+.geral-classe{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .geral-classe-nome{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;font-size:15px;font-weight:800;line-height:1.25;color:var(--ink);overflow-wrap:anywhere}
 .geral-classe-nome svg{width:16px;height:16px;flex:none;margin-top:2px;color:var(--muted)}
 .geral-classe-nota{font-size:12px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -3797,7 +3802,20 @@ function renderGeral(){
     document.getElementById('geralBusca').oninput=e=>{geralFiltros.busca=e.target.value;geralLimite=120;renderGeral()};
     document.getElementById('geralMais').onclick=()=>{geralLimite+=120;renderGeral()};
     document.getElementById('geralLocais').onclick=e=>{const b=e.target.closest('[data-local]');if(b){geralFiltros.local=b.dataset.local;geralLimite=120;renderGeral()}};
-    document.getElementById('geralClasses').onclick=e=>{const b=e.target.closest('[data-classe]');if(b)abrirClasseGeral(b.dataset.classe,b.dataset.nome)};
+    /* No celular, rolar a página com o dedo em cima de um card às vezes virava
+       clique e abria a classe sem querer. Só abre num toque de verdade: o dedo
+       não pode ter andado mais que 10px, nem a página ter rolado logo antes. */
+    const areaGeralClasses=document.getElementById('geralClasses');
+    let toqueGeral=null,ultimaRolagemGeral=0;
+    window.addEventListener('scroll',()=>{ultimaRolagemGeral=Date.now()},{passive:true,capture:true});
+    areaGeralClasses.addEventListener('touchstart',e=>{const t=e.touches[0];toqueGeral={x:t.clientX,y:t.clientY,moveu:e.touches.length>1,rolando:Date.now()-ultimaRolagemGeral<250}},{passive:true});
+    areaGeralClasses.addEventListener('touchmove',e=>{const t=e.touches[0];if(toqueGeral&&(Math.abs(t.clientX-toqueGeral.x)>10||Math.abs(t.clientY-toqueGeral.y)>10))toqueGeral.moveu=true},{passive:true});
+    areaGeralClasses.onclick=e=>{
+      const b=e.target.closest('[data-classe]');if(!b)return;
+      const toque=toqueGeral;toqueGeral=null;
+      if(toque&&(toque.moveu||toque.rolando||Date.now()-ultimaRolagemGeral<150))return;
+      abrirClasseGeral(b.dataset.classe,b.dataset.nome);
+    };
     document.getElementById('geralCabecalho').onclick=e=>{if(e.target.closest('#geralVoltar'))voltarClassesGeral()};
     document.getElementById('geralCabecalho').onchange=e=>{if(e.target.id==='geralZerados'){geralFiltros.zerados=e.target.checked;geralLimite=120;renderGeral()}};
   }

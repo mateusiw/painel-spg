@@ -557,8 +557,21 @@
         let isAuthMaster = SPG_API.isAdmin();
         try { const u = SPG_API.usuarioAtual(); if (u) localStorage.setItem('spge_user', u.usuario); } catch(e) {}
 
+        // A Estufa usava as mesmas chaves da Oásis para a Colheita (spg_harvestData) e o turno
+        // da Pesagem: no aparelho que abria as duas, a Estufa carregava os dados da Oásis.
+        // Agora tem chaves próprias (spge_). Na primeira vez, começa vazia e marca a Colheita
+        // como "nunca recebida", para buscar a da Estufa no servidor antes de enviar qualquer coisa.
+        try {
+            if (localStorage.getItem('spge_harvestData') === null) {
+                localStorage.setItem('spge_harvestData', '[]');
+                const meta = JSON.parse(localStorage.getItem('spge_sync_meta') || '{}') || {};
+                meta.colheita = { updatedAt: 0, dirty: false };
+                localStorage.setItem('spge_sync_meta', JSON.stringify(meta));
+            }
+        } catch (e) { }
+
         // Estruturas de Dados
-        let c_harvestData = JSON.parse(localStorage.getItem('spg_harvestData')) || [];
+        let c_harvestData = JSON.parse(localStorage.getItem('spge_harvestData')) || [];
         // Liberação da pesagem: só vale para os dados exatamente como estavam na conferência
         let c_release = null; try { c_release = JSON.parse(localStorage.getItem('spge_release')) || null; } catch(e) { c_release = null; }
         let c_editingIndex = -1;
@@ -690,7 +703,7 @@
                     localStorage.setItem(f_STORAGE_KEY, JSON.stringify(f_data)); f_render(); setTimeout(f_checkNewDay, 0);
                 } else if (key === 'colheita') {
                     c_harvestData = Array.isArray(data.harvestData) ? data.harvestData : [];
-                    localStorage.setItem('spg_harvestData', JSON.stringify(c_harvestData));
+                    localStorage.setItem('spge_harvestData', JSON.stringify(c_harvestData));
                     localStorage.setItem('spge_inputs', JSON.stringify(data.inputs || {}));
                     c_release = data.release || null; localStorage.setItem('spge_release', JSON.stringify(c_release));
                     if (c_editingIndex >= 0) c_clearBlockForm();
@@ -1171,7 +1184,7 @@
             document.getElementById('c_headerDateTime').innerText = `${day}/${month}/${now.getFullYear()} - ${timeString} - Semana ${getWeekNumber(now)}`;
         }
 
-        function c_saveData() { const json = JSON.stringify(c_harvestData); if (localStorage.getItem('spg_harvestData') !== json) { localStorage.setItem('spg_harvestData', json); spg_markChanged('colheita'); p_scheduleSyncFromColheita(); } }
+        function c_saveData() { const json = JSON.stringify(c_harvestData); if (localStorage.getItem('spge_harvestData') !== json) { localStorage.setItem('spge_harvestData', json); spg_markChanged('colheita'); p_scheduleSyncFromColheita(); } }
 
         function c_getForecastBlocks() {
             const container = document.getElementById('c_forecastBlocksContainer');
@@ -2072,7 +2085,34 @@
             const now = new Date(); load.closed = true; load.finalized = document.getElementById('f_finalized').checked; load.closedAt = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             document.getElementById('f_finalized').checked = false;
             f_save(); f_render();
+            if (load.finalized) {
+                const entradas = f_data.loads.flatMap(l => l.entries || []);
+                spg_notificarEvento('colheita_finalizada', {
+                    blocos: spg_nomeDosBlocos(entradas.map(e => e.bloco)),
+                    caixas: spg_num(entradas.reduce((s, e) => s + (Number(e.caixas) || 0), 0)),
+                    carregamentos: String(f_data.loads.filter(l => l.closed && (l.entries || []).length).length)
+                });
+            }
         }
+
+        // -------------------------------------------------------------
+        // Notificação na hora (colheita finalizada, pesagem concluída). Quem recebe e o
+        // texto ficam na tela Notificações; sem aviso ligado lá, o servidor não manda nada.
+        // -------------------------------------------------------------
+        function spg_nomeDosBlocos(lista) {
+            const d = [...new Set(lista.map(b => String(b || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
+            const setor = SPG_LOCAL === 'estufa';
+            if (d.length > 6) return `${d.length} ${setor ? 'setores' : 'blocos'}`;
+            const nomes = d.length <= 1 ? d.join('') : `${d.slice(0, -1).join(', ')} e ${d[d.length - 1]}`;
+            return `${d.length === 1 ? (setor ? 'Setor' : 'Bloco') : (setor ? 'Setores' : 'Blocos')} ${nomes}`;
+        }
+        function spg_notificarEvento(evento, dados) {
+            if (!navigator.onLine || !SPG_API.cliente || !SPG_API.cliente.functions) return;
+            SPG_API.cliente.functions.invoke('notificacoes', { body: { acao: 'evento', evento, projeto: 'resumo-colheita-' + SPG_LOCAL, local: SPG_LOCAL, dados } })
+                .then(({ error }) => { if (error) console.warn('Notificação de ' + evento + ':', error.message); })
+                .catch(e => console.warn('Notificação de ' + evento + ':', e && e.message));
+        }
+        const spg_num = v => Math.round(Number(v) || 0).toLocaleString('pt-BR');
 
         function f_confirmNewDay() {
             showConfirm('Iniciar novo dia?', 'Todos os carregamentos da aba Campo serão apagados <b>deste e dos outros aparelhos</b> (assim que sincronizarem). Os setores que já foram para a aba Colheita continuam lá.', 'danger', '<i data-lucide="trash-2" class="w-4 h-4"></i> Limpar', f_newDay);
@@ -2214,6 +2254,12 @@
             showConfirm('Peso conferido?', texto, 'warning', '<i data-lucide="check-check" class="w-4 h-4"></i> Confirmar', () => {
                 const atuais = p_itensPesados();
                 p_gravarConferido({ at: Date.now(), by: SPG_API.nomeUsuario(), date: f_todayISO(), hash: JSON.stringify(atuais), itens: atuais });
+                spg_notificarEvento('pesagem_concluida', {
+                    blocos: spg_nomeDosBlocos(atuais.map(i => i.bloco)),
+                    kg: spg_num(atuais.reduce((s, i) => s + (Number(i.kg) || 0), 0)),
+                    unidades: spg_num(atuais.reduce((s, i) => s + (Number(i.unidades) || 0), 0)),
+                    caixas: spg_num(atuais.reduce((s, i) => s + (Number(i.caixas) || 0), 0))
+                });
             });
         }
         function p_desfazerConferido() { p_gravarConferido(null); }
@@ -2260,7 +2306,7 @@
                 const storedData = localStorage.getItem(p_STORAGE_KEY);
                 if (storedData) { p_harvestData = JSON.parse(storedData); if (p_harvestData.length > 0) { const lastItem = p_harvestData[p_harvestData.length - 1]; if(lastItem.partner) { const partnerSelect = document.getElementById('p_partner'); if(partnerSelect) { partnerSelect.value = lastItem.partner; p_toggleInputMode(); p_updateDynamicTitle(); } } } const storedForecasts = localStorage.getItem('spge_sede_forecasts'); if (storedForecasts) { p_forecastBlocksData = JSON.parse(storedForecasts); } p_renderList(); p_renderReport(); }
             } catch (e) { }
-            try { const sp = localStorage.getItem('spg_sede_shiftParams'); if (sp) { const p = JSON.parse(sp); const el = document.getElementById('p_manualTotalEstimate'); if (el && p.manualTotalEstimate) el.value = p.manualTotalEstimate; } } catch(e) {}
+            try { const sp = localStorage.getItem('spge_sede_shiftParams'); if (sp) { const p = JSON.parse(sp); const el = document.getElementById('p_manualTotalEstimate'); if (el && p.manualTotalEstimate) el.value = p.manualTotalEstimate; } } catch(e) {}
             p_loadShiftPanel();
             loadAllCultures();
         }
@@ -2312,13 +2358,13 @@
             const rawInputs = localStorage.getItem('spge_inputs');
             let inputs = {}; try { inputs = JSON.parse(rawInputs || '{}') || {}; } catch(e) {}
             const inputsHash = JSON.stringify(inputs);
-            if (rawInputs && inputsHash !== localStorage.getItem('spg_p_colheitaInputsHash')) {
-                let params = {}; try { params = JSON.parse(localStorage.getItem('spg_sede_shiftParams') || '{}') || {}; } catch(e) {}
+            if (rawInputs && inputsHash !== localStorage.getItem('spge_p_colheitaInputsHash')) {
+                let params = {}; try { params = JSON.parse(localStorage.getItem('spge_sede_shiftParams') || '{}') || {}; } catch(e) {}
                 Object.assign(params, { crewCount: inputs.crewCount || '', estimateDay: inputs.estimateDay || '', startTime: inputs.startTime || '', endTime: inputs.endTime || '', intervalDuration: inputs.intervalDuration || '', manualTotalEstimate: inputs.manualTotalEstimate || '' });
-                localStorage.setItem('spg_sede_shiftParams', JSON.stringify(params));
+                localStorage.setItem('spge_sede_shiftParams', JSON.stringify(params));
                 p_forecastBlocksData = (inputs.forecastBlocks || []).filter(f => f.block || f.date).map(f => ({ block: f.block, date: f.date }));
                 localStorage.setItem('spge_sede_forecasts', JSON.stringify(p_forecastBlocksData));
-                localStorage.setItem('spg_p_colheitaInputsHash', inputsHash);
+                localStorage.setItem('spge_p_colheitaInputsHash', inputsHash);
                 const elManual = document.getElementById('p_manualTotalEstimate'); if (elManual) elManual.value = params.manualTotalEstimate;
                 p_loadShiftPanel(); changed = true;
             }
@@ -2329,7 +2375,7 @@
 
         // Ao virar o dia, apaga o peso (kg) lançado nos setores do SPG Estufa na Pesagem
         function p_checkNewDayWeights() {
-            const today = f_todayISO(); let last = ''; try { last = localStorage.getItem('spg_sede_weightDate') || ''; } catch(e) {}
+            const today = f_todayISO(); let last = ''; try { last = localStorage.getItem('spge_sede_weightDate') || ''; } catch(e) {}
             if (last === today) return;
             if (p_editingIndex >= 0) return; // tenta de novo depois que a edição for salva ou cancelada
             if (last) {
@@ -2346,11 +2392,11 @@
                 try { if (changed) { p_saveToStorage(); p_renderList(); p_renderReport(); } }
                 finally { spg_suppressMark = prev; }
             }
-            try { localStorage.setItem('spg_sede_weightDate', today); } catch(e) {}
+            try { localStorage.setItem('spge_sede_weightDate', today); } catch(e) {}
         }
 
         function p_loadShiftPanel() {
-            let params = {}; try { const sp = localStorage.getItem('spg_sede_shiftParams'); if (sp) params = JSON.parse(sp) || {}; } catch(e) {}
+            let params = {}; try { const sp = localStorage.getItem('spge_sede_shiftParams'); if (sp) params = JSON.parse(sp) || {}; } catch(e) {}
             const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
             set('p_sp_crewCount', params.crewCount); set('p_sp_estimateDay', params.estimateDay); set('p_sp_startTime', params.startTime); set('p_sp_endTime', params.endTime); set('p_sp_intervalDuration', params.intervalDuration);
             const container = document.getElementById('p_forecastBlocksContainer'); if (!container) return; container.innerHTML = '';
@@ -2370,10 +2416,10 @@
 
         function p_saveShiftPanel() {
             try {
-                const sp = localStorage.getItem('spg_sede_shiftParams'); const params = sp ? JSON.parse(sp) : {};
+                const sp = localStorage.getItem('spge_sede_shiftParams'); const params = sp ? JSON.parse(sp) : {};
                 params.crewCount = document.getElementById('p_sp_crewCount').value; params.estimateDay = document.getElementById('p_sp_estimateDay').value;
                 params.startTime = document.getElementById('p_sp_startTime').value; params.endTime = document.getElementById('p_sp_endTime').value; params.intervalDuration = document.getElementById('p_sp_intervalDuration').value;
-                localStorage.setItem('spg_sede_shiftParams', JSON.stringify(params));
+                localStorage.setItem('spge_sede_shiftParams', JSON.stringify(params));
                 p_forecastBlocksData = [];
                 document.querySelectorAll('#p_forecastBlocksContainer .p-forecast-row').forEach(row => { const block = row.querySelector('.forecast-block').value; const date = row.querySelector('.forecast-date').value; if (block || date) p_forecastBlocksData.push({ block, date }); });
                 localStorage.setItem('spge_sede_forecasts', JSON.stringify(p_forecastBlocksData));
@@ -2383,9 +2429,9 @@
 
         function p_saveManualEstimate() {
             try {
-                const sp = localStorage.getItem('spg_sede_shiftParams'); let params = sp ? JSON.parse(sp) : {};
+                const sp = localStorage.getItem('spge_sede_shiftParams'); let params = sp ? JSON.parse(sp) : {};
                 params.manualTotalEstimate = document.getElementById('p_manualTotalEstimate').value;
-                localStorage.setItem('spg_sede_shiftParams', JSON.stringify(params));
+                localStorage.setItem('spge_sede_shiftParams', JSON.stringify(params));
             } catch(e) {}
         }
 
@@ -2598,7 +2644,7 @@
                 const varietyCountPerBlock = {};
                 displayData.forEach(d => { if (d.partner === 'SPG Estufa' && !d.isGrouped) { const k = `${d.talhao}-${d.cycle || ''}`; varietyCountPerBlock[k] = (varietyCountPerBlock[k] || 0) + 1; } });
                 const seenBlockCycles = new Set();
-                let estimateDay = ''; try { const _sp = localStorage.getItem('spg_sede_shiftParams'); if (_sp) { const _p = JSON.parse(_sp); estimateDay = _p.estimateDay || ''; } } catch(e) {}
+                let estimateDay = ''; try { const _sp = localStorage.getItem('spge_sede_shiftParams'); if (_sp) { const _p = JSON.parse(_sp); estimateDay = _p.estimateDay || ''; } } catch(e) {}
                 displayData.forEach((item, index) => { 
                     const displayVariety = item.commercialVariety ? `${item.variety} - ${item.commercialVariety}` : item.variety;
                     const boxesVal = parseNumber(item.boxes); const weightVal = parseNumber(item.harvestWeight); const totalUnitsVal = parseNumber(item.totalUnits); const avgValG = parseNumber(item.averageWeight); const isMissingWeight = (!item.harvestWeight || item.harvestWeight === '0' || item.harvestWeight === '');
@@ -2664,7 +2710,7 @@
                     }
                 }
                 try {
-                    const savedParams = localStorage.getItem('spg_sede_shiftParams');
+                    const savedParams = localStorage.getItem('spge_sede_shiftParams');
                     let params = {}; if (savedParams) { params = JSON.parse(savedParams); }
                     const crewValue = params.crewCount; const crew = crewValue ? (parseInt(crewValue) === 1 ? `${crewValue} Colaborador` : `${crewValue} Colaboradores`) : '-'; const estDay = params.estimateDay || '';
                     let totalHours = '--:--'; if (typeof calcTimeDiff === 'function') { totalHours = calcTimeDiff(params.startTime, params.endTime, params.intervalDuration); }
@@ -2751,7 +2797,7 @@
                     const b = parseNumber(newItem.boxes); const u = parseNumber(newItem.totalUnits); if (b > 0 && u > 0) { newItem.unitsPerBox = (u / b).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }); }
                     p_harvestData.push(newItem); importedCount++;
                 }
-                p_enrichWithPlantsDates(); p_saveToStorage(); localStorage.setItem('spge_sede_forecasts', JSON.stringify(p_forecastBlocksData)); localStorage.setItem('spg_sede_shiftParams', JSON.stringify(shiftParams)); p_loadShiftPanel(); p_renderList(); p_renderReport(); event.target.value = ''; p_syncAndEnrichDates();
+                p_enrichWithPlantsDates(); p_saveToStorage(); localStorage.setItem('spge_sede_forecasts', JSON.stringify(p_forecastBlocksData)); localStorage.setItem('spge_sede_shiftParams', JSON.stringify(shiftParams)); p_loadShiftPanel(); p_renderList(); p_renderReport(); event.target.value = ''; p_syncAndEnrichDates();
                 if (importedCount > 0) { 
                     setTimeout(() => {
                         showAlert('Importação Concluída', [`${importedCount} bloco(s) importado(s) com sucesso!`, 'Os dados foram integrados ao relatório de pesagem.'], 'success');
@@ -2832,7 +2878,7 @@
             const isSPGOasis = rawPartnerName === 'SPG Estufa'; const titlePrefix = isSPGOasis ? 'Resumo da Produção' : 'Resumo da Pesagem';
             let text = `*${greeting}, ${headerName}!*\n\n\`${titlePrefix} de ${weekday} (${refDate} - S${weekNumber})\`\n\n`;
             let globalKg = 0; let globalBoxes = 0; let globalUnits = 0; let globalEstimatedBoxes = 0; let shiftParams = null;
-            try { const savedParams = localStorage.getItem('spg_sede_shiftParams'); if (savedParams) shiftParams = JSON.parse(savedParams); } catch(e) {}
+            try { const savedParams = localStorage.getItem('spge_sede_shiftParams'); if (savedParams) shiftParams = JSON.parse(savedParams); } catch(e) {}
 
             if (isSPGOasis) {
                 displayData.forEach(item => {

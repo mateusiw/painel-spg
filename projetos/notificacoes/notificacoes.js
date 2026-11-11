@@ -62,9 +62,11 @@
         return 'Com acesso';
     }
     const geradoresDoSite = p => catalogo.filter(g => g.sites.includes('*') || g.sites.includes(p.id));
+    // Assunto de evento: sai na hora em que acontece no app, sem horário marcado
+    const ehEvento = idGerador => !!(catalogo.find(g => g.id === idGerador) || {}).evento;
 
     function desenharTipo(t) {
-        const partes = [t.horario, textoDias(listaDias(t)), textoPublico(t), t.local ? API.nomeLocal(t.local) : ''].filter(Boolean).join(' · ');
+        const partes = [ehEvento(t.gerador) ? 'Na hora' : t.horario, textoDias(listaDias(t)), textoPublico(t), t.local ? API.nomeLocal(t.local) : ''].filter(Boolean).join(' · ');
         const podeEditar = catalogo.length && !faltaSql;
         return `<div class="p-3 rounded-xl bg-slate-50 ${t.ativo ? '' : 'opacity-70'}" data-tipo="${esc(t.id)}">
             <div class="flex items-center justify-between gap-3">
@@ -149,7 +151,11 @@
 
     function textoPrevia() {
         const g = geradorAtual();
-        const vars = { data: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), hora: ed.horario, ...g.exemplo };
+        // A prévia mostra o local do próprio aviso, e não o do exemplo (que era sempre Oásis)
+        const p = API.PROJETOS.find(x => x.id === ed.projeto) || {};
+        const idLocal = g.local === 'escolher' ? ed.local : p.local;
+        const doLocal = idLocal ? { local: API.nomeLocal(idLocal), ...(idLocal === 'estufa' && g.exemplo.blocos ? { blocos: 'Setores 1 e 2' } : {}) } : {};
+        const vars = { data: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), hora: g.evento ? new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ed.horario, ...g.exemplo, ...doLocal };
         const preencher = t => String(t || '').replace(/\{(\w+)\}/g, (o, n) => vars[n] ?? o);
         return { titulo: preencher(ed.titulo.trim() || g.titulo), corpo: preencher(ed.mensagem.trim() || g.mensagem) };
     }
@@ -173,7 +179,7 @@
         const titulo = t => `<h3 class="text-xs font-black text-slate-700 mb-2">${t}</h3>`;
         const locais = API.todosLocais().filter(l => l.ativo !== false);
         const fixo = g.local !== 'escolher' && p.local;
-        const variaveis = [...g.variaveis, ['data', 'Data de hoje'], ['hora', 'Hora do envio']];
+        const variaveis = [...g.variaveis, ['data', 'Data de hoje'], ['hora', g.evento ? 'Hora em que aconteceu' : 'Hora do envio']];
         caixa.className = 'fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm sm:p-4';
         caixa.innerHTML = `<div role="dialog" aria-modal="true" aria-labelledby="edTitulo" class="bg-white w-full sm:max-w-xl h-[92dvh] sm:h-auto sm:max-h-[90vh] rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
             <div class="bg-gradient-to-r from-green-600 to-green-700 px-5 py-3.5 flex items-center justify-between gap-2 shrink-0">
@@ -197,7 +203,7 @@
                 <section class="border-t border-slate-100 pt-5">
                     ${titulo('Quando enviar')}
                     <div class="flex flex-wrap items-end gap-3">
-                        <div><label class="rotulo" for="edHorario">Horário</label><input id="edHorario" data-ed="horario" type="time" value="${esc(ed.horario)}" class="campo w-32"></div>
+                        ${g.evento ? '<p class="w-full text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">Enviado na hora em que acontece, nos dias marcados abaixo.</p>' : `<div><label class="rotulo" for="edHorario">Horário</label><input id="edHorario" data-ed="horario" type="time" value="${esc(ed.horario)}" class="campo w-32"></div>`}
                         <div role="group" aria-label="Dias da semana" class="flex flex-wrap gap-1.5">${DIAS.map(([n, nome]) => pilula(ed.dias.includes(n), `data-ed-dia="${n}"`, nome)).join('')}</div>
                     </div>
                 </section>
@@ -235,7 +241,7 @@
 
     function validarEditor() {
         if (!ed.nome.trim()) return 'Dê um nome para o aviso.';
-        if (!/^\d{2}:\d{2}$/.test(ed.horario)) return 'Informe o horário.';
+        if (!geradorAtual().evento && !/^\d{2}:\d{2}$/.test(ed.horario)) return 'Informe o horário.';
         if (!ed.dias.length) return 'Escolha pelo menos um dia da semana.';
         if (ed.publico === 'pessoas' && !ed.pessoas.length) return 'Escolha pelo menos uma pessoa.';
         if (!ed.mensagem.trim() && !geradorAtual().mensagem) return 'Escreva a mensagem do lembrete.';

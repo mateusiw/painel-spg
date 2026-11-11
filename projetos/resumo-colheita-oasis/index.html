@@ -2062,7 +2062,34 @@
             const now = new Date(); load.closed = true; load.finalized = document.getElementById('f_finalized').checked; load.closedAt = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             document.getElementById('f_finalized').checked = false;
             f_save(); f_render();
+            if (load.finalized) {
+                const entradas = f_data.loads.flatMap(l => l.entries || []);
+                spg_notificarEvento('colheita_finalizada', {
+                    blocos: spg_nomeDosBlocos(entradas.map(e => e.bloco)),
+                    caixas: spg_num(entradas.reduce((s, e) => s + (Number(e.caixas) || 0), 0)),
+                    carregamentos: String(f_data.loads.filter(l => l.closed && (l.entries || []).length).length)
+                });
+            }
         }
+
+        // -------------------------------------------------------------
+        // Notificação na hora (colheita finalizada, pesagem concluída). Quem recebe e o
+        // texto ficam na tela Notificações; sem aviso ligado lá, o servidor não manda nada.
+        // -------------------------------------------------------------
+        function spg_nomeDosBlocos(lista) {
+            const d = [...new Set(lista.map(b => String(b || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
+            const setor = SPG_LOCAL === 'estufa';
+            if (d.length > 6) return `${d.length} ${setor ? 'setores' : 'blocos'}`;
+            const nomes = d.length <= 1 ? d.join('') : `${d.slice(0, -1).join(', ')} e ${d[d.length - 1]}`;
+            return `${d.length === 1 ? (setor ? 'Setor' : 'Bloco') : (setor ? 'Setores' : 'Blocos')} ${nomes}`;
+        }
+        function spg_notificarEvento(evento, dados) {
+            if (!navigator.onLine || !SPG_API.cliente || !SPG_API.cliente.functions) return;
+            SPG_API.cliente.functions.invoke('notificacoes', { body: { acao: 'evento', evento, projeto: 'resumo-colheita-' + SPG_LOCAL, local: SPG_LOCAL, dados } })
+                .then(({ error }) => { if (error) console.warn('Notificação de ' + evento + ':', error.message); })
+                .catch(e => console.warn('Notificação de ' + evento + ':', e && e.message));
+        }
+        const spg_num = v => Math.round(Number(v) || 0).toLocaleString('pt-BR');
 
         function f_confirmNewDay() {
             showConfirm('Iniciar novo dia?', 'Todos os carregamentos da aba Campo serão apagados <b>deste e dos outros aparelhos</b> (assim que sincronizarem). Os blocos que já foram para a aba Colheita continuam lá.', 'danger', '<i data-lucide="trash-2" class="w-4 h-4"></i> Limpar', f_newDay);
@@ -2204,6 +2231,12 @@
             showConfirm('Peso conferido?', texto, 'warning', '<i data-lucide="check-check" class="w-4 h-4"></i> Confirmar', () => {
                 const atuais = p_itensPesados();
                 p_gravarConferido({ at: Date.now(), by: SPG_API.nomeUsuario(), date: f_todayISO(), hash: JSON.stringify(atuais), itens: atuais });
+                spg_notificarEvento('pesagem_concluida', {
+                    blocos: spg_nomeDosBlocos(atuais.map(i => i.bloco)),
+                    kg: spg_num(atuais.reduce((s, i) => s + (Number(i.kg) || 0), 0)),
+                    unidades: spg_num(atuais.reduce((s, i) => s + (Number(i.unidades) || 0), 0)),
+                    caixas: spg_num(atuais.reduce((s, i) => s + (Number(i.caixas) || 0), 0))
+                });
             });
         }
         function p_desfazerConferido() { p_gravarConferido(null); }
