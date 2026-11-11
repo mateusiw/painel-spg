@@ -301,6 +301,11 @@ body.auth-locked{background:linear-gradient(135deg,#eef1fb 0%,#eafaf3 100%)}
 .combo-campo{position:relative}
 .combo-campo input{padding-right:42px}
 .combo-limpar{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;display:grid;place-items:center;padding:0;color:var(--muted);background:var(--surface-3);border:0;border-radius:50%;cursor:pointer}
+#productNfe{padding-right:92px}
+.campo-gerar{position:absolute;right:7px;top:50%;transform:translateY(-50%);height:30px;padding:0 10px;font-size:12px;font-weight:800;color:var(--brand-dark);background:var(--brand-soft);border:1px solid var(--brand-soft-strong);border-radius:9px;cursor:pointer;white-space:nowrap}
+.campo-gerar:hover{border-color:var(--brand)}
+:root[data-theme="dark"] .campo-gerar{color:var(--brand-light)}
+@media(prefers-color-scheme:dark){:root:where(:not([data-theme="light"])) .campo-gerar{color:var(--brand-light)}}
 .combo-limpar:hover{color:var(--critical);background:var(--critical-soft)}
 .combo-limpar svg{width:14px;height:14px}
 .combo-option{padding:9px 11px;border-radius:9px;cursor:pointer;font-size:13.5px;color:var(--ink)}
@@ -564,6 +569,19 @@ body.auth-locked{background:linear-gradient(135deg,#eef1fb 0%,#eafaf3 100%)}
 dialog{width:min(480px,calc(100% - 28px));border:0;border-radius:22px;padding:0;color:var(--ink);background:var(--surface);box-shadow:var(--shadow-lg)}
 #pedidoCompraDialog{width:min(880px,calc(100% - 28px))}
 dialog::backdrop{background:rgba(4,10,7,.55);backdrop-filter:blur(5px)}
+/* Janelas: as dicas (?) ficam fora da largura e criavam a barra horizontal; rolagem só na vertical,
+   com barra fina, e título e botões sempre à vista */
+dialog{overflow-x:hidden}
+/* A barra termina antes das curvas da janela (margin) e não tem as setinhas nas pontas */
+dialog::-webkit-scrollbar{width:10px}
+dialog::-webkit-scrollbar-track{background:transparent;margin:26px 0}
+dialog::-webkit-scrollbar-thumb{background:var(--line-strong);background-clip:padding-box;border:3px solid transparent;border-radius:999px}
+dialog::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:padding-box;border:3px solid transparent}
+dialog::-webkit-scrollbar-button{display:none;width:0;height:0}
+dialog::-webkit-scrollbar-corner{background:transparent}
+@supports not selector(::-webkit-scrollbar){dialog{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}}
+dialog .dialog-head{position:sticky;top:0;z-index:6;background:var(--surface)}
+dialog .dialog-foot{position:sticky;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line)}
 .dialog-head{padding:20px 22px 16px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .dialog-head h3{margin:0;font-size:18px;font-weight:800}
 .dialog-head p{margin:5px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
@@ -1393,7 +1411,7 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--pa
         <div class="field"><label>Status<span class="help-icon" tabindex="0">?<span class="tooltip">Situação de uso do produto. Vira "Concluído" sozinho quando o estoque chega a 0 (não dá pra editar nessa hora); enquanto tiver estoque, escolha uma das caixas abaixo.</span></span></label><select id="productStatus" hidden></select><div class="status-box-group" id="productStatusBoxes"></div><span class="field-help" id="productStatusNote" hidden>Vira "Concluído" automaticamente quando o estoque chegar a 0.</span></div>
         <div class="field"><label for="productNcm">NCM<span class="help-icon" tabindex="0">?<span class="tooltip">Código fiscal do produto (Nomenclatura Comum do Mercosul), se você usa isso pra nota fiscal. Só informativo, não afeta o painel.</span></span></label><input id="productNcm" maxlength="20"></div>
         <div class="field"><label for="productCst">CST<span class="help-icon" tabindex="0">?<span class="tooltip">Código de Situação Tributária, se precisar registrar pra nota fiscal. Só informativo, não afeta o painel.</span></span></label><input id="productCst" maxlength="20"></div>
-        <div class="field"><label for="productNfe">NFE / ID<span class="help-icon" tabindex="0">?<span class="tooltip">Número da nota fiscal ou outro identificador do lote/compra que gerou esta ficha. Ajuda a rastrear de onde ela veio.</span></span></label><input id="productNfe" maxlength="40"></div>
+        <div class="field"><label for="productNfe">NFE / ID<span class="help-icon" tabindex="0">?<span class="tooltip">Número da nota fiscal ou outro identificador do lote/compra que gerou esta ficha. Sem nota fiscal, use "Gerar ID" para criar um código único e acompanhar o produto nos lançamentos.</span></span></label><div class="combo-campo"><input id="productNfe" maxlength="40"><button type="button" class="campo-gerar" id="productNfeGerar" title="Criar um código único para acompanhar este produto" hidden>Gerar ID</button></div></div>
       </div>
     </div>
     <div class="dialog-foot"><button type="button" class="btn" onclick="this.closest('dialog').close()">Cancelar</button><button type="button" class="btn" id="productSaveNextBtn" title="Salva este produto e limpa os campos específicos (nome, classe, valor, quantidade, prazo de entrega...) pra você cadastrar o próximo item da mesma nota, sem fechar o diálogo nem redigitar Data/Fornecedor/NFE.">Salvar e cadastrar outro</button><button type="submit" class="btn btn-primary" id="productSave">Salvar produto</button></div>
@@ -5931,6 +5949,22 @@ function calcValorUnitarioEntry(){
     note.hidden=true;
   }
 }
+/* Código para produto sem nota fiscal (ex.: ID-261110-7KQ4): data + 4 letras/números, sem repetir
+   nenhum NFE/ID dos locais carregados. Fica no mesmo campo da nota, então já acompanha a ficha
+   nos lançamentos, nas buscas e nos relatórios. */
+const ID_GERADO=/^ID-\d{6}-[2-9A-HJ-NP-Z]{4}$/;
+function gerarIdProduto(){
+  const letras='23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const dia=todayIso().slice(2).replace(/-/g,'');
+  const usados=new Set(locationsPermitidas().flatMap(l=>[...productsOf(l.id).map(p=>p.nfeId),...entriesOf(l.id).map(e=>e.nfeId)]).filter(Boolean));
+  let id;
+  do{id=`ID-${dia}-${[...crypto.getRandomValues(new Uint8Array(4))].map(n=>letras[n%32]).join('')}`}while(usados.has(id));
+  return id;
+}
+/* Só aparece com o campo vazio: nunca troca um número de nota já digitado */
+function atualizarBotaoGerarId(){
+  document.getElementById('productNfeGerar').hidden=!!document.getElementById('productNfe').value.trim();
+}
 function openProductDialog(id,modo){
   hideAlert('productAlert');
   document.getElementById('productForm').reset();
@@ -6018,6 +6052,7 @@ function openProductDialog(id,modo){
   calcValorUnitarioProduto();
   atualizarEstoqueAlvoNota();
   atualizarCamposPorContexto();
+  atualizarBotaoGerarId();
   document.getElementById('productDialog').showModal();
   document.getElementById('productNome').focus();
   document.getElementById('productNomePanel').hidden=true;
@@ -6100,6 +6135,8 @@ function saveProductFormAndNext(){
   resetProductFieldsForNext();
 }
 function resetProductFieldsForNext(){
+  if(ID_GERADO.test(document.getElementById('productNfe').value.trim()))document.getElementById('productNfe').value='';
+  atualizarBotaoGerarId();
   document.getElementById('productNome').value='';
   document.getElementById('productClasse').value='';
   document.getElementById('productTipo').value='Unidade';
@@ -7112,6 +7149,8 @@ iniciarCelularEstoque();
 document.getElementById('cadastroSearch').oninput=e=>{cadastroFilters.search=e.target.value;renderCadastro()};
 document.getElementById('addProductBtn').onclick=()=>openProductDialog();
 document.getElementById('productSaveNextBtn').onclick=()=>saveProductFormAndNext();
+document.getElementById('productNfe').addEventListener('input',atualizarBotaoGerarId);
+document.getElementById('productNfeGerar').onclick=()=>{document.getElementById('productNfe').value=gerarIdProduto();atualizarBotaoGerarId()};
 document.getElementById('productCorrigirValorBtn').onclick=()=>corrigirValorUnitarioProduto();
 document.getElementById('productAddCustoBtn').onclick=()=>addCustoRow();
 document.getElementById('productControleEstoque').onchange=()=>atualizarCamposPorContexto();

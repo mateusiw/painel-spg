@@ -348,7 +348,7 @@
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Qtd. Caixas</label><input type="text" id="f_caixas" required inputmode="numeric" oninput="formatNumberInput(this); f_updateEntryPreview()" placeholder="Ex: 40" class="w-full p-3 border border-slate-300 rounded-lg outline-none text-base"></div>
-                        <div><label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Média Unid./Caixa</label><input type="text" id="f_media" required inputmode="decimal" oninput="formatDecimalInput(this); f_updateEntryPreview()" placeholder="Ex: 22" class="w-full p-3 border border-slate-300 rounded-lg outline-none text-base"></div>
+                        <div><label id="f_mediaRotulo" class="text-xs font-bold text-slate-500 uppercase mb-1 block">Média Unid./Caixa</label><input type="text" id="f_media" required inputmode="decimal" oninput="f_aoDigitarUnidades(this)" placeholder="Ex: 22" class="w-full p-3 border border-slate-300 rounded-lg outline-none text-base"></div>
                     </div>
                     <p id="f_entryPreview" class="text-xs text-slate-500 min-h-[1rem]"></p>
                     <button type="submit" id="f_submitBtn" class="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl active:scale-95 transition-all"><i data-lucide="plus-circle" class="w-4 h-4"></i> <span>Adicionar ao Carregamento</span></button>
@@ -392,6 +392,8 @@
             <div class="w-full lg:w-1/3 space-y-4">
                 <!-- Aviso de bloqueio do peso até a Colheita liberar -->
                 <div id="p_lockBanner" class="hidden"></div>
+                <!-- Quem pesou confirma aqui; o Lançar passa a sugerir o preenchimento -->
+                <div id="p_conferidoBox" class="hidden"></div>
                 <!-- Parametros do Turno (dados vindos do CSV da Colheita) -->
                 <div id="p_shiftPanel" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h2 class="text-sm font-bold text-slate-700 mb-1 flex items-center gap-2"><i data-lucide="settings" class="w-4 h-4 text-slate-500"></i> PARÂMETROS DO TURNO</h2>
@@ -698,10 +700,11 @@
                     p_scheduleSyncFromColheita();
                 } else if (key === 'pesagem') {
                     // Peso de outro dia não vale para hoje
-                    const state = data.date === f_todayISO() && data.weights ? { date: data.date, weights: data.weights } : { date: f_todayISO(), weights: {} };
+                    const state = data.date === f_todayISO() && data.weights ? { date: data.date, weights: data.weights, ...(data.conferido ? { conferido: data.conferido } : {}) } : { date: f_todayISO(), weights: {} };
                     p_applyRemoteWeights(state.weights);
                     // Grava por último: guarda também o peso de setores que ainda não chegaram da Colheita neste aparelho
                     localStorage.setItem('spge_p_weights', JSON.stringify(state));
+                    p_renderConferido();
                 }
             } catch(e) { console.error(e); } finally { spg_applyingRemote = false; }
             spg_syncMeta[key] = { updatedAt, dirty: false }; spg_saveMeta();
@@ -1711,6 +1714,7 @@
                 banner.className = 'bg-emerald-50 border border-emerald-300 p-4 rounded-2xl flex items-start gap-3';
                 banner.innerHTML = `<i data-lucide="lock-open" class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5"></i><div><p class="text-sm font-bold text-emerald-800">Pesagem liberada</p><p class="text-xs text-emerald-700 mt-0.5">Dados conferidos${c_release.by ? ` por <b>${c_release.by}</b>` : ''} às ${t}. Já pode lançar o peso.</p></div>`;
             }
+            p_renderConferido();
             if (window.lucide) lucide.createIcons();
         }
 
@@ -1872,22 +1876,45 @@
             wrapper.innerHTML = html;
             const sel = document.getElementById('f_variedade');
             if (prev && list && list.includes(prev)) sel.value = prev; else if (list && list.length === 1) sel.value = list[0]; else if (!(list && list.length)) sel.value = prev;
+            f_ajustarCampoUnidades();
+        }
+
+        // Pepino: informa o total de unidades das caixas. Demais culturas: média de unidades por caixa.
+        let f_modoTotalAtual = false;
+        function f_modoTotal() { return /pepino/i.test(document.getElementById('f_cultura').value || ''); }
+        function f_unidadesDe(e) { return e.unidades > 0 ? e.unidades : Math.round(e.caixas * e.media); }
+
+        function f_ajustarCampoUnidades() {
+            const total = f_modoTotal(); const input = document.getElementById('f_media');
+            document.getElementById('f_mediaRotulo').innerText = total ? 'Qtd. Unidades' : 'Média Unid./Caixa';
+            input.placeholder = total ? 'Ex: 900' : 'Ex: 22';
+            input.inputMode = total ? 'numeric' : 'decimal';
+            // Trocar entre média e total: o número digitado no outro formato não vale
+            if (total !== f_modoTotalAtual) { f_modoTotalAtual = total; input.value = ''; f_updateEntryPreview(); }
+        }
+
+        function f_aoDigitarUnidades(input) {
+            if (f_modoTotal()) formatNumberInput(input); else formatDecimalInput(input);
+            f_updateEntryPreview();
         }
 
         function f_updateEntryPreview() {
-            const cx = parseNumber(document.getElementById('f_caixas').value); const media = parseNumber(document.getElementById('f_media').value);
+            const cx = parseNumber(document.getElementById('f_caixas').value); const valor = parseNumber(document.getElementById('f_media').value);
+            if (f_modoTotal()) { document.getElementById('f_entryPreview').innerHTML = cx > 0 && valor > 0 ? `= média de <b>${f_fmt(valor / cx)} unidades por caixa</b>` : ''; return; }
+            const media = valor;
             document.getElementById('f_entryPreview').innerHTML = cx > 0 && media > 0 ? `= <b>${Math.round(cx * media).toLocaleString('pt-BR')} unidades</b>` : '';
         }
 
         function f_addEntry(e) {
             e.preventDefault();
-            const setor = document.getElementById('f_bloco').value; const ciclo = document.getElementById('f_ciclo').value.trim(); const cultura = document.getElementById('f_cultura').value; const variedade = (document.getElementById('f_variedade').value || '').trim();
-            const caixas = parseNumber(document.getElementById('f_caixas').value); const media = parseNumber(document.getElementById('f_media').value);
-            if (!bloco || !ciclo || !cultura || caixas <= 0 || media <= 0) { showAlert('Dados incompletos', ['Preencha setor, ciclo, cultura, caixas e média de unidades por caixa.'], 'error'); return; }
+            const bloco = document.getElementById('f_bloco').value; const ciclo = document.getElementById('f_ciclo').value.trim(); const cultura = document.getElementById('f_cultura').value; const variedade = (document.getElementById('f_variedade').value || '').trim();
+            const caixas = parseNumber(document.getElementById('f_caixas').value); const informado = parseNumber(document.getElementById('f_media').value);
+            const porTotal = f_modoTotal(); const media = porTotal && caixas > 0 ? informado / caixas : informado;
+            if (!bloco || !ciclo || !cultura || caixas <= 0 || informado <= 0) { showAlert('Dados incompletos', [`Preencha setor, ciclo, cultura, caixas e ${porTotal ? 'a quantidade de unidades' : 'média de unidades por caixa'}.`], 'error'); return; }
             f_checkNewDay();
             if (f_hasOldData()) { showAlert('Dados de outro dia', ['Há carregamentos salvos de outro dia. Toque em <b>Iniciar novo dia</b> antes de lançar a colheita de hoje, ou escolha a data <b>Manual</b>.'], 'error'); return; }
             f_data.date = f_workDate();
-            const entry = { bloco, ciclo, cultura, variedade, caixas, media }; const load = f_activeLoad();
+            const entry = { bloco, ciclo, cultura, variedade, caixas, media }; if (porTotal) entry.unidades = Math.round(informado); const load = f_activeLoad();
             if (f_editingEntryIdx >= 0 && load.entries[f_editingEntryIdx]) load.entries[f_editingEntryIdx] = entry; else load.entries.push(entry);
             f_editingEntryIdx = -1;
             f_save(); f_syncToColheita();
@@ -1906,7 +1933,7 @@
             document.getElementById('f_bloco').value = e.bloco; document.getElementById('f_ciclo').value = e.ciclo || '';
             document.getElementById('f_cultura').value = ''; f_populateCultures(); c_ensureOption('f_cultura', e.cultura); f_updateVarieties();
             if (document.getElementById('f_variedade').tagName === 'SELECT') c_ensureOption('f_variedade', e.variedade); else document.getElementById('f_variedade').value = e.variedade || '';
-            document.getElementById('f_caixas').value = f_fmt(e.caixas); document.getElementById('f_media').value = String(e.media).replace('.', ',');
+            document.getElementById('f_caixas').value = f_fmt(e.caixas); document.getElementById('f_media').value = f_modoTotal() ? f_unidadesDe(e).toLocaleString('pt-BR') : String(e.media).replace('.', ',');
             f_updateEntryPreview(); f_render();
             document.getElementById('f_entryForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -1959,7 +1986,7 @@
             if (!load.entries.length) return '';
             const total = load.entries.reduce((s, e) => s + e.caixas, 0);
             let txt = `*${f_ordinal(number)} Colheita a Caminho:*\n`;
-            load.entries.forEach(e => { txt += `*Setor ${f_padBloco(e.bloco)}*: ${f_fmt(e.caixas)} Caixas de [${e.variedade || e.cultura}], Sendo ${f_fmt(e.media)} Média Por Caixa.\n`; });
+            load.entries.forEach(e => { txt += `*Setor ${f_padBloco(e.bloco)}*: ${f_fmt(e.caixas)} Caixas de [${e.variedade || e.cultura}], ${e.unidades > 0 ? `Total de ${f_unidadesDe(e).toLocaleString('pt-BR')} Unidades` : `Sendo ${f_fmt(e.media)} Média Por Caixa`}.\n`; });
             txt += `\n*Total de Caixas* ${f_fmt(total)}`;
             if (finalized) {
                 const dayTotal = f_data.loads.slice(0, number).reduce((s, l) => s + l.entries.reduce((a, e) => a + e.caixas, 0), 0);
@@ -1993,7 +2020,7 @@
             const list = document.getElementById('f_entriesList');
             if (!load.entries.length) { list.innerHTML = '<li class="text-center text-slate-400 italic text-sm py-2">Nenhum setor neste carregamento.</li>'; }
             else {
-                list.innerHTML = load.entries.map((e, i) => `<li class="flex justify-between items-center p-3 rounded-xl border ${i === f_editingEntryIdx ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-200' : 'border-slate-100 bg-slate-50'}"><div class="min-w-0"><p class="text-sm font-bold text-slate-800">Setor ${e.bloco}${e.ciclo ? ` <span class="text-[10px] font-bold text-slate-600 bg-slate-200 px-1.5 py-0.5 rounded-full">C${e.ciclo}</span>` : ''} <span class="font-semibold text-slate-500">· ${e.variedade || e.cultura}</span></p><p class="text-xs text-slate-500">${f_fmt(e.caixas)} cx × ${f_fmt(e.media)} un/cx = <b>${Math.round(e.caixas * e.media).toLocaleString('pt-BR')} un</b></p></div><div class="flex items-center shrink-0"><button type="button" onclick="f_editEntry(${i})" title="Editar" class="text-blue-500 hover:bg-blue-100 p-2 rounded-md"><i data-lucide="pencil" width="16"></i></button><button type="button" onclick="f_removeEntry(${activeIdx}, ${i})" title="Excluir" class="text-red-500 hover:bg-red-100 p-2 rounded-md"><i data-lucide="trash-2" width="16"></i></button></div></li>`).join('');
+                list.innerHTML = load.entries.map((e, i) => `<li class="flex justify-between items-center p-3 rounded-xl border ${i === f_editingEntryIdx ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-200' : 'border-slate-100 bg-slate-50'}"><div class="min-w-0"><p class="text-sm font-bold text-slate-800">Setor ${e.bloco}${e.ciclo ? ` <span class="text-[10px] font-bold text-slate-600 bg-slate-200 px-1.5 py-0.5 rounded-full">C${e.ciclo}</span>` : ''} <span class="font-semibold text-slate-500">· ${e.variedade || e.cultura}</span></p><p class="text-xs text-slate-500">${e.unidades > 0 ? `${f_fmt(e.caixas)} cx · <b>${f_unidadesDe(e).toLocaleString('pt-BR')} un</b> · média ${f_fmt(e.media)} un/cx` : `${f_fmt(e.caixas)} cx × ${f_fmt(e.media)} un/cx = <b>${f_unidadesDe(e).toLocaleString('pt-BR')} un</b>`}</p></div><div class="flex items-center shrink-0"><button type="button" onclick="f_editEntry(${i})" title="Editar" class="text-blue-500 hover:bg-blue-100 p-2 rounded-md"><i data-lucide="pencil" width="16"></i></button><button type="button" onclick="f_removeEntry(${activeIdx}, ${i})" title="Excluir" class="text-red-500 hover:bg-red-100 p-2 rounded-md"><i data-lucide="trash-2" width="16"></i></button></div></li>`).join('');
             }
 
             const history = document.getElementById('f_historyList'); const closed = f_data.loads.map((l, i) => ({ l, i })).filter(x => x.l.closed);
@@ -2083,7 +2110,7 @@
             const lc = s => (s || '').trim().toLowerCase();
             const keyOf = it => `${it.talhao}|${lc(String(it.cycle || ''))}|${lc(it.variety)}|${lc(it.commercialVariety)}`;
             const agg = {};
-            f_data.loads.forEach(l => l.entries.forEach(e => { const k = `${e.bloco}|${lc(String(e.ciclo || ''))}|${lc(e.cultura)}|${lc(e.variedade)}`; if (!agg[k]) agg[k] = { bloco: e.bloco, ciclo: e.ciclo || '', cultura: e.cultura, variedade: e.variedade || '', caixas: 0, unidades: 0 }; agg[k].caixas += e.caixas; agg[k].unidades += Math.round(e.caixas * e.media); }));
+            f_data.loads.forEach(l => l.entries.forEach(e => { const k = `${e.bloco}|${lc(String(e.ciclo || ''))}|${lc(e.cultura)}|${lc(e.variedade)}`; if (!agg[k]) agg[k] = { bloco: e.bloco, ciclo: e.ciclo || '', cultura: e.cultura, variedade: e.variedade || '', caixas: 0, unidades: 0 }; agg[k].caixas += e.caixas; agg[k].unidades += f_unidadesDe(e); }));
 
             const updateItem = (item, caixas, unidades) => {
                 const base = Math.max(0, parseNumber(item.totalUnits) - parseNumber(item.dailyUnits)); const total = base + unidades;
@@ -2126,6 +2153,7 @@
                     if (Object.keys(state.weights).length || oldDate === state.date) spg_markChanged('pesagem');
                 }
             } catch (e) { }
+            p_renderConferido();
         }
 
         // -------------------------------------------------------------
@@ -2145,8 +2173,68 @@
             // Mantém o peso de setores que ainda não existem neste aparelho (vieram de outro)
             Object.keys(prev).forEach(k => { if (!localKeys.has(k) && prev[k]) weights[k] = prev[k]; });
             const sorted = {}; Object.keys(weights).sort().forEach(k => { sorted[k] = weights[k]; });
-            return { date: f_todayISO(), weights: sorted };
+            const state = { date: f_todayISO(), weights: sorted };
+            const conferido = p_conferidoSalvo();
+            if (conferido && p_conferidoAindaVale(conferido)) state.conferido = conferido;
+            return state;
         }
+
+        // -------------------------------------------------------------
+        // PESO INSERIDO E CONFERIDO
+        // Quem pesa confirma quando terminou. Os dados vão junto com os pesos e o Lançar
+        // sugere o preenchimento. Se algo mudar depois, a conferência deixa de valer.
+        // -------------------------------------------------------------
+        function p_ativos() { return p_harvestData.filter(it => it.partner === 'SPG Estufa' && it.active !== false); }
+        function p_itensPesados() {
+            return p_ativos().filter(it => parseNumber(it.grossWeight) > 0).map(it => ({
+                bloco: String(it.talhao || ''), ciclo: String(it.cycle || ''), cultura: it.variety || '', variedade: it.commercialVariety || '',
+                caixas: parseNumber(it.boxes) || null, unidades: parseNumber(it.totalUnits) || null, kg: parseNumber(it.grossWeight)
+            })).sort((a, b) => a.bloco.localeCompare(b.bloco, 'pt-BR', { numeric: true }) || a.variedade.localeCompare(b.variedade, 'pt-BR'));
+        }
+        function p_conferidoSalvo() {
+            try { const s = JSON.parse(localStorage.getItem('spge_p_weights') || 'null'); if (s && s.date === f_todayISO() && s.conferido) return s.conferido; } catch (e) { }
+            return null;
+        }
+        // Aparelho que ainda não recebeu os setores da Colheita não tem como comparar: mantém
+        function p_conferidoAindaVale(conferido) { return !p_harvestData.some(it => it.partner === 'SPG Estufa') || JSON.stringify(p_itensPesados()) === conferido.hash; }
+
+        function p_gravarConferido(conferido) {
+            const state = p_getWeightsState();
+            if (conferido) state.conferido = conferido; else delete state.conferido;
+            localStorage.setItem('spge_p_weights', JSON.stringify(state));
+            spg_markChanged('pesagem');
+            p_applyWeightLock();
+        }
+
+        function p_marcarConferido() {
+            const itens = p_itensPesados();
+            if (!c_isReleased() || !itens.length) return;
+            const faltam = p_ativos().length - itens.length;
+            const texto = `Confirma que o peso de <b>${itens.length} ${itens.length === 1 ? 'setor' : 'setores'}</b> foi inserido e conferido?` + (faltam > 0 ? `<br><br><b>${faltam} ${faltam === 1 ? 'setor está' : 'setores estão'} sem peso</b> e não ${faltam === 1 ? 'entra' : 'entram'} na conferência.` : '') + '<br><br>O Lançar vai sugerir o preenchimento com estes dados.';
+            showConfirm('Peso conferido?', texto, 'warning', '<i data-lucide="check-check" class="w-4 h-4"></i> Confirmar', () => {
+                const atuais = p_itensPesados();
+                p_gravarConferido({ at: Date.now(), by: SPG_API.nomeUsuario(), date: f_todayISO(), hash: JSON.stringify(atuais), itens: atuais });
+            });
+        }
+        function p_desfazerConferido() { p_gravarConferido(null); }
+
+        function p_renderConferido() {
+            const caixa = document.getElementById('p_conferidoBox'); if (!caixa) return;
+            const partnerEl = document.getElementById('p_partner');
+            if (!(partnerEl && partnerEl.value === 'SPG Estufa') || !c_isReleased() || !isAuthPesagem) { caixa.className = 'hidden'; caixa.innerHTML = ''; return; }
+            const conferido = p_conferidoSalvo();
+            if (conferido && p_conferidoAindaVale(conferido)) {
+                const hora = new Date(conferido.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                caixa.className = 'bg-emerald-600 text-white p-4 rounded-2xl flex items-start gap-3';
+                caixa.innerHTML = `<i data-lucide="check-check" class="w-5 h-5 shrink-0 mt-0.5"></i><div class="min-w-0 flex-1"><p class="text-sm font-bold">Peso inserido e conferido</p><p class="text-xs text-white/85">${conferido.by ? 'Por ' + escapeHtmlConferido(conferido.by) + ' às ' : 'Às '}${hora} · ${conferido.itens.length} ${conferido.itens.length === 1 ? 'setor' : 'setores'}. Disponível no Lançar.</p><button type="button" onclick="p_desfazerConferido()" class="mt-1.5 text-xs font-bold underline text-white/90">Desfazer</button></div>`;
+            } else {
+                const pesados = p_itensPesados().length, faltam = p_ativos().length - pesados;
+                caixa.className = 'bg-white border border-slate-200 p-4 rounded-2xl';
+                caixa.innerHTML = `<p class="text-sm font-bold text-slate-800">Terminou de pesar?</p><p class="text-xs text-slate-500 mb-3">${pesados} com peso${faltam > 0 ? ` · ${faltam} sem peso` : ''}</p><button type="button" onclick="p_marcarConferido()"${pesados ? '' : ' disabled'} class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold"><i data-lucide="check-check" class="w-4 h-4"></i>Peso inserido e conferido</button>`;
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+        function escapeHtmlConferido(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
         function p_setItemWeight(item, gross) {
             item.grossWeight = gross || '';
@@ -2778,6 +2866,7 @@
         }
 
     </script>
+    <script src="../../catalogo-colheita.js"></script>
     <script src="lancamentos.js"></script>
 </body>
 </html>

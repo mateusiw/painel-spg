@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Culturas e variedades | Painel SPG</title>
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" type="image/png" href="../../favicon.png">
+    <link rel="apple-touch-icon" href="../../icone-app.png">
+    <link rel="manifest" href="../../manifest.json">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../../supabase-config.js"></script>
+    <script src="../../supabase-api.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        #topo {
+            background: rgba(255,255,255,0.78);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            backdrop-filter: blur(18px) saturate(180%);
+            border-bottom: 1px solid rgba(226,232,240,0.9);
+        }
+        #topo::before {
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none;
+            background: linear-gradient(90deg, #10b981, #14b8a6 35%, #0ea5e9 70%, #6366f1);
+        }
+    </style>
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
+    <script src="../../catalogo-colheita.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+    <header id="topo" class="sticky top-0 z-30 px-4 py-2.5 flex items-center gap-3">
+        <img src="../../icone-app.png" alt="" class="w-9 h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
+        <div class="min-w-0 flex-1">
+            <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight truncate">Culturas e variedades</h1>
+            <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">Nomes usados nos lançamentos de cada local</p>
+        </div>
+    </header>
+
+    <main class="p-4 pb-16 space-y-4">
+        <div id="locais" role="tablist" aria-label="Local" class="flex max-w-3xl mx-auto gap-1 p-1 bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70"></div>
+        <div id="paineis"></div>
+    </main>
+
+    <div id="aviso" role="status" aria-live="polite" class="hidden fixed left-1/2 -translate-x-1/2 bottom-6 z-[90] max-w-[90vw] bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-xl"></div>
+
+    <script src="culturas.js"></script>
+</body>
+</html>

@@ -105,33 +105,52 @@
         const abas = [{ id: 'todos', nome: 'Todos' }, ...locaisAtivos().map(l => ({ id: l.id, nome: l.nome }))];
         if (usuarios.some(u => u.ativo && semLocalValido(u))) abas.push({ id: 'sem', nome: 'Sem local' });
         if (!abas.some(a => a.id === localFiltro)) localFiltro = 'todos';
-        el('abasLocais').innerHTML = abas.map(a => {
+        const faixa = el('abasLocais');
+        let posicao = faixa.scrollLeft;
+        faixa.innerHTML = abas.map(a => {
             const ativa = a.id === localFiltro;
             const qtd = usuarios.filter(u => u.ativo && pertenceAoLocal(u, a.id)).length;
-            return `<button type="button" data-acao="localFiltro" data-id="${esc(a.id)}" aria-pressed="${ativa}" class="flex items-center gap-1.5 px-3 py-2.5 text-xs font-bold whitespace-nowrap border-b-2 -mb-px transition-colors ${ativa ? 'border-emerald-600 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'}">
+            return `<button type="button" data-acao="localFiltro" data-id="${esc(a.id)}" aria-pressed="${ativa}" class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${ativa ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500 hover:text-slate-800'}">
                 ${a.id === 'todos' ? '' : '<i data-lucide="map-pin" class="w-3.5 h-3.5"></i>'}${esc(a.nome)}
-                <span class="text-[10px] font-black px-1.5 py-0.5 rounded-full ${ativa ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">${qtd}</span>
+                <span class="text-[10px] font-black px-1.5 py-0.5 rounded-full ${ativa ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/70 text-slate-500'}">${qtd}</span>
             </button>`;
         }).join('');
+        const ativa = faixa.querySelector('[aria-pressed="true"]');
+        if (ativa) {
+            if (ativa.offsetLeft < posicao) posicao = ativa.offsetLeft;
+            else if (ativa.offsetLeft + ativa.offsetWidth > posicao + faixa.clientWidth) posicao = ativa.offsetLeft + ativa.offsetWidth - faixa.clientWidth;
+        }
+        faixa.scrollLeft = posicao;
     }
 
     function cartao(u) {
         const nome = u.nome_curto || u.nome;
         const iniciais = nome.split(/\s+/).filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
-        const selo = (cor, texto) => `<span class="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full ${cor}">${esc(texto)}</span>`;
+        const selo = (cor, texto) => `<span class="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${cor}">${esc(texto)}</span>`;
         const eu = (API.usuarioAtual() || {}).id === u.id;
+        const selecionado = editando === u.id;
         const projetos = resumoProjetos(u);
-        return `<button type="button" data-acao="editar" data-id="${esc(u.id)}" aria-current="${editando === u.id}"
-            class="w-full text-left flex items-center gap-3 p-3 rounded-xl border transition-all ${editando === u.id ? 'border-amber-400 ring-2 ring-amber-200' : 'border-slate-200 hover:shadow-sm'} ${u.ativo ? '' : 'opacity-60'}">
-            <span class="w-11 h-11 rounded-xl flex items-center justify-center text-sm font-black shrink-0 ${u.administrador ? 'bg-slate-800 text-white' : u.papel === 'gestor' ? 'bg-sky-50 text-sky-700' : 'bg-green-50 text-green-700'}">${esc(iniciais)}</span>
+        const parciais = projetos.filter(p => p.parcial).length;
+        const locais = u.administrador ? 'Todos os locais' : locaisDe(u).map(id => API.nomeLocal(id)).join(', ') || 'Sem local';
+        const textoProjetos = u.administrador ? 'Todos os projetos' : `${projetos.length} projeto${projetos.length === 1 ? '' : 's'}`;
+        return `<button type="button" data-acao="editar" data-id="${esc(u.id)}" aria-current="${selecionado}"
+            class="w-full text-left flex items-center gap-3 px-4 py-3 transition-colors ${selecionado ? 'bg-emerald-50/70 shadow-[inset_3px_0_0_#10b981]' : 'hover:bg-slate-50'} ${u.ativo ? '' : 'opacity-60'}">
+            <span class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black shrink-0 ${u.administrador ? 'bg-slate-800 text-white' : u.papel === 'gestor' ? 'bg-sky-50 text-sky-700' : 'bg-green-50 text-green-700'}">${esc(iniciais)}</span>
             <span class="min-w-0 flex-1">
-                <span class="block text-sm font-black text-slate-800 truncate ${u.ativo ? '' : 'line-through'}">${esc(nome)}${eu ? ' <span class="text-[10px] font-medium text-slate-400">(você)</span>' : ''}</span>
+                <span class="flex items-center gap-2">
+                    <span class="min-w-0 truncate text-sm font-black text-slate-800 ${u.ativo ? '' : 'line-through'}">${esc(nome)}</span>
+                    ${eu ? '<span class="text-[10px] font-medium text-slate-400 shrink-0">(você)</span>' : ''}
+                    <span class="ml-auto flex items-center gap-1 shrink-0">
+                        ${u.administrador ? selo('bg-slate-800 text-white', 'Administrador') : u.papel === 'gestor' ? selo('bg-sky-50 text-sky-700', 'Gestor') : ''}
+                        ${u.ativo ? '' : selo('bg-red-50 text-red-600', 'Desativado')}
+                    </span>
+                </span>
                 <span class="block text-[11px] text-slate-500 truncate" title="${esc(emailDe(u))}">${esc(emailDe(u))}</span>
-                <span class="flex flex-wrap gap-1 mt-1">
-                    ${u.administrador ? selo('bg-slate-800 text-white', 'Administrador') : u.papel === 'gestor' ? selo('bg-sky-50 text-sky-700', 'Gestor') : ''}
-                    ${localFiltro === 'todos' && !u.administrador ? locaisDe(u).map(id => selo('bg-emerald-50 text-emerald-800', API.nomeLocal(id))).join('') : ''}
-                    ${projetos.length ? projetos.map(p => selo(p.parcial ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600', p.nome)).join('') : selo('bg-red-50 text-red-600', 'Sem acesso')}
-                    ${u.ativo ? '' : selo('bg-red-50 text-red-600', 'Desativado')}
+                <span class="mt-0.5 flex items-center gap-3 text-[11px] font-semibold text-slate-500">
+                    <span class="min-w-0 flex items-center gap-1" title="${esc(locais)}"><i data-lucide="map-pin" class="w-3 h-3 shrink-0 text-slate-400"></i><span class="truncate">${esc(locais)}</span></span>
+                    ${projetos.length
+                        ? `<span class="flex items-center gap-1 shrink-0" title="${esc(projetos.map(p => p.nome).join(', '))}"><i data-lucide="layout-grid" class="w-3 h-3 text-slate-400"></i>${textoProjetos}${parciais ? `<span class="text-amber-600">· ${parciais} parcia${parciais === 1 ? 'l' : 'is'}</span>` : ''}</span>`
+                        : '<span class="shrink-0 text-red-600">Sem acesso</span>'}
                 </span>
             </span>
             <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
@@ -153,7 +172,7 @@
             const qtd = doLocal.filter(f.teste).length;
             if (id !== 'todos' && id !== 'gestor' && !qtd) return '';
             const ativo = filtroAtual === id;
-            return `<button type="button" data-acao="filtro" data-id="${id}" aria-pressed="${ativo}" class="px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all ${ativo ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-400'}">${f.rotulo} <span class="${ativo ? 'text-slate-300' : 'text-slate-400'}">${qtd}</span></button>`;
+            return `<button type="button" data-acao="filtro" data-id="${id}" aria-pressed="${ativo}" class="flex-1 sm:flex-none px-1.5 sm:px-2.5 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all ${ativo ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500 hover:text-slate-800'}">${f.rotulo} <span class="${ativo ? 'text-emerald-600/70' : 'text-slate-400'}">${qtd}</span></button>`;
         }).join('');
 
         const busca = semAcento(el('busca').value.trim());
@@ -166,6 +185,20 @@
         const ativos = usuarios.filter(u => u.ativo).length;
         el('contagem').innerText = `${ativos} ativo${ativos === 1 ? '' : 's'}`;
         icones();
+    }
+    // O corpo do painel rola sozinho: ao redesenhar a mesma tela, continua no mesmo ponto
+    const CARTAO_PAINEL = 'bg-white lg:rounded-2xl shadow-sm lg:border border-slate-200 overflow-hidden max-w-xl mx-auto lg:max-w-none h-full lg:h-auto lg:max-h-full flex flex-col';
+    let painelChave = null;
+    function pintarPainel(chave, html) {
+        const painel = el('painelEditor');
+        const anterior = el('painelCorpo');
+        const rolagem = anterior && painelChave === chave ? anterior.scrollTop : 0;
+        painel.className = 'fixed inset-0 z-40 bg-slate-50 lg:static lg:z-auto lg:h-full lg:min-h-0 lg:bg-transparent';
+        painel.innerHTML = html;
+        painelChave = chave;
+        icones();
+        const corpo = el('painelCorpo');
+        if (corpo) corpo.scrollTop = rolagem;
     }
 
     function interruptor(acao, id, ligado, rotulo) {
@@ -198,12 +231,12 @@
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Função na irrigação</p>
                 <div class="grid grid-cols-2 gap-1.5">${[['irrigador', 'Irrigador', 'Registra irrigação, poços e reservatórios'], ['gestor', 'Gestor', 'Edita programação, cadastros e vê o log']].map(([id, nome, desc]) => {
                     const ativo = r.papel === id;
-                    return `<button type="button" ${papelTravado ? 'disabled' : ''} aria-pressed="${ativo}" data-acao="papel" data-id="${id}" class="text-left px-3 py-2 rounded-xl border-2 ${ativo ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-600'} ${papelTravado && !ativo ? 'opacity-40' : ''}"><span class="block text-xs font-black">${nome}</span><span class="block text-[10px] mt-0.5 ${ativo ? 'text-slate-300' : 'text-slate-400'}">${desc}</span></button>`;
+                    return `<button type="button" ${papelTravado ? 'disabled' : ''} aria-pressed="${ativo}" data-acao="papel" data-id="${id}" class="text-left px-3 py-2 rounded-xl border-2 ${ativo ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-600'} ${papelTravado && !ativo ? 'opacity-40' : ''}"><span class="block text-xs font-black">${nome}</span><span class="block text-[10px] mt-0.5 ${ativo ? 'text-emerald-100' : 'text-slate-400'}">${desc}</span></button>`;
                 }).join('')}</div>
                 ${papelTravado ? '<p class="text-[10px] text-slate-400 mt-1">Não dá para mudar a própria função.</p>' : ''}
             </div>` : '';
 
-        return `<article class="border border-slate-200 rounded-2xl overflow-hidden">
+        return `<article class="border border-slate-200 rounded-2xl overflow-hidden break-inside-avoid mb-3 last:mb-0">
             <header class="flex items-center gap-2.5 px-4 py-3 bg-slate-50 border-b border-slate-100">
                 <span class="w-8 h-8 rounded-lg flex items-center justify-center ${p.cor}"><i data-lucide="${p.icone}" class="w-4 h-4"></i></span>
                 <h3 class="text-sm font-black text-slate-800">${esc(p.nome)}</h3>
@@ -292,33 +325,33 @@
     }
 
     function renderLocais() {
-        const painel = el('painelEditor');
         const locais = todosOrdenados();
         const ativos = locais.filter(l => l.ativo !== false).length;
-        painel.className = 'fixed inset-0 z-40 overflow-y-auto bg-slate-50 p-4 lg:static lg:z-auto lg:overflow-visible lg:bg-transparent lg:p-0';
-        painel.innerHTML = `<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden max-w-xl mx-auto lg:max-w-none">
-            <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-5 py-4 flex items-center justify-between gap-2">
+        pintarPainel('locais', `<div class="${CARTAO_PAINEL}">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 px-5 py-3.5 flex items-center justify-between gap-2 shrink-0">
                 <div class="min-w-0">
                     <h2 class="text-base font-bold text-white">Locais e projetos</h2>
-                    <p id="locaisContagem" class="text-[11px] text-slate-300">${ativos} ativo${ativos === 1 ? '' : 's'}${locais.length > ativos ? ` · ${locais.length - ativos} desativado${locais.length - ativos === 1 ? '' : 's'}` : ''}</p>
+                    <p id="locaisContagem" class="text-[11px] text-green-100">${ativos} ativo${ativos === 1 ? '' : 's'}${locais.length > ativos ? ` · ${locais.length - ativos} desativado${locais.length - ativos === 1 ? '' : 's'}` : ''}</p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <button type="button" data-acao="novoLocal" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100"><i data-lucide="plus" class="w-4 h-4"></i>Novo local</button>
+                    <button type="button" data-acao="novoLocal" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-white text-green-700 hover:bg-green-50"><i data-lucide="plus" class="w-4 h-4"></i>Novo local</button>
                     <button type="button" data-acao="fechar" aria-label="Fechar" class="p-1.5 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
                 </div>
             </div>
-            <div id="locaisLista" class="p-4 space-y-2">
-                ${localEditando === NOVO_LOCAL ? editorLocal(null) : ''}
-                ${locais.map(l => l.id === localEditando ? editorLocal(l) : cartaoLocal(l)).join('')}
+            <div id="painelCorpo" class="flex-1 min-h-0 overflow-y-auto">
+                <div id="locaisLista" class="p-4 space-y-2">
+                    ${localEditando === NOVO_LOCAL ? editorLocal(null) : ''}
+                    ${locais.map(l => l.id === localEditando ? editorLocal(l) : cartaoLocal(l)).join('')}
+                </div>
+                <p class="px-5 pb-4 text-[11px] text-slate-500">Cada local tem os seus próprios dados. O acesso de cada pessoa é marcado no cadastro dela. Precisa de internet.</p>
+                <section class="border-t border-slate-100 p-4 space-y-2" aria-labelledby="tituloProjetosLocais">
+                    <h3 id="tituloProjetosLocais" class="text-sm font-black text-slate-800">Projetos em cada local</h3>
+                    <p class="text-[11px] text-slate-500">Marque onde cada projeto existe. Sem nenhum marcado, ele vale para todos os locais.</p>
+                    <div id="projetosLocais" class="space-y-2">${PROJETOS.map(blocoProjetoLocais).join('')}</div>
+                </section>
             </div>
-            <p class="px-5 pb-4 text-[11px] text-slate-500">Cada local tem os seus próprios dados. O acesso de cada pessoa é marcado no cadastro dela. Precisa de internet.</p>
-            <section class="border-t border-slate-100 p-4 space-y-2" aria-labelledby="tituloProjetosLocais">
-                <h3 id="tituloProjetosLocais" class="text-sm font-black text-slate-800">Projetos em cada local</h3>
-                <p class="text-[11px] text-slate-500">Marque onde cada projeto existe. Sem nenhum marcado, ele vale para todos os locais.</p>
-                <div id="projetosLocais" class="space-y-2">${PROJETOS.map(blocoProjetoLocais).join('')}</div>
-            </section>
-        </div>`;
-        icones();
+            <div class="h-3 shrink-0 hidden lg:block"></div>
+        </div>`);
     }
 
     function abrirLocais() {
@@ -399,8 +432,14 @@
         if (modoLocais) { renderLocais(); return; }
         const painel = el('painelEditor');
         if (!editando) {
-            painel.className = 'hidden lg:block';
-            painel.innerHTML = `<div class="bg-white rounded-2xl border border-dashed border-slate-300 py-20 text-center text-slate-400"><i data-lucide="users" class="w-8 h-8 mx-auto mb-2"></i><p class="text-xs font-semibold">Escolha um usuário para definir os acessos.</p></div>`;
+            painelChave = null;
+            painel.className = 'hidden lg:block lg:self-start';
+            painel.innerHTML = `<div class="bg-white rounded-2xl border border-slate-200 shadow-sm px-6 py-14 text-center">
+                <span class="w-14 h-14 mx-auto rounded-2xl bg-green-50 text-green-600 flex items-center justify-center"><i data-lucide="user-cog" class="w-6 h-6"></i></span>
+                <h2 class="mt-3 text-sm font-black text-slate-800">Nenhum usuário selecionado</h2>
+                <p class="mt-1 text-xs text-slate-500">Escolha alguém na lista para ver e alterar os acessos.</p>
+                <button type="button" data-acao="novo" class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"><i data-lucide="user-plus" class="w-4 h-4"></i>Novo usuário</button>
+            </div>`;
             icones();
             return;
         }
@@ -410,56 +449,60 @@
         const eu = u && u.id === (API.usuarioAtual() || {}).id;
         const campo = 'w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-2.5 px-3 text-sm font-medium text-slate-800 outline-none focus:border-slate-400 focus:bg-white';
         const rotulo = (t, para) => `<label${para ? ` for="${para}"` : ''} class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">${t}</label>`;
+        const titulo = (icone, t) => `<h3 class="flex items-center gap-2 text-xs font-black text-slate-700"><i data-lucide="${icone}" class="w-4 h-4 text-green-600"></i>${t}</h3>`;
 
         const secaoAcessos = admin
             ? `<p class="text-sm text-slate-600 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3"><i data-lucide="crown" class="w-4 h-4 text-amber-500 shrink-0"></i>O administrador acessa todos os projetos, locais e opções.</p>`
-            : `<div>
-                    ${rotulo('Locais de acesso <span class="text-red-400">*</span>')}
+            : `<section class="space-y-2.5 border-t border-slate-100 pt-5">
+                    ${titulo('map-pin', 'Locais de acesso <span class="text-red-400">*</span>')}
                     <div class="flex flex-wrap gap-1.5">${API.todosLocais().filter(l => l.ativo !== false).map(l => {
                         const marcado = r.locais.includes(l.id);
                         return `<button type="button" aria-pressed="${marcado}" data-acao="local" data-id="${esc(l.id)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 text-[11px] font-bold ${marcado ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-slate-500'}"><i data-lucide="${marcado ? 'check' : 'map-pin'}" class="w-3.5 h-3.5"></i>${esc(l.nome)}</button>`;
                     }).join('')}</div>
-                </div>
-                <div class="space-y-3">
-                    ${rotulo('Projetos e o que fica liberado <span class="text-red-400">*</span>')}
-                    ${PROJETOS.map(blocoProjeto).join('')}
-                </div>`;
+                </section>
+                <section class="space-y-2.5 border-t border-slate-100 pt-5">
+                    ${titulo('layout-grid', 'Projetos e o que fica liberado <span class="text-red-400">*</span>')}
+                    <div class="xl:columns-2 gap-3">${PROJETOS.map(blocoProjeto).join('')}</div>
+                </section>`;
 
-        painel.className = 'fixed inset-0 z-40 overflow-y-auto bg-slate-50 p-4 lg:static lg:z-auto lg:overflow-visible lg:bg-transparent lg:p-0';
-        painel.innerHTML = `<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden max-w-xl mx-auto lg:max-w-none">
-            <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-5 py-4 flex items-center justify-between gap-2">
+        pintarPainel(editando, `<div class="${CARTAO_PAINEL}">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 px-5 py-3.5 flex items-center justify-between gap-2 shrink-0">
                 <div class="min-w-0">
                     <h2 class="text-base font-bold text-white truncate">${novo ? 'Novo usuário' : 'Editar ' + esc(u.nome_curto || u.nome)}</h2>
-                    ${novo ? '' : `<p class="text-[11px] text-slate-300 truncate">${esc(emailDe(u))}</p>`}
+                    ${novo ? '' : `<p class="text-[11px] text-green-100 truncate">${esc(emailDe(u))}</p>`}
                 </div>
                 <button type="button" data-acao="fechar" aria-label="Fechar" class="p-1.5 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
-            <div class="p-5 space-y-4">
-                <div>${rotulo('Nome completo <span class="text-red-400">*</span>', 'edNome')}<input id="edNome" data-campo="nome" value="${esc(r.nome)}" placeholder="Aparece nos relatórios" class="${campo} font-bold"></div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>${rotulo('Nome curto', 'edCurto')}<input id="edCurto" data-campo="nome_curto" value="${esc(r.nome_curto)}" maxlength="40" class="${campo}"></div>
-                    ${novo ? `<div>${rotulo('Usuário (login) <span class="text-red-400">*</span>', 'edLogin')}<input id="edLogin" data-campo="usuario" value="${esc(r.usuario)}" maxlength="30" autocapitalize="none" spellcheck="false" class="${campo} font-bold"></div>` : ''}
-                </div>
-                <div>
-                    ${rotulo(novo ? 'Senha <span class="text-red-400">*</span>' : 'Nova senha', 'edSenha')}
-                    <div class="flex gap-2">
-                        <div class="relative flex-1">
-                            <input id="edSenha" type="${r.verSenha ? 'text' : 'password'}" data-campo="senha" value="${esc(r.senha)}" autocomplete="new-password" placeholder="${novo ? 'Mínimo 6 caracteres' : 'Deixe vazio para manter a atual'}" class="${campo} pr-10">
-                            <button type="button" data-acao="verSenha" aria-label="${r.verSenha ? 'Esconder senha' : 'Mostrar senha'}" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400"><i data-lucide="${r.verSenha ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
+            <div id="painelCorpo" class="flex-1 min-h-0 overflow-y-auto p-5 space-y-5">
+                <section class="space-y-2.5">
+                    ${titulo('user-round', 'Dados de acesso')}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="${novo ? 'sm:col-span-2' : ''}">${rotulo('Nome completo <span class="text-red-400">*</span>', 'edNome')}<input id="edNome" data-campo="nome" value="${esc(r.nome)}" placeholder="Aparece nos relatórios" class="${campo} font-bold"></div>
+                        <div>${rotulo('Nome curto', 'edCurto')}<input id="edCurto" data-campo="nome_curto" value="${esc(r.nome_curto)}" maxlength="40" class="${campo}"></div>
+                        ${novo ? `<div>${rotulo('Usuário (login) <span class="text-red-400">*</span>', 'edLogin')}<input id="edLogin" data-campo="usuario" value="${esc(r.usuario)}" maxlength="30" autocapitalize="none" spellcheck="false" class="${campo} font-bold"></div>` : ''}
+                        <div class="sm:col-span-2">
+                            ${rotulo(novo ? 'Senha <span class="text-red-400">*</span>' : 'Nova senha', 'edSenha')}
+                            <div class="flex gap-2">
+                                <div class="relative flex-1">
+                                    <input id="edSenha" type="${r.verSenha ? 'text' : 'password'}" data-campo="senha" value="${esc(r.senha)}" autocomplete="new-password" placeholder="${novo ? 'Mínimo 6 caracteres' : 'Deixe vazio para manter a atual'}" class="${campo} pr-10">
+                                    <button type="button" data-acao="verSenha" aria-label="${r.verSenha ? 'Esconder senha' : 'Mostrar senha'}" class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400"><i data-lucide="${r.verSenha ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
+                                </div>
+                                <button type="button" data-acao="gerar" class="flex items-center gap-1 px-3 rounded-xl border-2 border-slate-200 text-xs font-bold text-slate-600 hover:border-slate-400"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>Gerar</button>
+                            </div>
                         </div>
-                        <button type="button" data-acao="gerar" class="flex items-center gap-1 px-3 rounded-xl border-2 border-slate-200 text-xs font-bold text-slate-600 hover:border-slate-400"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>Gerar</button>
                     </div>
-                </div>
+                </section>
                 ${secaoAcessos}
-                ${erroEditor ? `<p role="alert" class="text-xs font-bold text-red-500">${esc(erroEditor)}</p>` : ''}
-                <div class="flex gap-2 pt-1">
-                    <button type="button" data-acao="fechar" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl text-sm">Cancelar</button>
-                    <button type="button" id="edSalvar" data-acao="salvar" ${salvando ? 'disabled' : ''} class="flex-1 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 disabled:opacity-60 text-white font-bold py-3 rounded-xl text-sm"><i data-lucide="${novo ? 'user-plus' : 'save'}" class="w-4 h-4"></i>${salvando ? 'Salvando...' : novo ? 'Criar usuário' : 'Salvar'}</button>
-                </div>
                 ${!novo && !admin && !eu ? `<div class="border-t border-slate-100 pt-3"><button type="button" data-acao="ativo" class="w-full text-xs font-bold py-2.5 rounded-xl ${u.ativo ? 'text-red-600 hover:bg-red-50' : 'text-emerald-700 hover:bg-emerald-50'}">${u.ativo ? 'Desativar usuário' : 'Reativar usuário'}</button></div>` : ''}
             </div>
-        </div>`;
-        icones();
+            <div class="shrink-0 border-t border-slate-200 bg-white px-5 py-3">
+                ${erroEditor ? `<p role="alert" class="text-xs font-bold text-red-500 mb-2">${esc(erroEditor)}</p>` : ''}
+                <div class="flex gap-2">
+                    <button type="button" data-acao="fechar" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl text-sm">Cancelar</button>
+                    <button type="button" id="edSalvar" data-acao="salvar" ${salvando ? 'disabled' : ''} class="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm"><i data-lucide="${novo ? 'user-plus' : 'save'}" class="w-4 h-4"></i>${salvando ? 'Salvando...' : novo ? 'Criar usuário' : 'Salvar'}</button>
+                </div>
+            </div>
+        </div>`);
     }
 
     function abrirEditor(id) {

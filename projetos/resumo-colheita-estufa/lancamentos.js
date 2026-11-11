@@ -5,6 +5,8 @@
 
     const API = window.IrrigacaoAPI;
     const LOCAL = 'estufa';
+    const ehAdmin = !!API.isAdmin();
+    const catalogo = window.CatalogoColheita.criar({ local: LOCAL, cliente: API.cliente, ehAdmin, nomeLocal: API.nomeLocal(LOCAL) });
     const STATUS_PADRAO = ['Pendente', 'Em andamento'];
 
     const CAMPOS_BLOCO = [
@@ -29,7 +31,6 @@
             campos: [
                 { id: 'data_entrega', rotulo: 'Data da entrega', icone: 'calendar', tipo: 'date', obrig: true, largo: true, padraoHoje: true },
                 ...CAMPOS_BLOCO,
-                { id: 'total_plantas_campo', rotulo: 'Plantas no campo', icone: 'flower-2', tipo: 'number', decimal: false },
                 { id: 'caixas', rotulo: 'Caixas', icone: 'package', tipo: 'number', decimal: true },
                 { id: 'entregue_unidades', rotulo: 'Unidades', icone: 'hash', tipo: 'number', decimal: false },
                 { id: 'entregue_kg', rotulo: 'Peso (kg)', icone: 'scale', tipo: 'number', decimal: true },
@@ -127,6 +128,15 @@
     let editando = null;
     let opcoes = { blocos: [], status: [], motivos: [], locaisPerda: [] };
     let lista = [];
+    const POR_PAGINA = 4;
+    const K_SUGESTAO_DISPENSADA = 'spg_sugestao_pesagem_' + LOCAL;
+    const VERIFICAR_SUGESTOES_MS = 30000;
+    let conferencia = null;       // pesagem conferida de hoje
+    let sugestoes = [];           // itens conferidos que ainda não foram lançados
+    let sugestaoPausada = false;  // preenchendo um item: não abre a janela por cima
+    let timerSugestoes = null;
+    let pagina = 1;
+    let plantios = [];   // transplantios usados para mostrar os prazos no histórico
     let filtro = null;
     let montado = false;
     let carga = 0;
@@ -139,6 +149,7 @@
     let imagemAtual = null;
     let rascunho = null;
     let mudasManual = false;
+    let aCadastrar = null;
     const K_OCULTOS = 'spg_calendario_ocultos';
     let ocultos = new Set();
     try { ocultos = new Set(JSON.parse(localStorage.getItem(K_OCULTOS)) || []); } catch (e) { /* sem itens ocultos */ }
@@ -152,23 +163,25 @@
 
     function montar() {
         raiz().innerHTML = `
-            <div class="container mx-auto p-4 space-y-4 max-w-md lg:max-w-5xl mt-2">
+            <div class="mx-auto p-4 lg:px-6 space-y-4 max-w-md md:max-w-2xl lg:max-w-none 2xl:max-w-[1720px] mt-2">
                 <div id="lancAbas" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1 max-w-md" role="tablist" aria-label="Tipo de lançamento"></div>
                 <div id="lancStatus" class="hidden"></div>
-                <div class="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start space-y-4 lg:space-y-0">
+                <div id="lancSugestaoAviso" class="hidden"></div>
+                <div class="lg:grid lg:grid-cols-[minmax(0,430px)_minmax(0,1fr)] lg:gap-6 lg:items-start space-y-4 lg:space-y-0">
                     <div id="lancForm" class="bg-white rounded-2xl shadow-sm border border-slate-200"></div>
                     <div id="lancPainel" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"></div>
                 </div>
             </div>
             <div id="lancImagemModal"></div>
+            <div id="lancSugestaoModal"></div>
             <div id="lancAviso" role="status" aria-live="polite" class="hidden fixed left-1/2 -translate-x-1/2 bottom-24 lg:bottom-6 z-[60] max-w-[90vw] bg-slate-900 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-xl"></div>`;
 
         // Janela da imagem e aviso ficam direto no body: a animação de entrada da aba (transform)
         // prenderia o position:fixed dentro dela, e a janela aparecia lá embaixo da lista
-        ['lancImagemModal', 'lancAviso'].forEach(id => { const n = el(id); document.body.appendChild(n); n.addEventListener('click', aoClicar); });
+        ['lancImagemModal', 'lancSugestaoModal', 'lancAviso'].forEach(id => { const n = el(id); document.body.appendChild(n); n.addEventListener('click', aoClicar); });
         raiz().addEventListener('click', aoClicar);
         raiz().addEventListener('change', aoMudar);
-        raiz().addEventListener('input', e => { if (e.target.id === 'lancBusca') { filtro.busca = e.target.value; renderLista(); } if (e.target.getAttribute('role') === 'combobox') mostrarLista(e.target.id, true); aoDigitar(e); });
+        raiz().addEventListener('input', e => { if (e.target.id === 'lancBusca') { filtro.busca = e.target.value; pagina = 1; renderLista(); } if (e.target.getAttribute('role') === 'combobox') mostrarLista(e.target.id, true); aoDigitar(e); });
         raiz().addEventListener('submit', aoSalvar);
         // Valor preenchido sozinho fica selecionado: o que a pessoa digitar substitui, em vez de somar (2 virava 22)
         raiz().addEventListener('focusin', e => {
@@ -270,11 +283,11 @@
         el('lancPainel').innerHTML = `
             <div class="px-5 py-4 border-b border-slate-100 space-y-3">
                 <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="list" class="w-4 h-4 text-slate-400"></i>Lançamentos</h3>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-2 lg:grid-cols-[170px_170px_minmax(0,1fr)] gap-2">
                     <div class="min-w-0"><label for="lancDe" class="text-[10px] font-bold text-slate-400 uppercase">De</label><input type="date" id="lancDe" value="${filtro.de}" class="${CLASSE_CAMPO} !py-2"></div>
                     <div class="min-w-0"><label for="lancAte" class="text-[10px] font-bold text-slate-400 uppercase">Até</label><input type="date" id="lancAte" value="${filtro.ate}" class="${CLASSE_CAMPO} !py-2"></div>
+                    <div class="min-w-0 col-span-2 lg:col-span-1"><label for="lancBusca" class="text-[10px] font-bold text-slate-400 uppercase">Buscar</label><input type="search" id="lancBusca" value="${esc(filtro.busca)}" placeholder="Bloco, cultura, variedade..." class="${CLASSE_CAMPO} !py-2"></div>
                 </div>
-                <input type="search" id="lancBusca" value="${esc(filtro.busca)}" placeholder="Buscar..." aria-label="Buscar lançamentos" class="${CLASSE_CAMPO} !py-2">
             </div>
             <div id="lancLista" class="p-3 space-y-4"></div>`;
         iconesAgora();
@@ -296,41 +309,156 @@
             iconesAgora();
             return;
         }
+        const totalPaginas = Math.ceil(itens.length / POR_PAGINA);
+        pagina = Math.min(Math.max(pagina, 1), totalPaginas);
+        const inicio = (pagina - 1) * POR_PAGINA;
         const grupos = new Map();
-        itens.forEach(r => { const d = r[t.data] || ''; if (!grupos.has(d)) grupos.set(d, []); grupos.get(d).push(r); });
+        itens.slice(inicio, inicio + POR_PAGINA).forEach(r => { const d = r[t.data] || ''; if (!grupos.has(d)) grupos.set(d, []); grupos.get(d).push(r); });
+        // O total do dia considera o dia inteiro, mesmo quando ele continua na outra página
+        const doDia = d => itens.filter(r => (r[t.data] || '') === d);
+        const paginacao = totalPaginas > 1 ? `<nav aria-label="Páginas dos lançamentos" class="flex items-center justify-between gap-2 pt-1">
+            <button type="button" data-acao="paginaLanc" data-valor="${pagina - 1}"${pagina === 1 ? ' disabled' : ''} class="inline-flex items-center gap-1 pl-2 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"><i data-lucide="chevron-left" class="w-4 h-4"></i>Anterior</button>
+            <span class="text-xs font-semibold text-slate-500 text-center">Página <b class="text-slate-800">${pagina}</b> de ${totalPaginas} <span class="text-slate-400">· ${itens.length.toLocaleString('pt-BR')} lançamentos</span></span>
+            <button type="button" data-acao="paginaLanc" data-valor="${pagina + 1}"${pagina === totalPaginas ? ' disabled' : ''} class="inline-flex items-center gap-1 pl-3 pr-2 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">Próxima<i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        </nav>` : '';
         alvo.innerHTML = [...grupos.entries()].map(([data, regs]) => `
             <section>
                 <header class="flex items-center justify-between px-1 mb-1.5">
                     <h4 class="text-[11px] font-black text-slate-500 uppercase tracking-wider">${emPt(data)}</h4>
-                    <span class="text-[11px] font-bold text-slate-400">${esc(t.total(regs))}</span>
+                    <span class="text-[11px] font-bold text-slate-400">${esc(t.total(doDia(data)))}</span>
                 </header>
-                <div class="space-y-1.5">${regs.map(r => cartao(r, t)).join('')}</div>
-            </section>`).join('') + (lista.length >= 1000 ? `<p class="text-[11px] text-amber-700 bg-amber-50 rounded-lg p-2 text-center">Mostrando os 1.000 mais recentes. Reduza o período para ver os demais.</p>` : '');
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-2">${regs.map(r => cartao(r, t)).join('')}</div>
+            </section>`).join('') + paginacao + (lista.length >= 1000 ? `<p class="text-[11px] text-amber-700 bg-amber-50 rounded-lg p-2 text-center">Mostrando os 1.000 mais recentes. Reduza o período para ver os demais.</p>` : '');
         iconesAgora();
+    }
+
+    const textoDias = n => `${n} ${n === 1 ? 'dia' : 'dias'}`;
+    const mesmoTexto = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+
+    // Transplantio do lançamento: mesmo bloco, ciclo e cultura. Prefere a mesma variedade e,
+    // se o bloco foi replantado, o plantio mais recente até a data do lançamento.
+    function transplantioDe(r, t) {
+        if (!r.bloco) return null;
+        const doBloco = plantios.filter(p => mesmoTexto(limparBloco(p.bloco), limparBloco(r.bloco))
+            && (!r.ciclo || mesmoTexto(p.ciclo, r.ciclo)) && (!r.cultura || mesmoTexto(p.cultura, r.cultura)));
+        const daVariedade = r.variedade ? doBloco.filter(p => mesmoTexto(p.variedade, r.variedade)) : [];
+        const opcoesPlantio = (daVariedade.length ? daVariedade : doBloco).slice().sort((a, b) => String(b.data_plantio || '').localeCompare(String(a.data_plantio || '')));
+        const data = r[t.data] || '';
+        return opcoesPlantio.find(p => p.data_plantio && p.data_plantio <= data) || opcoesPlantio[0] || null;
+    }
+
+    const CICLO_ENCERRADO = /conclu|finaliz|encerr|colhid/i;
+    function dadosDoPrazo(r, t) {
+        const p = tipoAtual === 'previsao' ? r : transplantioDe(r, t);
+        if (!p) return null;
+        const itens = [];
+        if (p.data_plantio) itens.push(['sprout', 'Plantado em', emPt(p.data_plantio)]);
+        if (p.inicio_colheita) itens.push(['calendar-check', 'Início previsto', emPt(p.inicio_colheita)]);
+        if (p.data_plantio) {
+            const data = r[t.data];
+            if (tipoAtual !== 'previsao' && data && data >= p.data_plantio) itens.push(['timer', tipoAtual === 'colheita' ? 'Colhido com' : 'Lançado com', textoDias(diasEntre(p.data_plantio, data))]);
+            if (hoje() >= p.data_plantio && !CICLO_ENCERRADO.test(p.status || '')) itens.push(['hourglass', 'Hoje está com', textoDias(diasEntre(p.data_plantio, hoje()))]);
+        }
+        return itens;
     }
 
     function cartao(r, t) {
         const planilha = r.origem === 'planilha';
-        const detalhes = t.linha(r).filter(Boolean).map(esc).join(' · ');
-        return `<article class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 ${ocultos.has(r.id) ? 'opacity-50' : ''} ${editando && editando.id === r.id ? 'ring-2 ring-amber-400' : ''}">
-            <div class="min-w-0 flex-1">
-                <p class="text-sm font-black text-slate-800 truncate">${t.titulo ? esc(t.titulo(r)) : `Setor ${esc(r.bloco)}${r.ciclo ? ` <span class="font-semibold text-slate-400">· Ciclo ${esc(r.ciclo)}</span>` : ''}`}</p>
-                <p class="text-[11px] text-slate-500 truncate">${esc(t.subtitulo ? t.subtitulo(r) : [r.cultura, r.variedade].filter(Boolean).join(' · '))}</p>
-                <p class="text-xs font-bold text-slate-700 truncate">${detalhes}</p>
-                ${r._pendente ? `<span class="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full"><i data-lucide="cloud-off" class="w-3 h-3"></i>Aguardando envio</span>` : ''}
-                ${!r._pendente && r.criado_por_nome ? `<p class="text-[10px] text-slate-400 truncate">por ${esc(r.criado_por_nome)}</p>` : ''}
+        const metricas = t.linha(r).filter(Boolean);
+        const prazos = dadosDoPrazo(r, t);
+        const blocoInformado = !!r.bloco;
+        return `<article class="p-3 rounded-2xl border border-slate-200 bg-white ${ocultos.has(r.id) ? 'opacity-50' : ''} ${editando && editando.id === r.id ? 'ring-2 ring-amber-400' : ''}">
+            <div class="flex items-start gap-2">
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-black text-slate-800 truncate">${t.titulo ? esc(t.titulo(r)) : `Setor ${esc(r.bloco)}${r.ciclo ? ` <span class="font-semibold text-slate-400">· Ciclo ${esc(r.ciclo)}</span>` : ''}`}</p>
+                    <p class="text-xs text-slate-500 truncate">${esc(t.subtitulo ? t.subtitulo(r) : [r.cultura, r.variedade].filter(Boolean).join(' · '))}</p>
+                </div>
+                <div class="flex shrink-0 items-center -mr-1 -mt-1">
+                ${t.imagem && t.imagem(r) ? `<button type="button" data-acao="ocultar" data-valor="${esc(r.id)}" aria-pressed="${ocultos.has(r.id)}" aria-label="${ocultos.has(r.id) ? 'Mostrar na imagem' : 'Ocultar da imagem'}" title="${ocultos.has(r.id) ? 'Mostrar na imagem' : 'Ocultar da imagem'}" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"><i data-lucide="${ocultos.has(r.id) ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>` : ''}
+                ${t.imagem && t.imagem(r) ? `<button type="button" data-acao="imagem" data-valor="${esc(r.data_plantio)}" aria-label="Gerar imagem do transplantio" title="Gerar imagem do transplantio" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></button>` : ''}
+                ${planilha
+                    ? `<span title="Veio da planilha: alterações são feitas lá até a migração terminar" class="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-full"><i data-lucide="lock" class="w-3 h-3"></i>Planilha</span>`
+                    : `<button type="button" data-acao="editar" data-valor="${esc(r.id)}" aria-label="Editar lançamento" title="Editar" class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                       <button type="button" data-acao="excluir" data-valor="${esc(r.id)}" aria-label="Excluir lançamento" title="Excluir" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`}
+                </div>
             </div>
-            <div class="flex shrink-0 items-center">
-            ${t.imagem && t.imagem(r) ? `<button type="button" data-acao="ocultar" data-valor="${esc(r.id)}" aria-pressed="${ocultos.has(r.id)}" aria-label="${ocultos.has(r.id) ? 'Mostrar na imagem' : 'Ocultar da imagem'}" title="${ocultos.has(r.id) ? 'Mostrar na imagem' : 'Ocultar da imagem'}" class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg"><i data-lucide="${ocultos.has(r.id) ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>` : ''}
-            ${t.imagem && t.imagem(r) ? `<button type="button" data-acao="imagem" data-valor="${esc(r.data_plantio)}" aria-label="Gerar imagem do transplantio" title="Gerar imagem do transplantio" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></button>` : ''}
-            ${planilha
-                ? `<span title="Veio da planilha: alterações são feitas lá até a migração terminar" class="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-full"><i data-lucide="lock" class="w-3 h-3"></i>Planilha</span>`
-                : `<div class="flex shrink-0">
-                    <button type="button" data-acao="editar" data-valor="${esc(r.id)}" aria-label="Editar lançamento" title="Editar" class="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                    <button type="button" data-acao="excluir" data-valor="${esc(r.id)}" aria-label="Excluir lançamento" title="Excluir" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                  </div>`}
-            </div>
+            ${metricas.length ? `<div class="flex flex-wrap gap-1.5 mt-2">${metricas.map(m => `<span class="px-2 py-1 rounded-lg bg-slate-100 text-xs font-bold text-slate-700">${esc(m)}</span>`).join('')}</div>` : ''}
+            ${prazos && prazos.length ? `<dl class="grid grid-cols-2 gap-x-3 gap-y-2 mt-2.5 pt-2.5 border-t border-slate-100">${prazos.map(([icone, rotulo, valor]) => `<div class="min-w-0">
+                <dt class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-400"><i data-lucide="${icone}" class="w-3 h-3 shrink-0"></i><span class="truncate">${rotulo}</span></dt>
+                <dd class="text-xs font-black text-slate-800 tabular-nums">${esc(valor)}</dd>
+            </div>`).join('')}</dl>`
+                : (blocoInformado && tipoAtual !== 'previsao' ? '<p class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-400">Sem transplantio lançado para este bloco e ciclo.</p>' : '')}
+            ${r._pendente ? `<span class="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full"><i data-lucide="cloud-off" class="w-3 h-3"></i>Aguardando envio</span>` : ''}
+            ${!r._pendente && r.criado_por_nome ? `<p class="mt-1.5 text-[10px] text-slate-400 truncate">por ${esc(r.criado_por_nome)}</p>` : ''}
         </article>`;
+    }
+
+    // ---------- Sugestão de preenchimento pela pesagem conferida ----------
+    const lancTelaVisivel = () => !raiz().classList.contains('hidden');
+
+    async function verificarSugestoes(forcarAbrir) {
+        if (!tiposLiberados().includes('colheita') || !lancTelaVisivel()) return;
+        let conf = null, feitos = [];
+        try {
+            const lido = await API.colheita.syncLer(LOCAL, ['pesagem']);
+            const dados = lido.pesagem && lido.pesagem.data;
+            if (dados && dados.date === hoje() && dados.conferido && Array.isArray(dados.conferido.itens)) conf = dados.conferido;
+            if (conf) feitos = await API.lancamentos.listar(LOCAL, 'colheita', conf.date, conf.date);
+        } catch (e) { return; } // sem conexão: tenta de novo na próxima verificação
+        conferencia = conf;
+        sugestoes = conf ? conf.itens.filter(i => !feitos.some(f => mesmoTexto(limparBloco(f.bloco), limparBloco(i.bloco)) && mesmoTexto(f.ciclo, i.ciclo) && mesmoTexto(f.cultura, i.cultura) && mesmoTexto(f.variedade, i.variedade))) : [];
+        renderAvisoSugestoes();
+        const janela = el('lancSugestaoModal');
+        if (!sugestoes.length) { if (janela) janela.innerHTML = ''; return; }
+        if (janela && janela.firstElementChild) { desenharSugestoes(); return; }
+        if (forcarAbrir === true) { desenharSugestoes(); return; }
+        const dispensada = localStorage.getItem(K_SUGESTAO_DISPENSADA) === conf.hash;
+        const digitando = document.activeElement && document.activeElement.closest && document.activeElement.closest('#lancFormulario');
+        if (!dispensada && !sugestaoPausada && !editando && !digitando) desenharSugestoes();
+    }
+
+    function renderAvisoSugestoes() {
+        const alvo = el('lancSugestaoAviso');
+        if (!alvo) return;
+        if (!sugestoes.length) { alvo.className = 'hidden'; alvo.innerHTML = ''; return; }
+        alvo.className = 'flex items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-3 py-2.5 text-xs font-bold';
+        alvo.innerHTML = `<span class="flex items-center gap-2 min-w-0"><i data-lucide="scale" class="w-4 h-4 shrink-0"></i><span>${sugestoes.length} ${sugestoes.length === 1 ? 'peso conferido aguardando' : 'pesos conferidos aguardando'} lançamento</span></span><button type="button" data-acao="sugestaoVer" class="shrink-0 underline">Ver</button>`;
+        iconesAgora();
+    }
+
+    function desenharSugestoes() {
+        const quando = conferencia.at ? new Date(conferencia.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+        el('lancSugestaoModal').innerHTML = `<div class="fixed inset-0 z-[70] bg-slate-900/50 flex items-end sm:items-center justify-center sm:p-4">
+            <div role="dialog" aria-modal="true" aria-labelledby="lancSugestaoTitulo" class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[88vh] flex flex-col overflow-hidden">
+                <div class="bg-gradient-to-r from-emerald-600 to-emerald-700 px-5 py-4">
+                    <h3 id="lancSugestaoTitulo" class="text-base font-bold text-white flex items-center gap-2"><i data-lucide="scale" class="w-5 h-5"></i>Pesagem conferida</h3>
+                    <p class="text-xs text-white/85 mt-0.5">${conferencia.by ? 'Por ' + esc(conferencia.by) + (quando ? ' às ' + quando : '') + '. ' : ''}Escolha um item para preencher o lançamento e conferir antes de salvar.</p>
+                </div>
+                <div class="p-3 space-y-2 overflow-y-auto">${sugestoes.map((s, i) => `<div class="flex items-center gap-3 p-3 rounded-2xl border border-slate-200">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-black text-slate-800 truncate">Setor ${esc(s.bloco)}${s.ciclo ? ` <span class="font-semibold text-slate-400">· Ciclo ${esc(s.ciclo)}</span>` : ''}</p>
+                        <p class="text-xs text-slate-500 truncate">${esc([s.cultura, s.variedade].filter(Boolean).join(' · '))}</p>
+                        <p class="text-xs font-bold text-slate-700 mt-0.5">${[s.unidades ? n(s.unidades) + ' un' : '', n(s.kg, 2) + ' kg', s.caixas ? n(s.caixas, 1) + ' cx' : ''].filter(Boolean).join(' · ')}</p>
+                    </div>
+                    <button type="button" data-acao="sugestaoPreencher" data-valor="${i}" class="shrink-0 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Preencher</button>
+                </div>`).join('')}</div>
+                <div class="p-3 border-t border-slate-100"><button type="button" data-acao="sugestaoFechar" class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold">Agora não</button></div>
+            </div>
+        </div>`;
+        iconesAgora();
+    }
+
+    function preencherSugestao(s) {
+        el('lancSugestaoModal').innerHTML = '';
+        sugestaoPausada = true;
+        const trocouTipo = tipoAtual !== 'colheita';
+        tipoAtual = 'colheita';
+        editando = null;
+        rascunho = { data_entrega: conferencia.date, bloco: s.bloco, ciclo: s.ciclo, cultura: s.cultura, variedade: s.variedade, caixas: s.caixas, entregue_unidades: s.unidades, entregue_kg: s.kg };
+        if (trocouTipo) { pagina = 1; filtro = periodoPadrao('colheita'); lista = []; renderTudo(); carregar(); }
+        else { renderAbas(); renderForm(); }
+        el('lancForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        aviso('Dados preenchidos. Confira e salve o lançamento.');
     }
 
     function renderStatus(s) {
@@ -521,8 +649,18 @@
         if (comboAberto === 'lanc_' + id) mostrarLista(comboAberto, true);
     }
 
+    // Com o cadastro ativo, cultura e variedade só oferecem os nomes cadastrados.
+    // Na colheita continua mostrando primeiro o que está plantado no bloco escolhido.
+    function opcoesDoCampo(id, sugeridas) {
+        if (!catalogo.pronto || (id !== 'cultura' && id !== 'variedade')) return sugeridas;
+        const cadastradas = id === 'cultura' ? catalogo.culturas() : catalogo.variedades(valorCampo('cultura'));
+        if (tipoAtual !== 'colheita') return cadastradas;
+        const noBloco = sugeridas.map(v => catalogo.oficial(id, v, valorCampo('cultura'))).filter(Boolean);
+        return noBloco.length ? noBloco : cadastradas;
+    }
+
     function atualizarListas() {
-        ['bloco', 'ciclo', 'cultura', 'variedade'].forEach(id => preencherLista(id, [...candidatos(id).map(b => b[id]), ...sugestoesFixas(id)]));
+        ['bloco', 'ciclo', 'cultura', 'variedade'].forEach(id => preencherLista(id, opcoesDoCampo(id, [...candidatos(id).map(b => b[id]), ...sugestoesFixas(id)])));
         const rotuloBloco = el('lanc_bloco_rotulo');
         if (rotuloBloco) rotuloBloco.textContent = 'Setor';
         preencherLista('motivo', opcoes.motivos);
@@ -537,9 +675,6 @@
             const unicos = [...new Set(candidatos(id).map(b => b[id]))];
             if (unicos.length === 1 && unicos[0]) { campo.value = unicos[0]; campo.dataset.auto = '1'; }
         });
-        const plantas = el('lanc_total_plantas_campo');
-        const achados = candidatos();
-        if (plantas && !plantas.value && achados.length === 1 && achados[0].plantas != null) plantas.value = achados[0].plantas;
     }
 
     function aviso(texto) {
@@ -554,6 +689,7 @@
         const alvo = e.target;
         if (alvo.id === 'lancDe' || alvo.id === 'lancAte') {
             filtro[alvo.id === 'lancDe' ? 'de' : 'ate'] = alvo.value;
+            pagina = 1;
             if (filtro.de && filtro.ate) carregar();
             return;
         }
@@ -569,7 +705,29 @@
         const b = e.target.closest('[data-acao]');
         if (!b) return;
         const { acao, valor } = b.dataset;
-        if (acao === 'tipo' && valor !== tipoAtual) {
+        if (acao === 'sugestaoPreencher') {
+            const item = sugestoes[Number(valor)];
+            if (item) preencherSugestao(item);
+        } else if (acao === 'sugestaoFechar') {
+            if (conferencia) localStorage.setItem(K_SUGESTAO_DISPENSADA, conferencia.hash);
+            el('lancSugestaoModal').innerHTML = '';
+        } else if (acao === 'sugestaoVer') {
+            sugestaoPausada = false;
+            verificarSugestoes(true);
+        } else if (acao === 'cadastrarNome') {
+            if (!aCadastrar) return;
+            catalogo.adicionar(aCadastrar.cultura, aCadastrar.variedade).then(() => {
+                aCadastrar = null;
+                el('lancErro').classList.add('hidden');
+                atualizarListas();
+                aviso('Cadastrado. Agora é só salvar o lançamento.');
+            }).catch(err => aviso(err.message));
+        } else if (acao === 'paginaLanc') {
+            pagina = Number(valor) || 1;
+            renderLista();
+            el('lancPainel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else if (acao === 'tipo' && valor !== tipoAtual) {
+            pagina = 1;
             tipoAtual = valor;
             editando = null;
             filtro = periodoPadrao(tipoAtual);
@@ -647,6 +805,21 @@
         const negativo = t.campos.find(c => c.tipo === 'number' && v[c.id] !== null && (!Number.isFinite(v[c.id]) || v[c.id] < 0));
         if (negativo) return { erro: `Valor inválido em ${negativo.rotulo}.`, campo: negativo.id };
         if (t.semFuturo && v[t.data] > hoje()) return { erro: 'A data não pode ser no futuro.', campo: t.data };
+        if (catalogo.pronto) {
+            for (const id of ['cultura', 'variedade']) {
+                const campo = t.campos.find(c => c.id === id);
+                if (!campo || !v[id]) continue;
+                const oficial = catalogo.oficial(id, v[id], id === 'variedade' ? v.cultura : '');
+                if (oficial) { v[id] = oficial; continue; }
+                // Lançamento antigo com nome fora do cadastro continua podendo ser editado
+                if (editando && String(editando[id] || '').trim() === v[id]) continue;
+                return {
+                    erro: `${campo.rotulo} "${v[id]}" não está cadastrada.${ehAdmin ? '' : ' Peça ao administrador para cadastrar.'}`,
+                    campo: id,
+                    cadastrar: { cultura: v.cultura || '', variedade: id === 'variedade' ? v[id] : '' }
+                };
+            }
+        }
         const regra = t.validar(v);
         return regra ? { erro: regra } : null;
     }
@@ -665,14 +838,19 @@
         if (problema) {
             erro.innerText = problema.erro;
             erro.classList.remove('hidden');
+            aCadastrar = problema.cadastrar || null;
+            if (aCadastrar && ehAdmin) erro.insertAdjacentHTML('beforeend', ' <button type="button" data-acao="cadastrarNome" class="underline">Cadastrar agora</button>');
             if (problema.campo) el('lanc_' + problema.campo).focus();
             return;
         }
         if (t.ajustar) t.ajustar(v);
         try {
             const eraEdicao = !!editando;
+            if (!eraEdicao) pagina = 1; // lançamento novo aparece no início
             const salvo = Object.assign({ id: editando ? editando.id : API.novoId() }, v);
             API.lancamentos.salvar(LOCAL, tipoAtual, salvo);
+            sugestaoPausada = false;
+            setTimeout(verificarSugestoes, 500); // abre o próximo item conferido
             editando = null;
             ultimoTransplantio = t.imagem && t.imagem(salvo) ? salvo : null;
             ofertaImagem = ultimoTransplantio;
@@ -852,9 +1030,14 @@
         if (alvo && !lista.length) alvo.innerHTML = `<div class="py-10 flex justify-center"><i data-lucide="loader-circle" class="w-6 h-6 text-slate-300 animate-spin"></i></div>`;
         iconesAgora();
         try {
-            const dados = await API.lancamentos.listar(LOCAL, tipo, filtro.de, filtro.ate);
+            const [dados, transplantios] = await Promise.all([
+                API.lancamentos.listar(LOCAL, tipo, filtro.de, filtro.ate),
+                // Colheita acontece meses depois do plantio: busca uma janela maior que o período da tela
+                tipo === 'previsao' ? [] : API.lancamentos.listar(LOCAL, 'previsao', somarDias(filtro.de, -400), somarDias(filtro.ate, 400)).catch(() => [])
+            ]);
             if (minha !== carga) return;
             lista = dados;
+            plantios = transplantios;
             renderLista();
         } catch (e) {
             if (minha !== carga || !el('lancLista')) return;
@@ -885,5 +1068,8 @@
         renderStatus(API.status());
         carregar();
         carregarOpcoes();
+        catalogo.carregar().then(atualizarListas).catch(() => {});
+        verificarSugestoes();
+        if (!timerSugestoes) timerSugestoes = setInterval(() => { if (document.visibilityState === 'visible') verificarSugestoes(); }, VERIFICAR_SUGESTOES_MS);
     };
 })();

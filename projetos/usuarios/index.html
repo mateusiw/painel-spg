@@ -27,6 +27,14 @@
             content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none;
             background: linear-gradient(90deg, #10b981, #14b8a6 35%, #0ea5e9 70%, #6366f1);
         }
+        /* Barras discretas, sem setas, que terminam antes da curva dos cartões */
+        #painelCorpo::-webkit-scrollbar, #lista::-webkit-scrollbar { width: 8px; }
+        #painelCorpo::-webkit-scrollbar-button, #lista::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+        #painelCorpo::-webkit-scrollbar-track, #lista::-webkit-scrollbar-track { background: transparent; }
+        #painelCorpo::-webkit-scrollbar-thumb, #lista::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #fff; }
+        @supports not selector(::-webkit-scrollbar) { #painelCorpo, #lista { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; } }
+        .sem-barra { scrollbar-width: none; }
+        .sem-barra::-webkit-scrollbar { display: none; }
     </style>
     <script src="../../lista-moderna.js"></script>
     <script src="../../trava-fundo.js"></script>
@@ -39,23 +47,22 @@
             <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight truncate">Cadastro de Usuários</h1>
             <p id="contagem" class="text-[10px] font-semibold text-slate-400 truncate">Quem acessa o quê</p>
         </div>
-        <button type="button" data-acao="novo" class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white shadow-sm shrink-0"><i data-lucide="user-plus" class="w-4 h-4"></i>Novo usuário</button>
+        <button type="button" data-acao="gerenciarLocais" title="Locais e projetos" aria-label="Locais e projetos" class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="settings-2" class="w-4 h-4"></i><span class="hidden sm:inline">Configurar locais</span></button>
+        <button type="button" data-acao="novo" class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0"><i data-lucide="user-plus" class="w-4 h-4"></i><span class="sm:hidden">Novo</span><span class="hidden sm:inline">Novo usuário</span></button>
     </header>
 
-    <main class="max-w-6xl mx-auto p-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-6 lg:items-start">
-        <section aria-label="Lista de usuários" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="flex items-stretch border-b border-slate-200">
-                <div id="abasLocais" class="flex-1 min-w-0 flex gap-1 overflow-x-auto px-3 pt-2" role="group" aria-label="Filtrar por local"></div>
-                <button type="button" data-acao="gerenciarLocais" title="Locais e projetos" aria-label="Locais e projetos" class="shrink-0 flex items-center gap-1.5 px-3 text-xs font-bold text-slate-500 hover:text-slate-800 border-l border-slate-200"><i data-lucide="settings-2" class="w-4 h-4"></i><span class="hidden sm:inline">Configurar</span></button>
-            </div>
-            <div class="p-4 space-y-3 border-b border-slate-100">
-                <div id="filtros" class="flex flex-wrap gap-1.5"></div>
-                <div class="relative">
+    <main class="max-w-[1500px] mx-auto p-4 lg:px-6 grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-[auto_minmax(0,1fr)] gap-3 lg:gap-4 lg:h-[calc(100vh-57px)]">
+        <div id="abasLocais" class="lg:col-span-2 relative flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible sem-barra gap-1 bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1" role="group" aria-label="Filtrar por local"></div>
+
+        <section aria-label="Lista de usuários" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col lg:min-h-0 lg:pb-3">
+            <div class="flex flex-wrap items-center gap-2 p-3 border-b border-slate-200 shrink-0">
+                <div class="relative flex-1 min-w-[200px]">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                    <input type="search" id="busca" placeholder="Buscar por nome ou usuário" aria-label="Buscar usuário" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400 focus:bg-white">
+                    <input type="search" id="busca" placeholder="Buscar usuário" aria-label="Buscar usuário" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400 focus:bg-white">
                 </div>
+                <div id="filtros" role="group" aria-label="Filtrar por situação" class="w-full sm:w-auto flex flex-wrap gap-0.5 bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1"></div>
             </div>
-            <div id="lista" class="p-3 space-y-2"></div>
+            <div id="lista" class="divide-y divide-slate-100 lg:flex-1 lg:min-h-0 lg:overflow-y-auto"></div>
         </section>
 
         <!-- No celular o editor abre por cima da lista; no computador fica ao lado -->

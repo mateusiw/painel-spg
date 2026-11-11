@@ -398,6 +398,8 @@
               { modulo: 'organograma_edicao', nome: 'Editar o organograma', extra: true, requer: 'organograma', recursos: [] }] },
         { id: 'online', nome: 'Usuários online', descricao: 'Quem está usando agora, em qual página e há quanto tempo', icone: 'radio', grupo: 'Administração', gradiente: 'from-emerald-500 to-teal-700',
           cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/online/index.html', soAdmin: true, areas: [] },
+        { id: 'culturas', nome: 'Culturas e variedades', descricao: 'Nomes usados nos lançamentos de cada local e unificação de duplicados', icone: 'sprout', grupo: 'Administração', gradiente: 'from-emerald-500 to-green-700',
+          cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/culturas/index.html', soAdmin: true, areas: [] },
         { id: 'notificacoes', nome: 'Notificações', descricao: 'Quais sites avisam os usuários no celular, horários e recados', icone: 'bell-ring', grupo: 'Administração', gradiente: 'from-amber-500 to-orange-600',
           cor: 'bg-amber-50 text-amber-700', caminho: 'projetos/notificacoes/index.html', soAdmin: true, areas: [] },
         { id: 'log', nome: 'Log de atividades', descricao: 'O que cada pessoa registrou, alterou ou excluiu em todos os projetos', icone: 'scroll-text', grupo: 'Administração', gradiente: 'from-slate-500 to-slate-700',
