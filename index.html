@@ -44,6 +44,20 @@
         body.modo-projeto #colunaConteudo { height: 100dvh; }
         #areaProjeto { padding-bottom: env(safe-area-inset-bottom); }
         #cabecalhoMobile { padding-top: max(.75rem, env(safe-area-inset-top)); }
+        /* Celular: quem rola no Início é só a área do conteúdo, não a página. Com a página
+           inteira rolando, o conteúdo passava por baixo da barra de status (transparente) e o
+           iPhone desenhava uma névoa cinza no topo; e com o menu aberto, arrastar o dedo
+           rolava a página de trás. Assim o cabeçalho verde fica parado lá em cima. */
+        @media (max-width: 1023px) {
+            body:has(#telaMenu:not(.hidden)) { height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+            #telaMenu > div { min-height: 0; height: 100dvh; }
+            #colunaConteudo { height: 100dvh; overflow: hidden; }
+            #areaInicio { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+            /* Menu aberto: a página de trás não rola, e o arrasto dentro do menu não escapa para ela */
+            body.gaveta-aberta #areaInicio { overflow: hidden; }
+            #navLateral { overscroll-behavior: contain; }
+            #fundoGaveta { touch-action: none; }
+        }
         #lateral { transition: width .2s ease, transform .22s ease, visibility .22s; }
         #lateral.aberta { transform: translateX(0) !important; box-shadow: 0 0 60px rgba(0,0,0,.45); }
         @media (max-width: 1023px) { #lateral:not(.aberta) { visibility: hidden; } }
@@ -963,6 +977,7 @@
         function alternarGaveta(abrir) {
             el('lateral').classList.toggle('aberta', abrir);
             el('fundoGaveta').classList.toggle('hidden', !abrir);
+            document.body.classList.toggle('gaveta-aberta', abrir);
         }
 
         // --- FILTRO POR LOCAL NO MENU ---

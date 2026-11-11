@@ -247,6 +247,14 @@ body.auth-locked{background:linear-gradient(135deg,#eef1fb 0%,#eafaf3 100%)}
    continua só como rede de segurança pra telas bem estreitas. */
 .filter-bar-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 8px;grid-column:1/-1;justify-content:flex-end}
 .filter-bar-actions .btn{white-space:nowrap}
+/* Barra de filtros das abas: um cartão com os campos em grade (colunas de
+   pelo menos 190px, pra "Sendo Utilizado" e afins caberem sem cortar) e,
+   embaixo, a linha de ações separada por um traço — opções (checkboxes) à
+   esquerda, botões à direita. Mesma cara da barra do Relatório. */
+.view>.filter-bar{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);padding:14px 16px;margin-bottom:14px}
+.view>.filter-bar>.filter-bar-actions{justify-content:flex-end;gap:8px 10px;margin-top:2px;padding-top:12px;border-top:1px solid var(--line)}
+.view>.filter-bar>.filter-bar-actions>.toolbar-check{margin-right:14px}
+.view>.filter-bar>.filter-bar-actions>.toolbar-check:last-of-type{margin-right:auto}
 .filter-chip{display:flex;align-items:center;gap:8px;padding:8px 12px;margin:-4px 0 12px;border-radius:11px;background:var(--brand-soft);color:var(--brand-dark);font-size:12.5px;font-weight:700}
 .filter-chip[hidden],.filter-chip:empty{display:none}
 :root[data-theme="dark"] .filter-chip{color:var(--brand-light)}
@@ -275,6 +283,10 @@ body.auth-locked{background:linear-gradient(135deg,#eef1fb 0%,#eafaf3 100%)}
 .multiselect-option input:checked~.ms-check{background:linear-gradient(135deg,var(--brand-light),var(--brand-dark));border-color:transparent}
 .multiselect-option input:checked~.ms-check::after{content:'';width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
 .ms-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Passando o mouse (ou navegando pelo teclado), o nome cortado com "…" abre inteiro, quebrando a linha */
+.multiselect-option:hover .ms-text,.multiselect-option:focus-within .ms-text{white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.3}
+.multiselect-option:hover,.multiselect-option:focus-within{align-items:flex-start}
+.multiselect-option:hover .ms-check,.multiselect-option:focus-within .ms-check{margin-top:1px}
 .multiselect-all{border-bottom:1px solid var(--line);margin-bottom:4px;padding-bottom:10px;font-weight:800}
 .ms-only{display:none;border:0;background:var(--brand-soft);color:var(--brand-dark);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;border-radius:999px;padding:3px 9px;cursor:pointer;flex:none}
 :root[data-theme="dark"] .ms-only{color:var(--brand-light)}
@@ -862,6 +874,13 @@ dialog .dialog-foot{position:sticky;bottom:0;z-index:6;background:var(--surface)
 
 /* Compras */
 .toolbar-check{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:650;color:var(--ink-2);white-space:nowrap}
+/* Barra do Relatório: cartão com os filtros em grade e, embaixo, opções à esquerda e ações à direita */
+.rel-barra-filtros{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-sm);padding:14px 16px;margin-bottom:14px}
+.rel-filtros-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.rel-barra-rodape{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.rel-barra-opcoes{display:flex;flex-wrap:wrap;gap:8px 22px}
+.rel-barra-acoes{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
+@media(max-width:640px){.rel-filtros-grade{grid-template-columns:repeat(2,minmax(0,1fr))}.rel-barra-acoes{width:100%}.rel-barra-acoes .btn{flex:1;justify-content:center}}
 .toolbar-check input{accent-color:var(--brand);width:16px;height:16px}
 
 /* Conteúdo de uma aba (na TELA — a impressão do Relatório usa #printArea
@@ -1180,7 +1199,12 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--pa
 @media(max-width:767px){
   .filter-bar>.fb-alternar{display:flex;align-items:center;justify-content:center;gap:6px;height:40px;font-size:12.5px;font-weight:700;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:12px;cursor:pointer}
   body:not(.filtros-abertos) .filter-bar>.filter-field~.filter-field,
-  body:not(.filtros-abertos) .filter-bar>.filter-bar-actions{display:none}
+  body:not(.filtros-abertos) .filter-bar>.filter-bar-actions>:not(.btn-primary),
+  body:not(.filtros-abertos) .filter-bar>.filter-bar-actions:not(:has(>.btn-primary)){display:none}
+  /* Botão principal (Novo produto, Gerar solicitação...) sempre à vista, abaixo do "Mais filtros" */
+  .filter-bar>.fb-alternar{order:1}
+  .filter-bar>.filter-bar-actions{order:2}
+  .filter-bar>.filter-bar-actions>.btn-primary{flex:1;justify-content:center}
 
   .table-scroll{background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible}
   .table-head-wrap{display:none}
@@ -1368,8 +1392,8 @@ body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--pa
       </select></div>
       <div class="filter-field"><label>Destino</label><div id="lancFilterDestinoMount"></div></div>
       <div class="filter-field"><label>Classe</label><div id="lancFilterClasseMount"></div></div>
-      <label class="toolbar-check" title="Ajustes de estoque (feitos pelo botão &quot;Ajustar estoque&quot;, destino &quot;Atualização&quot;) ficam escondidos daqui por padrão pra não parecerem uma saída/entrada real. Marque pra ver e conferir esses ajustes."><input type="checkbox" id="lancMostrarAjustes"> Mostrar ajustes de estoque</label>
       <div class="filter-bar-actions">
+        <label class="toolbar-check" title="Ajustes de estoque (feitos pelo botão &quot;Ajustar estoque&quot;, destino &quot;Atualização&quot;) ficam escondidos daqui por padrão pra não parecerem uma saída/entrada real. Marque pra ver e conferir esses ajustes."><input type="checkbox" id="lancMostrarAjustes"> Mostrar ajustes de estoque</label>
         <button type="button" class="btn" id="lancClearFiltersBtn">Limpar filtros</button>
         <button type="button" class="btn btn-primary" id="addEntryBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Novo lançamento</span></button>
         <button type="button" class="btn" id="bulkSaidaBtn" title="Lança a saída de vários produtos de uma vez, todos pro mesmo destino"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Saída em lote</span></button>
@@ -1957,7 +1981,7 @@ function multiselectHtml(id,allLabel,options,selected){
     :`${selSet.size} selecionados`;
   const showCount=!allChecked&&selSet.size>0&&selSet.size!==options.length;
   const rows=options.map(opt=>`<label class="multiselect-option" data-value="${esc(opt)}">
-      <input type="checkbox"${selSet.has(opt)?' checked':''}><span class="ms-check"></span><span class="ms-text">${esc(opt)}</span>
+      <input type="checkbox"${selSet.has(opt)?' checked':''}><span class="ms-check"></span><span class="ms-text" title="${esc(opt)}">${esc(opt)}</span>
       <button type="button" class="ms-only">Somente</button>
     </label>`).join('');
   /* Só mostra a busca quando a lista é grande o bastante pra rolar ser
@@ -1965,7 +1989,7 @@ function multiselectHtml(id,allLabel,options,selected){
      Destino são listas curtas e fixas, não precisam disso). */
   const searchHtml=options.length>7?`<div class="ms-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" class="ms-search-input" autocomplete="off" placeholder="Buscar..."></div>`:'';
   return `<div class="multiselect${openMultiselects.has(id)?' open':''}" id="${id}">
-    <button type="button" class="multiselect-btn"><span class="multiselect-btn-label">${esc(label)}</span>${showCount?`<span class="multiselect-count">${selSet.size}</span>`:''}<svg class="ms-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button type="button" class="multiselect-btn"><span class="multiselect-btn-label" title="${esc(label)}">${esc(label)}</span>${showCount?`<span class="multiselect-count">${selSet.size}</span>`:''}<svg class="ms-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
     <div class="multiselect-panel">
       ${searchHtml}
       <label class="multiselect-option multiselect-all"><input type="checkbox"${allChecked||selSet.size===options.length?' checked':''}><span class="ms-check"></span><strong>${esc(allLabel)}</strong></label>
@@ -3735,10 +3759,19 @@ function syncSplitTable(bodyTableOrId){
    nome + unidade; a busca responde "quantos computadores tem", ignorando
    acentos e maiúsculas. */
 function semAcento(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim()}
+/* Plural da unidade. Muitos produtos foram cadastrados com a unidade já no
+   plural ("Litros") ou abreviada ("Kg", "L", "Un."), e somar um "s" virava
+   "Litross" / "Kgs" — esses ficam como estão. */
 function plural(unidade,n){
-  const u=String(unidade||'Unidade');
+  const u=String(unidade||'Unidade').trim();
   if(Math.abs(n)===1||u.includes('('))return u;
-  return {'Par':'Pares','Galão':'Galões'}[u]||u+'s';
+  const especiais={'Par':'Pares','Galão':'Galões'};
+  if(especiais[u])return especiais[u];
+  if(/s$/i.test(u))return u;                                    // já está no plural
+  if(u.length<=2||!/[aeiouáéíóúâêôãõ]/i.test(u)||/[.\d²³]/.test(u)||u===u.toUpperCase())return u; // sigla ou abreviação: kg, L, Pct, Un., M3
+  if(/ão$/i.test(u))return u.slice(0,-2)+'ões';
+  if(/[rz]$/i.test(u))return u+'es';
+  return u+'s';
 }
 /* A mesma classe pode estar escrita de jeitos diferentes: mostra a melhor grafia (com acento e maiúscula só na inicial) */
 function melhorGrafia(atual,nova){
@@ -3996,7 +4029,7 @@ function renderLocationTabs(){
   const permitidos=locationsPermitidas();
   document.getElementById('locationTabs').innerHTML=permitidos.map(l=>`<button type="button" class="location-tab${l.id===activeLocation?' active':''}" data-loc="${l.id}">${l.label}</button>`).join('');
   document.getElementById('locationTabs').hidden=activeTab==='geral'; // a Visão Geral soma os locais e tem o próprio seletor
-  document.querySelectorAll('#locationTabs .location-tab').forEach(btn=>btn.onclick=()=>{activeLocation=btn.dataset.loc;garantirListenersLocal(activeLocation);renderAll();atualizarPresenca()});
+  document.querySelectorAll('#locationTabs .location-tab').forEach(btn=>btn.onclick=()=>{if(btn.dataset.loc!==activeLocation)trocarFiltrosDeLocal(activeLocation,btn.dataset.loc);activeLocation=btn.dataset.loc;garantirListenersLocal(activeLocation);renderAll();atualizarPresenca()});
   garantirListenersLocal(activeLocation);
 }
 function abaEstoqueLiberada(tab){return API.recursoLiberado('estoque.'+tab)}
@@ -4987,13 +5020,13 @@ function renderCompras(){
       <div class="filter-field"><label>Produto</label><div id="comprasFilterNomeMount"></div></div>
       <div class="filter-field"><label>Classe</label><div id="comprasFilterClasseMount"></div></div>
       <div class="filter-field"><label>Status</label><div id="comprasFilterStatusMount"></div></div>
-      <div class="filter-bar-actions"><button type="button" class="btn" id="comprasClearFiltersBtn">Limpar filtros</button></div>
-    </div>
-    <div class="table-toolbar">
       <div class="filter-field"><label for="comprasMediaPeriodo" title="Período usado pra calcular a média semanal de uso a partir das saídas lançadas">Média calc.</label><select id="comprasMediaPeriodo">${mediaPeriodoOptionsHtml()}</select></div>
-      <label class="toolbar-check"><input type="checkbox" id="comprasSomenteAlerta"${comprasFilters.somenteAlerta?' checked':''}> Somente itens com alerta (próx. 14 dias)</label>
-      <button type="button" class="btn" id="comprasSelectAllBtn">${allSelected?'Limpar seleção':'Selecionar todos'}</button>
-      <button type="button" class="btn btn-primary" id="comprasGerarBtn"><span>Gerar solicitação de compra</span></button>
+      <div class="filter-bar-actions">
+        <label class="toolbar-check"><input type="checkbox" id="comprasSomenteAlerta"${comprasFilters.somenteAlerta?' checked':''}> Somente itens com alerta (próx. 14 dias)</label>
+        <button type="button" class="btn" id="comprasClearFiltersBtn">Limpar filtros</button>
+        <button type="button" class="btn" id="comprasSelectAllBtn">${allSelected?'Limpar seleção':'Selecionar todos'}</button>
+        <button type="button" class="btn btn-primary" id="comprasGerarBtn"><span>Gerar solicitação de compra</span></button>
+      </div>
     </div>
     <div class="table-scroll">
       <div class="table-head-wrap"><table class="prod-table" id="comprasTableHead">
@@ -5099,9 +5132,9 @@ function renderCustos(){
   document.getElementById('viewCustos').innerHTML=`
     <div class="filter-bar">
       <div class="filter-field"><label for="custosSearch">Buscar</label><input type="search" id="custosSearch" placeholder="Produto, classe..." value="${esc(custosFilters.search)}"></div>
-    </div>
-    <div class="table-toolbar">
+      <div class="filter-bar-actions">
       <button type="button" class="btn btn-primary" id="addProduzidoBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Novo item produzido</span></button>
+      </div>
     </div>
     <div class="kpi-row">
       <div class="kpi"><div class="kpi-icon">🏭</div><div class="kpi-copy"><span>Itens produzidos</span><strong>${fmtNum(list.length)}</strong></div></div>
@@ -5291,6 +5324,52 @@ let relatorioFiltroSecao=null;
    é 'personalizado') — de/até escolhidos à mão, pra ver um intervalo que
    nenhum preset cobre (ex.: 03/08 até 08/08). */
 let relatorioCustomStart=null, relatorioCustomEnd=null;
+
+/* Filtros por local: cada local (Sede, Oásis, Estufa...) tem os próprios
+   filtros e buscas. Antes eram variáveis únicas e o filtro feito na Sede
+   aparecia na Oásis. Ao trocar de local, guarda os do local que está saindo
+   e devolve os do que está entrando — ou o padrão, se ainda não mexeu nele.
+   Ordenação, período do relatório e opções de exibição continuam iguais
+   para todos. */
+const copiarFiltro=v=>v instanceof Set?new Set(v):Array.isArray(v)?v.map(copiarFiltro):(v&&typeof v==='object')?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,copiarFiltro(x)])):v;
+const FILTROS_DO_LOCAL={
+  cadastroFilters:[()=>cadastroFilters,v=>{cadastroFilters=v}],
+  lancFilters:[()=>lancFilters,v=>{lancFilters=v}],
+  lancPage:[()=>lancPage,v=>{lancPage=v}],
+  resumoFilters:[()=>resumoFilters,v=>{resumoFilters=v}],
+  comprasFilters:[()=>comprasFilters,v=>{comprasFilters=v}],
+  custosFilters:[()=>custosFilters,v=>{custosFilters=v}],
+  inventarioFilters:[()=>inventarioFilters,v=>{inventarioFilters=v}],
+  relatorioFiltroStatus:[()=>relatorioFiltroStatus,v=>{relatorioFiltroStatus=v}],
+  relatorioFiltroClasse:[()=>relatorioFiltroClasse,v=>{relatorioFiltroClasse=v}],
+  relatorioFiltroNome:[()=>relatorioFiltroNome,v=>{relatorioFiltroNome=v}],
+};
+let filtrosPadrao=null;          // como os filtros começam (capturado na primeira troca)
+const filtrosPorLocal={};        // local -> filtros guardados
+function trocarFiltrosDeLocal(de,para){
+  if(!filtrosPadrao){
+    filtrosPadrao={};
+    // Padrão = valores iniciais do código; o local atual pode já ter filtros, então usa os de "fábrica"
+    filtrosPadrao.cadastroFilters={search:'',classe:null,status:new Set(['Sendo Utilizado']),nomeExato:'',nome:null,tipoControle:'estoque'};
+    filtrosPadrao.lancFilters={search:'',destino:null,classe:null,produtoId:'',tipo:'',nome:null};
+    filtrosPadrao.lancPage=0;
+    filtrosPadrao.resumoFilters={classe:null,status:new Set(['Sendo Utilizado'])};
+    filtrosPadrao.comprasFilters={somenteAlerta:true,search:'',classe:null,status:new Set(['Sendo Utilizado']),nome:null};
+    filtrosPadrao.custosFilters={search:''};
+    filtrosPadrao.inventarioFilters={search:'',classe:null};
+    filtrosPadrao.relatorioFiltroStatus=new Set(['Sendo Utilizado']);
+    filtrosPadrao.relatorioFiltroClasse=null;
+    filtrosPadrao.relatorioFiltroNome=null;
+  }
+  filtrosPorLocal[de]=Object.fromEntries(Object.entries(FILTROS_DO_LOCAL).map(([k,[ler]])=>[k,copiarFiltro(ler())]));
+  const novos=filtrosPorLocal[para]||filtrosPadrao;
+  Object.entries(FILTROS_DO_LOCAL).forEach(([k,[,gravar]])=>gravar(copiarFiltro(novos[k])));
+  // Campos fixos da página (os demais são redesenhados a partir dos filtros)
+  const campo=(id,v)=>{const c=document.getElementById(id);if(c)c.value=v||''};
+  campo('cadastroSearch',cadastroFilters.search);
+  campo('lancSearch',lancFilters.search);
+  campo('lancFilterTipo',lancFilters.tipo);
+}
 const RELATORIO_SECAO_OPTIONS=['Estoque','Entradas','Saídas'];
 const RELATORIO_PERIODO_OPTIONS=[
   {value:'semana',label:'Esta semana'},
@@ -5394,67 +5473,79 @@ function estoqueEmData(locId,productId,dataRef){
   });
   return{estoque:round2(saldo),valorTotal:round2(valorSaldo)};
 }
-/* Estilo do Relatório (modelo Looker Studio) — string única injetada tanto
-   na página (tela + impressão) quanto na aba "Abrir pra leitura na tela",
-   que tem CSS próprio. Cores fixas de propósito (sai igual no papel). */
+/* Estilo do Relatório — string única injetada tanto na página (tela +
+   impressão) quanto na aba "Abrir pra leitura na tela", que tem CSS próprio. */
 const RELATORIO_CSS=`
-/* Tela: fonte confortável e largura limitada (centralizado) — em monitor
-   largo a tabela esticada a 100% deixava as colunas muito distantes umas
-   das outras. Impressão/medição (bloco mais abaixo) usa tamanhos próprios
-   pra caber na folha A4. */
-.rel-doc{font-family:Roboto,Arial,Helvetica,sans-serif;color:#333;max-width:1100px;margin:0 auto}
-.rel-secao+.rel-secao{margin-top:40px}
-.rel-barra{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 10px}
-.rel-filtros{display:flex;flex-wrap:wrap;gap:8px 36px;font-size:14px;color:#222}
-.rel-filtro{white-space:nowrap}
-.rel-filtro-valor{font-size:12.5px;color:#555}
-.rel-caret{margin-left:12px;font-size:11px;color:#666}
-.rel-logo{width:60px;height:60px;object-fit:contain;flex:none}
-.rel-doc fieldset.rel-resumo{display:flex;justify-content:center;margin:0 0 14px;padding:0 14px 10px;border:1px solid #cfcfcf;border-radius:6px;min-width:0}
-.rel-resumo legend{font-size:17px;font-weight:700;color:#333;padding:0 8px}
-.rel-resumo>div{flex:0 1 220px;text-align:center}
-.rel-resumo span{display:block;font-size:12.5px;color:#666}
-.rel-resumo strong{display:block;font-size:27px;font-weight:400;color:#222;line-height:1.2}
-.rel-doc table.rel-tabela{width:100%;border-collapse:collapse;font-size:14px;margin:0 0 4px}
-.rel-doc .rel-tabela th{background:#000;color:#fff;font-weight:700;font-size:1.05em;text-align:center;padding:7px 10px;border:none;white-space:nowrap}
-.rel-doc .rel-tabela td{text-align:center;padding:6px 10px;border:none;border-bottom:1px solid #d6d6d6;color:#222;white-space:nowrap}
-.rel-doc .rel-tabela td.rel-prod,.rel-doc .rel-tabela td.rel-vazio{white-space:normal}
-.rel-doc .rel-tabela tbody tr:nth-child(odd){background:#c8e6c9}
-.rel-doc .rel-tabela tbody tr:nth-child(even){background:#f8f9fa}
-.rel-doc .rel-tabela .rel-n{text-align:left;width:34px;padding-left:6px}
-.rel-doc .rel-tabela td.rel-vazio{text-align:center;background:#fff;color:#777}
-.rel-nfe{font-size:.85em;color:#666}
-.rel-sub{font-size:15px;font-weight:700;color:#333;margin:18px 0 8px}
-.rel-rodape{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;color:#777;margin:10px 0 0}
-.rel-pag{margin-left:14px;letter-spacing:12px;color:#999}
-/* Tamanhos de impressão — repetidos em #printArea.medindo porque
+/* Relatório moderno: um cabeçalho só (logo, local, período), cartões de resumo
+   por seção e tabela leve (cabeçalho cinza-claro, linhas finas, números à
+   direita). Cores fixas de propósito: sai igual no papel. Tela: largura
+   limitada e fonte confortável; impressão/medição usam tamanhos menores. */
+.rel-doc{font-family:'Segoe UI',Roboto,Arial,Helvetica,sans-serif;color:#0f172a;max-width:1100px;margin:0 auto;font-variant-numeric:tabular-nums}
+.rel-cab{display:flex;align-items:center;gap:14px;padding:0 0 14px;margin:0 0 18px;border-bottom:2px solid #059669}
+.rel-logo{width:48px;height:48px;object-fit:contain;flex:none}
+.rel-cab-texto{flex:1;min-width:0}
+.rel-cab h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em;color:#0f172a}
+.rel-cab p{margin:3px 0 0;font-size:12.5px;color:#64748b}
+.rel-cab p b{color:#334155;font-weight:700}
+.rel-cab-data{text-align:right;font-size:11px;color:#94a3b8;white-space:nowrap}
+.rel-secao+.rel-secao{margin-top:34px}
+.rel-titulo{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 10px}
+.rel-titulo h2{margin:0;font-size:16px;font-weight:800;color:#0f172a}
+.rel-titulo span{font-size:11.5px;color:#94a3b8}
+.rel-resumo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.rel-resumo>div{border:1px solid #e2e8f0;border-radius:10px;padding:9px 12px;background:#f8fafc}
+.rel-resumo span{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b}
+.rel-resumo strong{display:block;margin-top:2px;font-size:19px;font-weight:800;color:#0f172a;line-height:1.2}
+.rel-resumo>div.rel-destaque{background:#ecfdf5;border-color:#a7f3d0}
+.rel-resumo>div.rel-destaque strong{color:#047857}
+.rel-doc table.rel-tabela{width:100%;border-collapse:collapse;font-size:13px;margin:0}
+.rel-doc .rel-tabela th{background:#f1f5f9;color:#475569;font-weight:700;font-size:.78em;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:7px 10px;border:none;border-bottom:1px solid #cbd5e1;white-space:nowrap}
+.rel-doc .rel-tabela td{text-align:left;padding:6px 10px;border:none;border-bottom:1px solid #e2e8f0;color:#1e293b;white-space:nowrap;vertical-align:top}
+.rel-doc .rel-tabela tbody tr:nth-child(even){background:#fafbfc}
+.rel-doc .rel-tabela th.rel-num,.rel-doc .rel-tabela td.rel-num{text-align:right}
+.rel-doc .rel-tabela td.rel-prod{white-space:normal;font-weight:600;color:#0f172a}
+.rel-doc .rel-tabela td.rel-fraco{color:#64748b}
+.rel-doc .rel-tabela td.rel-vazio{white-space:normal;text-align:center;color:#94a3b8;padding:16px}
+.rel-doc .rel-tabela tfoot td{border-top:1.5px solid #94a3b8;border-bottom:none;font-weight:800;color:#0f172a;background:#fff}
+.rel-nfe{display:block;font-size:.82em;font-weight:500;color:#94a3b8}
+.rel-sub{font-size:13.5px;font-weight:700;color:#334155;margin:18px 0 6px}
+.rel-rodape{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:#94a3b8;margin:8px 0 0}
+/* Tamanhos de impressão: repetidos em #printArea.medindo porque
    imprimirRelatorio mede a altura do modo "página única" com o CSS de
    tela; sem isso a altura sai superestimada e sobra papel em branco. */
 #printArea.medindo .rel-doc{padding:0;max-width:none}
-#printArea.medindo .rel-filtros{font-size:11px}
-#printArea.medindo .rel-resumo legend{font-size:14px}
-#printArea.medindo .rel-resumo span{font-size:10px}
-#printArea.medindo .rel-resumo strong{font-size:21px}
-#printArea.medindo .rel-doc table.rel-tabela{font-size:10px}
-#printArea.medindo .rel-doc .rel-tabela th,#printArea.medindo .rel-doc .rel-tabela td{padding:4px 6px}
-#printArea.medindo .rel-rodape{font-size:9.5px}
+#printArea.medindo .rel-cab h1{font-size:15px}
+#printArea.medindo .rel-cab p{font-size:9.5px}
+#printArea.medindo .rel-logo{width:36px;height:36px}
+#printArea.medindo .rel-titulo h2{font-size:12.5px}
+#printArea.medindo .rel-resumo strong{font-size:14px}
+#printArea.medindo .rel-resumo span{font-size:8px}
+#printArea.medindo .rel-doc table.rel-tabela{font-size:9.5px}
+#printArea.medindo .rel-doc .rel-tabela th,#printArea.medindo .rel-doc .rel-tabela td{padding:3.5px 6px}
+#printArea.medindo .rel-rodape{font-size:8.5px}
 @media print{
   html,body{background:#fff!important}
   .rel-doc{max-width:none}
-  .rel-filtros{font-size:11px;gap:6px 32px}
-  .rel-filtro-valor{font-size:9.5px}
-  .rel-caret{font-size:9px}
-  .rel-logo{width:54px;height:54px}
-  .rel-resumo legend{font-size:14px}
-  .rel-resumo span{font-size:10px}
-  .rel-resumo strong{font-size:21px}
-  .rel-sub{font-size:12px}
-  .rel-rodape{font-size:9.5px}
+  .rel-cab{padding-bottom:8px;margin-bottom:12px}
+  .rel-cab h1{font-size:15px}
+  .rel-cab p{font-size:9.5px}
+  .rel-cab-data{font-size:8.5px}
+  .rel-logo{width:36px;height:36px}
+  .rel-titulo{margin-bottom:6px}
+  .rel-titulo h2{font-size:12.5px}
+  .rel-titulo span{font-size:8.5px}
+  .rel-resumo{gap:6px;margin-bottom:8px}
+  .rel-resumo>div{padding:5px 8px;border-radius:6px}
+  .rel-resumo span{font-size:8px}
+  .rel-resumo strong{font-size:14px}
+  .rel-sub{font-size:10.5px}
+  .rel-rodape{font-size:8.5px}
   .rel-secao+.rel-secao{margin-top:0;break-before:page;page-break-before:always}
-  #printArea.pagina-unica .rel-secao+.rel-secao{break-before:auto;page-break-before:auto;margin-top:28px}
-  .rel-doc table.rel-tabela{font-size:10px}
-  .rel-doc .rel-tabela th,.rel-doc .rel-tabela td{padding:4px 6px}
+  #printArea.pagina-unica .rel-secao+.rel-secao{break-before:auto;page-break-before:auto;margin-top:22px}
+  .rel-doc table.rel-tabela{font-size:9.5px}
+  .rel-doc .rel-tabela th,.rel-doc .rel-tabela td{padding:3.5px 6px}
   .rel-doc thead{display:table-header-group}
+  .rel-doc tfoot{display:table-row-group}
   .rel-doc .rel-tabela tr{break-inside:avoid}
 }`;
 document.head.insertAdjacentHTML('beforeend',`<style id="relatorioCss">${RELATORIO_CSS}</style>`);
@@ -5489,29 +5580,29 @@ function buildRelatorioHtml(locId){
   const valoresFechamento=new Map(products.map(p=>[p.id,estoqueEmData(locId,p.id,end)]));
   const valoresDe=p=>valoresFechamento.get(p.id)||{estoque:0,valorTotal:0};
   const valorTotalGeral=products.reduce((s,p)=>s+valoresDe(p).valorTotal,0);
-  /* Visual no estilo do painel do Looker Studio (modelo: PDF "Estoque Sede
-     e Oásis - SPG"): cada seção tem uma barra de filtros com o logo à
-     direita, um quadro de resumo (Produtos · Itens · Valor Total) e a
-     tabela com cabeçalho preto, linhas numeradas e zebrado verde. Estilos
-     em RELATORIO_CSS. Agrupando por nome, a chave é nome+tipo — o mesmo
+  /* Visual moderno (estilos em RELATORIO_CSS): um cabeçalho único no topo
+     com logo, local, período e data de geração; cada seção tem título,
+     três cartões de resumo e uma tabela leve com os números alinhados à
+     direita e uma linha de total. O local não se repete em cada linha (já
+     está no cabeçalho). Agrupando por nome, a chave é nome+tipo — o mesmo
      produto lançado em unidades diferentes (ex.: Unidade/Pacote) vira
-     linha própria, igual no Looker. */
+     linha própria. */
   const localNome='SPG '+locLabel(locId);
   const cmpTxt=(a,b)=>String(a||'').localeCompare(String(b||''),'pt-BR');
   const moneyInt=v=>'R$ '+Math.round(Number(v)||0).toLocaleString('pt-BR');
-  const dataLonga=iso=>new Date(iso+'T00:00:00').toLocaleDateString('pt-BR',{day:'numeric',month:'short',year:'numeric'});
+  const dataCurta=iso=>new Date(iso+'T00:00:00').toLocaleDateString('pt-BR');
   const produtoDe=e=>locState(locId).products[e.produtoId];
-  /* Barra do topo mostra só o período — os chips de Local/Produto/Status/
-     Classe foram removidos a pedido (poluíam o PDF sem acrescentar info). */
-  const chipPeriodo=txt=>`<span class="rel-filtro">${esc(txt)}<span class="rel-caret">▾</span></span>`;
+  const periodoTxt=start===end?dataCurta(start):`${dataCurta(start)} a ${dataCurta(end)}`;
   const geradoEm=fmtStamp(new Date().toISOString());
-  const secaoHtml=({chips,titulo,resumo,head,rows,vazio,extra=''})=>`<section class="rel-secao">
-      <div class="rel-barra"><div class="rel-filtros">${chips}</div><img class="rel-logo" src="${esc(new URL('icon.png',location.href).href)}" alt=""></div>
-      <fieldset class="rel-resumo"><legend>${esc(titulo)}</legend>${resumo.map(([l,v])=>`<div><span>${esc(l)}</span><strong>${v}</strong></div>`).join('')}</fieldset>
-      <table class="rel-tabela"><thead><tr><th class="rel-n"></th>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
-      <tbody>${rows.map((r,i)=>`<tr><td class="rel-n">${i+1}.</td>${r.map((c,j)=>`<td${head[j].startsWith('Produto')?' class="rel-prod"':''}>${c}</td>`).join('')}</tr>`).join('')||`<tr><td class="rel-vazio" colspan="${head.length+1}">${esc(vazio)}</td></tr>`}</tbody></table>
+  /* cols: [{t:'Título', num:true|false, cls:'rel-prod'|'rel-fraco'}] · rows: células (HTML) · total: células da linha de total */
+  const secaoHtml=({titulo,detalhe,resumo,cols,rows,vazio,total,extra=''})=>`<section class="rel-secao">
+      <div class="rel-titulo"><h2>${esc(titulo)}</h2><span>${esc(detalhe)}</span></div>
+      <div class="rel-resumo">${resumo.map(([l,v],i)=>`<div${i===resumo.length-1?' class="rel-destaque"':''}><span>${esc(l)}</span><strong>${v}</strong></div>`).join('')}</div>
+      <table class="rel-tabela"><thead><tr>${cols.map(c=>`<th${c.num?' class="rel-num"':''}>${c.t}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r=>`<tr>${r.map((v,j)=>`<td class="${[cols[j].num?'rel-num':'',cols[j].cls||''].join(' ').trim()}">${v}</td>`).join('')}</tr>`).join('')||`<tr><td class="rel-vazio" colspan="${cols.length}">${esc(vazio)}</td></tr>`}</tbody>
+      ${rows.length&&total?`<tfoot><tr>${total.map((v,j)=>`<td${cols[j].num?' class="rel-num"':''}>${v}</td>`).join('')}</tr></tfoot>`:''}</table>
       ${extra}
-      <div class="rel-rodape"><span>Gerado em ${esc(geradoEm)}${agrupar?' · agrupado por nome':''}</span><span>${rows.length?`1 - ${rows.length} / ${rows.length}`:'0 / 0'}<span class="rel-pag">‹ ›</span></span></div>
+      <div class="rel-rodape"><span>${rows.length} ${rows.length===1?'linha':'linhas'}${agrupar?' · agrupado por nome':''}</span><span>Gerado em ${esc(geradoEm)}</span></div>
     </section>`;
 
   /* Estoque */
@@ -5548,13 +5639,14 @@ function buildRelatorioHtml(locId){
   };
   const movSecao=(lista,campo,titulo,rotuloExtra)=>{
     const linhas=movLinhas(lista,campo);
-    const head=[...(agrupar?[]:['Data']),'Local Estoque','Produto ▲','Tipo','Qtde','Valor Total',...(relatorioMostrarDestino?[rotuloExtra]:[])];
-    const rows=linhas.map(x=>[...(agrupar?[]:[fmtDate(x.data)]),esc(localNome),esc(x.nome),esc(x.tipo),fmtNum(x.qtd),moneyInt(x.valor),...(relatorioMostrarDestino?[esc(x.extra||'—')]:[])]);
+    const cols=[...(agrupar?[]:[{t:'Data',cls:'rel-fraco'}]),{t:'Produto',cls:'rel-prod'},{t:'Tipo',cls:'rel-fraco'},{t:'Qtde',num:true},{t:'Valor total',num:true},...(relatorioMostrarDestino?[{t:rotuloExtra,cls:'rel-fraco'}]:[])];
+    const rows=linhas.map(x=>[...(agrupar?[]:[fmtDate(x.data)]),esc(x.nome),esc(x.tipo),fmtNum(x.qtd),moneyInt(x.valor),...(relatorioMostrarDestino?[esc(x.extra||'—')]:[])]);
+    const valorTotal=lista.reduce((s,e)=>s+(Number(e.valorTotal)||0),0);
     return secaoHtml({
-      chips:chipPeriodo(`${dataLonga(start)} - ${dataLonga(end)}`),
-      titulo,
-      resumo:[['Produtos',fmtNum(new Set(lista.map(e=>{const p=produtoDe(e);return p?p.nome:e.produtoId})).size)],['Itens',fmtNum(round2(lista.reduce((s,e)=>s+(Number(e[campo])||0),0)))],['Valor Total',fmtMoney(lista.reduce((s,e)=>s+(Number(e.valorTotal)||0),0))]],
-      head,rows,vazio:`Nenhuma ${campo==='saida'?'saída':'entrada'} registrada no período.`
+      titulo,detalhe:periodoTxt,
+      resumo:[['Produtos',fmtNum(new Set(lista.map(e=>{const p=produtoDe(e);return p?p.nome:e.produtoId})).size)],['Itens',fmtNum(round2(lista.reduce((s,e)=>s+(Number(e[campo])||0),0)))],['Valor total',fmtMoney(valorTotal)]],
+      cols,rows,vazio:`Nenhuma ${campo==='saida'?'saída':'entrada'} registrada no período.`,
+      total:[...(agrupar?[]:['']),'Total','','',moneyInt(valorTotal),...(relatorioMostrarDestino?['']:[])]
     });
   };
 
@@ -5570,48 +5662,64 @@ function buildRelatorioHtml(locId){
       const insumo=locState(locId).products[item.produtoId];
       const valorInsumo=insumo?Number(insumo.valorUnitario)||0:0;
       const subtotal=round2(valorInsumo*(Number(item.quantidade)||0));
-      return `<tr><td class="rel-n">${i+1}.</td><td class="rel-prod">${esc(insumo?insumo.nome:'(produto removido)')}</td><td>${fmtNum(item.quantidade)}</td><td>${fmtMoney(valorInsumo)}</td><td>${fmtMoney(subtotal)}</td></tr>`;
-    }).join('')||'<tr><td class="rel-vazio" colspan="5">Sem receita cadastrada.</td></tr>';
+      return `<tr><td class="rel-prod">${esc(insumo?insumo.nome:'(produto removido)')}</td><td class="rel-num">${fmtNum(item.quantidade)}</td><td class="rel-num">${fmtMoney(valorInsumo)}</td><td class="rel-num">${fmtMoney(subtotal)}</td></tr>`;
+    }).join('')||'<tr><td class="rel-vazio" colspan="4">Sem receita cadastrada.</td></tr>';
     const custoUnit=custoReceita(locId,receita);
     return `<p class="rel-sub">${esc(p.nome)} — custo por unidade: ${fmtMoney(custoUnit)} · estoque atual: ${fmtNum(p.estoque)} unidade(s) (${fmtMoney(round2(custoUnit*(Number(p.estoque)||0)))})</p>
-      <table class="rel-tabela"><thead><tr><th class="rel-n"></th><th>Insumo</th><th>Qtd./unidade</th><th>Valor unit. insumo</th><th>Subtotal</th></tr></thead><tbody>${linhasReceita}</tbody></table>`;
+      <table class="rel-tabela"><thead><tr><th>Insumo</th><th class="rel-num">Qtd./unidade</th><th class="rel-num">Valor unit. insumo</th><th class="rel-num">Subtotal</th></tr></thead><tbody>${linhasReceita}</tbody></table>`;
   }).join('');
 
   const mostrarEstoque=!relatorioFiltroSecao||relatorioFiltroSecao.has('Estoque');
   const mostrarEntrada=!relatorioFiltroSecao||relatorioFiltroSecao.has('Entradas');
   const mostrarSaida=!relatorioFiltroSecao||relatorioFiltroSecao.has('Saídas');
   const estoqueSecaoHtml=mostrarEstoque?secaoHtml({
-    chips:chipPeriodo(`${dataLonga(start)} - ${dataLonga(end)}`),
-    titulo:'Estoque',
-    resumo:[['Produtos',fmtNum(new Set(linhasEstoque.map(x=>x.nome)).size)],['Itens',fmtNum(round2(totalItensEstoque))],['Valor Total',fmtMoney(valorTotalGeral)]],
-    head:['Local Estoque','Produto ▲','Tipo','Estoque','Valor Total','Uso Semanal Automático'],
-    rows:linhasEstoque.map(x=>[esc(localNome),esc(x.nome)+(x.nfe?` <span class="rel-nfe">NFE ${esc(x.nfe)}</span>`:''),esc(x.tipo),fmtNum(x.estoque),moneyInt(x.valor),fmtNum(round2(x.uso))]),
+    titulo:'Estoque',detalhe:`Saldo em ${dataCurta(end)}`,
+    resumo:[['Produtos',fmtNum(new Set(linhasEstoque.map(x=>x.nome)).size)],['Itens',fmtNum(round2(totalItensEstoque))],['Valor total',fmtMoney(valorTotalGeral)]],
+    cols:[{t:'Produto',cls:'rel-prod'},{t:'Tipo',cls:'rel-fraco'},{t:'Estoque',num:true},{t:'Valor total',num:true},{t:'Uso semanal',num:true}],
+    rows:linhasEstoque.map(x=>[esc(x.nome)+(x.nfe?`<span class="rel-nfe">NFE ${esc(x.nfe)}</span>`:''),esc(x.tipo),fmtNum(x.estoque),moneyInt(x.valor),fmtNum(round2(x.uso))]),
     vazio:'Nenhum produto cadastrado.',
+    total:['Total','','',moneyInt(valorTotalGeral),''],
     extra:produzidos.length?`<p class="rel-sub">Fichas técnicas / custo de produção (${fmtNum(produzidos.length)} produto(s))</p>${producaoHtml}`:''
   }):'';
   const entradaSecaoHtml=mostrarEntrada?movSecao(entradas,'entrada','Entradas',agrupar?'Fornecedor(es)':'Fornecedor'):'';
   const saidaSecaoHtml=mostrarSaida?movSecao(saidas,'saida','Saídas',agrupar?'Destino(s)':'Destino'):'';
   const conteudo=estoqueSecaoHtml+entradaSecaoHtml+saidaSecaoHtml;
-  return `<div class="print-doc rel-doc">${conteudo||'<p class="rel-sub">Nenhum conteúdo selecionado em "Conteúdo do relatório".</p>'}</div>`;
+  const cabecalho=`<header class="rel-cab">
+      <img class="rel-logo" src="${esc(new URL('icon.png',location.href).href)}" alt="">
+      <div class="rel-cab-texto"><h1>Relatório de Estoque</h1><p><b>${esc(localNome)}</b> · Período: ${esc(periodoTxt)}</p></div>
+      <div class="rel-cab-data">Gerado em<br>${esc(geradoEm)}</div>
+    </header>`;
+  return `<div class="print-doc rel-doc">${cabecalho}${conteudo||'<p class="rel-sub">Nenhum conteúdo selecionado em "Conteúdo do relatório".</p>'}</div>`;
 }
 function renderRelatorio(){
   const locId=activeLocation;
   const classeOptions=classesUsed(locId);
   const nomeOptions=nomesProdutoUsados(locId);
+  /* Barra do Relatório em duas linhas: em cima os filtros (grade de colunas
+     iguais; com "Personalizado" entram De/Até), embaixo as opções de exibição
+     à esquerda e as ações à direita. */
   document.getElementById('viewRelatorio').innerHTML=`
-    <div class="table-toolbar">
-      <label class="toolbar-check" title="Junta todas as fichas/lançamentos com o mesmo nome de produto, somando estoque, entradas e saídas."><input type="checkbox" id="relatorioAgruparNome"${relatorioGroupByName?' checked':''}> Agrupar por nome</label>
-      <label class="toolbar-check" title="Mostra ou esconde a coluna de destino (saídas) / fornecedor (entradas) nas tabelas de movimentação."><input type="checkbox" id="relatorioMostrarDestino"${relatorioMostrarDestino?' checked':''}> Mostrar destino/fornecedor</label>
-      <div class="filter-field" style="min-width:170px"><label>Conteúdo do relatório</label><div id="relatorioFilterSecaoMount"></div></div>
-      <div class="filter-field" style="min-width:170px"><label>Produto</label><div id="relatorioFilterNomeMount"></div></div>
-      <div class="filter-field" style="min-width:170px"><label>Classe</label><div id="relatorioFilterClasseMount"></div></div>
-      <div class="filter-field" style="min-width:170px"><label>Status (estoque)</label><div id="relatorioFilterStatusMount"></div></div>
-      <div class="filter-field" style="min-width:170px"><label for="relatorioPeriodo" title="Vale tanto pras tabelas de Entradas/Saídas quanto pro Estoque — que passa a mostrar o saldo reconstruído no dia final do período, em vez do saldo de hoje. Escolha &quot;Personalizado&quot; pra digitar as datas.">Período</label><select id="relatorioPeriodo">${relatorioPeriodoOptionsHtml()}</select></div>
-      ${relatorioPeriodo==='personalizado'?`
-      <div class="filter-field" style="min-width:150px"><label for="relatorioCustomStart">De</label><input type="date" id="relatorioCustomStart" value="${relatorioCustomStart||''}"></div>
-      <div class="filter-field" style="min-width:150px"><label for="relatorioCustomEnd">Até</label><input type="date" id="relatorioCustomEnd" value="${relatorioCustomEnd||''}"></div>`:''}
-      <button type="button" class="btn" id="relatorioAbrirTelaBtn" title="Abre numa aba nova, num tamanho confortável pra ler na tela — sem cortar em folhas A4 nem espremer a fonte."><span>Abrir pra leitura na tela</span></button>
-      <button type="button" class="btn btn-primary" id="relatorioImprimirBtn"><span>Imprimir / Gerar PDF</span></button>
+    <div class="rel-barra-filtros">
+      <div class="rel-filtros-grade">
+        <div class="filter-field"><label for="relatorioPeriodo" title="Vale tanto pras tabelas de Entradas/Saídas quanto pro Estoque — que passa a mostrar o saldo reconstruído no dia final do período, em vez do saldo de hoje. Escolha &quot;Personalizado&quot; pra digitar as datas.">Período</label><select id="relatorioPeriodo">${relatorioPeriodoOptionsHtml()}</select></div>
+        ${relatorioPeriodo==='personalizado'?`
+        <div class="filter-field"><label for="relatorioCustomStart">De</label><input type="date" id="relatorioCustomStart" value="${relatorioCustomStart||''}"></div>
+        <div class="filter-field"><label for="relatorioCustomEnd">Até</label><input type="date" id="relatorioCustomEnd" value="${relatorioCustomEnd||''}"></div>`:''}
+        <div class="filter-field"><label>Conteúdo</label><div id="relatorioFilterSecaoMount"></div></div>
+        <div class="filter-field"><label>Produto</label><div id="relatorioFilterNomeMount"></div></div>
+        <div class="filter-field"><label>Classe</label><div id="relatorioFilterClasseMount"></div></div>
+        <div class="filter-field"><label>Status (estoque)</label><div id="relatorioFilterStatusMount"></div></div>
+      </div>
+      <div class="rel-barra-rodape">
+        <div class="rel-barra-opcoes">
+          <label class="toolbar-check" title="Junta todas as fichas/lançamentos com o mesmo nome de produto, somando estoque, entradas e saídas."><input type="checkbox" id="relatorioAgruparNome"${relatorioGroupByName?' checked':''}> Agrupar por nome</label>
+          <label class="toolbar-check" title="Mostra ou esconde a coluna de destino (saídas) / fornecedor (entradas) nas tabelas de movimentação."><input type="checkbox" id="relatorioMostrarDestino"${relatorioMostrarDestino?' checked':''}> Mostrar destino/fornecedor</label>
+        </div>
+        <div class="rel-barra-acoes">
+          <button type="button" class="btn" id="relatorioAbrirTelaBtn" title="Abre numa aba nova, num tamanho confortável pra ler na tela — sem cortar em folhas A4 nem espremer a fonte."><span>Abrir pra leitura na tela</span></button>
+          <button type="button" class="btn btn-primary" id="relatorioImprimirBtn"><span>Imprimir / Gerar PDF</span></button>
+        </div>
+      </div>
     </div>
     <div class="view-scroll" id="relatorioScrollBox">${buildRelatorioHtml(locId)}</div>`;
   fitViewScrollHeight('relatorioScrollBox');
@@ -7418,6 +7526,115 @@ document.addEventListener('mouseout',e=>{const icon=e.target.closest('.help-icon
 document.addEventListener('focusout',e=>{const icon=e.target.closest('.help-icon');if(icon){icon.style.removeProperty('--tip-shift');icon.classList.remove('tip-below')}});
 
 boot();
+
+/* Buscas recentes: os campos de busca mostravam a lista preta de histórico do
+   próprio navegador (sem como mudar o visual). Ela fica desligada
+   (autocomplete="off") e no lugar abre esta, no mesmo visual das listas do
+   sistema (lista-moderna.js): as últimas buscas de cada campo, filtradas
+   pelo que está sendo digitado, com setas/Enter e um × pra apagar cada uma.
+   Guardadas só neste aparelho. */
+(function iniciarBuscasRecentes(){
+  const CHAVE='estoque_buscas_recentes',MAX=6;
+  let recentes={};try{recentes=JSON.parse(localStorage.getItem(CHAVE))||{}}catch(e){recentes={}}
+  const guardar=()=>{try{localStorage.setItem(CHAVE,JSON.stringify(recentes))}catch(e){}};
+  const RELOGIO='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:#94a3b8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  const estilo=document.createElement('style');
+  estilo.textContent=`.br-menu{min-width:220px;max-height:min(320px,50vh)}
+    .br-menu .lm-op{justify-content:flex-start}
+    .br-menu .lm-op>span{flex:1;min-width:0}
+    .br-tirar{flex:none;width:26px;height:26px;margin:-4px -6px -4px 0;border:0;border-radius:7px;background:none;color:#94a3b8;font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .br-tirar:hover{background:#fee2e2;color:#dc2626}`;
+  document.head.appendChild(estilo);
+  const menu=document.createElement('div');
+  menu.className='lm-menu br-menu';menu.setAttribute('role','listbox');menu.setAttribute('aria-label','Buscas recentes');menu.hidden=true;
+  document.body.appendChild(menu);
+  let campo=null,foco=-1;
+  const idDe=inp=>inp.id||inp.getAttribute('aria-label')||'busca';
+  const ehBusca=t=>t instanceof HTMLInputElement&&t.type==='search'&&!t.hasAttribute('data-nativo');
+  function lembrar(inp){
+    const v=String(inp&&inp.value||'').trim();if(v.length<2)return;
+    const k=idDe(inp);
+    recentes[k]=[v,...(recentes[k]||[]).filter(x=>normalizeTexto(x)!==normalizeTexto(v))].slice(0,MAX);
+    guardar();
+  }
+  function fechar(){menu.hidden=true;foco=-1}
+  function posicionar(){
+    if(!campo||!campo.isConnected){fechar();return}
+    const r=campo.getBoundingClientRect();
+    menu.style.left=Math.max(8,Math.min(r.left,innerWidth-Math.max(r.width,220)-8))+'px';
+    menu.style.top=(r.bottom+6)+'px';
+    menu.style.width=Math.max(r.width,220)+'px';
+  }
+  function abrir(){
+    if(!campo)return;
+    const q=normalizeTexto(campo.value);
+    const lista=(recentes[idDe(campo)]||[]).filter(x=>!q||(normalizeTexto(x).includes(q)&&normalizeTexto(x)!==q));
+    if(!lista.length){fechar();return}
+    foco=-1;
+    menu.innerHTML=`<div class="lm-grupo">Buscas recentes</div><div class="lm-lista">${lista.map(x=>`<div class="lm-op" role="option" data-valor="${esc(x)}">${RELOGIO}<span>${esc(x)}</span><button type="button" class="br-tirar" data-tirar="${esc(x)}" title="Apagar desta lista" aria-label="Apagar ${esc(x)} das buscas recentes">×</button></div>`).join('')}</div>`;
+    posicionar();menu.hidden=false;
+  }
+  function escolher(v){
+    if(!campo)return;
+    campo.value=v;
+    campo.dispatchEvent(new Event('input',{bubbles:true}));
+    lembrar(campo);fechar();
+  }
+  function marcar(i){
+    const ops=[...menu.querySelectorAll('.lm-op')];if(!ops.length)return;
+    foco=(i+ops.length)%ops.length;
+    ops.forEach((o,j)=>o.classList.toggle('lm-foco',j===foco));
+    ops[foco].scrollIntoView({block:'nearest'});
+  }
+  document.addEventListener('focusin',e=>{
+    if(!ehBusca(e.target))return;
+    e.target.setAttribute('autocomplete','off');
+    campo=e.target;abrir();
+  });
+  document.addEventListener('input',e=>{
+    if(e.target!==campo||!ehBusca(e.target))return;
+    /* Compras, Custos e Inventário redesenham a aba a cada tecla e trocam o
+       campo por um novo: devolve o foco e o cursor pra ele, senão a busca
+       perdia o foco depois de cada letra. */
+    if(!e.target.isConnected&&e.target.id){
+      const novo=document.getElementById(e.target.id);
+      if(novo&&novo!==e.target){
+        const pos=e.target.selectionStart;
+        campo=novo;
+        novo.setAttribute('autocomplete','off');
+        novo.focus({preventScroll:true});
+        try{novo.setSelectionRange(pos,pos)}catch(err){}
+      }
+    }
+    abrir();
+  });
+  document.addEventListener('focusout',e=>{
+    // Campo tirado da página porque a aba redesenhou (não foi a pessoa saindo dele): não guarda o pedaço digitado
+    if(e.target!==campo||!e.target.isConnected)return;
+    lembrar(campo);
+    setTimeout(()=>{if(document.activeElement!==campo)fechar()},120);
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.target!==campo||!ehBusca(campo))return;
+    if(e.key==='Enter'){if(!menu.hidden&&foco>=0){e.preventDefault();escolher(menu.querySelectorAll('.lm-op')[foco].dataset.valor)}else{lembrar(campo);fechar()}return}
+    if(menu.hidden)return;
+    if(e.key==='ArrowDown'){e.preventDefault();marcar(foco+1)}
+    else if(e.key==='ArrowUp'){e.preventDefault();marcar(foco-1)}
+    else if(e.key==='Escape'){fechar()}
+  });
+  // mousedown: escolhe antes do campo perder o foco
+  menu.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    const tirar=e.target.closest('[data-tirar]');
+    if(tirar){
+      const k=idDe(campo);
+      recentes[k]=(recentes[k]||[]).filter(x=>x!==tirar.dataset.tirar);guardar();abrir();return;
+    }
+    const op=e.target.closest('.lm-op');if(op)escolher(op.dataset.valor);
+  });
+  addEventListener('resize',()=>{if(!menu.hidden)posicionar()});
+  addEventListener('scroll',()=>{if(!menu.hidden)posicionar()},true);
+})();
 
 /* Como o script é type="module", funções declaradas aqui dentro não ficam
    visíveis pra atributos HTML inline (oninput="..." etc) — só pro próprio
