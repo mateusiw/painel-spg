@@ -137,7 +137,7 @@
     async function carregarOpcoes() {
         const [sites, tipos, prefs] = await Promise.all([
             sb.from('notif_sites').select('projeto').eq('ativo', true),
-            sb.from('notif_tipos').select('id,projeto,nome,descricao,publico,horario,ativo,ordem').eq('ativo', true).order('ordem'),
+            sb.from('notif_tipos').select('*').eq('ativo', true).order('ordem'),
             sb.from('notif_preferencias').select('tipo,ativo'),
         ]);
         if (sites.error || tipos.error) throw new Error((sites.error || tipos.error).message);
@@ -145,7 +145,7 @@
         const meus = new Map(API.projetosDoUsuario().filter(p => !p.soAdmin).map(p => [p.id, p]));
         const desligadas = new Set((prefs.data || []).filter(p => !p.ativo).map(p => p.tipo));
         const automaticas = tipos.data
-            .filter(t => ativos.has(t.projeto) && (t.publico === 'todos' || meus.has(t.projeto)))
+            .filter(t => ativos.has(t.projeto) && (t.publico === 'pessoas' ? (t.pessoas || []).includes(API.usuarioAtual().id) : t.publico === 'todos' || meus.has(t.projeto)))
             .map(t => ({ id: t.id, nome: t.nome, nota: `${t.descricao} Às ${t.horario}.` }));
         const avisos = [...meus.values()].filter(p => ativos.has(p.id))
             .map(p => ({ id: `aviso:${p.id}`, nome: `Avisos de ${p.nome}`, nota: 'Recados enviados pela administração.' }));
