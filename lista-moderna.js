@@ -39,6 +39,7 @@
 
     let aberto = null;   // { campo, tipo: 'select' | 'lista', menu, busca, lista, foco }
     let toque = null;
+    let ultimoToque = 0;   // hora do último toque na tela (celular)
     let digitado = '';
     let timerDigitado = null;
 
@@ -148,7 +149,10 @@
         aberto = null;
         menu.remove();
         campo.setAttribute('aria-expanded', 'false');
-        if (voltarFoco) campo.focus({ preventScroll: true });
+        // No celular (toque), não devolve o foco ao <select>: no iPhone, focar a lista abre a roleta
+        // do próprio aparelho por cima (ela aparecia logo depois de escolher a opção aqui).
+        const veioDeToque = Date.now() - ultimoToque < 1500;
+        if (voltarFoco && !(campo.tagName === 'SELECT' && veioDeToque)) campo.focus({ preventScroll: true });
     }
 
     function escolher(botao) {
@@ -209,6 +213,7 @@
 
     // Celular: o toque abre esta lista (sem a roleta do aparelho); arrastar a tela não abre
     document.addEventListener('touchstart', e => {
+        ultimoToque = Date.now();
         const s = selectDe(e.target);
         toque = s ? { s, x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
     }, { capture: true, passive: true });

@@ -588,8 +588,35 @@
 
         console.log("Aplicação 'Registro de Descarte SPG' inicializada.");
 
-        let discardData = JSON.parse(localStorage.getItem('spg_discardData_v2')) || [];
+        // Lista do relatório em andamento (com as fotos). Fica no IndexedDB do aparelho, que tem espaço de sobra:
+        // o localStorage é pequeno (~5 MB) e é dividido com todas as telas do sistema, e as fotos o enchiam ("Memória Cheia").
+        // O localStorage guarda só uma cópia leve, sem fotos, para abrir a lista na hora.
+        let discardData = (() => { try { return JSON.parse(localStorage.getItem('spg_discardData_v2')) || []; } catch (e) { return []; } })();
         let editingIndex = -1;
+        let rascunhoMexido = false;
+        function rascunhoIdb(modo, acao) {
+            return new Promise((ok, erro) => {
+                if (typeof indexedDB === 'undefined') return erro(new Error('Sem IndexedDB'));
+                const r = indexedDB.open('spg-descarte-rascunho', 1);
+                r.onupgradeneeded = () => r.result.createObjectStore('dados');
+                r.onerror = () => erro(r.error);
+                r.onsuccess = () => {
+                    const db = r.result, tx = db.transaction('dados', modo);
+                    let valor; const q = acao(tx.objectStore('dados'));
+                    if (q) q.onsuccess = () => { valor = q.result; };
+                    tx.oncomplete = () => { db.close(); ok(valor); };
+                    tx.onerror = tx.onabort = () => { db.close(); erro(tx.error); };
+                };
+            });
+        }
+        // Ao abrir: a lista completa (com fotos) vem do IndexedDB
+        rascunhoIdb('readonly', s => s.get('lista')).then(lista => {
+            if (rascunhoMexido) return;
+            // Primeira vez nesta versão: a lista com fotos ainda está no localStorage — passa para o IndexedDB e libera o espaço
+            if (!Array.isArray(lista)) { if (discardData.some(it => it.photos && it.photos.length)) saveData(); return; }
+            discardData = lista;
+            if (typeof renderReport === 'function') { renderReport(); renderList(); }
+        }).catch(() => { /* fica a cópia do localStorage */ });
         let clearConfirmTimer;
         let currentPhotos = [];
         let isSending = false;
@@ -1424,9 +1451,16 @@
 
         function removePhoto(index) { currentPhotos.splice(index, 1); renderPhotoPreviews(); }
 
-        function saveData() { 
-            try { localStorage.setItem('spg_discardData_v2', JSON.stringify(discardData)); } 
-            catch (e) { if (e.name === 'QuotaExceededError') { showMessageModal('Memória Cheia', 'Não é possível salvar mais fotos localmente.', 'error'); } }
+        function saveData() {
+            rascunhoMexido = true;
+            const semFotos = discardData.map(it => Object.assign({}, it, { photos: [] }));
+            rascunhoIdb('readwrite', s => s.put(discardData, 'lista')).catch(e => {
+                // Sem IndexedDB: tenta guardar a lista completa no localStorage (como antes)
+                try { localStorage.setItem('spg_discardData_v2', JSON.stringify(discardData)); return; } catch (err) { }
+                console.warn('Descarte: não foi possível guardar as fotos no aparelho; elas ficam só enquanto a página estiver aberta.', e);
+            });
+            // Cópia leve, sem fotos (nunca enche a memória); com IndexedDB, as fotos ficam lá
+            try { localStorage.setItem('spg_discardData_v2', JSON.stringify(semFotos)); } catch (e) { }
         }
 
         function addItem(e) {
