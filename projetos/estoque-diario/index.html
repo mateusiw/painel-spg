@@ -466,7 +466,9 @@
     @media(max-width:620px){.culture-split-grid{grid-template-columns:1fr}}
     .ra-grid{display:flex;flex-direction:column;gap:16px;margin-top:16px;min-width:0}
     .ra-col{display:flex;flex-direction:column;gap:16px;min-width:0}
-    .ra-table-scroll{overflow-x:auto;max-width:100%;border-radius:14px}
+    /* Mesma moldura das tabelas das outras abas (.stock-scroll) */
+    .ra-table-scroll{overflow-x:auto;max-width:100%;border-radius:20px;background:var(--surface);border:1px solid var(--line);
+      box-shadow:var(--shadow-md);scrollbar-color:var(--brand-soft-strong) transparent}
     .ra-empty-notice{display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 16px;border:1.5px dashed var(--line-strong);border-radius:16px;background:var(--surface);text-align:center}
     .ra-empty-notice[hidden]{display:none}
     .ra-empty-notice strong{font-size:15px;color:var(--ink)}
@@ -891,6 +893,19 @@
     #manageDialog .list-col-head label{padding-bottom:0;margin-bottom:0;border-bottom:0}
     #manageDialog .list-col+.list-col{border-left:1px solid var(--line);padding-left:28px}
     #manageDialog .list-manager{max-height:460px}
+    /* Parceiros × culturas: a coluna de parceiros fica mais larga, com um botão por cultura */
+    #manageDialog .dialog-body{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr) minmax(0,1fr)}
+    .partner-search{width:100%;min-height:42px;padding:0 12px;border:2px solid var(--line);border-radius:12px;background:var(--surface-2);font-size:14px;outline:none;flex:none}
+    .partner-search:focus{border-color:var(--brand);background:#fff}
+    .pc-item{align-items:flex-start}
+    .pc-body{min-width:0;flex:1}
+    .pc-body>strong,.pc-body>span{display:block}
+    .pc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .pc-chip{min-height:34px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line-strong);background:#fff;color:var(--muted);
+      font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+    .pc-chip:hover{border-color:var(--c)}
+    .pc-chip.on{background:var(--c);border-color:var(--c);color:#fff}
+    .pc-chip:active{transform:scale(.96)}
     @media(max-width:960px){
       #manageDialog .dialog-body{grid-template-columns:minmax(0,1fr)}
       #manageDialog .list-col+.list-col{margin-top:20px;padding-top:20px;border-top:1px solid var(--line);border-left:0;padding-left:0}
@@ -1311,7 +1326,7 @@
   </dialog>
 
   <dialog id="manageDialog">
-    <div class="dialog-head"><div><h3>Gerenciar cadastros</h3><p>Mostra tudo de todas as culturas, agrupado por cor. Use o lápis para renomear, o olho para ocultar/mostrar sem perder os dados, ou remova em definitivo.</p></div><button class="dialog-close" onclick="backOrCloseDialog('manageDialog')" aria-label="Fechar">×</button></div>
+    <div class="dialog-head"><div><h3>Gerenciar cadastros</h3><p>Em cada parceiro, toque nas culturas que ele entrega (marcadas ficam coloridas). Tirar uma cultura que já tem valores lançados só esconde a linha: os valores voltam se marcar de novo. Use o lápis para renomear e a lixeira para remover.</p></div><button class="dialog-close" onclick="backOrCloseDialog('manageDialog')" aria-label="Fechar">×</button></div>
     <div class="dialog-body"><div class="field list-col"><div class="list-col-head"><label id="partnerListLabel">Parceiros</label><button type="button" class="mini-add" id="addPartnerFromManage" title="Adicionar parceiro" aria-label="Adicionar parceiro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div><div class="list-manager" id="partnerList"></div></div><div class="field list-col"><label>Clientes (separação)</label><div class="list-manager" id="clientList"></div></div><div class="field list-col"><label id="dateListLabel">Datas</label><div class="list-manager" id="dateList"></div></div></div>
     <div class="dialog-foot"><button class="btn btn-primary" onclick="backOrCloseDialog('manageDialog')">Concluir</button></div>
   </dialog>
@@ -1429,6 +1444,7 @@
       <div class="sys-section" id="sysDataSection">Dados</div>
       <div class="sys-grid" id="sysDataGrid">
         <button type="button" class="sys-item" id="sysSettings"><span class="sys-ico cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h4M12 17h8"/><circle cx="15" cy="7" r="2.1"/><circle cx="8" cy="17" r="2.1"/></svg></span><span class="sys-txt"><strong>Configurar Supabase</strong><span>URL do projeto e chave anon usadas na sincronização.</span></span></button>
+        <button type="button" class="sys-item" id="sysRecover"><span class="sys-ico cloud"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg></span><span class="sys-txt"><strong>Recuperar dados do app antigo</strong><span>Usa a cópia guardada neste navegador ou um arquivo de backup (.json).</span></span></button>
         <button type="button" class="sys-item danger" id="sysClear"><span class="sys-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/><path d="M6 7l1 12.5A2 2 0 0 0 9 21h6a2 2 0 0 0 2-1.5L18 7"/><path d="M10 11v6M14 11v6"/></svg></span><span class="sys-txt"><strong>Limpar dados</strong><span id="sysClearDesc">Zera os valores lançados na cultura selecionada.</span></span></button>
       </div>
     </div>
@@ -1916,8 +1932,19 @@
       next.days.sort((a,b)=>a.iso.localeCompare(b.iso));
       return next;
     }
+    // Cópia do estoque no aparelho (para abrir sem internet). É só um apoio: o que vale é o banco.
+    // Com o armazenamento do navegador cheio, segue sem a cópia local, sem atrapalhar o salvamento no banco.
+    // Não apaga nada de outros apps (a cópia do app antigo, spg_estoque_diario_v2, pode servir para recuperar dados).
+    let avisouCopiaLocal=false;
+    function guardarCopiaLocal(){
+      const json=JSON.stringify(state);
+      try{localStorage.setItem(STORAGE_KEY,json);return true}catch(e){}
+      try{localStorage.removeItem(STORAGE_KEY)}catch(e){}
+      if(!avisouCopiaLocal){avisouCopiaLocal=true;console.warn('Estoque diário: armazenamento do navegador cheio; seguindo sem a cópia local.')}
+      return false;
+    }
     function saveState(cloud=true){
-      state.updatedAt=new Date().toISOString();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+      state.updatedAt=new Date().toISOString();guardarCopiaLocal();
       const el=document.getElementById('saveState');el.textContent='Salvo agora';clearTimeout(saveState.timer);saveState.timer=setTimeout(()=>el.textContent='Salvo automaticamente',1200);
       updateHeaderStamp();
       if(cloud&&hasBackend()&&cloudLoaded){clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>{cloudTimer=null;syncCloud(true)},1800)}
@@ -3615,13 +3642,74 @@
       document.getElementById('dateListLabel').textContent='Datas';
       const partnerGroups=CULTURES.map(c=>({culture:c,items:state.partners.filter(p=>(p.produce||'brocolis')===c.id)})).filter(g=>g.items.length);
       const dateGroups=CULTURES.map(c=>({culture:c,items:state.days.filter(d=>(d.produce||'brocolis')===c.id)})).filter(g=>g.items.length);
-      document.getElementById('partnerList').innerHTML=partnerGroups.length?partnerGroups.map(g=>groupHeaderHtml(g.culture)+g.items.map(p=>{const active=isActive(p);return `<div class="list-item${active?'':' inactive'}"><div class="list-item-avatar">${esc(initials(p.name))}</div><div><strong>${esc(p.name)}</strong><span>${active?'Parceiro ativo':'Oculto do painel'}</span></div><div class="list-item-actions"><button class="mini-edit" data-rename-partner="${p.id}" title="Renomear" aria-label="Renomear ${esc(p.name)}">${ICON_EDIT}</button><button class="mini-toggle" data-toggle-partner="${p.id}" title="${toggleTitle(active)}" aria-label="${toggleTitle(active)} ${esc(p.name)}">${toggleIcon(active)}</button><button class="mini-remove" data-remove-partner="${p.id}" title="Remover" aria-label="Remover ${esc(p.name)}">${ICON_TRASH}</button></div></div>`}).join('')).join(''):'<span class="field-help">Nenhum parceiro cadastrado.</span>';
+      renderPartnerCultureList();
       document.getElementById('clientList').innerHTML=state.clients.length?state.clients.map(c=>{const active=isActive(c);const removeBtn=isMaster()?`<button class="mini-remove" data-remove-client="${c.id}" title="Remover" aria-label="Remover ${esc(c.name)}">${ICON_TRASH}</button>`:'';return `<div class="list-item${active?'':' inactive'}"><div class="list-item-avatar client">${clientAvatarHtml(c)}</div><div><strong>${esc(c.name)}</strong><span>${active?'Cliente ativo':'Oculto do painel'}</span></div><div class="list-item-actions"><button class="mini-edit" data-rename-client="${c.id}" title="Renomear" aria-label="Renomear ${esc(c.name)}">${ICON_EDIT}</button><button class="mini-toggle" data-toggle-client="${c.id}" title="${toggleTitle(active)}" aria-label="${toggleTitle(active)} ${esc(c.name)}">${toggleIcon(active)}</button>${removeBtn}</div></div>`}).join(''):'<span class="field-help">Nenhum cliente cadastrado.</span>';
       document.getElementById('dateList').innerHTML=dateGroups.length?dateGroups.map(g=>groupHeaderHtml(g.culture)+g.items.map(d=>{const active=isActive(d);return `<div class="list-item${active?'':' inactive'}"><div><strong>${formatDate(d.iso)}</strong><span>${active?weekDay(d.iso):'Oculta do painel'}</span></div><div class="list-item-actions"><button class="mini-toggle" data-toggle-date="${d.id}" title="${toggleTitle(active)}" aria-label="${toggleTitle(active)} ${formatDate(d.iso)}">${toggleIcon(active)}</button><button class="mini-remove" data-remove-date="${d.id}" title="Remover" aria-label="Remover ${formatDate(d.iso)}">${ICON_TRASH}</button></div></div>`}).join('')).join(''):'<span class="field-help">Nenhuma data cadastrada.</span>';
       document.querySelectorAll('[data-remove-partner]').forEach(btn=>btn.onclick=()=>removePartner(btn.dataset.removePartner));document.querySelectorAll('[data-remove-client]').forEach(btn=>btn.onclick=()=>removeClient(btn.dataset.removeClient));document.querySelectorAll('[data-remove-date]').forEach(btn=>btn.onclick=()=>removeDate(btn.dataset.removeDate));
       document.querySelectorAll('[data-toggle-partner]').forEach(btn=>btn.onclick=()=>togglePartner(btn.dataset.togglePartner));document.querySelectorAll('[data-toggle-client]').forEach(btn=>btn.onclick=()=>toggleClient(btn.dataset.toggleClient));document.querySelectorAll('[data-toggle-date]').forEach(btn=>btn.onclick=()=>toggleDate(btn.dataset.toggleDate));
       document.querySelectorAll('[data-rename-partner]').forEach(btn=>btn.onclick=()=>openRenameDialog('partner',btn.dataset.renamePartner));document.querySelectorAll('[data-rename-client]').forEach(btn=>btn.onclick=()=>openRenameDialog('client',btn.dataset.renameClient));
       wireLogoPreview(document.getElementById('clientList'));
+    }
+    // ── Parceiros × culturas ─────────────────────────────────────────
+    // Cada parceiro aparece UMA vez, com um botão por cultura: marcado = ele entrega aquela cultura
+    // (tem linha na tabela dela). Por dentro continua um registro por cultura (state.partners),
+    // então os lançamentos e a mesclagem entre aparelhos não mudam.
+    let partnerSearch='';
+    const partnerKey=name=>String(name||'').trim().toLowerCase();
+    function partnerRecordsByName(){
+      const map=new Map();
+      state.partners.forEach(p=>{const k=partnerKey(p.name);if(!map.has(k))map.set(k,{name:p.name,records:[]});map.get(k).records.push(p)});
+      return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+    }
+    const partnerHasData=id=>Object.keys(state.cells).some(k=>k.startsWith(id+'|')&&num(state.cells[k]))||Object.keys(state.processar).some(k=>k.startsWith(id+'|')&&num(state.processar[k]));
+    function renderPartnerCultureList(){
+      const box=document.getElementById('partnerList');if(!box)return;
+      const termo=partnerKey(partnerSearch);
+      const lista=partnerRecordsByName().filter(g=>!termo||partnerKey(g.name).includes(termo));
+      const busca=`<input type="search" id="partnerSearchInput" class="partner-search" placeholder="Buscar parceiro…" value="${esc(partnerSearch)}" autocomplete="off" aria-label="Buscar parceiro">`;
+      const linhas=lista.map(g=>{
+        const ativas=CULTURES.filter(c=>g.records.some(p=>(p.produce||'brocolis')===c.id&&isActive(p)));
+        const chips=CULTURES.map(c=>{
+          const rec=g.records.find(p=>(p.produce||'brocolis')===c.id);
+          const on=!!rec&&isActive(rec);
+          return `<button type="button" class="pc-chip${on?' on':''}" style="--c:${c.color}" data-pc-name="${esc(g.name)}" data-pc-culture="${c.id}" aria-pressed="${on}" title="${on?'Entrega':'Não entrega'} ${esc(c.label)} — toque para ${on?'tirar':'marcar'}">${on?'✓ ':''}${esc(c.label)}</button>`;
+        }).join('');
+        const first=g.records[0];
+        return `<div class="list-item pc-item${ativas.length?'':' inactive'}"><div class="list-item-avatar">${esc(initials(g.name))}</div>
+          <div class="pc-body"><strong>${esc(g.name)}</strong><span>${ativas.length?'Entrega: '+ativas.map(c=>esc(c.label)).join(', '):'Não aparece em nenhuma cultura'}</span><div class="pc-chips">${chips}</div></div>
+          <div class="list-item-actions"><button class="mini-edit" data-rename-partner="${first.id}" title="Renomear" aria-label="Renomear ${esc(g.name)}">${ICON_EDIT}</button><button class="mini-remove" data-remove-partner-all="${esc(g.name)}" title="Remover de todas as culturas" aria-label="Remover ${esc(g.name)}">${ICON_TRASH}</button></div></div>`;
+      }).join('');
+      box.innerHTML=busca+(linhas||`<span class="field-help">${state.partners.length?'Nenhum parceiro encontrado.':'Nenhum parceiro cadastrado.'}</span>`);
+      const input=document.getElementById('partnerSearchInput');
+      input.oninput=()=>{partnerSearch=input.value;const pos=input.selectionStart;renderPartnerCultureList();const el=document.getElementById('partnerSearchInput');el.focus();try{el.setSelectionRange(pos,pos)}catch(e){}};
+      box.querySelectorAll('[data-pc-culture]').forEach(btn=>btn.onclick=()=>togglePartnerCulture(btn.dataset.pcName,btn.dataset.pcCulture));
+      box.querySelectorAll('[data-rename-partner]').forEach(btn=>btn.onclick=()=>openRenameDialog('partner',btn.dataset.renamePartner));
+      box.querySelectorAll('[data-remove-partner-all]').forEach(btn=>btn.onclick=()=>removePartnerAll(btn.dataset.removePartnerAll));
+    }
+    // Marca: reativa a linha (se já existiu) ou cria. Desmarca: sem lançamentos, apaga a linha;
+    // com lançamentos, só oculta (os valores ficam guardados e voltam se marcar de novo).
+    function togglePartnerCulture(name,culture){
+      const recs=state.partners.filter(p=>partnerKey(p.name)===partnerKey(name));
+      const rec=recs.find(p=>(p.produce||'brocolis')===culture);
+      const label=produceLabel(culture),nome=(recs[0]&&recs[0].name)||name.toUpperCase();
+      if(rec&&isActive(rec)){
+        if(partnerHasData(rec.id)){rec.active=false;toast(`${nome} saiu de ${label}. Os valores lançados ficam guardados e voltam se marcar de novo.`)}
+        else{state.partners=state.partners.filter(p=>p.id!==rec.id);toast(`${nome} saiu de ${label}.`)}
+        addLog(`tirou o parceiro ${nome} de ${label}`);
+      }else{
+        if(rec)rec.active=true;else state.partners.push({id:uid('p'),name:nome,produce:culture});
+        addLog(`colocou o parceiro ${nome} em ${label}`);toast(`${nome} agora aparece em ${label}.`);
+      }
+      pendingStructural=true;saveState();renderAll();renderPartnerCultureList();
+    }
+    async function removePartnerAll(name){
+      const recs=state.partners.filter(p=>partnerKey(p.name)===partnerKey(name));if(!recs.length)return;
+      const nome=recs[0].name,culturas=recs.map(p=>produceLabel(p.produce||'brocolis')).join(', ');
+      const ok=await confirmModern(`Remover ${nome} de todas as culturas (${culturas}) e apagar os valores lançados nas linhas dele?`,{title:'Remover parceiro'});if(!ok)return;
+      const ids=new Set(recs.map(p=>p.id));
+      state.partners=state.partners.filter(p=>!ids.has(p.id));
+      ['cells','processar'].forEach(store=>Object.keys(state[store]).filter(k=>ids.has(k.split('|')[0])).forEach(k=>delete state[store][k]));
+      addLog(`removeu o parceiro ${nome} (${culturas})`);pendingStructural=true;saveState();renderAll();renderPartnerCultureList();toast('Parceiro removido.');
     }
     let renameTarget=null;
     function openRenameDialog(kind,id){
@@ -3646,12 +3734,15 @@
       }
       const list=kind==='partner'?state.partners:state.clients;
       const item=list.find(x=>x.id===id);if(!item)return;
+      // Parceiro: o nome muda em todas as culturas dele de uma vez
+      const sameName=p=>p.name.toLowerCase()===item.name.toLowerCase();
       const duplicate=kind==='partner'
-        ?list.some(p=>p.id!==id&&(p.produce||'brocolis')===(item.produce||'brocolis')&&p.name.toLowerCase()===name.toLowerCase())
+        ?list.some(p=>!sameName(p)&&p.name.toLowerCase()===name.toLowerCase())
         :list.some(c=>c.id!==id&&c.name.toLowerCase()===name.toLowerCase());
-      if(duplicate){showAlert('renameAlert',`Já existe um ${kind==='partner'?'parceiro':'cliente'} com esse nome${kind==='partner'?' nesta cultura':''}.`);return}
+      if(duplicate){showAlert('renameAlert',`Já existe um ${kind==='partner'?'parceiro':'cliente'} com esse nome.`);return}
       const oldName=item.name;
-      item.name=kind==='partner'?name.toUpperCase():name;
+      if(kind==='partner')list.filter(sameName).forEach(p=>{p.name=name.toUpperCase()});
+      else item.name=name;
       if(kind==='client'){if(logoUrl)item.logoUrl=logoUrl;else delete item.logoUrl}
       addLog(`renomeou ${kind==='partner'?'o parceiro':'o cliente'} ${oldName} para ${item.name}`);
       document.getElementById('renameDialog').close();renameTarget=null;
@@ -3696,6 +3787,7 @@
       if(!created.length){showAlert('partnerAlert',`Este parceiro já está cadastrado em ${skipped.join(', ')}.`);return}
       addLog(`adicionou o parceiro ${name.toUpperCase()} em ${created.join(', ')}`);
       input.value='';hideAlert('partnerAlert');document.getElementById('partnerDialog').close();pendingStructural=true;saveState();renderAll();
+      if(document.getElementById('manageDialog').open)renderPartnerCultureList();
       toast(`Parceiro adicionado em ${created.join(', ')}.`+(skipped.length?` Já existia em ${skipped.join(', ')}.`:''));
     }
     function addClientProductRow(value=''){
@@ -4420,6 +4512,7 @@
       }
     }
     let lastCloudCheck=0;
+    let lastCloudError='';
     async function loadCloud(quiet=false){
       if(!hasBackend())return false;
       lastCloudCheck=Date.now();
@@ -4439,7 +4532,7 @@
           state.separado=state.separado||{};
           applyPendingLogs(state);
           if(Object.keys(pendingOps).length){applyOps(state,pendingOps);saveState(false)}
-          else localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+          else guardarCopiaLocal();
           renderAll();restoreFocus(foco);
           if(!quiet)toast('Painel atualizado com os dados do banco de dados.');
         }
@@ -4450,6 +4543,7 @@
       }catch(e){
         cloudLoaded=false;
         if(e.authError){setCloudStatus('error','Sessão expirada');handleAuthError();return false}
+        lastCloudError=String(e.message||'');
         setCloudStatus('error','Banco de dados indisponível — usando dados locais',e.message);
         return false;
       }
@@ -4727,41 +4821,9 @@
         }
       }catch(err){}
     });
-    async function testSupabaseConnection(){
-      const urlInput=document.getElementById('supaUrl'),keyInput=document.getElementById('supaKey');
-      const url=urlInput.value.trim(),key=keyInput.value.trim();
-      const btn=document.getElementById('settingsTest'),alertEl=document.getElementById('settingsAlert');
-      if(!/^https:\/\//.test(url)){showAlert('settingsAlert','Cole a URL do projeto Supabase (começa com https://) antes de testar.');return}
-      if(key.length<20){showAlert('settingsAlert','Cole a chave "anon public" do projeto antes de testar.');return}
-      alertEl.classList.remove('success');hideAlert('settingsAlert');
-      const original=btn.textContent;btn.disabled=true;btn.textContent='Testando…';
-      try{
-        const client=window.supabase.createClient(url,key);
-        const {data,error}=await client.rpc('ping');
-        if(error)throw new Error(error.message||'Erro desconhecido');
-        alertEl.textContent=`Conexão OK — banco de dados respondendo normalmente (status: ${(data&&data.status)||'online'}).`;
-        alertEl.hidden=false;alertEl.classList.add('success');
-      }catch(e){
-        showAlert('settingsAlert','Não foi possível conectar: '+e.message+'. Confira se a URL e a chave anon estão corretas e se você já rodou o supabase-schema.sql neste projeto.');
-      }finally{
-        btn.disabled=false;btn.textContent=original;
-      }
-    }
-    async function saveSettings(){
-      const urlInput=document.getElementById('supaUrl'),keyInput=document.getElementById('supaKey');
-      const url=urlInput.value.trim(),key=keyInput.value.trim();
-      if(!/^https:\/\//.test(url)){showAlert('settingsAlert','Cole a URL do projeto Supabase (começa com https://).');return}
-      if(key.length<20){showAlert('settingsAlert','Cole a chave "anon public" do projeto.');return}
-      localStorage.setItem(SUPA_URL_KEY,url);localStorage.setItem(SUPA_ANON_KEY,key);hideAlert('settingsAlert');document.getElementById('settingsDialog').close();
-      // A partir de agora o banco está configurado: login por usuário/senha
-      // passa a valer (ou o bootstrap do primeiro administrador, se for o caso).
-      if(hasBackend()){
-        await unlockWithSession();
-      }else{
-        await loadCloud();
-      }
-      updateUserChip();applyProfileGating();
-    }
+    // A conexão é a do Painel SPG (supabase-config.js): não há mais tela para trocar de banco
+    function testSupabaseConnection(){}
+    function saveSettings(){document.getElementById("settingsDialog").close()}
     function cultureCsvRows(days,culture,withLabel){
       const meta=typeMetaForCulture(culture.id),labels=meta.map(m=>m.label);
       const prefix=row=>withLabel?[culture.label,...row]:row;
@@ -5597,6 +5659,52 @@
       document.getElementById('sysDataGrid').hidden=!master;
       document.getElementById('systemDialog').showModal();
     }
+    // ── Recuperar dados do app antigo (resumo-estoque-diario-spg) ─────────
+    // O app antigo guardava o painel inteiro no navegador (chave spg_estoque_diario_v2), no mesmo formato.
+    // Usa essa cópia se ela estiver neste navegador; senão, pede o arquivo .json baixado de lá.
+    function escolherArquivoJson(){
+      return new Promise(resolve=>{
+        const input=document.createElement('input');input.type='file';input.accept='.json,application/json,text/plain';
+        input.onchange=()=>{const f=input.files&&input.files[0];if(!f)return resolve(null);const r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=()=>resolve(null);r.readAsText(f)};
+        input.click();
+      });
+    }
+    async function recoverOldAppData(){
+      if(!isMaster()){toast('Só quem tem a gestão do Estoque Diário pode recuperar dados.',true);return}
+      let raw=null,origem='a cópia guardada neste navegador';
+      try{raw=localStorage.getItem('spg_estoque_diario_v2')}catch(e){}
+      if(!raw){
+        const escolher=await confirmModern('Este navegador não tem a cópia do app antigo. Escolha o arquivo de backup (.json) baixado do app antigo.',{title:'Recuperar dados',confirmText:'Escolher arquivo'});
+        if(!escolher)return;
+        raw=await escolherArquivoJson();origem='o arquivo escolhido';
+        if(!raw)return;
+      }
+      let s=null;try{s=JSON.parse(raw)}catch(e){}
+      if(!(s&&s.version===2&&Array.isArray(s.partners)&&Array.isArray(s.days))){toast('Esse arquivo não é um backup do estoque diário.',true);return}
+      const valores=Object.values(s.cells||{}).filter(v=>num(v)).length+Object.values(s.processar||{}).filter(v=>num(v)).length;
+      const quando=s.updatedAt?fmtStamp(s.updatedAt):'data desconhecida';
+      const ok=await confirmModern(`Encontrei ${origem}: última alteração em ${quando}, ${s.partners.length} linhas de parceiro, ${s.days.length} datas, ${valores} valores lançados e ${Object.keys(s.orders||{}).length} pedidos. Usar estes dados no lugar do que está no painel agora? O que foi lançado aqui no sistema novo será substituído.`,{title:'Recuperar dados',confirmText:'Recuperar'});
+      if(!ok)return;
+      // Mesmas correções que o app antigo fazia ao abrir
+      s.clients=Array.isArray(s.clients)?s.clients:DEFAULT_CLIENTS.map((name,i)=>({id:'c'+i,name}));
+      s.cells=migrateCells(s.cells);
+      s.partners=s.partners.map(p=>p.produce?p:{...p,produce:'brocolis'});
+      s.days=s.days.map(d=>d.produce?d:{...d,produce:'brocolis'});
+      ['orders','processar','separado','factors','factorConfig','dashboardLabels','generalHiddenCultures'].forEach(k=>{s[k]=s[k]||{}});
+      s.cultures=s.cultures||[];s.log=Array.isArray(s.log)?s.log:[];s.recentActivity=Array.isArray(s.recentActivity)?s.recentActivity:[];
+      s.lastActivityAt=s.lastActivityAt||s.updatedAt;s.lastActivityLabel=s.lastActivityLabel||'';
+      const aba=activeProduce();
+      state=migrateFactorRules(s);state.activeProduce=aba;
+      clearTimeout(cloudTimer);cloudTimer=null;pendingOps={};pendingLogs=[];pendingStructural=false;
+      addLog(`recuperou os dados do app antigo (${origem}, última alteração em ${quando})`);
+      saveState(false);renderAll();
+      try{
+        const r=await backendCall('salvarEstoque',state,{baseToken:cloudToken,force:true});
+        setCloudToken(r.token||cloudToken);cloudLoaded=true;pendingLogs=[];snapshotBaseline();
+        setCloudStatus('online','Sincronizado com o banco de dados');
+        toast('Dados recuperados e salvos no banco.');
+      }catch(e){toast('Recuperei na tela, mas não consegui salvar no banco: '+e.message+'. Toque em Salvar na nuvem.',true)}
+    }
     function requireAccess(permission,action){
       return ()=>{
         if(!hasAccess(permission)){toast('Seu perfil não tem permissão para esta função.',true);return}
@@ -5614,6 +5722,7 @@
       sysFactors:()=>openFactorsDialog(),
       sysSettings:()=>openSettingsDialog(),
       sysClear:()=>clearCultureData(),
+      sysRecover:()=>recoverOldAppData(),
       sysUser:()=>openUserAction(),
       sysUsers:()=>openUsersDialog(),
       sysLog:()=>openLogDialog()
@@ -5692,7 +5801,12 @@
       renderAll();
       updateUserChip();applyProfileGating();
       presenceSessionStart=Date.now();initRealtime();sendPresence();
-      if(!ok)toast('Sem conexão com o banco agora: mostrando a última cópia deste aparelho.',true);
+      if(!ok){
+        // Mostra a causa: banco sem a tabela/funções (SQL não rodado) é diferente de falta de internet
+        const semFuncao=!/quota|setItem|Storage/i.test(lastCloudError)&&/estoque_diario_(carregar|salvar)|schema cache|does not exist|Could not find the function/i.test(lastCloudError);
+        if(semFuncao)Dialogo.avisar('O banco ainda não tem o Resumo Estoque Diário. Rode o arquivo supabase/estoque_diario.sql no SQL Editor do Supabase e abra a página de novo. Detalhe: '+lastCloudError,{titulo:'Falta preparar o banco',tipo:'aviso'});
+        else toast(navigator.onLine?'Não consegui ler o banco: '+(lastCloudError||'erro desconhecido'):'Sem internet: mostrando a última cópia deste aparelho.',true);
+      }
     }
     boot();
   </script>

@@ -18,6 +18,7 @@
         ${ALVO}:not([class]):not([style]) { background-color: #fff; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .375rem 2.1rem .375rem .625rem; }
         ${ALVO}:disabled { cursor: not-allowed; }
         @media print { ${ALVO} { background-image: none !important; padding-right: 0 !important; } }
+        .lm-menu[popover] { margin: 0; inset: auto; overflow: visible; }
         .lm-menu { position: fixed; z-index: 2147483000; display: flex; flex-direction: column; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 12px 28px -8px rgba(16,24,40,.22), 0 4px 8px -4px rgba(16,24,40,.08); padding: 4px; font-family: inherit; color: #334155; animation: lmAbrir .12s ease-out; }
         @keyframes lmAbrir { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
         @media (prefers-reduced-motion: reduce) { .lm-menu { animation: none; } }
@@ -89,7 +90,15 @@
         const temBusca = tipo === 'select' && itens.filter(x => x.tipo === 'op').length > 8;
         menu.innerHTML = (temBusca ? '<input type="search" class="lm-busca" placeholder="Buscar..." aria-label="Buscar opção" autocomplete="off">' : '') +
             `<div class="lm-lista" role="listbox"></div>`;
-        document.body.appendChild(menu);
+        // Campo dentro de um <dialog> aberto com showModal(): a janela fica numa camada acima de tudo
+        // (z-index não adianta). O menu entra dentro dela (para não ficar inerte) e abre como "popover",
+        // que também vai para essa camada de cima — assim aparece por cima da janela, sem ser cortado.
+        const janela = campo.closest('dialog[open]');
+        (janela || document.body).appendChild(menu);
+        if (janela && typeof menu.showPopover === 'function') {
+            menu.setAttribute('popover', 'manual');
+            try { menu.showPopover(); } catch (e) { /* segue como antes */ }
+        }
         aberto = { campo, tipo, menu, itens, busca: menu.querySelector('.lm-busca'), lista: menu.querySelector('.lm-lista'), foco: -1 };
         campo.setAttribute('aria-expanded', 'true');
         desenhar(tipo === 'lista' ? campo.value : '');
