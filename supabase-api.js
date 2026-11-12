@@ -415,6 +415,53 @@
     ];
     const MODULOS = PROJETOS.flatMap(p => p.areas.map(a => a.modulo));
 
+    // ---- Menu organizado pelo administrador: ordem, nome e guia (grupo) de cada site ----
+    // Fica em painel_config (chave 'menu') e vale para todos. É aplicado na própria lista
+    // PROJETOS, então o menu lateral, os cartões do Início, a busca e o Cadastro de Usuários
+    // seguem a mesma ordem e os mesmos nomes. Site novo que ainda não está na configuração
+    // aparece no fim da guia dele. Guardado no aparelho para o menu já abrir organizado.
+    const K_MENU = 'spg_menu_config';
+    const MENU_PADRAO = PROJETOS.map(p => ({ id: p.id, nome: p.nome, grupo: p.grupo }));
+    let menuAtual = null;
+    function aplicarMenu(cfg) {
+        const itens = cfg && Array.isArray(cfg.itens) ? cfg.itens : [];
+        const posicao = new Map(itens.map((x, i) => [x.id, i]));
+        const ordemPadrao = new Map(MENU_PADRAO.map((o, i) => [o.id, i]));
+        MENU_PADRAO.forEach(o => {
+            const p = PROJETOS.find(x => x.id === o.id);
+            const c = itens.find(x => x.id === o.id) || {};
+            p.nome = String(c.nome || '').trim() || o.nome;
+            p.grupo = String(c.grupo || '').trim() || o.grupo;
+        });
+        const lugar = p => posicao.has(p.id) ? posicao.get(p.id) : 100000 + ordemPadrao.get(p.id);
+        PROJETOS.sort((a, b) => lugar(a) - lugar(b));
+        menuAtual = itens.length ? { itens } : null;
+    }
+    aplicarMenu(ler(K_MENU, null));
+    // Busca a configuração no servidor; devolve true se mudou (a tela redesenha o menu)
+    async function carregarMenu() {
+        try {
+            const { data, error } = await sb.from('painel_config').select('valor').eq('chave', 'menu').maybeSingle();
+            if (error) return false;
+            const novo = data && data.valor && Array.isArray(data.valor.itens) && data.valor.itens.length ? { itens: data.valor.itens } : null;
+            if (JSON.stringify(novo) === JSON.stringify(menuAtual)) return false;
+            gravar(K_MENU, novo);
+            aplicarMenu(novo);
+            return true;
+        } catch (e) { return false; }
+    }
+    // Só o administrador (a regra do banco também confere). null = volta ao padrão.
+    async function salvarMenu(cfg) {
+        if (!navigator.onLine) throw new Error('Sem conexão. Organizar o menu precisa de internet.');
+        const resp = cfg
+            ? await sb.from('painel_config').upsert({ chave: 'menu', valor: cfg, atualizado_em: new Date().toISOString() }, { onConflict: 'chave' })
+            : await sb.from('painel_config').delete().eq('chave', 'menu');
+        if (resp.error) throw new Error(/painel_config/.test(resp.error.message || '') ? 'Rode o arquivo supabase/painel_config.sql no Supabase primeiro.' : resp.error.message);
+        gravar(K_MENU, cfg);
+        aplicarMenu(cfg);
+    }
+    const menuPadrao = () => MENU_PADRAO.map(o => ({ ...o }));
+
     function modulosDoUsuario(u) {
         u = u || usuarioAtual();
         if (!u) return [];
@@ -2056,6 +2103,8 @@
         cliente: sb, enfileirar,
         // projetos e módulos
         PROJETOS, MODULOS, modulosDoUsuario, temModulo, recursoLiberado, areaLiberada, projetosDoUsuario,
+        // menu organizado (ordem, nome e guia de cada site)
+        carregarMenu, salvarMenu, menuPadrao,
         // resumo da colheita
         colheita, lancamentos, novoId,
         // locais (fazendas)

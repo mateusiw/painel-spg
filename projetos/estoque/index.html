@@ -4004,7 +4004,7 @@ async function gerarImagemClasseGeral(){
     await aguardarImagens(host);
     const alvo=host.firstElementChild;
     // Classe com muitos produtos vira uma imagem bem alta: reduz a nitidez pra caber no limite do celular (iPhone)
-    const ratio=Math.max(1,Math.min(2,Math.sqrt(15e6/(alvo.offsetWidth*alvo.offsetHeight))));
+    const ratio=Math.max(1,Math.min(3,Math.sqrt(15e6/(alvo.offsetWidth*alvo.offsetHeight))));
     const opcoes={pixelRatio:ratio,backgroundColor:'#ffffff',skipFonts:true};
     await htmlToImage.toBlob(alvo,opcoes); // a primeira às vezes sai sem o logo
     const blob=await htmlToImage.toBlob(alvo,opcoes);
@@ -7780,5 +7780,14 @@ boot();
    HTML, então precisam ser expostas em window pra não dar "is not defined". */
 Object.assign(window,{brDecInput,brIntInput,brNumLiveInput,brMoneyLiveInput,atualizarPreviewAjusteEstoque,calcValorUnitarioProduto,calcValorUnitarioEntry,atualizarEstoqueAlvoNota,atualizarEstoqueDisponivelEntry});
 </script>
+    <!-- Seletor de período padrão (Dia | Mês | Ano | Intervalo) nos filtros De/Até -->
+    <script src="../../seletor-periodo.js"></script>
+    <script>
+    (function () {
+        if (!window.SeletorPeriodo) return;
+        // Histórico de ações: sem datas = todo o histórico ("Tudo")
+        SeletorPeriodo.paraCampos('#logDataInicio', '#logDataFim', { tudo: true });
+    })();
+    </script>
 </body>
 </html>

@@ -46,7 +46,8 @@
         const linha = Object.assign({
             rowNumber: r.id, dataRegistro: dataBr(r.registrado_em), semana: r.semana, local: r.setor, programador: r.programador,
             operador: r.operador, diaSemana: r.dia_semana, blocos: r.blocos, tempo: r.tempo, combustivel: r.combustivel, operacoes: r.operacoes,
-            status: r.status || 'Em Andamento', realizado: r.realizado, estimativa: r.estimativa, quantidade: r.quantidade
+            status: r.status || 'Em Andamento', realizado: r.realizado, estimativa: r.estimativa, quantidade: r.quantidade,
+            meta: r.meta || '', percentual: r.percentual === undefined ? null : r.percentual
         }, horas(r));
         if (setor === 'Insumos') Object.assign(linha, { categoria: r.categoria, produto: r.produto, alvo: r.alvo });
         if (setor === 'SPG Packing') linha.processaCaixas = r.processa_caixas;
@@ -98,12 +99,16 @@
     const exigirLista = (lista, nome) => { if (!Array.isArray(lista)) throw new Error(nome + ' inválido.'); };
 
     function camposDaProgramacao(l) {
-        return {
+        const campos = {
             semana: texto(l.semana), programador: texto(l.programador), operador: texto(l.operador), dia_semana: texto(l.diaSemana),
             blocos: texto(l.blocos), tempo: texto(l.tempo), combustivel: texto(l.combustivel), operacoes: texto(l.operacoes),
             status: l.status || 'Em Andamento', estimativa: ouVazio(l.estimativa)
         };
+        // Meta: só grava quando a tela mandou (o modo completo antigo não manda e não pode apagar a meta)
+        if (l.meta !== undefined) campos.meta = ouVazio(l.meta);
+        return campos;
     }
+    const pct = v => (v === null || v === undefined || v === '') ? null : Math.max(0, Math.min(100, Math.round(Number(v)) || 0));
 
     const ACOES = {
         updateEstimativa: async d => { exigirLinha(d); await atualizar(d.rowNumber, { estimativa: ouVazio(d.estimativa) }); },
@@ -115,6 +120,16 @@
         deleteTeam: async d => { exigirLinha(d); await excluir(d.rowNumber); },
         deleteServico: async d => { exigirLinha(d); await excluir(d.rowNumber); },
         deleteProgramacaoRow: async d => { exigirLinha(d); await excluir(d.rowNumber); },
+
+        // Fechamento rápido: foi concluído? chegou em quantos %? (e, se quiser, o que foi feito)
+        fecharServicos: async d => {
+            exigirLista(d.updates, 'updates');
+            await Promise.all(d.updates.filter(i => i.rowNumber).map(i => {
+                const v = { status: i.status || 'Em Andamento', percentual: pct(i.percentual) };
+                if (i.realizado !== undefined) v.realizado = ouVazio(i.realizado);
+                return atualizar(i.rowNumber, v);
+            }));
+        },
 
         updateRealizado: async d => {
             exigirLista(d.updates, 'updates');

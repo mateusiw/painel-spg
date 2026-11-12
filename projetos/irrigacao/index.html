@@ -11298,5 +11298,17 @@
             });
         }
     </script>
+    <!-- Seletor de período padrão (Dia | Mês | Ano | Intervalo) nos filtros De/Até -->
+    <script src="../../seletor-periodo.js"></script>
+    <script>
+    (function () {
+        if (!window.SeletorPeriodo) return;
+        SeletorPeriodo.paraCampos('#resumoDe', '#resumoAte', { esconder: ['[data-resumo-dias]'] });
+        SeletorPeriodo.paraCampos('#grafDe', '#grafAte', { esconder: ['#grafAtalhos'] });
+        SeletorPeriodo.paraCampos('#balancoDe', '#balancoAte', { esconder: ['[onclick^="window.periodoBalanco("]'] });
+        // Histórico do bloco: filtra direto ao escolher o período (antes era preciso tocar em "Filtrar")
+        SeletorPeriodo.paraCampos('#blocoHistDe', '#blocoHistAte', { aoMudar: () => { if (window.filtrarHistoricoBloco) window.filtrarHistoricoBloco(); } });
+    })();
+    </script>
 </body>
 </html>

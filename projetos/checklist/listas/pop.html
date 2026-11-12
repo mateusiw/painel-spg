@@ -2796,5 +2796,14 @@ let _pendingResolve = null;
             }
         }
     </script>
+    <!-- Seletor de período padrão (Dia | Mês | Ano | Intervalo) nos filtros De/Até -->
+    <script src="../../../seletor-periodo.js"></script>
+    <script>
+    (function () {
+        if (!window.SeletorPeriodo) return;
+        // Calendário do painel: sem datas = sem filtro ("Tudo")
+        SeletorPeriodo.paraCampos('#filter-data-inicio', '#filter-data-fim', { substituir: '.dash-calendario', tudo: true });
+    })();
+    </script>
 </body>
 </html>

@@ -44,6 +44,9 @@
     <script src="../../supabase-api.js"></script>
     <script src="../../lista-moderna.js"></script>
     <script src="../../trava-fundo.js"></script>
+    <script src="../../seletor-periodo.js"></script>
+    <script src="../../barra-abas.js"></script>
+    <script src="../../mais-filtros.js"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
@@ -101,11 +104,6 @@
                 <i data-lucide="database" class="w-4 h-4 text-emerald-600"></i>
                 <span class="hidden sm:inline">Importar histórico</span>
             </button>
-            <button id="sendBtn" type="button" onclick="confirmBeforeSend()" class="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl shadow-md shadow-emerald-600/25 ring-1 ring-emerald-700/20 transition-all active:scale-95 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100">
-                <i data-lucide="send" class="w-4 h-4"></i>
-                <span class="hidden sm:inline-block">Enviar para o WhatsApp</span>
-                <span class="sm:hidden">Enviar</span>
-            </button>
         </div>
     </div>
 
@@ -123,14 +121,17 @@
         </button>
     </div>
 
-    <!-- Abas: registrar um descarte / ver os recentes (com as fotos) -->
-    <div class="max-w-md lg:max-w-[1400px] mx-auto px-4 pt-3">
-        <div id="abasDescarte" role="tablist" aria-label="Seções" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1 lg:max-w-sm">
+    <!-- Abas: registrar um descarte / ver os recentes (com as fotos) / painel. No celular: barra flutuante do rodapé (barra-abas.js) -->
+    <div class="hidden lg:block max-w-md lg:max-w-[1400px] mx-auto px-4 pt-3">
+        <div id="abasDescarte" role="tablist" aria-label="Seções" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1 lg:max-w-md">
             <button type="button" role="tab" data-aba="registrar" aria-selected="true" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700">
                 <i data-lucide="clipboard-pen" class="w-3.5 h-3.5"></i> Registrar
             </button>
             <button type="button" role="tab" data-aba="recentes" aria-selected="false" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-500">
                 <i data-lucide="images" class="w-3.5 h-3.5"></i> Recentes
+            </button>
+            <button type="button" role="tab" data-aba="painel" aria-selected="false" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-500">
+                <i data-lucide="chart-column" class="w-3.5 h-3.5"></i> Painel
             </button>
         </div>
     </div>
@@ -168,7 +169,7 @@
                     <div class="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
                         <div>
                             <label for="culture" class="rotulo"><i data-lucide="sprout" class="w-3.5 h-3.5 text-green-500"></i> Cultura</label>
-                            <select id="culture" onchange="updateDynamicFields(); checkProductionData();" required class="campo w-full">
+                            <select id="culture" onchange="mostrarTodosParceiros = false; updateDynamicFields(); checkProductionData();" required class="campo w-full">
                                 <option value="">Selecione a cultura...</option>
                                 <option value="Brócolis">Brócolis</option>
                                 <option value="Couve-Flor">Couve-Flor</option>
@@ -178,7 +179,7 @@
                         </div>
                         <div>
                             <label for="partnerName" class="rotulo"><i data-lucide="handshake" class="w-3.5 h-3.5 text-green-500"></i> Parceiro</label>
-                            <select id="partnerName" onchange="checkProductionData();" required class="campo w-full">
+                            <select id="partnerName" onchange="aoEscolherParceiro();" required class="campo w-full">
                                 <option value="">Selecione a cultura primeiro...</option>
                             </select>
                         </div>
@@ -249,6 +250,19 @@
                     <button id="clearAllBtn" onclick="clearAll()" class="text-xs font-bold text-rose-600 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition-all">Limpar Tudo</button>
                 </div>
                 <ul id="itemsList" class="p-3 space-y-2 text-sm text-slate-600"></ul>
+                <!-- Registrar: aparece logo abaixo do registro, assim que ele é adicionado -->
+                <div id="rodapeRegistrar" class="hidden px-3 pb-3">
+                    <button id="sendBtn" type="button" onclick="confirmBeforeSend()" class="group w-full flex items-center gap-3 p-3 pr-4 bg-gradient-to-b from-slate-700 to-slate-900 hover:from-slate-800 hover:to-slate-950 text-white rounded-2xl shadow-lg shadow-slate-900/25 ring-1 ring-slate-950/30 transition-all active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 text-left">
+                        <span class="flex items-center justify-center w-10 h-10 rounded-xl bg-amber-400 text-slate-900 shrink-0">
+                            <i data-lucide="check-check" class="w-5 h-5"></i>
+                        </span>
+                        <span class="flex-1 min-w-0">
+                            <span class="block text-sm font-extrabold leading-tight">Registrar descarte</span>
+                            <span class="block text-[11px] font-semibold text-slate-300 leading-tight mt-0.5">Último passo: grava no sistema com as fotos</span>
+                        </span>
+                        <i data-lucide="chevron-right" class="w-5 h-5 opacity-80 transition-transform group-hover:translate-x-0.5"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -283,29 +297,16 @@
 
     <!-- RECENTES: descartes já registrados, com foto e detalhes -->
     <div id="viewRecentes" class="hidden mx-auto p-4 space-y-4 max-w-md lg:max-w-[1400px] lg:pt-5">
-        <!-- Filtros: período (atalhos ou calendário De/Até), por qual data, parceiro, cultura, motivo e busca -->
-        <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 space-y-3">
-            <div class="grid grid-cols-2 lg:grid-cols-[170px_150px_150px_170px_minmax(0,1fr)] gap-3 items-end">
-                <div class="col-span-2 lg:col-span-1">
-                    <label for="recPeriodo" class="rotulo"><i data-lucide="calendar-range" class="w-3.5 h-3.5 text-green-500"></i> Período</label>
-                    <select id="recPeriodo" class="campo w-full">
-                        <option value="hoje">Hoje</option>
-                        <option value="7" selected>Últimos 7 dias</option>
-                        <option value="30">Últimos 30 dias</option>
-                        <option value="mes">Este mês</option>
-                        <option value="mesPassado">Mês passado</option>
-                        <option value="90">Últimos 90 dias</option>
-                        <option value="personalizado">Personalizado</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="recDe" class="rotulo"><i data-lucide="calendar" class="w-3.5 h-3.5 text-green-500"></i> De</label>
-                    <input type="date" id="recDe" class="campo w-full">
-                </div>
-                <div>
-                    <label for="recAte" class="rotulo"><i data-lucide="calendar-check" class="w-3.5 h-3.5 text-green-500"></i> Até</label>
-                    <input type="date" id="recAte" class="campo w-full">
-                </div>
+        <!-- Filtros: período (atalhos ou calendário De/Até), por qual data, parceiro, cultura, motivo e busca.
+             No celular só o período fica à vista; o resto abre em "Mais filtros" (mais-filtros.js) -->
+        <div data-mais-filtros="descarte-recentes" class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 space-y-3">
+            <div>
+                <p class="rotulo"><i data-lucide="calendar-range" class="w-3.5 h-3.5 text-green-500"></i> Período</p>
+                <!-- Seletor padrão (seletor-periodo.js): Dia | Mês | Ano | Intervalo; as datas ficam em recDe/recAte -->
+                <div id="recSeletorPeriodo"></div>
+                <input type="hidden" id="recDe"><input type="hidden" id="recAte">
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-[200px_minmax(0,1fr)] gap-3 items-end">
                 <div class="col-span-2 lg:col-span-1">
                     <label for="recCampoData" class="rotulo"><i data-lucide="calendar-search" class="w-3.5 h-3.5 text-green-500"></i> Considerar a data</label>
                     <select id="recCampoData" class="campo w-full">
@@ -321,7 +322,21 @@
             <div class="grid grid-cols-2 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto_auto] gap-3 items-end">
                 <div class="col-span-2 lg:col-span-1">
                     <label for="recParceiro" class="rotulo"><i data-lucide="handshake" class="w-3.5 h-3.5 text-green-500"></i> Parceiro</label>
-                    <select id="recParceiro" class="campo w-full"><option value="">Todos os parceiros</option></select>
+                    <!-- Seleção múltipla: dá para ver, por exemplo, Sítio Rafael e Sítio Reginaldo juntos -->
+                    <div class="relative" id="recParceiroCaixa">
+                        <button type="button" id="recParceiro" aria-haspopup="listbox" aria-expanded="false" class="campo w-full flex items-center justify-between gap-2 text-left">
+                            <span id="recParceiroRotulo" class="truncate">Todos os parceiros</span>
+                            <span class="flex items-center gap-1 shrink-0"><span id="recParceiroConta" class="hidden text-[10px] font-black bg-emerald-600 text-white rounded-full px-1.5 py-0.5"></span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i></span>
+                        </button>
+                        <div id="recParceiroPainel" class="hidden absolute z-40 left-0 mt-1 w-full min-w-[260px] bg-white rounded-2xl shadow-xl ring-1 ring-slate-200 p-2">
+                            <input type="search" data-filtro-ignorar id="recParceiroBusca" placeholder="Buscar parceiro..." autocomplete="off" class="campo w-full mb-2">
+                            <div id="recParceiroOpcoes" role="listbox" aria-multiselectable="true" class="max-h-64 overflow-y-auto overscroll-contain space-y-0.5"></div>
+                            <div class="flex items-center justify-between gap-2 pt-2 mt-1 border-t border-slate-100">
+                                <button type="button" id="recParceiroLimpar" class="text-xs font-bold text-slate-500 hover:text-slate-700 px-2 py-2">Limpar</button>
+                                <button type="button" id="recParceiroOk" class="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-4 py-2">Pronto</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label for="recCultura" class="rotulo"><i data-lucide="sprout" class="w-3.5 h-3.5 text-green-500"></i> Cultura</label>
@@ -335,6 +350,9 @@
                     <input type="checkbox" id="recSoFotos" class="w-4 h-4 accent-emerald-600"> Só com foto
                 </label>
                 <div class="flex gap-2 col-span-2 lg:col-span-1 justify-end">
+                    <button type="button" id="recImagem" title="Gera uma imagem com o resumo do que está filtrado (para enviar)" class="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white text-xs font-bold shadow-sm shadow-emerald-600/25 disabled:opacity-60 whitespace-nowrap">
+                        <i data-lucide="file-image" class="w-4 h-4"></i> Imagem do resumo
+                    </button>
                     <button type="button" id="recLimpar" class="flex items-center gap-1.5 px-3 py-3 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">
                         <i data-lucide="eraser" class="w-4 h-4"></i> Limpar
                     </button>
@@ -343,11 +361,64 @@
                     </button>
                 </div>
             </div>
-            <p id="recAvisoLimite" class="hidden text-[11px] font-bold text-amber-700 bg-amber-50 rounded-xl px-3 py-2"></p>
+            <!-- Exibição: cartões ou tabela, peso separado (Sítio Leitão = Rafael + Reginaldo) e copiar os dados -->
+            <div data-filtro-acao class="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+                <div id="recModo" role="tablist" aria-label="Exibição" class="flex bg-slate-100 rounded-xl p-1 gap-1">
+                    <button type="button" data-modo="cartoes" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Cartões</button>
+                    <button type="button" data-modo="tabela" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="table-2" class="w-3.5 h-3.5"></i> Tabela</button>
+                </div>
+                <label class="flex items-center gap-2 px-2 py-2 text-xs font-bold text-slate-600 cursor-pointer select-none" title="Sítio Leitão aparece dividido em Sítio Rafael e Sítio Reginaldo, cada um com o seu peso">
+                    <span class="relative inline-flex w-9 h-5 shrink-0">
+                        <input type="checkbox" id="recPesoSeparado" class="peer absolute inset-0 opacity-0 cursor-pointer z-10">
+                        <span class="absolute inset-0 rounded-full bg-slate-300 peer-checked:bg-emerald-600 transition-colors"></span>
+                        <span class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4"></span>
+                    </span>
+                    Peso separado
+                </label>
+                <button type="button" id="recCopiar" title="Copia parceiro, kg, motivo e cultura do que está filtrado (uma linha por descarte, pronto para colar na planilha)" class="ml-auto flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white ring-1 ring-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95 transition">
+                    <i data-lucide="clipboard-copy" class="w-4 h-4 text-emerald-600"></i> <span>Copiar dados</span>
+                </button>
+            </div>
+            <p id="recAvisoLimite" data-filtro-acao class="hidden text-[11px] font-bold text-amber-700 bg-amber-50 rounded-xl px-3 py-2"></p>
         </div>
         <div id="recResumo" class="grid grid-cols-3 gap-3"></div>
         <div id="recLista" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 items-start"></div>
     </div>
+
+    <!-- PAINEL: acompanhamento do descarte (% sobre a produção entregue) por parceiro, mês ou semana -->
+    <div id="viewPainel" class="hidden mx-auto p-4 space-y-4 max-w-md lg:max-w-[1400px] lg:pt-5">
+        <div data-mais-filtros="descarte-painel" class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 space-y-3">
+            <div>
+                <p class="rotulo"><i data-lucide="calendar-range" class="w-3.5 h-3.5 text-green-500"></i> Período (data da colheita)</p>
+                <div id="pnSeletorPeriodo"></div>
+                <input type="hidden" id="pnDe"><input type="hidden" id="pnAte">
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 items-end">
+                <div class="col-span-2 lg:col-span-1">
+                    <p class="rotulo"><i data-lucide="calendar-days" class="w-3.5 h-3.5 text-green-500"></i> Agrupar por</p>
+                    <div id="pnAgrupar" class="flex bg-slate-100 rounded-xl p-1 gap-1">
+                        <button type="button" data-agrupar="mes" class="flex-1 px-4 py-2 rounded-lg text-xs font-bold">Mês</button>
+                        <button type="button" data-agrupar="semana" class="flex-1 px-4 py-2 rounded-lg text-xs font-bold">Semana</button>
+                    </div>
+                </div>
+                <div>
+                    <label for="pnCultura" class="rotulo"><i data-lucide="sprout" class="w-3.5 h-3.5 text-green-500"></i> Cultura</label>
+                    <select id="pnCultura" class="campo w-full"><option value="">Todas</option></select>
+                </div>
+                <div>
+                    <label for="pnParceiro" class="rotulo"><i data-lucide="handshake" class="w-3.5 h-3.5 text-green-500"></i> Parceiro</label>
+                    <select id="pnParceiro" class="campo w-full"><option value="">Todos os parceiros</option></select>
+                </div>
+                <div class="col-span-2 lg:col-span-1 flex justify-end">
+                    <button type="button" id="pnAtualizar" class="flex items-center gap-1.5 px-3 py-3 rounded-xl bg-white ring-1 ring-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i> Atualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="pnConteudo" class="space-y-4"></div>
+    </div>
+    <div id="pnDica" class="fixed z-[90] hidden pointer-events-none bg-slate-900 text-white text-xs rounded-xl shadow-xl px-3 py-2 leading-relaxed max-w-[240px]"></div>
 
     <!-- Foto ampliada -->
     <div id="fotoAmpliada" class="fixed inset-0 z-[80] hidden bg-slate-950/90 flex-col items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Foto do descarte">
@@ -457,7 +528,7 @@
             </div>
             <h3 class="text-xl font-black text-slate-800 text-center">Conferiu os dados?</h3>
             <p class="text-sm text-slate-500 mt-3 text-center leading-relaxed font-medium">
-                Você conferiu todas as informações? Se sim, toque para enviar.<br><br>
+                Você conferiu todas as informações? Se sim, toque em registrar.<br><br>
                 <span class="text-amber-600 font-bold">Caso tenha enviado alguma informação errada, informe ao responsável para que ele possa corrigir no sistema.</span>
             </p>
             <div class="grid grid-cols-2 gap-3 mt-6">
@@ -465,7 +536,7 @@
                     Cancelar
                 </button>
                 <button onclick="executeSend()" class="px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-brand-600/20 active:scale-95 uppercase">
-                    Enviar Agora
+                    Registrar
                 </button>
             </div>
         </div>
@@ -619,6 +690,34 @@
             if (dateEl) dateEl.innerHTML = `<div><span class="opacity-60">Colheita: </span><span class="font-bold text-white">${day}/${month}/${year} &nbsp;·&nbsp; Semana ${weekNumber}</span></div>${addedAtDisplay}${idDisplay}`;
         }
 
+        // Parceiro entregou produção desta cultura nos últimos 30 dias? Usa a cópia da produção que
+        // fica na memória do aparelho. Enquanto ela não carregou, considera que sim (mostra todos).
+        let mostrarTodosParceiros = false;
+        const DIAS_PARCEIRO_ATIVO = 30;
+        function parceiroEntregouRecentemente(parceiro, cultura) {
+            if (!memoriaProducao.em) return true;
+            const d = new Date(); d.setDate(d.getDate() - DIAS_PARCEIRO_ATIVO);
+            const limite = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const p = normalizarNome(parceiro), c = normalizarNome(cultura);
+            const nomes = PARCEIROS_DIVIDIDOS[p] || [p];
+            for (const chave of memoriaProducao.linhas.keys()) {
+                const [data, cult, parc] = chave.split('|');
+                if (data >= limite && cult === c && nomes.includes(parc)) return true;
+            }
+            return false;
+        }
+        // Lista de parceiros: "+ Mostrar todos os parceiros" abre a lista completa
+        function aoEscolherParceiro() {
+            const sel = document.getElementById('partnerName');
+            if (sel.value === '__todos__') {
+                mostrarTodosParceiros = true;
+                updateDynamicFields('', document.getElementById('discardReason').value);
+                sel.focus();
+                return;
+            }
+            checkProductionData();
+        }
+
         function updateDynamicFields(selectedPartner = "", selectedReason = "") {
             const cultureSelect = document.getElementById('culture');
             const partnerSelect = document.getElementById('partnerName');
@@ -629,11 +728,23 @@
             if (selectedCulture) {
                 if (partnersData[selectedCulture]) {
                     partnerSelect.disabled = false;
-                    partnersData[selectedCulture].forEach(partner => {
+                    // Só quem entregou produção desta cultura nos últimos 30 dias (os demais ficam em
+                    // "+ Mostrar todos os parceiros", para quem voltou a entregar e ainda não está na planilha)
+                    const todos = partnersData[selectedCulture];
+                    const ativos = mostrarTodosParceiros ? todos : todos.filter(p => p === selectedPartner || parceiroEntregouRecentemente(p, selectedCulture));
+                    const lista = ativos.length ? ativos : todos;
+                    lista.forEach(partner => {
                         const option = document.createElement('option');
                         option.value = partner; option.textContent = partner;
                         partnerSelect.appendChild(option);
                     });
+                    const ocultos = todos.length - lista.length;
+                    if (ocultos > 0) {
+                        const option = document.createElement('option');
+                        option.value = '__todos__';
+                        option.textContent = `+ Mostrar todos os parceiros (${ocultos} sem entrega nos últimos 30 dias)`;
+                        partnerSelect.appendChild(option);
+                    }
                     if (selectedPartner) partnerSelect.value = selectedPartner;
                 }
                 if (reasonsData[selectedCulture]) {
@@ -825,14 +936,62 @@
         const normalizarNome = s => String(s || '').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '');
         // Nome no app -> nomes na planilha de produção (a produção é a soma deles), como no Apps Script
         const PARCEIROS_DIVIDIDOS = { 'sitio leitao': ['sitio rafael', 'sitio reginaldo'] };
+        // Cópia da produção dos últimos 60 dias na memória do aparelho: a consulta fica instantânea
+        // (sem ir à internet a cada troca de data, cultura ou parceiro). Renovada a cada 5 minutos,
+        // no mesmo ritmo em que o Apps Script manda a planilha para o Supabase.
+        const DIAS_EM_MEMORIA = 60;
+        const memoriaProducao = { linhas: new Map(), desde: '', em: 0, carregando: null };
+        const chaveProducao = (data, cultura, parceiro) => `${data}|${cultura}|${parceiro}`;
+        function carregarMemoriaProducao(forcar) {
+            if (memoriaProducao.carregando) return memoriaProducao.carregando;
+            if (!forcar && Date.now() - memoriaProducao.em < 5 * 60 * 1000) return Promise.resolve();
+            if (!navigator.onLine) return Promise.resolve();
+            const d = new Date(); d.setDate(d.getDate() - DIAS_EM_MEMORIA);
+            const desde = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            memoriaProducao.carregando = (async () => {
+                try {
+                    const novo = new Map();
+                    for (let ini = 0; ; ini += 1000) { // o Supabase entrega no máximo 1000 linhas por vez
+                        const { data, error } = await SPG_API.cliente.from('producao_parceiros')
+                            .select('data, cultura_norm, parceiro_norm, producao_kg').gte('data', desde).order('data').range(ini, ini + 999);
+                        if (error) throw error;
+                        (data || []).forEach(r => novo.set(chaveProducao(r.data, r.cultura_norm, r.parceiro_norm), r.producao_kg));
+                        if (!data || data.length < 1000) break;
+                    }
+                    memoriaProducao.linhas = novo; memoriaProducao.desde = desde; memoriaProducao.em = Date.now();
+                    // Lista de parceiros: agora dá para saber quem entregou nos últimos 30 dias
+                    const cult = document.getElementById('culture'), parc = document.getElementById('partnerName');
+                    if (cult && cult.value && parc && !parc.value) updateDynamicFields('', document.getElementById('discardReason').value);
+                } catch (e) {
+                    console.warn('Produção na memória não carregou (consulta vai direto ao Supabase):', e.message || e);
+                } finally { memoriaProducao.carregando = null; }
+            })();
+            return memoriaProducao.carregando;
+        }
+        carregarMemoriaProducao(true);
+        setInterval(() => { if (document.visibilityState === 'visible') carregarMemoriaProducao(); }, 5 * 60 * 1000);
+
+        function respostaDeLinhas(linhas) {
+            if (!linhas.length) return null;
+            const comPeso = linhas.filter(kg => kg !== null && kg !== undefined);
+            if (!comPeso.length) return { production: '' }; // achou, mas o peso ainda está vazio: em andamento
+            return { production: comPeso.reduce((s, kg) => s + Number(kg), 0) };
+        }
+
         async function producaoNoSistema(dataISO, cultura, parceiro) {
+            const p = normalizarNome(parceiro);
+            const nomes = PARCEIROS_DIVIDIDOS[p] || [p];
+            const c = normalizarNome(cultura);
+            // 1º: a cópia na memória (instantâneo), se a data estiver dentro dos 60 dias guardados
+            if (memoriaProducao.em && dataISO >= memoriaProducao.desde) {
+                carregarMemoriaProducao(); // renova em segundo plano se já passou de 5 minutos
+                return respostaDeLinhas(nomes.map(n => memoriaProducao.linhas.get(chaveProducao(dataISO, c, n))).filter(kg => kg !== undefined));
+            }
             if (!navigator.onLine) return null;
             try {
-                const p = normalizarNome(parceiro);
-                const nomes = PARCEIROS_DIVIDIDOS[p] || [p];
                 const { data, error } = await SPG_API.cliente.from('producao_parceiros')
                     .select('parceiro_norm, producao_kg')
-                    .eq('data', dataISO).eq('cultura_norm', normalizarNome(cultura)).in('parceiro_norm', nomes);
+                    .eq('data', dataISO).eq('cultura_norm', c).in('parceiro_norm', nomes);
                 if (error || !data || !data.length) return null;
                 const comPeso = data.filter(r => r.producao_kg !== null && r.producao_kg !== undefined);
                 if (!comPeso.length) return { production: '' }; // achou, mas o peso ainda está vazio: em andamento
@@ -840,6 +999,47 @@
             } catch (e) {
                 return null;
             }
+        }
+
+        // A cópia da produção no Supabase está em dia? (o Apps Script manda a cada 5 min; se recebeu
+        // algo nos últimos 30 min, está funcionando). Com ela em dia, "não achou" já é a resposta:
+        // não precisa travar a tela esperando o Apps Script, que pode levar até ~50 s.
+        let sincronizacaoProducao = { em: 0, ativa: false };
+        async function sincronizacaoAtiva() {
+            if (Date.now() - sincronizacaoProducao.em < 5 * 60 * 1000) return sincronizacaoProducao.ativa;
+            try {
+                const { data } = await SPG_API.cliente.from('producao_parceiros').select('atualizado_em').order('atualizado_em', { ascending: false }).limit(1);
+                const ativa = !!(data && data[0] && Date.now() - new Date(data[0].atualizado_em).getTime() < 30 * 60 * 1000);
+                sincronizacaoProducao = { em: Date.now(), ativa };
+                return ativa;
+            } catch (e) { return false; }
+        }
+
+        // Confere no Apps Script em segundo plano, sem travar a tela nem o envio: a produção pode ter
+        // sido lançada na planilha há menos de 5 minutos (ainda não chegou ao Supabase). Se achar e os
+        // campos ainda forem os mesmos, preenche sozinho e avisa.
+        async function confirmarProducaoNoAppsScript(dateInput, cultura, parceiro) {
+            const [a, m, d] = dateInput.split('-');
+            const url = `${URL_PRODUCAO}?action=getProduction&date=${encodeURIComponent(`${d}/${m}/${a}`)}&culture=${encodeURIComponent(cultura)}&partner=${encodeURIComponent(parceiro)}`;
+            const controle = new AbortController();
+            const tempo = setTimeout(() => controle.abort(), 45000);
+            try {
+                const dados = JSON.parse(await (await fetch(url, { signal: controle.signal })).text());
+                const mesmo = document.getElementById('reportDate').value === dateInput && document.getElementById('culture').value === cultura && document.getElementById('partnerName').value === parceiro;
+                const kg = dados && dados.production;
+                if (!mesmo || kg === undefined || kg === null || kg === '' || Number(kg) === 0) return;
+                const prodInput = document.getElementById('productionQuantity');
+                document.getElementById('productionInProgress').checked = false;
+                toggleProductionInProgress();
+                setCheckboxEnabled(false);
+                prodInput.value = formatSmart(kg);
+                prodInput.placeholder = 'Produção encontrada';
+                prodInput.readOnly = true;
+                prodInput.classList.add('cursor-not-allowed');
+                showMessageModal('Produção Localizada!', `A produção acabou de ser lançada na planilha.\n\nParceiro: ${parceiro}\nCultura: ${cultura}\nTotal: ${formatSmart(kg)} kg`, 'success');
+            } catch (e) {
+                // sem resposta do Apps Script: fica o "não encontrada"; a conferência automática tenta de novo
+            } finally { clearTimeout(tempo); }
         }
 
         async function checkProductionData(isBackground = false) {
@@ -867,12 +1067,13 @@
                 prodInput.readOnly = false;
                 prodInput.classList.remove('cursor-not-allowed');
 
+                let timerCarregando = null;
                 if (!isBackground) {
                     prodInput.placeholder = "Buscando...";
                     prodInput.value = "";
-                    // Mostra a tela de carregamento congelando a página
-                    loadingOverlay.classList.remove('hidden');
-                    loadingOverlay.classList.add('flex');
+                    // A tela "Consultando produção..." só aparece se a resposta demorar de verdade
+                    // (na memória do aparelho a resposta é instantânea e a tela nem pisca)
+                    timerCarregando = setTimeout(() => { loadingOverlay.classList.remove('hidden'); loadingOverlay.classList.add('flex'); }, 400);
                 } else {
                     // Mantém o valor se houver, mas indica que está atualizando
                     if (!prodInput.value) prodInput.placeholder = "Atualizando...";
@@ -882,6 +1083,12 @@
                     // 1º: a produção já copiada para o Supabase (instantâneo). Só se ainda não tiver
                     // chegado lá (o Apps Script manda a cada 5 minutos) pergunta direto ao Apps Script.
                     let data = await producaoNoSistema(dateInput, cultureVal, partnerVal);
+                    if (!data && await sincronizacaoAtiva()) {
+                        // Cópia em dia e não achou: responde na hora ("não encontrada") e confere
+                        // no Apps Script em segundo plano, caso tenha acabado de ser lançada
+                        data = { error: 'Debug' };
+                        confirmarProducaoNoAppsScript(dateInput, cultureVal, partnerVal);
+                    }
                     if (!data) {
                     const url = `${URL_PRODUCAO}?action=getProduction&date=${encodeURIComponent(dateBR)}&culture=${encodeURIComponent(cultureVal)}&partner=${encodeURIComponent(partnerVal)}`;
 
@@ -985,6 +1192,7 @@
                         prodInput.value = '';
                     }
                 } finally {
+                    clearTimeout(timerCarregando);
                     try {
                         if (!document.getElementById('productionInProgress').checked) {
                             prodInput.disabled = false;
@@ -1247,9 +1455,13 @@
             
             if (editingIndex >= 0) { discardData[editingIndex] = item; } else { discardData.push(item); }
             saveData(); clearBlockForm(); renderReport(); renderList();
+            // Leva o usuário até o botão Registrar, que acabou de aparecer
+            const rodape = document.getElementById('rodapeRegistrar');
+            if (rodape) setTimeout(() => rodape.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
         }
 
         function clearBlockForm() {
+            mostrarTodosParceiros = false;
             document.getElementById('culture').value = ''; updateDynamicFields();
             document.getElementById('discardQuantity').value = ''; document.getElementById('customReason').value = '';
             
@@ -1312,6 +1524,8 @@
                     <div class="flex items-center"><button onclick="editItem(${index})" class="text-blue-500 mr-2"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="removeItem(${index})" class="text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
                 </li>`;
             });
+            const rodape = document.getElementById('rodapeRegistrar');
+            if (rodape) rodape.classList.toggle('hidden', !discardData.length);
             lucide.createIcons();
         }
 
@@ -1383,7 +1597,7 @@
         function confirmBeforeSend() { 
             if (isSending) return;
             if (isConsulting) {
-                showMessageModal('Aguarde', 'A consulta de produção está em andamento. Aguarde concluir antes de enviar.', 'info');
+                showMessageModal('Aguarde', 'A consulta de produção está em andamento. Aguarde concluir antes de registrar.', 'info');
                 return;
             }
             if (discardData.length === 0) { showMessageModal('Atenção', 'Adicione o registro primeiro.', 'error'); return; } 
@@ -1393,8 +1607,44 @@
         function hideConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
         function executeSend() { 
             if (isSending) return;
-            hideConfirmModal(); 
-            downloadImage(); 
+            hideConfirmModal();
+            registrarDescarte();
+        }
+
+        // Registrar descarte: grava no sistema (fotos sobem para o Drive em segundo plano), sem abrir
+        // o WhatsApp. Para mandar a imagem ao parceiro, usa-se "Reenviar" na aba Recentes.
+        function registrarDescarte() {
+            if (isSending || !discardData.length) return;
+            isSending = true;
+            const btn = document.getElementById('sendBtn');
+            if (btn) btn.disabled = true;
+            try {
+                const reportDate = getSelectedDate();
+                const original = discardData[0];
+                const reportId = generateReportID(original);
+                const itemsToSync = [];
+                discardData.forEach(d => {
+                    if (d.partnerName === "Sítio Leitão") {
+                        const halfWeightFormatted = formatSmart(parsePTBRNumber(d.quantity) / 2);
+                        itemsToSync.push({ partnerName: "Sítio Rafael", culture: d.culture, quantity: halfWeightFormatted, reason: d.reason });
+                        itemsToSync.push({ partnerName: "Sítio Reginaldo", culture: d.culture, quantity: halfWeightFormatted, reason: d.reason });
+                    } else {
+                        itemsToSync.push({ partnerName: d.partnerName, culture: d.culture, quantity: d.quantity, reason: d.reason });
+                    }
+                });
+                if (!salvarDescarteNoSistema(reportDate, reportId, itemsToSync, original)) return;
+
+                const total = discardData.reduce((acc, d) => acc + parsePTBRNumber(d.quantity), 0);
+                discardData = [];
+                saveData(); clearBlockForm(); renderReport(); renderList();
+                const offline = navigator.onLine ? '' : '\n\nSem internet agora: ficou guardado neste aparelho e vai para o sistema sozinho quando o sinal voltar.';
+                showMessageModal('Descarte registrado',
+                    `${original.partnerName} · ${formatSmart(total)} kg · ID ${reportId}${offline}\n\nPara mandar a imagem ao parceiro, use "Reenviar" na aba Recentes.`,
+                    'success');
+            } finally {
+                isSending = false;
+                if (btn) btn.disabled = false;
+            }
         }
 
         // Imagem única do envio: cartão com os dados do descarte e, embaixo, as fotos anexadas.
@@ -1455,7 +1705,7 @@
                 const alvo = host.firstElementChild;
                 await Promise.all([...alvo.querySelectorAll('img')].map(img => img.complete ? null : new Promise(r => { img.onload = img.onerror = r; })));
                 // Muitas fotos = imagem alta: reduz a nitidez para caber no limite do celular (iPhone)
-                const ratio = Math.max(1, Math.min(2, Math.sqrt(15e6 / (alvo.offsetWidth * alvo.offsetHeight))));
+                const ratio = Math.max(1, Math.min(3, Math.sqrt(15e6 / (alvo.offsetWidth * alvo.offsetHeight))));
                 const opcoes = { pixelRatio: ratio, backgroundColor: '#f8fafc', quality: 0.9, skipFonts: true };
                 await htmlToImage.toJpeg(alvo, opcoes); // a primeira às vezes sai sem as imagens; vale a segunda
                 return await htmlToImage.toJpeg(alvo, opcoes);
@@ -1573,12 +1823,11 @@
                         fotos: original.photos.slice()
                     });
                 }
-                if (!navigator.onLine) {
-                    showMessageModal('Salvo no aparelho', 'Sem internet agora. O descarte ficou guardado neste aparelho e será enviado ao sistema sozinho quando o sinal voltar.', 'info');
-                }
+                return true;
             } catch (erro) {
                 console.error('Falha ao gravar o descarte:', erro);
-                showMessageModal('Falha ao salvar', 'Não foi possível salvar o descarte no sistema: ' + erro.message + '\n\nToque em "Enviar" de novo: o mesmo registro não é duplicado.', 'error');
+                showMessageModal('Falha ao salvar', 'Não foi possível salvar o descarte no sistema: ' + erro.message + '\n\nToque em "Registrar descarte" de novo: o mesmo registro não é duplicado.', 'error');
+                return false;
             }
         }
 
@@ -1838,6 +2087,17 @@
         setTimeout(() => { mostrarAvisoFotos(); processarPendentes(); }, 3000);
 
         // ---------- Abas ----------
+        // Celular: barra flutuante no rodapé, igual à Irrigação (componente compartilhado barra-abas.js)
+        let abaAtual = 'registrar', barraAbasDescarte = null;
+        if (window.BarraAbas) barraAbasDescarte = BarraAbas.criar({
+            rotulo: 'Seções do descarte',
+            abas: () => [
+                { id: 'registrar', nome: 'Registrar', icone: 'clipboard-pen', cor: '22, 163, 74', ativa: abaAtual === 'registrar' },
+                { id: 'recentes', nome: 'Recentes', icone: 'images', cor: '2, 132, 199', ativa: abaAtual === 'recentes' },
+                { id: 'painel', nome: 'Painel', icone: 'chart-column', cor: '79, 70, 229', ativa: abaAtual === 'painel' }
+            ],
+            abrir: id => trocarAba(id)
+        });
         function trocarAba(aba) {
             document.querySelectorAll('#abasDescarte [data-aba]').forEach(b => {
                 const ativa = b.dataset.aba === aba;
@@ -1848,34 +2108,88 @@
             // "hidden" e a tela de registro continuava aparecendo, com os Recentes lá embaixo
             el('conteudo').classList.toggle('aba-oculta', aba !== 'registrar');
             el('viewRecentes').classList.toggle('hidden', aba !== 'recentes');
-            const hash = aba === 'recentes' ? '#recentes' : '';
+            el('viewPainel').classList.toggle('hidden', aba !== 'painel');
+            const hash = aba === 'registrar' ? '' : '#' + aba;
             if (location.hash !== hash) history.replaceState(null, '', location.pathname + location.search + hash);
+            abaAtual = aba;
+            if (barraAbasDescarte) barraAbasDescarte.atualizar();
             if (aba === 'recentes') carregarRecentes();
+            if (aba === 'painel') carregarPainel();
             scrollTo(0, 0);
         }
         el('abasDescarte').addEventListener('click', e => { const b = e.target.closest('[data-aba]'); if (b) trocarAba(b.dataset.aba); });
         // Abrindo com #recentes no endereço (ou atualizando a página nos Recentes), já abre nela
-        if (location.hash === '#recentes') setTimeout(() => trocarAba('recentes'), 0);
+        if (location.hash === '#recentes' || location.hash === '#painel') { const aba = location.hash.slice(1); setTimeout(() => trocarAba(aba), 0); }
 
         // ---------- Recentes ----------
         let grupos = [];
+        let ultimosVisiveis = []; // o que está filtrado na tela (usado pela imagem do resumo)
         const dataBR = iso => iso ? String(iso).slice(0, 10).split('-').reverse().join('/') : '—';
         const horaBR = ts => new Date(ts).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         const kgBR = v => Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
         const meuId = () => (API.usuarioAtual() || {}).id;
 
+        let recModo = 'cartoes'; // exibição dos Recentes: 'cartoes' | 'tabela'
+        const recParceirosSel = new Set(); // parceiros marcados no filtro (vazio = todos)
+
+        // ---- Filtro de parceiro com seleção múltipla ----
+        function montarOpcoesParceiro() {
+            const nomes = [...new Set(grupos.flatMap(nomesDoGrupo).map(v => String(v || '').trim()).filter(Boolean))];
+            recParceirosSel.forEach(v => { if (!nomes.includes(v)) nomes.push(v); }); // mantém a escolha, mesmo sem registros agora
+            nomes.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+            const termo = semAcento(el('recParceiroBusca').value.trim());
+            const visiveis = nomes.filter(n => !termo || semAcento(n).includes(termo));
+            el('recParceiroOpcoes').innerHTML = visiveis.map(n => {
+                const marcado = recParceirosSel.has(n);
+                return `<label role="option" aria-selected="${marcado}" class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl cursor-pointer text-sm ${marcado ? 'bg-emerald-50 text-emerald-800 font-bold' : 'text-slate-700 hover:bg-slate-50'}">
+                    <input type="checkbox" value="${esc(n)}" ${marcado ? 'checked' : ''} class="w-4 h-4 accent-emerald-600 shrink-0"><span class="truncate">${esc(n)}</span></label>`;
+            }).join('') || '<p class="px-3 py-4 text-center text-xs text-slate-400">Nenhum parceiro encontrado.</p>';
+            const sel = [...recParceirosSel];
+            el('recParceiroRotulo').textContent = !sel.length ? 'Todos os parceiros' : sel.length <= 2 ? sel.join(', ') : `${sel.length} parceiros`;
+            el('recParceiroConta').textContent = sel.length;
+            el('recParceiroConta').classList.toggle('hidden', sel.length < 3);
+            el('recParceiro').title = sel.length ? sel.join(', ') : 'Todos os parceiros';
+        }
+        const painelParceiroAberto = () => !el('recParceiroPainel').classList.contains('hidden');
+        function abrirPainelParceiro(abrir) {
+            el('recParceiroPainel').classList.toggle('hidden', !abrir);
+            el('recParceiro').setAttribute('aria-expanded', abrir);
+            if (abrir) { el('recParceiroBusca').value = ''; montarOpcoesParceiro(); setTimeout(() => el('recParceiroBusca').focus(), 0); }
+        }
+        el('recParceiro').addEventListener('click', () => abrirPainelParceiro(!painelParceiroAberto()));
+        el('recParceiroBusca').addEventListener('input', montarOpcoesParceiro);
+        el('recParceiroOpcoes').addEventListener('change', e => {
+            const cb = e.target.closest('input[type="checkbox"]'); if (!cb) return;
+            if (cb.checked) recParceirosSel.add(cb.value); else recParceirosSel.delete(cb.value);
+            montarOpcoesParceiro(); desenharRecentes();
+        });
+        el('recParceiroLimpar').addEventListener('click', () => { recParceirosSel.clear(); montarOpcoesParceiro(); desenharRecentes(); });
+        el('recParceiroOk').addEventListener('click', () => abrirPainelParceiro(false));
+        document.addEventListener('click', e => { if (painelParceiroAberto() && !e.target.closest('#recParceiroCaixa')) abrirPainelParceiro(false); });
+        addEventListener('keydown', e => { if (e.key === 'Escape' && painelParceiroAberto()) abrirPainelParceiro(false); });
+        // Nome do cartão: Rafael + Reginaldo (mesmo ID) = Sítio Leitão
+        // Sítio Rafael e Sítio Reginaldo = Sítio Leitão (é como o app conhece). "Peso separado" mostra os dois nomes.
+        const ehLeitao = p => /s[ií]tio\s+(rafael|reginaldo)/i.test(String(p || ''));
+        const nomeUnificado = p => ehLeitao(p) ? 'Sítio Leitão' : String(p || '').trim();
+        const nomeGrupoRec = g => [...new Set(g.parceiros.map(nomeUnificado))].join(' + ');
+        const nomesDoGrupo = g => el('recPesoSeparado').checked ? g.parceiros.map(p => String(p || '').trim()) : [nomeGrupoRec(g)];
         // Sítio Leitão vira duas linhas (Rafael e Reginaldo) com o mesmo ID: aqui voltam a ser um cartão só
         function agrupar(linhas) {
             const mapa = new Map();
             linhas.forEach(r => {
-                const k = r.origem === 'app' && r.id_exclusivo ? 'app|' + r.id_exclusivo : r.id;
+                // App: as duas metades têm o mesmo ID. Planilha (histórico importado): junta as metades de
+                // Rafael/Reginaldo pelo mesmo ID + colheita + cultura + motivo, como o painel antigo fazia.
+                const k = r.origem === 'app' && r.id_exclusivo ? 'app|' + r.id_exclusivo
+                    : ehLeitao(r.parceiro) ? ['leitao', r.id_exclusivo || r.registrado_em, r.data_colheita, r.cultura, r.motivo].join('|')
+                    : r.id;
                 let g = mapa.get(k);
                 if (!g) {
                     g = { rows: [], parceiros: [], cultura: r.cultura, motivo: r.motivo, data_colheita: r.data_colheita, registrado_em: r.registrado_em,
                           criado_por_nome: r.criado_por_nome, id_exclusivo: r.id_exclusivo, origem: r.origem, descarte: 0, producao: null, andamento: false, fotos: [] };
                     mapa.set(k, g);
                 }
-                g.rows.push({ id: r.id, criado_por: r.criado_por });
+                g.rows.push({ id: r.id, criado_por: r.criado_por, parceiro: r.parceiro, descarte: Number(r.descarte_kg) || 0,
+                              producao: r.producao_kg === null || r.producao_kg === undefined ? null : Number(r.producao_kg) });
                 g.parceiros.push(r.parceiro);
                 g.descarte += Number(r.descarte_kg) || 0;
                 if (r.producao_kg !== null && r.producao_kg !== undefined) g.producao = (g.producao || 0) + Number(r.producao_kg);
@@ -1889,19 +2203,24 @@
         const podeGerenciar = () => API.isAdmin() || API.temModulo('descarte_parceiros_editar');
         const podeEditar = g => podeGerenciar() || (g.origem === 'app' && g.rows.every(r => r.criado_por && r.criado_por === meuId()));
 
-        // Período: os atalhos preenchem o calendário De/Até; mexer nas datas vira "Personalizado"
+        // Período: o seletor padrão da Produção (Dia | Mês | Ano | Intervalo). Abre nos últimos 7 dias.
         const isoLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        function aplicarAtalhoPeriodo() {
-            const v = el('recPeriodo').value;
-            if (v === 'personalizado') return;
-            const hoje = new Date(); let de = new Date(hoje), ate = new Date(hoje);
-            if (v === 'mes') de = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-            else if (v === 'mesPassado') { de = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1); ate = new Date(hoje.getFullYear(), hoje.getMonth(), 0); }
-            else if (v !== 'hoje') de.setDate(hoje.getDate() - (Number(v) - 1));
-            el('recDe').value = isoLocal(de);
-            el('recAte').value = isoLocal(ate);
-        }
-        aplicarAtalhoPeriodo();
+        let ultimoDescarte = '';   // atalho "Último descarte"
+        const anosComDescarte = new Set([new Date().getFullYear()]);
+        API.cliente.from('descarte_parceiros').select('registrado_em').order('registrado_em', { ascending: true }).limit(1)
+            .then(({ data }) => { if (data && data[0]) for (let a = new Date(data[0].registrado_em).getFullYear(); a <= new Date().getFullYear(); a++) anosComDescarte.add(a); });
+        API.cliente.from('descarte_parceiros').select('registrado_em').order('registrado_em', { ascending: false }).limit(1)
+            .then(({ data }) => { if (data && data[0]) ultimoDescarte = isoLocal(new Date(data[0].registrado_em)); });
+        const seteDias = (() => { const d = new Date(); d.setDate(d.getDate() - 6); return isoLocal(d); })();
+        el('recDe').value = seteDias; el('recAte').value = isoLocal(new Date());
+        const seletorRecentes = window.SeletorPeriodo ? SeletorPeriodo.montar(el('recSeletorPeriodo'), {
+            periodo: { modo: 'intervalo', de: seteDias, ate: isoLocal(new Date()), dia: isoLocal(new Date()), mes: new Date().getMonth(), ano: new Date().getFullYear() },
+            rotuloUltima: 'Último descarte',
+            ultima: () => ultimoDescarte,
+            anos: () => [...anosComDescarte],
+            aoMudar: (de, ate) => { el('recDe').value = de || ''; el('recAte').value = ate || ''; carregarRecentes(); }
+        }) : null;
+        const nomePeriodoRecentes = () => seletorRecentes ? SeletorPeriodo.nome(seletorRecentes.periodo()) : `${el('recDe').value} a ${el('recAte').value}`;
 
         const LIMITE_LINHAS = 3000;
         async function carregarRecentes() {
@@ -1909,10 +2228,12 @@
             lista.innerHTML = '<div class="col-span-full py-16 flex justify-center"><i data-lucide="loader-circle" class="w-8 h-8 text-emerald-300 animate-spin"></i></div>';
             if (window.lucide) lucide.createIcons();
             let de = el('recDe').value, ate = el('recAte').value;
-            if (!de || !ate) { aplicarAtalhoPeriodo(); de = el('recDe').value; ate = el('recAte').value; }
-            if (de > ate) { [de, ate] = [ate, de]; el('recDe').value = de; el('recAte').value = ate; }
+            if (de && ate && de > ate) [de, ate] = [ate, de];
             let q = API.cliente.from('descarte_parceiros').select('*');
-            if (el('recCampoData').value === 'data_colheita') {
+            if (!de || !ate) {
+                // "Tudo": sem filtro de data
+                q = q.order(el('recCampoData').value === 'data_colheita' ? 'data_colheita' : 'registrado_em', { ascending: false, nullsFirst: false });
+            } else if (el('recCampoData').value === 'data_colheita') {
                 q = q.gte('data_colheita', de).lte('data_colheita', ate).order('data_colheita', { ascending: false }).order('registrado_em', { ascending: false });
             } else {
                 const fim = new Date(ate + 'T00:00:00'); fim.setDate(fim.getDate() + 1);
@@ -1939,7 +2260,7 @@
                 if (atual && !lista.includes(atual)) lista.unshift(atual); // mantém a escolha, mesmo sem registros agora
                 campo.innerHTML = `<option value="">${rotuloTodos}</option>` + lista.map(v => `<option value="${esc(v)}"${v === atual ? ' selected' : ''}>${esc(v)}</option>`).join('');
             };
-            opcoes('recParceiro', grupos.flatMap(g => g.parceiros), 'Todos os parceiros');
+            montarOpcoesParceiro();
             opcoes('recCultura', grupos.map(g => g.cultura), 'Todas');
             opcoes('recMotivo', grupos.map(g => g.motivo), 'Todos os motivos');
         }
@@ -1947,12 +2268,13 @@
         function desenharRecentes() {
             const termo = semAcento(el('recBusca').value.trim());
             const soFotos = el('recSoFotos').checked;
-            const parceiro = el('recParceiro').value, cultura = el('recCultura').value, motivo = el('recMotivo').value;
+            const cultura = el('recCultura').value, motivo = el('recMotivo').value;
             const visiveis = grupos.filter(g => (!soFotos || g.fotos.length)
-                && (!parceiro || g.parceiros.includes(parceiro))
+                && (!recParceirosSel.size || nomesDoGrupo(g).some(n => recParceirosSel.has(n)))
                 && (!cultura || String(g.cultura || '').trim() === cultura)
                 && (!motivo || String(g.motivo || '').trim() === motivo)
                 && (!termo || semAcento([g.parceiros.join(' '), g.cultura, g.motivo, g.id_exclusivo, g.criado_por_nome].join(' ')).includes(termo)));
+            ultimosVisiveis = visiveis;
             const total = visiveis.reduce((s, g) => s + g.descarte, 0);
             const comProd = visiveis.filter(g => !g.andamento && g.producao > 0);
             const pctMedio = comProd.length ? num(comProd.reduce((s, g) => s + g.descarte, 0) / comProd.reduce((s, g) => s + g.producao, 0) * 100) + '%' : '—';
@@ -1965,8 +2287,16 @@
                 + tile('percent', '% médio', pctMedio, 'text-amber-600', 'bg-amber-50')
                 + tile('images', 'Com foto', num(visiveis.filter(g => g.fotos.length).length, 0), 'text-emerald-600', 'bg-emerald-50');
 
+            el('recModo').querySelectorAll('[data-modo]').forEach(b => {
+                b.className = 'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ' + (b.dataset.modo === recModo ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500');
+            });
+            if (recModo === 'tabela') { desenharTabelaRecentes(visiveis); return; }
+            const separado = el('recPesoSeparado').checked;
+
             el('recLista').innerHTML = visiveis.map(g => {
                 const i = grupos.indexOf(g);
+                const divisao = separado && g.rows.length > 1
+                    ? `<p class="text-[11px] font-bold text-slate-500 -mt-1">${g.rows.map(r => `${esc(r.parceiro)}: <span class="text-rose-700 tabular-nums">${num(r.descarte)} kg</span>`).join(' · ')}</p>` : '';
                 const pct = !g.andamento && g.producao > 0 ? num(g.descarte / g.producao * 100) + '%' : '—';
                 const producao = g.andamento ? '<span class="text-amber-600 text-xs">Em andamento</span>' : g.producao > 0 ? num(g.producao) + ' kg' : '—';
                 const capa = g.fotos.length
@@ -1976,7 +2306,7 @@
                     <div class="relative aspect-[16/10] bg-gradient-to-br from-emerald-600 to-green-800 overflow-hidden">
                         ${capa}
                         <div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pb-3.5 pt-12 text-white">
-                            <h3 class="text-[17px] font-extrabold leading-tight drop-shadow">${esc(g.parceiros.join(' + '))}</h3>
+                            <h3 class="text-[17px] font-extrabold leading-tight drop-shadow">${esc(separado ? g.parceiros.join(' + ') : nomeGrupoRec(g))}</h3>
                             <p class="text-[11px] font-semibold text-white/80 mt-0.5">Colheita ${dataBR(g.data_colheita)} · ${horaBR(g.registrado_em)}</p>
                         </div>
                         <span class="pointer-events-none absolute top-3 left-3 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/95 text-emerald-800 shadow-sm">${esc(g.cultura || '—')}</span>
@@ -1988,6 +2318,7 @@
                             <div class="rounded-2xl bg-slate-50 px-2.5 py-2"><p class="text-[9px] font-black text-slate-400 uppercase tracking-wider">Produção</p><p class="text-[15px] font-black text-slate-700 tabular-nums leading-tight">${producao}</p></div>
                             <div class="rounded-2xl bg-amber-50 px-2.5 py-2"><p class="text-[9px] font-black text-amber-500 uppercase tracking-wider">% Desc.</p><p class="text-[15px] font-black text-amber-700 tabular-nums leading-tight">${pct}</p></div>
                         </div>
+                        ${divisao}
                         <div class="flex items-start gap-2 text-sm text-slate-700">
                             <i data-lucide="message-square-warning" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i><span class="font-semibold leading-snug">${esc(g.motivo || '—')}</span>
                         </div>
@@ -2009,14 +2340,123 @@
             if (window.lucide) lucide.createIcons();
         }
 
-        el('recPeriodo').addEventListener('change', () => { aplicarAtalhoPeriodo(); carregarRecentes(); });
-        ['recDe', 'recAte'].forEach(id => el(id).addEventListener('change', () => { el('recPeriodo').value = 'personalizado'; carregarRecentes(); }));
+        // Linhas do que está filtrado: um descarte por linha (ou, com "Peso separado", Sítio Leitão
+        // em duas linhas — Rafael e Reginaldo — cada uma com o seu peso e a sua produção)
+        function linhasRecentes(visiveis) {
+            const separado = el('recPesoSeparado').checked;
+            return visiveis.flatMap(g => {
+                const base = { g, i: grupos.indexOf(g), cultura: g.cultura, motivo: g.motivo, andamento: g.andamento };
+                if (separado && g.rows.length > 1) return g.rows.map(r => ({ ...base, parceiro: r.parceiro, descarte: r.descarte, producao: r.producao, parte: true }));
+                return [{ ...base, parceiro: nomeGrupoRec(g), descarte: g.descarte, producao: g.producao }];
+            });
+        }
+
+        function desenharTabelaRecentes(visiveis) {
+            const linhas = linhasRecentes(visiveis);
+            if (!linhas.length) {
+                el('recLista').innerHTML = `<div class="col-span-full bg-white rounded-3xl ring-1 ring-slate-200 p-10 text-center"><i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-300"></i><p class="mt-2 text-sm font-semibold text-slate-400">Nenhum descarte neste período.</p></div>`;
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+            const th = (t, extra = '') => `<th class="px-3 py-2.5 text-[10px] font-black uppercase tracking-wider text-slate-500 whitespace-nowrap ${extra}">${t}</th>`;
+            const corpo = linhas.map((l, n) => {
+                const g = l.g;
+                const pct = !l.andamento && l.producao > 0 ? l.descarte / l.producao * 100 : null;
+                const prod = l.andamento ? '<span class="text-amber-600 font-bold">Em andamento</span>' : l.producao > 0 ? num(l.producao) : '—';
+                const fundo = n % 2 ? 'bg-slate-50/70' : 'bg-white';
+                return `<tr class="${fundo} hover:bg-emerald-50/60">
+                    <td class="px-3 py-2 font-mono text-[11px] tracking-wider text-slate-500 whitespace-nowrap sticky left-0 ${fundo}">${esc(g.id_exclusivo || '—')}</td>
+                    <td class="px-3 py-2 whitespace-nowrap tabular-nums">${dataBR(g.data_colheita)}</td>
+                    <td class="px-3 py-2 whitespace-nowrap tabular-nums text-slate-500">${horaBR(g.registrado_em)}</td>
+                    <td class="px-3 py-2 font-bold text-slate-800 whitespace-nowrap">${esc(l.parceiro)}${l.parte ? ' <span class="text-[9px] font-black text-slate-400 uppercase">½</span>' : ''}</td>
+                    <td class="px-3 py-2 whitespace-nowrap">${esc(l.cultura || '—')}</td>
+                    <td class="px-3 py-2 min-w-[160px]">${esc(l.motivo || '—')}</td>
+                    <td class="px-3 py-2 text-right tabular-nums whitespace-nowrap">${prod}</td>
+                    <td class="px-3 py-2 text-right tabular-nums font-black text-rose-700 whitespace-nowrap">${num(l.descarte)}</td>
+                    <td class="px-3 py-2 text-right tabular-nums font-bold text-amber-700 whitespace-nowrap">${pct === null ? '—' : num(pct) + '%'}</td>
+                    <td class="px-3 py-2 whitespace-nowrap">
+                        <div class="flex items-center justify-end gap-1">
+                            ${g.fotos.length ? `<button type="button" data-ver-fotos="${l.i}" title="Ver fotos" class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 text-[11px] font-bold"><i data-lucide="images" class="w-3.5 h-3.5"></i>${g.fotos.length}</button>` : ''}
+                            <button type="button" data-reenviar="${l.i}" title="Reenviar a imagem ao parceiro" class="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50"><i data-lucide="send" class="w-4 h-4"></i></button>
+                            ${podeEditar(g) ? `<button type="button" data-editar="${l.i}" title="Editar" class="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100"><i data-lucide="pencil" class="w-4 h-4"></i></button>` : ''}
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+            const totDesc = linhas.reduce((s, l) => s + l.descarte, 0);
+            el('recLista').innerHTML = `<div class="col-span-full bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-slate-700 text-left">
+                        <thead class="bg-slate-100/80"><tr>
+                            ${th('ID', 'sticky left-0 bg-slate-100')}${th('Colheita')}${th('Registrado')}${th('Parceiro')}${th('Cultura')}${th('Motivo')}
+                            ${th('Produção (kg)', 'text-right')}${th('Descarte (kg)', 'text-right')}${th('% Desc.', 'text-right')}${th('', 'text-right')}
+                        </tr></thead>
+                        <tbody class="divide-y divide-slate-100">${corpo}</tbody>
+                        <tfoot class="bg-slate-50 border-t border-slate-200"><tr>
+                            <td colspan="7" class="px-3 py-2.5 text-[11px] font-black uppercase tracking-wider text-slate-500">${num(linhas.length, 0)} linha${linhas.length === 1 ? '' : 's'}</td>
+                            <td class="px-3 py-2.5 text-right tabular-nums font-black text-rose-700">${num(totDesc)}</td>
+                            <td colspan="2"></td>
+                        </tr></tfoot>
+                    </table>
+                </div>
+            </div>`;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Copiar dados: parceiro, kg, motivo e cultura separados por TAB (cola certinho na planilha)
+        async function copiarDadosRecentes() {
+            const linhas = linhasRecentes(ultimosVisiveis);
+            if (!linhas.length) { showMessageModal('Nada para copiar', 'Não há descartes com os filtros atuais.', 'info'); return; }
+            const texto = linhas.map(l => [
+                l.parceiro || '—',
+                Number(l.descarte || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+                l.motivo || '—',
+                l.cultura || '—'
+            ].join('\t')).join('\n');
+            const rotulo = el('recCopiar').querySelector('span');
+            try {
+                await navigator.clipboard.writeText(texto);
+            } catch (e) {
+                // Navegadores antigos / sem permissão: copia por um campo escondido
+                const t = document.createElement('textarea');
+                t.value = texto; t.style.cssText = 'position:fixed;opacity:0;';
+                document.body.appendChild(t); t.select();
+                const ok = document.execCommand('copy'); t.remove();
+                if (!ok) { showMessageModal('Não foi possível copiar', 'O navegador bloqueou a cópia. Tente de novo.', 'error'); return; }
+            }
+            rotulo.textContent = `Copiado! (${linhas.length})`;
+            setTimeout(() => { rotulo.textContent = 'Copiar dados'; }, 1800);
+        }
+
+        try { recModo = localStorage.getItem('spg_descarte_rec_modo') === 'tabela' ? 'tabela' : 'cartoes'; el('recPesoSeparado').checked = localStorage.getItem('spg_descarte_rec_separado') === '1'; } catch (e) {}
+        el('recModo').addEventListener('click', e => {
+            const b = e.target.closest('[data-modo]'); if (!b || b.dataset.modo === recModo) return;
+            recModo = b.dataset.modo;
+            try { localStorage.setItem('spg_descarte_rec_modo', recModo); } catch (err) {}
+            desenharRecentes();
+        });
+        el('recPesoSeparado').addEventListener('change', () => {
+            try { localStorage.setItem('spg_descarte_rec_separado', el('recPesoSeparado').checked ? '1' : '0'); } catch (err) {}
+            // Sítio Leitão <-> Rafael/Reginaldo: a escolha no filtro de parceiro acompanha
+            const separado = el('recPesoSeparado').checked;
+            if (separado && recParceirosSel.delete('Sítio Leitão')) {
+                new Set(grupos.flatMap(g => g.parceiros).filter(ehLeitao).map(p => String(p).trim())).forEach(p => recParceirosSel.add(p));
+            } else if (!separado && [...recParceirosSel].some(ehLeitao)) {
+                [...recParceirosSel].filter(ehLeitao).forEach(p => recParceirosSel.delete(p));
+                recParceirosSel.add('Sítio Leitão');
+            }
+            preencherOpcoesFiltro();
+            desenharRecentes();
+        });
+        el('recCopiar').addEventListener('click', copiarDadosRecentes);
+
         el('recCampoData').addEventListener('change', carregarRecentes);
         el('recAtualizar').addEventListener('click', carregarRecentes);
         el('recBusca').addEventListener('input', desenharRecentes);
-        ['recSoFotos', 'recParceiro', 'recCultura', 'recMotivo'].forEach(id => el(id).addEventListener('change', desenharRecentes));
+        ['recSoFotos', 'recCultura', 'recMotivo'].forEach(id => el(id).addEventListener('change', desenharRecentes));
         el('recLimpar').addEventListener('click', () => {
-            ['recParceiro', 'recCultura', 'recMotivo', 'recBusca'].forEach(id => { el(id).value = ''; });
+            ['recCultura', 'recMotivo', 'recBusca'].forEach(id => { el(id).value = ''; });
+            recParceirosSel.clear(); montarOpcoesParceiro();
             el('recSoFotos').checked = false;
             desenharRecentes();
         });
@@ -2287,14 +2727,7 @@
                 const blob = await (await fetch(dataUrl)).blob();
                 const dia = colheita ? colheita.toLocaleDateString('pt-BR').replace(/\//g, '-') : 'sem-data';
                 const arquivo = new File([blob], `Descarte - ${parceiro} - ${dia}.jpg`, { type: 'image/jpeg' });
-                if (reenvio) URL.revokeObjectURL(reenvio.url);
-                reenvio = { arquivo, url: URL.createObjectURL(blob) };
-                el('reenvioImg').src = reenvio.url;
-                el('reenvioSub').textContent = `${parceiro} · colheita ${colheita ? colheita.toLocaleDateString('pt-BR') : '—'}`;
-                const podeCompartilhar = !!(navigator.canShare && navigator.canShare({ files: [arquivo] }));
-                el('reenvioCompartilhar').classList.toggle('hidden', !podeCompartilhar);
-                const m = el('reenvioModal'); m.classList.remove('hidden'); m.classList.add('flex');
-                if (window.lucide) lucide.createIcons();
+                mostrarPrevia('Reenviar ao parceiro', 'send', `${parceiro} · colheita ${colheita ? colheita.toLocaleDateString('pt-BR') : '—'}`, arquivo, blob);
             } catch (e) {
                 console.error('Reenviar descarte:', e);
                 showMessageModal('Não foi possível reenviar', String(e.message || e), 'error');
@@ -2303,6 +2736,125 @@
                 overlay.classList.add('hidden'); overlay.classList.remove('flex');
             }
         }
+
+        // Prévia de uma imagem pronta (Reenviar ao parceiro / Imagem do resumo), com Compartilhar e Baixar
+        function mostrarPrevia(titulo, icone, subtitulo, arquivo, blob) {
+            if (reenvio) URL.revokeObjectURL(reenvio.url);
+            reenvio = { arquivo, url: URL.createObjectURL(blob) };
+            el('reenvioTitulo').innerHTML = `<i data-lucide="${icone}" class="w-4 h-4 opacity-90"></i> ${esc(titulo)}`;
+            el('reenvioSub').textContent = subtitulo;
+            el('reenvioImg').src = reenvio.url;
+            el('reenvioCompartilhar').classList.toggle('hidden', !(navigator.canShare && navigator.canShare({ files: [arquivo] })));
+            const m = el('reenvioModal'); m.classList.remove('hidden'); m.classList.add('flex');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // ---------- Imagem do resumo do descarte (o que está filtrado na tela) ----------
+        // Sítio Leitão: os dois nomes (Rafael e Reginaldo) voltam a ser um só
+        const nomeDoGrupo = g => g.parceiros.length > 1 && g.parceiros.every(p => /rafael|reginaldo/i.test(p)) ? 'Sítio Leitão' : g.parceiros.join(' + ');
+
+        async function gerarImagemResumoDescarte() {
+            const lista = ultimosVisiveis.slice();
+            if (!lista.length) { showMessageModal('Nada para resumir', 'Não há descartes com esses filtros no período escolhido.', 'info'); return; }
+            const botao = el('recImagem'); botao.disabled = true;
+            try {
+                const escH = esc;
+                const de = el('recDe').value, ate = el('recAte').value;
+                const br = iso => iso ? iso.split('-').reverse().join('/') : '';
+                const hojeIso = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+                const periodo = nomePeriodoRecentes();
+                const pelaData = el('recCampoData').value === 'data_colheita' ? 'pela data da colheita' : 'pela data do descarte';
+                const filtros = [[...recParceirosSel].join(', '), el('recCultura').value, el('recMotivo').value].filter(Boolean);
+
+                // Totais: o % considera só os registros que têm a produção informada
+                const totalKg = lista.reduce((s, g) => s + g.descarte, 0);
+                const comProd = lista.filter(g => !g.andamento && g.producao > 0);
+                const kgComProd = comProd.reduce((s, g) => s + g.descarte, 0), producao = comProd.reduce((s, g) => s + g.producao, 0);
+                const pct = (kg, prod) => prod > 0 ? num(kg / prod * 100) + '%' : '—';
+
+                const agrupar = chave => {
+                    const m = new Map();
+                    lista.forEach(g => {
+                        const k = chave(g) || '—';
+                        const t = m.get(k) || { nome: k, n: 0, kg: 0, kgP: 0, prod: 0 };
+                        t.n++; t.kg += g.descarte;
+                        if (!g.andamento && g.producao > 0) { t.kgP += g.descarte; t.prod += g.producao; }
+                        m.set(k, t);
+                    });
+                    return [...m.values()].sort((a, b) => b.kg - a.kg);
+                };
+                const porParceiro = agrupar(nomeDoGrupo), porMotivo = agrupar(g => String(g.motivo || '').trim());
+                const maiorMotivo = Math.max(1, ...porMotivo.map(m => m.kg));
+
+                const caixa = (rot, val, cor, fundo) => `<div style="flex:1;background:${fundo};border-radius:14px;padding:12px 8px;text-align:center;"><div style="font-size:10px;font-weight:900;color:${cor};text-transform:uppercase;letter-spacing:.08em;opacity:.8;">${rot}</div><div style="font-size:22px;font-weight:900;color:${cor};line-height:1.15;margin-top:3px;">${val}</div></div>`;
+                const titulo = t => `<div style="font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.12em;margin:18px 0 8px;">${t}</div>`;
+                const LIMITE = 40;
+                const registros = lista.slice(0, LIMITE).map((g, i) => `<div style="display:flex;align-items:center;gap:12px;padding:9px 12px;${i % 2 ? 'background:#f8fafc;' : ''}border-radius:10px;">
+                        <div style="width:46px;flex-shrink:0;font-size:12px;font-weight:800;color:#047857;">${escH(br(String(g.data_colheita || '').slice(0, 10)).slice(0, 5))}</div>
+                        <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:800;color:#1e293b;">${escH(nomeDoGrupo(g))} <span style="color:#94a3b8;font-weight:600;">· ${escH(g.cultura || '')}</span></div>
+                        <div style="font-size:11px;color:#64748b;">${escH(g.motivo || '—')}</div></div>
+                        <div style="text-align:right;flex-shrink:0;"><div style="font-size:14px;font-weight:900;color:#be123c;">${num(g.descarte)} kg</div>
+                        <div style="font-size:11px;font-weight:700;color:#94a3b8;">${g.andamento ? 'em andamento' : pct(g.descarte, g.producao)}</div></div>
+                    </div>`).join('');
+
+                const html = `<div style="width:720px;background:#f8fafc;font-family:'Segoe UI',Roboto,Arial,sans-serif;padding:20px;">
+                    <div style="background:#fff;border-radius:22px;overflow:hidden;border:1px solid #e2e8f0;">
+                        <div style="background:linear-gradient(135deg,#16a34a,#15803d);padding:22px 24px;color:#fff;display:flex;align-items:center;gap:12px;">
+                            <img src="${new URL('../../icone-app.png', location.href).href}" style="width:44px;height:44px;border-radius:12px;background:#fff;">
+                            <div><div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#bbf7d0;">Resumo de Descarte</div>
+                            <div style="font-size:24px;font-weight:900;line-height:1.15;">${escH(periodo)}</div>
+                            <div style="font-size:12px;font-weight:600;color:#dcfce7;margin-top:2px;">${escH(pelaData)}${filtros.length ? ' · ' + escH(filtros.join(' · ')) : ''}</div></div>
+                        </div>
+                        <div style="padding:16px 24px 20px;">
+                            <div style="display:flex;gap:8px;">
+                                ${caixa('Registros', num(lista.length, 0), '#334155', '#f1f5f9')}
+                                ${caixa('Descartado', num(totalKg) + ' kg', '#be123c', '#fff1f2')}
+                                ${caixa('Produção', producao > 0 ? num(producao) + ' kg' : '—', '#047857', '#ecfdf5')}
+                                ${caixa('% Descartado', pct(kgComProd, producao), '#b45309', '#fffbeb')}
+                            </div>
+                            ${titulo('Por parceiro')}
+                            ${porParceiro.map(p => `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f1f5f9;">
+                                <div style="flex:1;font-size:14px;font-weight:800;color:#1e293b;">${escH(p.nome)} <span style="font-size:11px;color:#94a3b8;font-weight:600;">· ${p.n} ${p.n === 1 ? 'registro' : 'registros'}</span></div>
+                                <div style="width:110px;text-align:right;font-size:14px;font-weight:900;color:#be123c;">${num(p.kg)} kg</div>
+                                <div style="width:70px;text-align:right;font-size:13px;font-weight:800;color:#b45309;">${pct(p.kgP, p.prod)}</div>
+                            </div>`).join('')}
+                            ${titulo('Por motivo')}
+                            ${porMotivo.slice(0, 10).map(m => `<div style="display:flex;align-items:center;gap:10px;padding:5px 0;">
+                                <div style="width:220px;font-size:12px;font-weight:700;color:#334155;">${escH(m.nome)}</div>
+                                <div style="flex:1;height:10px;background:#f1f5f9;border-radius:99px;overflow:hidden;"><div style="height:100%;width:${Math.max(3, m.kg / maiorMotivo * 100).toFixed(1)}%;background:#f43f5e;border-radius:99px;"></div></div>
+                                <div style="width:90px;text-align:right;font-size:13px;font-weight:900;color:#1e293b;">${num(m.kg)} kg</div>
+                            </div>`).join('')}
+                            ${titulo(`Registros${lista.length > LIMITE ? ` (os ${LIMITE} mais recentes de ${lista.length})` : ''}`)}
+                            ${registros}
+                        </div>
+                        <div style="background:#f8fafc;border-top:1px solid #f1f5f9;padding:10px;text-align:center;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;">SPG Sede • Controle de Descarte</div>
+                    </div>
+                </div>`;
+
+                const host = document.createElement('div');
+                host.style.cssText = 'position:fixed;left:-10000px;top:0;';
+                host.innerHTML = html;
+                document.body.appendChild(host);
+                let dataUrl;
+                try {
+                    const alvo = host.firstElementChild;
+                    await Promise.all([...alvo.querySelectorAll('img')].map(img => img.complete ? null : new Promise(r => { img.onload = img.onerror = r; })));
+                    const ratio = Math.max(1, Math.min(3, Math.sqrt(15e6 / (alvo.offsetWidth * alvo.offsetHeight))));
+                    const opcoes = { pixelRatio: ratio, backgroundColor: '#f8fafc', quality: 0.92, skipFonts: true };
+                    await htmlToImage.toJpeg(alvo, opcoes); // a primeira às vezes sai sem o logo
+                    dataUrl = await htmlToImage.toJpeg(alvo, opcoes);
+                } finally { host.remove(); }
+                const blob = await (await fetch(dataUrl)).blob();
+                const nome = `Resumo de Descarte - ${periodo.replace(/\//g, '-').replace(/\s*·\s*/g, ' ')}.jpg`;
+                mostrarPrevia('Imagem do resumo', 'file-image', `${periodo} · ${num(lista.length, 0)} registros`, new File([blob], nome, { type: 'image/jpeg' }), blob);
+            } catch (e) {
+                console.error('Imagem do resumo:', e);
+                showMessageModal('Não foi possível gerar a imagem', String(e.message || e), 'error');
+            } finally {
+                botao.disabled = false;
+            }
+        }
+        el('recImagem').addEventListener('click', gerarImagemResumoDescarte);
 
         el('recLista').addEventListener('click', e => {
             const b = e.target.closest('[data-reenviar]');
@@ -2318,6 +2870,347 @@
         });
         el('reenvioBaixar').addEventListener('click', () => { if (reenvio) downloadFile(reenvio.url, reenvio.arquivo.name); });
         addEventListener('keydown', e => { if (e.key === 'Escape' && reenvio) fecharReenvio(); });
+
+        // ---------- Painel ----------
+        // % de descarte = kg descartados ÷ kg de produção ENTREGUE pelo parceiro no mesmo período
+        // (tabela producao_parceiros, cópia da planilha PRD). Assim o % de um mês é o do mês inteiro,
+        // não só dos dias em que houve descarte.
+        const pn = { linhas: [], agrupar: 'mes', carregando: 0, de: '', ate: '' };
+        try { pn.agrupar = localStorage.getItem('spg_descarte_painel_agrupar') === 'semana' ? 'semana' : 'mes'; } catch (e) {}
+        const anoHoje = new Date().getFullYear();
+        el('pnDe').value = `${anoHoje}-01-01`; el('pnAte').value = `${anoHoje}-12-31`;
+        if (window.SeletorPeriodo) SeletorPeriodo.montar(el('pnSeletorPeriodo'), {
+            periodo: { modo: 'ano', ano: anoHoje, mes: new Date().getMonth(), dia: isoLocal(new Date()), de: seteDias, ate: isoLocal(new Date()) },
+            anos: () => [...anosComDescarte],
+            aoMudar: (de, ate) => { el('pnDe').value = de || ''; el('pnAte').value = ate || ''; carregarPainel(); }
+        });
+
+        const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+        const dataDeIso = iso => new Date(iso + 'T00:00:00');
+        // Semana ISO (segunda a domingo), igual ao "Sem" do relatório do descarte
+        function semanaIso(d) {
+            const u = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            u.setUTCDate(u.getUTCDate() + 4 - (u.getUTCDay() || 7));
+            const ano = u.getUTCFullYear();
+            return { ano, sem: Math.ceil(((u - Date.UTC(ano, 0, 1)) / 86400000 + 1) / 7) };
+        }
+        function periodoDe(iso) {
+            if (pn.agrupar === 'mes') return iso.slice(0, 7);
+            const { ano, sem } = semanaIso(dataDeIso(iso));
+            return `${ano}-S${String(sem).padStart(2, '0')}`;
+        }
+        function rotuloPeriodo(chave, longo) {
+            if (pn.agrupar === 'mes') { const [a, m] = chave.split('-'); return `${MESES[+m - 1]}${longo ? ' de ' + a : '/' + a.slice(2)}`; }
+            const [a, s] = chave.split('-S');
+            if (!longo) return `S${+s}`;
+            // segunda-feira da semana ISO
+            const jan4 = new Date(+a, 0, 4), seg = new Date(jan4); seg.setDate(jan4.getDate() - ((jan4.getDay() || 7) - 1) + (+s - 1) * 7);
+            const dom = new Date(seg); dom.setDate(seg.getDate() + 6);
+            const f = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+            return `Semana ${+s} (${f(seg)} a ${f(dom)})`;
+        }
+        // Todos os meses/semanas do período (inclusive os vazios), até hoje
+        function periodosEntre(de, ate) {
+            const lista = [], hoje = isoLocal(new Date());
+            if (ate > hoje) ate = hoje;
+            for (let d = dataDeIso(de); isoLocal(d) <= ate; d.setDate(d.getDate() + (pn.agrupar === 'mes' ? 0 : 7))) {
+                const k = periodoDe(isoLocal(d));
+                if (lista[lista.length - 1] !== k) lista.push(k);
+                if (pn.agrupar === 'mes') d.setMonth(d.getMonth() + 1, 1);
+            }
+            const kFim = periodoDe(ate);
+            if (lista[lista.length - 1] !== kFim && kFim > (lista[lista.length - 1] || '')) lista.push(kFim);
+            return lista;
+        }
+
+        async function buscarTudo(montar) {
+            const out = [];
+            for (let i = 0; ; i += 1000) {
+                const { data, error } = await montar().range(i, i + 999);
+                if (error) throw error;
+                out.push(...(data || []));
+                if (!data || data.length < 1000 || out.length >= 100000) break;
+            }
+            return out;
+        }
+
+        async function carregarPainel() {
+            const vez = ++pn.carregando;
+            const alvo = el('pnConteudo');
+            alvo.innerHTML = '<div class="py-16 flex justify-center"><i data-lucide="loader-circle" class="w-8 h-8 text-emerald-300 animate-spin"></i></div>';
+            if (window.lucide) lucide.createIcons();
+            let de = el('pnDe').value, ate = el('pnAte').value;
+            if (de && ate && de > ate) [de, ate] = [ate, de];
+            try {
+                const [desc, prod] = await Promise.all([
+                    buscarTudo(() => {
+                        let q = API.cliente.from('descarte_parceiros').select('id, data_colheita, parceiro, cultura, motivo, descarte_kg').not('data_colheita', 'is', null).order('id');
+                        if (de) q = q.gte('data_colheita', de);
+                        if (ate) q = q.lte('data_colheita', ate);
+                        return q;
+                    }),
+                    buscarTudo(() => {
+                        let q = API.cliente.from('producao_parceiros').select('data, parceiro, cultura, parceiro_norm, cultura_norm, producao_kg')
+                            .order('data').order('cultura_norm').order('parceiro_norm');
+                        if (de) q = q.gte('data', de);
+                        if (ate) q = q.lte('data', ate);
+                        return q;
+                    })
+                ]);
+                if (vez !== pn.carregando) return; // chegou uma consulta mais nova
+                // No painel, Sítio Rafael + Sítio Reginaldo contam como Sítio Leitão (como o app conhece)
+                const unif = l => (l.p === 'sitio rafael' || l.p === 'sitio reginaldo') ? Object.assign(l, { p: 'sitio leitao', pNome: 'Sítio Leitão' }) : l;
+                pn.linhas = [
+                    ...desc.map(r => ({ data: String(r.data_colheita).slice(0, 10), p: normalizarNome(r.parceiro), pNome: String(r.parceiro || '').trim(), c: normalizarNome(r.cultura), cNome: String(r.cultura || '').trim(), desc: Number(r.descarte_kg) || 0, prod: 0, motivo: String(r.motivo || '').trim() || 'Sem motivo' })),
+                    ...prod.map(r => ({ data: String(r.data).slice(0, 10), p: r.parceiro_norm || normalizarNome(r.parceiro), pNome: String(r.parceiro || '').trim(), c: r.cultura_norm || normalizarNome(r.cultura), cNome: String(r.cultura || '').trim(), desc: 0, prod: Number(r.producao_kg) || 0 }))
+                ].map(unif);
+                const datas = pn.linhas.map(l => l.data).sort();
+                pn.de = de || datas[0] || isoLocal(new Date());
+                pn.ate = ate || datas[datas.length - 1] || isoLocal(new Date());
+                preencherFiltrosPainel();
+                desenharPainel();
+            } catch (e) {
+                if (vez !== pn.carregando) return;
+                alvo.innerHTML = `<div class="bg-white rounded-3xl ring-1 ring-slate-200 p-8 text-center text-sm text-slate-500">Não foi possível carregar o painel: ${esc(e.message || e)}</div>`;
+            }
+        }
+
+        // Nome de exibição: o mais usado entre as grafias do mesmo nome normalizado
+        function nomesPorChave(campo, nomeCampo, linhas) {
+            const cont = new Map();
+            linhas.forEach(l => {
+                if (!l[nomeCampo]) return;
+                const m = cont.get(l[campo]) || new Map(); cont.set(l[campo], m);
+                m.set(l[nomeCampo], (m.get(l[nomeCampo]) || 0) + 1);
+            });
+            const nomes = new Map();
+            cont.forEach((m, k) => nomes.set(k, [...m.entries()].sort((a, b) => b[1] - a[1])[0][0]));
+            return nomes;
+        }
+        function preencherFiltrosPainel() {
+            const preencher = (id, nomes, rotuloTodos) => {
+                const campo = el(id), atual = campo.value;
+                const lista = [...nomes.entries()].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'));
+                campo.innerHTML = `<option value="">${rotuloTodos}</option>` + lista.map(([k, n]) => `<option value="${esc(k)}"${k === atual ? ' selected' : ''}>${esc(n)}</option>`).join('');
+                if (atual && !nomes.has(atual)) campo.value = '';
+            };
+            preencher('pnCultura', nomesPorChave('c', 'cNome', pn.linhas), 'Todas');
+            const c = el('pnCultura').value;
+            preencher('pnParceiro', nomesPorChave('p', 'pNome', pn.linhas.filter(l => !c || l.c === c)), 'Todos os parceiros');
+        }
+
+        const pctDe = (d, p) => p > 0 ? d / p * 100 : null;
+        const pctTxt = v => v === null ? '—' : num(v, v < 10 ? 2 : 1) + '%';
+        const kgTxt = v => num(v, v >= 100 ? 0 : 1) + ' kg';
+
+        function desenharPainel() {
+            el('pnAgrupar').querySelectorAll('[data-agrupar]').forEach(b => {
+                const ativo = b.dataset.agrupar === pn.agrupar;
+                b.className = 'flex-1 px-4 py-2 rounded-lg text-xs font-bold transition-all ' + (ativo ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500');
+            });
+            const c = el('pnCultura').value, pSel = el('pnParceiro').value;
+            const daCultura = pn.linhas.filter(l => !c || l.c === c);
+            const linhas = daCultura.filter(l => !pSel || l.p === pSel);
+            const periodos = periodosEntre(pn.de, pn.ate);
+            const nomesP = nomesPorChave('p', 'pNome', pn.linhas);
+
+            // Totais por período (gráfico) e por parceiro x período (tabela)
+            const porPeriodo = new Map(periodos.map(k => [k, { desc: 0, prod: 0 }]));
+            linhas.forEach(l => { const t = porPeriodo.get(periodoDe(l.data)); if (t) { t.desc += l.desc; t.prod += l.prod; } });
+            const porParceiro = new Map();
+            daCultura.forEach(l => {
+                let r = porParceiro.get(l.p);
+                if (!r) { r = { p: l.p, nome: nomesP.get(l.p) || l.pNome, desc: 0, prod: 0, cel: new Map() }; porParceiro.set(l.p, r); }
+                r.desc += l.desc; r.prod += l.prod;
+                const k = periodoDe(l.data); const cel = r.cel.get(k) || { desc: 0, prod: 0 }; r.cel.set(k, cel);
+                cel.desc += l.desc; cel.prod += l.prod;
+            });
+            const totDesc = linhas.reduce((s, l) => s + l.desc, 0), totProd = linhas.reduce((s, l) => s + l.prod, 0);
+            const comDescarte = new Set(linhas.filter(l => l.desc > 0).map(l => l.p)).size;
+            const entregaram = new Set(linhas.filter(l => l.prod > 0).map(l => l.p)).size;
+
+            if (!linhas.length) {
+                el('pnConteudo').innerHTML = '<div class="bg-white rounded-3xl ring-1 ring-slate-200 p-10 text-center text-sm text-slate-500">Nenhum descarte ou produção neste período com estes filtros.</div>';
+                return;
+            }
+
+            const tile = (icone, rot, val, sub, cor, fundo) => `<div class="bg-white rounded-2xl ring-1 ring-slate-200/80 shadow-sm p-3.5 flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl ${fundo} ${cor} flex items-center justify-center shrink-0"><i data-lucide="${icone}" class="w-5 h-5"></i></span>
+                <span class="min-w-0"><span class="block text-[10px] font-black text-slate-400 uppercase tracking-wider">${rot}</span><span class="block text-lg font-black text-slate-800 tabular-nums leading-tight truncate">${val}</span>${sub ? `<span class="block text-[10px] font-semibold text-slate-400 truncate">${sub}</span>` : ''}</span></div>`;
+            const nomeFiltro = pSel ? esc(nomesP.get(pSel) || '') : 'todos os parceiros';
+            const kpis = `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                ${tile('percent', '% de descarte', pctTxt(pctDe(totDesc, totProd)), nomeFiltro, 'text-rose-600', 'bg-rose-50')}
+                ${tile('trash-2', 'Descartado', kgTxt(totDesc), `${num(linhas.filter(l => l.desc > 0).length, 0)} registros`, 'text-rose-600', 'bg-rose-50')}
+                ${tile('package-check', 'Produção entregue', kgTxt(totProd), 'planilha PRD', 'text-emerald-600', 'bg-emerald-50')}
+                ${tile('handshake', 'Parceiros com descarte', `${num(comDescarte, 0)} de ${num(Math.max(entregaram, comDescarte), 0)}`, 'que entregaram no período', 'text-slate-600', 'bg-slate-100')}
+            </div>`;
+
+            // Motivos (kg)
+            const motivos = new Map();
+            linhas.forEach(l => { if (l.desc > 0) motivos.set(l.motivo, (motivos.get(l.motivo) || 0) + l.desc); });
+            const topMotivos = [...motivos.entries()].sort((a, b) => b[1] - a[1]);
+            const maxMot = topMotivos.length ? topMotivos[0][1] : 1;
+            const htmlMotivos = topMotivos.length ? topMotivos.slice(0, 8).map(([m, kg]) => `
+                <li data-tip="${esc(`<b>${esc(m)}</b><br>${kgTxt(kg)} · ${num(kg / totDesc * 100, 1)}% do descarte`)}">
+                    <div class="flex justify-between gap-2 text-xs"><span class="font-bold text-slate-700 truncate">${esc(m)}</span><span class="font-black text-slate-800 tabular-nums shrink-0">${kgTxt(kg)} <span class="text-slate-400 font-bold">· ${num(kg / totDesc * 100, 0)}%</span></span></div>
+                    <div class="mt-1 h-2 rounded-full bg-slate-100"><div class="h-2 rounded-full bg-rose-500" style="width:${Math.max(2, kg / maxMot * 100)}%"></div></div>
+                </li>`).join('') + (topMotivos.length > 8 ? `<li class="text-[11px] font-bold text-slate-400">+ ${topMotivos.length - 8} outros motivos</li>` : '')
+                : '<li class="text-xs text-slate-400 italic">Sem descarte no período.</li>';
+
+            // Tabela parceiro x período: célula = % do período (cor mais forte = % maior)
+            const parceiros = [...porParceiro.values()].filter(r => r.desc > 0 || r.prod > 0)
+                .filter(r => !pSel || r.p === pSel)
+                .sort((a, b) => ((pctDe(b.desc, b.prod) ?? (b.desc ? 1e9 : -1)) - (pctDe(a.desc, a.prod) ?? (a.desc ? 1e9 : -1))) || b.desc - a.desc);
+            const valores = parceiros.flatMap(r => [...r.cel.values()].map(v => pctDe(v.desc, v.prod)).filter(v => v !== null && v > 0)).sort((a, b) => a - b);
+            const escala = Math.max(5, valores.length ? valores[Math.floor(valores.length * 0.9)] : 5);
+            const corCelula = v => {
+                const t = Math.min(1, v / escala), a = [255, 241, 242], b = [190, 18, 60];
+                return { fundo: `rgb(${a.map((x, i) => Math.round(x + (b[i] - x) * t)).join(',')})`, texto: t > 0.55 ? '#fff' : '#1e293b' };
+            };
+            const celula = (r, k) => {
+                const v = r.cel.get(k);
+                if (!v || (!v.desc && !v.prod)) return '<td class="px-1 py-1"><div class="h-9 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300 text-xs">·</div></td>';
+                const pct = pctDe(v.desc, v.prod);
+                const dica = esc(`<b>${esc(r.nome)}</b> · ${rotuloPeriodo(k, true)}<br>Descarte: ${kgTxt(v.desc)}<br>Produção: ${v.prod ? kgTxt(v.prod) : 'sem entrega na planilha'}<br>% descarte: <b>${pctTxt(pct)}</b>`);
+                if (pct === null) return `<td class="px-1 py-1" data-tip="${dica}"><div class="h-9 rounded-lg bg-amber-50 ring-1 ring-amber-200 flex flex-col items-center justify-center text-[10px] font-bold text-amber-700 leading-tight"><span>${kgTxt(v.desc)}</span><span class="opacity-70">sem prod.</span></div></td>`;
+                const cor = corCelula(pct);
+                return `<td class="px-1 py-1" data-tip="${dica}"><div class="h-9 rounded-lg flex items-center justify-center text-xs font-black tabular-nums" style="background:${cor.fundo};color:${cor.texto}">${pct > 0 ? pctTxt(pct) : '0%'}</div></td>`;
+            };
+            // Tendência: último período com produção x o anterior
+            const tendencia = r => {
+                const ks = periodos.filter(k => (r.cel.get(k) || {}).prod > 0);
+                if (ks.length < 2) return '<span class="text-slate-300">—</span>';
+                const a = pctDe(r.cel.get(ks[ks.length - 2]).desc, r.cel.get(ks[ks.length - 2]).prod), b = pctDe(r.cel.get(ks[ks.length - 1]).desc, r.cel.get(ks[ks.length - 1]).prod);
+                const dif = b - a;
+                if (Math.abs(dif) < 0.1) return '<span class="inline-flex items-center gap-0.5 text-slate-400 text-[11px] font-bold"><i data-lucide="minus" class="w-3.5 h-3.5"></i>estável</span>';
+                return dif > 0
+                    ? `<span class="inline-flex items-center gap-0.5 text-rose-600 text-[11px] font-bold" title="Piorou em relação ao período anterior"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i>+${num(dif, 1)} pp</span>`
+                    : `<span class="inline-flex items-center gap-0.5 text-emerald-600 text-[11px] font-bold" title="Melhorou em relação ao período anterior"><i data-lucide="trending-down" class="w-3.5 h-3.5"></i>${num(dif, 1)} pp</span>`;
+            };
+            const tabela = `<div class="overflow-x-auto -mx-1">
+                <table class="w-full border-separate border-spacing-0 text-left">
+                    <thead><tr class="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <th class="sticky left-0 z-10 bg-white px-2 py-2 min-w-[150px]">Parceiro</th>
+                        ${periodos.map(k => `<th class="px-1 py-2 text-center min-w-[64px] whitespace-nowrap" title="${esc(rotuloPeriodo(k, true))}">${rotuloPeriodo(k)}</th>`).join('')}
+                        <th class="px-2 py-2 text-right min-w-[84px]">Total</th>
+                        <th class="px-2 py-2 min-w-[86px]">Tendência</th>
+                    </tr></thead>
+                    <tbody>${parceiros.map(r => `<tr class="group">
+                        <td class="sticky left-0 z-10 bg-white px-2 py-1"><button type="button" data-pn-parceiro="${esc(r.p)}" class="text-left text-xs font-bold text-slate-700 group-hover:text-emerald-700 hover:underline truncate max-w-[180px] block" title="Ver só ${esc(r.nome)}">${esc(r.nome)}</button></td>
+                        ${periodos.map(k => celula(r, k)).join('')}
+                        <td class="px-2 py-1 text-right whitespace-nowrap"><span class="block text-sm font-black text-slate-800 tabular-nums">${pctTxt(pctDe(r.desc, r.prod))}</span><span class="block text-[10px] font-bold text-slate-400 tabular-nums">${kgTxt(r.desc)}</span></td>
+                        <td class="px-2 py-1 whitespace-nowrap">${tendencia(r)}</td>
+                    </tr>`).join('')}</tbody>
+                </table></div>`;
+
+            const card = (icone, titulo, sub, corpo, extra = '') => `<section class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 ${extra}">
+                <div class="flex items-start justify-between gap-3 mb-3"><div><h3 class="text-sm font-black text-slate-800 flex items-center gap-1.5"><i data-lucide="${icone}" class="w-4 h-4 text-emerald-600"></i>${titulo}</h3>${sub ? `<p class="text-[11px] font-semibold text-slate-400 mt-0.5">${sub}</p>` : ''}</div></div>${corpo}</section>`;
+            const nomeAgr = pn.agrupar === 'mes' ? 'mês' : 'semana';
+            el('pnConteudo').innerHTML = kpis
+                + `<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-4">
+                    ${card('chart-column', `% de descarte por ${nomeAgr}`, `Descarte ÷ produção entregue · ${nomeFiltro}${c ? ' · ' + esc(el('pnCultura').selectedOptions[0].text) : ''}`, '<div id="pnGrafico" class="w-full min-w-0 flex-1 min-h-[260px] overflow-hidden"></div>', 'flex flex-col min-w-0')}
+                    ${card('message-square-warning', 'Motivos', 'Kg descartados por motivo', `<ul class="space-y-3">${htmlMotivos}</ul>`)}
+                </div>`
+                + card('table-2', `Parceiros × ${nomeAgr}`, 'Cor mais forte = % de descarte maior. Toque no nome para ver só o parceiro.', tabela)
+                + `<p class="text-[11px] font-semibold text-slate-400 px-1">"Sem prod." = houve descarte, mas a planilha PRD não tem entrega desse parceiro/cultura no período (o % não dá para calcular).</p>`;
+            pn.grafDados = periodos.map(k => ({ k, ...porPeriodo.get(k) }));
+            desenharGrafico(pn.grafDados);
+            // Redesenha quando o cartão muda de tamanho (layout terminando de montar, janela, celular girando)
+            if (window.ResizeObserver) {
+                if (pn.obs) pn.obs.disconnect();
+                const alvoG = el('pnGrafico');
+                pn.obs = new ResizeObserver(() => {
+                    const w = Math.floor(alvoG.getBoundingClientRect().width);
+                    if (w && Math.abs(w - (pn.grafW || 0)) > 2) desenharGrafico(pn.grafDados);
+                });
+                pn.obs.observe(alvoG);
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Barras do % por período (uma série só: sem legenda; o título diz o que é)
+        function desenharGrafico(dados) {
+            const alvo = el('pnGrafico'); if (!alvo) return;
+            // Cabe sempre na largura do cartão (sem barra de rolagem) e ocupa a altura que sobra
+            // ao lado dos Motivos; com muitas semanas as barras afinam e os rótulos ficam espaçados
+            alvo.innerHTML = '';
+            const padE = 40, padD = 8, padT = 22, padB = 28;
+            const caixa = alvo.getBoundingClientRect();
+            const W = Math.max(280, Math.floor(caixa.width || 600));
+            const H = Math.max(260, Math.min(360, Math.floor(caixa.height || 260)));
+            pn.grafW = W;
+            const banda = (W - padE - padD) / Math.max(1, dados.length);
+            const larg = Math.min(40, Math.max(2, banda * (banda < 12 ? 0.7 : 0.62)));
+            const vals = dados.map(d => pctDe(d.desc, d.prod));
+            const maxV = Math.max(1, ...vals.filter(v => v !== null));
+            const passo = [0.5, 1, 2, 2.5, 5, 10, 20, 25, 50].find(p => maxV / p <= 4) || 100;
+            const topo = Math.ceil(maxV / passo) * passo;
+            const y = v => padT + (H - padT - padB) * (1 - v / topo);
+            const iMax = vals.indexOf(Math.max(...vals.filter(v => v !== null)));
+            let iUlt = -1; vals.forEach((v, i) => { if (v !== null) iUlt = i; });
+            const cadaRotulo = Math.max(1, Math.ceil(34 / banda));
+            // Tamanho exato em pixels (sem esticar/encolher): o texto fica sempre no tamanho certo
+            let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Porcentagem de descarte por período" style="display:block;font-family:inherit">`;
+            for (let v = 0; v <= topo + 1e-9; v += passo) {
+                svg += `<line x1="${padE}" x2="${W - padD}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? '#cbd5e1' : '#f1f5f9'}" stroke-width="1"/>`
+                    + `<text x="${padE - 6}" y="${y(v) + 3.5}" text-anchor="end" font-size="11" fill="#94a3b8" font-weight="600">${num(v, 1)}%</text>`;
+            }
+            dados.forEach((d, i) => {
+                const cx = padE + banda * i + banda / 2, v = vals[i];
+                const dica = esc(`<b>${esc(rotuloPeriodo(d.k, true))}</b><br>% descarte: <b>${pctTxt(v)}</b><br>Descarte: ${kgTxt(d.desc)}<br>Produção: ${d.prod ? kgTxt(d.prod) : '—'}`);
+                if (v !== null && v > 0) {
+                    const yt = y(v), h = y(0) - yt, r = Math.min(4, larg / 2, h);
+                    // ponta arredondada em cima, base reta no eixo
+                    svg += `<path d="M${cx - larg / 2},${y(0)} V${yt + r} Q${cx - larg / 2},${yt} ${cx - larg / 2 + r},${yt} H${cx + larg / 2 - r} Q${cx + larg / 2},${yt} ${cx + larg / 2},${yt + r} V${y(0)} Z" fill="${i === iUlt ? '#e11d48' : '#fb7185'}"/>`;
+                    if (i === iMax || i === iUlt) svg += `<text x="${cx}" y="${yt - 6}" text-anchor="middle" font-size="12" font-weight="800" fill="#1e293b">${pctTxt(v)}</text>`;
+                } else if (v === null && d.desc > 0) {
+                    svg += `<text x="${cx}" y="${y(0) - 6}" text-anchor="middle" font-size="9" font-weight="700" fill="#b45309">s/ prod.</text>`;
+                }
+                if (i % cadaRotulo === 0 || i === dados.length - 1) svg += `<text x="${cx}" y="${H - 9}" text-anchor="middle" font-size="11" fill="#64748b" font-weight="700">${esc(rotuloPeriodo(d.k))}</text>`;
+                // área de toque maior que a barra
+                svg += `<rect x="${padE + banda * i}" y="${padT}" width="${banda}" height="${H - padT - padB}" fill="transparent" data-tip="${dica}" data-barra="${i}"/>`;
+            });
+            alvo.innerHTML = svg + '</svg>';
+        }
+
+        // Dica (tooltip) ao passar o mouse ou tocar
+        const dica = el('pnDica');
+        function mostrarDica(alvo, x, yP) {
+            dica.innerHTML = alvo.getAttribute('data-tip');
+            dica.classList.remove('hidden');
+            const w = dica.offsetWidth, h = dica.offsetHeight;
+            dica.style.left = Math.max(8, Math.min(innerWidth - w - 8, x + 14)) + 'px';
+            dica.style.top = Math.max(8, yP - h - 12 < 8 ? yP + 16 : yP - h - 12) + 'px';
+            el('pnGrafico')?.querySelectorAll('[data-barra]').forEach(r => r.setAttribute('fill', r === alvo ? 'rgba(148,163,184,.12)' : 'transparent'));
+        }
+        function esconderDica() {
+            dica.classList.add('hidden');
+            el('pnGrafico')?.querySelectorAll('[data-barra]').forEach(r => r.setAttribute('fill', 'transparent'));
+        }
+        el('pnConteudo').addEventListener('pointermove', e => {
+            const a = e.target.closest('[data-tip]');
+            if (a) mostrarDica(a, e.clientX, e.clientY); else esconderDica();
+        });
+        el('pnConteudo').addEventListener('pointerleave', esconderDica);
+        el('pnConteudo').addEventListener('click', e => {
+            const b = e.target.closest('[data-pn-parceiro]');
+            if (b) { el('pnParceiro').value = b.dataset.pnParceiro; desenharPainel(); el('viewPainel').scrollIntoView({ behavior: 'smooth' }); return; }
+            const a = e.target.closest('[data-tip]');
+            if (a) mostrarDica(a, e.clientX, e.clientY);
+        });
+        addEventListener('scroll', esconderDica, { passive: true });
+
+        el('pnAgrupar').addEventListener('click', e => {
+            const b = e.target.closest('[data-agrupar]'); if (!b || b.dataset.agrupar === pn.agrupar) return;
+            pn.agrupar = b.dataset.agrupar;
+            try { localStorage.setItem('spg_descarte_painel_agrupar', pn.agrupar); } catch (err) {}
+            if (pn.linhas.length) desenharPainel();
+        });
+        el('pnCultura').addEventListener('change', () => { preencherFiltrosPainel(); desenharPainel(); });
+        el('pnParceiro').addEventListener('change', desenharPainel);
+        el('pnAtualizar').addEventListener('click', carregarPainel);
+        let pnRedim;
+        addEventListener('resize', () => { clearTimeout(pnRedim); pnRedim = setTimeout(() => { if (!el('viewPainel').classList.contains('hidden') && pn.linhas.length) desenharPainel(); }, 200); });
     })();
     </script>
 </body>

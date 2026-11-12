@@ -291,6 +291,8 @@
                 </div>
             </div>
             <div id="lancLista" class="p-3 space-y-4"></div>`;
+        // Seletor de período padrão (Dia | Mês | Ano | Intervalo) no lugar do De/Até
+        if (window.SeletorPeriodo) SeletorPeriodo.paraCampos(el('lancDe'), el('lancAte'));
         iconesAgora();
     }
 
@@ -1041,7 +1043,9 @@
             host.innerHTML = htmlDaImagem(datasComDados, regs, await logoEmDados());
             document.body.appendChild(host);
             iconesAgora();
-            const opcoesImg = { pixelRatio: 2, backgroundColor: '#f8fafc', skipFonts: true };
+            const alvoImg = host.firstElementChild;
+            // Alta resolução para o WhatsApp HD (~1900px de largura), limitada a 15 MP para o iPhone
+            const opcoesImg = { pixelRatio: Math.max(1, Math.min(3, Math.sqrt(15e6 / (alvoImg.offsetWidth * alvoImg.offsetHeight)))), backgroundColor: '#f8fafc', skipFonts: true };
             // A primeira captura pode sair sem a logo em alguns celulares; vale a segunda
             await htmlToImage.toBlob(host.firstElementChild, opcoesImg);
             const blob = await htmlToImage.toBlob(host.firstElementChild, opcoesImg);

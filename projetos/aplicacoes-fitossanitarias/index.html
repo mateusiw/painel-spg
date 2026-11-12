@@ -2387,5 +2387,14 @@
             btn.setAttribute('aria-expanded', hidden ? 'false' : 'true');
         }
     </script>
+    <!-- Seletor de período padrão (Dia | Mês | Ano | Intervalo) nos filtros De/Até -->
+    <script src="../../seletor-periodo.js"></script>
+    <script>
+    (function () {
+        if (!window.SeletorPeriodo) return;
+        // Dentro da janelinha "Período" do topo; continua valendo o botão "Aplicar"
+        SeletorPeriodo.paraCampos('#topPeriodStart', '#topPeriodEnd', { esconder: ['#topPeriodPopover .chip-modern'] });
+    })();
+    </script>
 </body>
 </html>

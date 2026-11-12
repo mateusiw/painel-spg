@@ -17,6 +17,9 @@
     <script src="../../supabase-config.js"></script>
     <script src="../../supabase-api.js"></script>
     <script src="../../resumo-producao.js"></script>
+    <script src="../../seletor-periodo.js"></script>
+    <script src="../../mais-filtros.js"></script>
+    <script src="../../lista-moderna.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { brand: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e' }, prod: { green: '#749d83', yellow: '#e3d39e', grey: '#9ca3af', lightgreen: '#86b693' } }, boxShadow: { 'soft': '0 10px 40px -10px rgba(0,0,0,0.04)', 'float': '0 20px 40px -10px rgba(15,23,42,0.1)' } } } }
@@ -1012,6 +1015,12 @@
             document.querySelectorAll('.date-range-picker').forEach(campo => {
                 if (campo._flatpickr) campo._flatpickr.setDate([anoAtual + '-01-01', anoAtual + '-12-31'], false);
             });
+            // Seletor de período padrão (o mesmo do Resumo) no lugar do calendário de cada aba
+            if (window.SeletorPeriodo) SeletorPeriodo.substituirCalendarios({
+                rotuloUltima: 'Última colheita',
+                anos: () => { const a = new Set([new Date().getFullYear()]); if (cachedApiData) [...(cachedApiData.historico || []), ...(cachedApiData.pendentes || [])].forEach(x => { const d = String(x.data_entrega || x.data_plantio || ''); if (d.length >= 4) a.add(Number(d.slice(0, 4))); }); return [...a].filter(Boolean); },
+                ultima: () => cachedApiData ? (cachedApiData.historico || []).reduce((m, h) => { const d = String(h.data_entrega || '').slice(0, 10); return d > m && d <= new Date().toISOString().slice(0, 10) ? d : m; }, '') : ''
+            });
             fetchData();
         }
 
@@ -1020,10 +1029,9 @@
             const loadingText = loadingModal.querySelector('h3');
             const iconContainer = document.getElementById('loadingIconContainer');
             
-            loadingModal.classList.remove('hidden');
-            loadingText.innerText = "Sincronizando Dados...";
-            if (iconContainer) iconContainer.innerHTML = '<i data-lucide="loader-2" class="h-8 w-8 text-slate-800 animate-spin mx-auto mb-4"></i>';
-            lucide.createIcons();
+            // Sem a tela "Sincronizando Dados": ela era do tempo do Apps Script (demorava). Os dados vêm do
+            // Supabase em instantes; a janela só aparece se der erro, com o botão de tentar de novo.
+            loadingModal.classList.add('hidden');
 
             try {
                 cachedApiData = await SPG_API.producaoEstufaPainel();
@@ -1046,8 +1054,9 @@
                 
                 loadingModal.classList.add('hidden');
             } catch (err) { 
-                console.error("Erro detalhado na busca:", err); 
-                
+                console.error("Erro detalhado na busca:", err);
+                loadingModal.classList.remove('hidden');
+
                 if (iconContainer) iconContainer.innerHTML = '<i data-lucide="x-circle" class="h-8 w-8 text-rose-500 mx-auto mb-4"></i>';
                 loadingText.innerText = "Erro ao carregar dados:\n" + err.message;
                 lucide.createIcons();
@@ -2334,6 +2343,11 @@
             renderCompareCards();
         }
 
+        // Resolução da imagem para o WhatsApp HD: ~2000px de largura (mín. 2x), limitada a 15 MP (iPhone)
+        function ratioWhatsapp(el) {
+            const w = el.offsetWidth || 1, h = el.offsetHeight || 1;
+            return Math.max(1, Math.min(Math.max(2, 2000 / w), 4, Math.sqrt(15e6 / (w * h))));
+        }
         async function captureComparisonView() {
             const container = document.getElementById('compareMainCard');
             const btn = document.getElementById('btnCaptureComparacao');
@@ -2363,7 +2377,7 @@
                 const stamp = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}`;
                 const dataUrl = await htmlToImage.toPng(container, {
                     backgroundColor: '#ffffff',
-                    pixelRatio: 2,
+                    pixelRatio: ratioWhatsapp(container),
                     quality: 1
                 });
                 const link = document.createElement('a');

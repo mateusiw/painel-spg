@@ -151,6 +151,7 @@
     <script src="./lista-moderna.js"></script>
     <script src="./trava-fundo.js"></script>
     <script src="./cartao-aniversario.js"></script>
+    <script src="./motivacao.js"></script>
     <script src="./notificacoes.js"></script>
 </head>
 <body class="bg-[#f5f7f2] text-slate-900 min-h-screen">
@@ -265,7 +266,7 @@
                     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                         <div class="min-w-0">
                             <p id="menuData" class="text-xs font-bold text-[#4a7c3a] first-letter:uppercase"></p>
-                            <h1 id="menuSaudacao" class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1"></h1>
+                            <h1 id="menuSaudacao" role="button" tabindex="0" title="Ver a frase do dia" class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1 cursor-pointer"></h1>
                         </div>
                         <div class="flex items-center gap-2 w-full md:w-auto shrink-0">
                         <button type="button" data-alertas title="Alertas" aria-label="Alertas" aria-haspopup="dialog" class="foco relative hidden lg:flex items-center justify-center w-11 h-11 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-[#1b3a2a] hover:border-slate-300 hover:shadow-sm transition [&_[data-selo-alertas]]:ring-white"><i data-lucide="bell" class="w-5 h-5"></i><span data-selo-alertas class="hidden absolute -top-1 -right-1 min-w-[1.15rem] h-[1.15rem] px-1 rounded-full bg-rose-500 text-white text-[10px] font-black leading-none flex items-center justify-center ring-2"></span></button>
@@ -490,7 +491,8 @@
                 grupos(projetos).map(([g, lista]) => `<div class="space-y-1">
                     ${titulo(esc(g))}
                     ${lista.map(item).join('')}
-                    ${g === 'Administração' && API.isAdmin() ? `<button type="button" data-atualizar-todos title="Atualizar todos os aparelhos" class="item-lateral w-full text-left"><i data-lucide="radio-tower" class="w-4 h-4 shrink-0"></i><span class="rotulo truncate">Atualizar aparelhos</span></button>` : ''}
+                    ${lista.some(p => p.id === 'usuarios') && API.isAdmin() ? `<button type="button" data-organizar-menu title="Ordem, nome e guia de cada site no menu" class="item-lateral w-full text-left"><i data-lucide="list-ordered" class="w-4 h-4 shrink-0"></i><span class="rotulo truncate">Organizar menu</span></button>
+                    <button type="button" data-atualizar-todos title="Atualizar todos os aparelhos" class="item-lateral w-full text-left"><i data-lucide="radio-tower" class="w-4 h-4 shrink-0"></i><span class="rotulo truncate">Atualizar aparelhos</span></button>` : ''}
                 </div>`).join('');
         }
 
@@ -511,29 +513,55 @@
             el('resumoLocais').title = locais.join(', ');
         }
 
-        function mostrarMenu() {
-            NotificacoesSPG.sincronizar();
-            const projetos = API.projetosDoUsuario();
-            // Quem tem um só projeto vai direto para ele
-            if (projetos.length === 1) { location.replace(projetos[0].caminho); return; }
-            preencherCabecalho(projetos);
-            el('semProjetos').classList.toggle('hidden', projetos.length > 0);
-            renderAbasLocalMenu();
-            el('buscaProjetos').value = '';
-            el('semResultado').classList.add('hidden');
-
-            const porGrupo = grupos(projetos);
+        // Menu lateral + cartões do Início, agrupados pela guia de cada site, na ordem do menu
+        function desenharMenuEGrupos(projetos) {
             montarLateral(projetos);
             renderFavoritos(projetos);
-
             const larguraGrupo = n => n >= 3 ? ['sm:col-span-2 xl:col-span-3', 'sm:grid-cols-2 xl:grid-cols-3'] : n === 2 ? ['sm:col-span-2', 'sm:grid-cols-2'] : ['', ''];
-            el('listaProjetos').innerHTML = porGrupo.map(([g, lista]) => {
+            el('listaProjetos').innerHTML = grupos(projetos).map(([g, lista]) => {
                 const [secao, grade] = larguraGrupo(lista.length);
                 return `<section data-grupo aria-label="${esc(g)}" class="${secao}">
                     <h2 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3">${esc(g)}</h2>
                     <div class="grid ${grade} gap-4">${lista.map(cartao).join('')}</div>
                 </section>`;
             }).join('');
+        }
+        // Depois de organizar o menu (aqui ou em outro aparelho): redesenha sem sair de onde está
+        function redesenharMenuOrganizado() {
+            const projetos = API.projetosDoUsuario();
+            desenharMenuEGrupos(projetos);
+            renderRecentes(projetos);
+            marcarAtual(projetoAberto || '');
+            renderAbas();
+            atualizarContadorOnline();
+            filtrar();
+            icones();
+        }
+
+        function mostrarMenu() {
+            NotificacoesSPG.sincronizar();
+            const projetos = API.projetosDoUsuario();
+            // Primeira entrada do dia: mensagem de início de expediente (motivacao.js)
+            const u = API.usuarioAtual() || {};
+            const motivacao = window.MotivacaoSPG ? opcoes => MotivacaoSPG.mostrarSeForOPrimeiroDoDia(Object.assign({ id: u.id, nome: API.nomeUsuario() }, opcoes)) : () => false;
+            // Quem tem um só projeto vai direto para ele (depois de fechar a mensagem do dia, se houver)
+            if (projetos.length === 1) {
+                if (!motivacao({ aoFechar: () => location.replace(projetos[0].caminho) })) location.replace(projetos[0].caminho);
+                return;
+            }
+            motivacao();
+            // Tocar na saudação ("Bom dia, Fulano") abre a frase do dia de novo, a qualquer hora
+            el('menuSaudacao').onclick = () => window.MotivacaoSPG && MotivacaoSPG.mostrar({ nome: API.nomeUsuario() });
+            el('menuSaudacao').onkeydown = e => { if (e.key === 'Enter') el('menuSaudacao').onclick(); };
+            preencherCabecalho(projetos);
+            el('semProjetos').classList.toggle('hidden', projetos.length > 0);
+            renderAbasLocalMenu();
+            el('buscaProjetos').value = '';
+            el('semResultado').classList.add('hidden');
+
+            desenharMenuEGrupos(projetos);
+            // A organização do menu (ordem, nomes e guias) pode ter mudado em outro aparelho
+            API.carregarMenu().then(mudou => { if (mudou) redesenharMenuOrganizado(); });
 
             restaurarAbas();
             carregarAlertas();
@@ -1106,6 +1134,7 @@
                 return;
             }
             if (e.target.closest('[data-atualizar-todos]')) { alternarGaveta(false); confirmarAtualizarTodos(); return; }
+            if (e.target.closest('[data-organizar-menu]')) { alternarGaveta(false); abrirOrganizarMenu(); return; }
             if (e.target.closest('[data-gaveta]')) { alternarGaveta(true); return; }
             if (e.target.closest('[data-fechar-gaveta]')) { alternarGaveta(false); return; }
             if (e.target.closest('[data-recolher]')) {
@@ -1124,6 +1153,157 @@
                 mostrarLogin();
             }
         });
+
+        // --- ORGANIZAR MENU (só o administrador): ordem, nome e guia de cada site, para todos ---
+        function abrirOrganizarMenu() {
+            if (!API.isAdmin() || document.getElementById('janelaOrganizarMenu')) return;
+            const padrao = new Map(API.menuPadrao().map(o => [o.id, o]));
+            // Cópia de trabalho, na ordem atual do menu
+            let itens = API.PROJETOS.map(p => ({ id: p.id, nome: p.nome, grupo: p.grupo, icone: p.icone }));
+            const ordemGrupos = () => [...new Set(itens.map(i => i.grupo))];
+            // Reagrupa mantendo a ordem das guias e dos sites dentro de cada uma
+            const reagrupar = guias => { itens = guias.flatMap(g => itens.filter(i => i.grupo === g)); };
+
+            const caixa = document.createElement('div');
+            caixa.id = 'janelaOrganizarMenu';
+            caixa.className = 'fixed inset-0 z-[80] bg-slate-950/60 flex items-end sm:items-center justify-center sm:p-5';
+            caixa.setAttribute('role', 'dialog');
+            caixa.setAttribute('aria-modal', 'true');
+            caixa.setAttribute('aria-labelledby', 'tituloOrganizarMenu');
+            caixa.innerHTML = `<div class="bg-white w-full sm:max-w-2xl max-h-[92dvh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+                <div class="fundo-mata text-white px-5 py-4 flex items-center justify-between gap-3 shrink-0">
+                    <div class="min-w-0"><h3 id="tituloOrganizarMenu" class="text-base font-extrabold flex items-center gap-2"><i data-lucide="list-ordered" class="w-5 h-5"></i>Organizar menu</h3>
+                    <p class="text-[11px] font-semibold text-emerald-100/70">Ordem, nome e guia de cada site. Vale para todos os usuários.</p></div>
+                    <button type="button" data-om-fechar aria-label="Fechar" class="foco p-2 rounded-lg hover:bg-white/10"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div data-om-corpo class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 bg-slate-50"></div>
+                <p data-om-erro role="alert" class="hidden mx-4 mb-2 text-xs font-bold text-red-600"></p>
+                <div class="shrink-0 border-t border-slate-200 bg-white px-4 py-3 flex flex-wrap items-center gap-2" style="padding-bottom:max(.75rem,env(safe-area-inset-bottom))">
+                    <button type="button" data-om-padrao class="foco px-3 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Restaurar padrão</button>
+                    <div class="flex gap-2 ml-auto">
+                        <button type="button" data-om-fechar class="foco px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold">Cancelar</button>
+                        <button type="button" data-om-salvar class="foco px-5 py-2.5 rounded-xl bg-gradient-to-b from-emerald-600 to-emerald-700 text-white text-sm font-bold shadow-md disabled:opacity-60">Salvar</button>
+                    </div>
+                </div>
+            </div>`;
+            document.body.appendChild(caixa);
+            const corpo = caixa.querySelector('[data-om-corpo]');
+            const seta = (attrs, icone, rotulo, desabilitado) => `<button type="button" ${attrs} aria-label="${rotulo}" title="${rotulo}"${desabilitado ? ' disabled' : ''} class="foco w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-25 disabled:hover:bg-transparent"><i data-lucide="${icone}" class="w-4 h-4"></i></button>`;
+
+            function desenhar() {
+                const guias = ordemGrupos();
+                const opcoesGuia = atual => guias.map(g => `<option value="${esc(g)}"${g === atual ? ' selected' : ''}>${esc(g)}</option>`).join('') + '<option value="__nova__">+ Nova guia…</option>';
+                corpo.innerHTML = guias.map((g, gi) => {
+                    const lista = itens.filter(i => i.grupo === g);
+                    return `<section class="bg-white rounded-2xl ring-1 ring-slate-200 overflow-hidden">
+                        <div class="flex items-center gap-2 px-3 py-2.5 bg-slate-100/70 border-b border-slate-200">
+                            <i data-lucide="folder" class="w-4 h-4 text-emerald-700 shrink-0"></i>
+                            <input type="text" data-om-guia="${esc(g)}" value="${esc(g)}" maxlength="40" aria-label="Nome da guia" class="flex-1 min-w-0 bg-transparent text-xs font-extrabold uppercase tracking-wider text-slate-700 outline-none focus:bg-white rounded-lg px-2 py-1.5">
+                            ${seta(`data-om-guia-subir="${esc(g)}"`, 'chevron-up', 'Subir a guia', gi === 0)}
+                            ${seta(`data-om-guia-descer="${esc(g)}"`, 'chevron-down', 'Descer a guia', gi === guias.length - 1)}
+                        </div>
+                        <ul class="divide-y divide-slate-100">
+                            ${lista.map((i, ii) => `<li class="flex flex-wrap sm:flex-nowrap items-center gap-2 px-3 py-2">
+                                <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0"><i data-lucide="${esc(i.icone)}" class="w-4 h-4"></i></span>
+                                <input type="text" data-om-nome="${esc(i.id)}" value="${esc(i.nome)}" maxlength="60" aria-label="Nome do site" placeholder="${esc(padrao.get(i.id).nome)}" class="flex-1 min-w-[140px] bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white">
+                                <select data-om-mover="${esc(i.id)}" aria-label="Guia do site" class="bg-slate-50 border-2 border-slate-200 rounded-xl px-2 py-2 text-xs font-bold text-slate-600 outline-none focus:border-emerald-400 max-w-[150px]">${opcoesGuia(g)}</select>
+                                <span class="flex items-center">
+                                    ${seta(`data-om-subir="${esc(i.id)}"`, 'arrow-up', 'Subir', ii === 0)}
+                                    ${seta(`data-om-descer="${esc(i.id)}"`, 'arrow-down', 'Descer', ii === lista.length - 1)}
+                                </span>
+                            </li>`).join('')}
+                        </ul>
+                    </section>`;
+                }).join('');
+                icones();
+            }
+            // Troca o site de lugar com o vizinho dentro da mesma guia
+            function moverSite(id, passo) {
+                const atual = itens.find(i => i.id === id);
+                const daGuia = itens.filter(i => i.grupo === atual.grupo);
+                const k = daGuia.indexOf(atual), outro = daGuia[k + passo];
+                if (!outro) return;
+                const a = itens.indexOf(atual), b = itens.indexOf(outro);
+                [itens[a], itens[b]] = [itens[b], itens[a]];
+            }
+            function moverGuia(g, passo) {
+                const guias = ordemGrupos(), k = guias.indexOf(g);
+                if (k + passo < 0 || k + passo >= guias.length) return;
+                [guias[k], guias[k + passo]] = [guias[k + passo], guias[k]];
+                reagrupar(guias);
+            }
+            const fechar = () => caixa.remove();
+            const erro = t => { const p = caixa.querySelector('[data-om-erro]'); p.textContent = t; p.classList.toggle('hidden', !t); };
+
+            caixa.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });
+            caixa.addEventListener('click', async e => {
+                if (e.target === caixa || e.target.closest('[data-om-fechar]')) { fechar(); return; }
+                const b = e.target.closest('button');
+                if (!b || b.disabled) return;
+                if (b.dataset.omSubir) { moverSite(b.dataset.omSubir, -1); desenhar(); return; }
+                if (b.dataset.omDescer) { moverSite(b.dataset.omDescer, 1); desenhar(); return; }
+                if (b.dataset.omGuiaSubir) { moverGuia(b.dataset.omGuiaSubir, -1); desenhar(); return; }
+                if (b.dataset.omGuiaDescer) { moverGuia(b.dataset.omGuiaDescer, 1); desenhar(); return; }
+                if (b.hasAttribute('data-om-padrao')) {
+                    const ordem = API.menuPadrao();
+                    itens = ordem.map(o => ({ ...o, icone: (API.PROJETOS.find(p => p.id === o.id) || {}).icone }));
+                    erro(''); desenhar(); return;
+                }
+                if (b.hasAttribute('data-om-salvar')) {
+                    if (itens.some(i => !String(i.grupo).trim())) { erro('Toda guia precisa de um nome.'); return; }
+                    b.disabled = true; b.textContent = 'Salvando...';
+                    try {
+                        // Igual ao padrão = apaga a configuração (o menu volta a seguir o código)
+                        const ehPadrao = JSON.stringify(itens.map(({ id, nome, grupo }) => ({ id, nome, grupo }))) === JSON.stringify(API.menuPadrao());
+                        await API.salvarMenu(ehPadrao ? null : { itens: itens.map(({ id, nome, grupo }) => ({ id, nome: nome.trim(), grupo: grupo.trim() })) });
+                        fechar();
+                        redesenharMenuOrganizado();
+                    } catch (err) {
+                        erro(err.message || 'Não foi possível salvar.');
+                        b.disabled = false; b.textContent = 'Salvar';
+                    }
+                }
+            });
+            caixa.addEventListener('change', e => {
+                const mover = e.target.closest('[data-om-mover]');
+                if (mover) {
+                    const site = itens.find(i => i.id === mover.dataset.omMover);
+                    const guias = ordemGrupos();
+                    let destino = mover.value;
+                    if (destino === '__nova__') {
+                        destino = (prompt('Nome da nova guia:') || '').trim();
+                        if (!destino) { desenhar(); return; }
+                        if (!guias.includes(destino)) guias.push(destino);
+                    }
+                    site.grupo = destino;
+                    // vai para o fim da guia escolhida
+                    itens = itens.filter(i => i !== site);
+                    const ultimo = itens.map(i => i.grupo).lastIndexOf(site.grupo);
+                    itens.splice(ultimo + 1, 0, site);
+                    reagrupar(guias.filter(g => itens.some(i => i.grupo === g)));
+                    desenhar();
+                }
+            });
+            caixa.addEventListener('input', e => {
+                const nome = e.target.closest('[data-om-nome]');
+                if (nome) { itens.find(i => i.id === nome.dataset.omNome).nome = nome.value || padrao.get(nome.dataset.omNome).nome; return; }
+                const guia = e.target.closest('[data-om-guia]');
+                if (guia) {
+                    // Renomeia a guia de todos os sites dela (sem redesenhar, para não perder o cursor)
+                    const antigo = guia.dataset.omGuia, novo = guia.value.trim();
+                    if (!novo || (novo !== antigo && ordemGrupos().includes(novo))) { erro(novo ? 'Já existe uma guia com esse nome.' : 'Toda guia precisa de um nome.'); return; }
+                    erro('');
+                    itens.forEach(i => { if (i.grupo === antigo) i.grupo = novo; });
+                    guia.dataset.omGuia = novo;
+                    caixa.querySelectorAll('[data-om-guia-subir], [data-om-guia-descer]').forEach(x => {
+                        if (x.dataset.omGuiaSubir === antigo) x.dataset.omGuiaSubir = novo;
+                        if (x.dataset.omGuiaDescer === antigo) x.dataset.omGuiaDescer = novo;
+                    });
+                    caixa.querySelectorAll('[data-om-mover] option').forEach(o => { if (o.value === antigo) { o.value = novo; o.textContent = novo; } });
+                }
+            });
+            desenhar();
+        }
 
         // --- ATUALIZAR TODOS OS APARELHOS (só o administrador) ---
         function confirmarAtualizarTodos() {

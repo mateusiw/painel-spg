@@ -596,12 +596,13 @@
                             <i data-lucide="image-down" class="w-4 h-4"></i>
                             <span class="hidden sm:inline">Gerar Imagem</span>
                         </button>
-                        <button type="button" id="btnFecharDiaTop" onclick="openClosingDayModal()" class="btn-fechar-dia hidden items-center gap-2 px-3 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm shadow-green-600/20">
-                            <i data-lucide="clipboard-check" class="w-4 h-4"></i>
-                            <span class="hidden sm:inline">Fechar Dia</span>
+                        <!-- "Fechar Dia" (fechamento do modo completo) desativado: o fechamento é feito em "Fechar serviços" -->
+                        <button type="button" onclick="abrirFechamentoRapido()" title="Foi concluído? Chegou em quantos %?" class="flex items-center gap-2 px-3 py-2.5 bg-white hover:bg-slate-50 text-slate-700 ring-1 ring-slate-200 rounded-xl text-sm font-black transition-all active:scale-95 shadow-sm">
+                            <i data-lucide="flag" class="w-4 h-4 text-emerald-600"></i> <span class="hidden sm:inline">Fechar serviços</span>
                         </button>
-                        <button type="button" onclick="openProgramacaoFormModal()" class="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-brand-700 border-2 border-brand-200 rounded-xl text-sm font-black transition-all active:scale-95">
-                            <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden sm:inline">Nova Programação</span>
+                        <!-- Modo completo (assistente antigo) desativado: a programação é feita pelo "Programar" -->
+                        <button type="button" onclick="abrirProgramacaoRapida()" class="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl shadow-md shadow-emerald-600/25 ring-1 ring-emerald-700/20 text-sm font-black transition-all active:scale-95">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Programar
                         </button>
                     </div>
                 </div>
@@ -661,7 +662,7 @@
                                             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Tipo de Programação</label>
                                             <select id="localSelect" required onchange="handleProgramacaoTypeChange()" class="w-full p-3.5 border border-slate-200 rounded-xl text-sm bg-slate-50 hover:border-slate-300 focus:bg-white focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none font-bold text-slate-700 transition-all shadow-sm cursor-pointer">
                                                 <option value="Trator">Trator</option>
-                                                <option value="Colaboradores">Colaboradores</option>
+                                                <option value="Colaboradores">Fazenda Oásis</option>
                                                 <option value="SPG Packing">SPG Packing</option>
                                                 <option value="SPG Estufa">SPG Estufa</option>
                                                 <option value="Insumos">Insumos (Adubos/Defensivos)</option>
@@ -803,7 +804,7 @@
                             <i data-lucide="layout-grid" class="w-4 h-4 text-slate-400 shrink-0"></i>
                             <select id="dashFilterSetor" onchange="handleDashboardSectorChange(this.value)" class="p-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 cursor-pointer">
                                 <option value="Trator">Trator</option>
-                                <option value="Colaboradores">Colaboradores</option>
+                                <option value="Colaboradores">Fazenda Oásis</option>
                                 <option value="SPG Packing">SPG Packing</option>
                                 <option value="SPG Estufa">SPG Estufa</option>
                                 <option value="Insumos">Insumos</option>
@@ -985,7 +986,7 @@
                     </div>
                     <select id="relatorioSector" onchange="loadRelatorioData()" class="p-2 border border-slate-200 rounded-lg text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 cursor-pointer">
                         <option value="Trator">Trator</option>
-                        <option value="Colaboradores">Colaboradores</option>
+                        <option value="Colaboradores">Fazenda Oásis</option>
                         <option value="SPG Packing">SPG Packing</option>
                         <option value="SPG Estufa">SPG Estufa</option>
                         <option value="Insumos">Insumos (Adubos/Defensivos)</option>
@@ -1021,7 +1022,7 @@
                             <label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">Tipo</label>
                             <select id="historyLocal" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 hover:border-slate-300 focus:bg-white focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none font-bold text-slate-700 cursor-pointer">
                                 <option value="Trator">Trator</option>
-                                <option value="Colaboradores">Colaboradores</option>
+                                <option value="Colaboradores">Fazenda Oásis</option>
                                 <option value="SPG Packing">SPG Packing</option>
                                 <option value="SPG Estufa">SPG Estufa</option>
                                 <option value="Insumos">Insumos (Adubos/Defensivos)</option>
@@ -1048,6 +1049,44 @@
             </div>
 
             <!-- CONFIGURAÇÕES -->
+        </div>
+    </div>
+
+    <!-- PROGRAMAR (rápido): qual serviço? -> quem vai participar? -> qual a meta? -> conferir e salvar -->
+    <div id="progRapida" class="fixed inset-0 z-[70] hidden items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true" aria-labelledby="prTitulo">
+        <div class="bg-white w-full sm:max-w-lg max-h-[94dvh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="px-5 pt-5 pb-3 border-b border-slate-100 shrink-0">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 id="prTitulo" class="text-base font-black text-slate-800 flex items-center gap-2"><i data-lucide="calendar-plus" class="w-5 h-5 text-emerald-600"></i> Programar serviço</h2>
+                    <button type="button" onclick="fecharProgramacaoRapida()" aria-label="Fechar" class="p-2 -mr-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div id="prPassos" class="mt-3 grid grid-cols-4 gap-1.5"></div>
+            </div>
+            <div id="prCorpo" class="flex-1 overflow-y-auto px-5 py-4"></div>
+            <div class="px-5 py-4 border-t border-slate-100 grid grid-cols-2 gap-3 shrink-0" style="padding-bottom:max(1rem,env(safe-area-inset-bottom))">
+                <button type="button" id="prVoltar" class="min-h-[48px] rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-sm">Voltar</button>
+                <button type="button" id="prAvancar" class="min-h-[48px] rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white font-black text-sm shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 disabled:opacity-50">Próximo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FECHAR SERVIÇOS (rápido): foi concluído? chegou em quantos %? -->
+    <div id="fechRapido" class="fixed inset-0 z-[70] hidden items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm sm:p-4" role="dialog" aria-modal="true" aria-labelledby="frTitulo">
+        <div class="bg-white w-full sm:max-w-2xl max-h-[94dvh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="px-5 pt-5 pb-3 border-b border-slate-100 shrink-0">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <h2 id="frTitulo" class="text-base font-black text-slate-800 flex items-center gap-2"><i data-lucide="flag" class="w-5 h-5 text-emerald-600"></i> Fechar serviços</h2>
+                        <p id="frSub" class="text-[11px] font-semibold text-slate-400 mt-0.5 truncate"></p>
+                    </div>
+                    <button type="button" onclick="fecharFechamentoRapido()" aria-label="Fechar" class="p-2 -mr-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+            <div id="frCorpo" class="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-slate-50/60"></div>
+            <div class="px-5 py-4 border-t border-slate-100 grid grid-cols-2 gap-3 shrink-0" style="padding-bottom:max(1rem,env(safe-area-inset-bottom))">
+                <button type="button" onclick="fecharFechamentoRapido()" class="min-h-[48px] rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-sm">Cancelar</button>
+                <button type="button" id="frSalvar" onclick="salvarFechamentoRapido()" class="min-h-[48px] rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white font-black text-sm shadow-md shadow-emerald-600/25 flex items-center justify-center gap-2 disabled:opacity-50"><i data-lucide="check-check" class="w-4 h-4"></i> Salvar fechamento</button>
+            </div>
         </div>
     </div>
 
@@ -1627,7 +1666,7 @@
                 storageKey: 'programacaoTratorSPG_data'
             },
             Colaboradores: {
-                documentTitle: 'Programação dos Colaboradores',
+                documentTitle: 'Programação da Fazenda Oásis',
                 filePrefix: 'Programacao_Colaboradores',
                 storageKey: 'programacaoColaboradoresSPG_data'
             },
@@ -1667,6 +1706,9 @@
         function getProgramacaoFilePrefix(type = getSelectedProgramacaoType()) {
             return getProgramacaoConfig(type).filePrefix;
         }
+
+        // Nome do setor na tela: "Colaboradores" aparece como "Fazenda Oásis" (no banco continua "Colaboradores")
+        function nomeSetor(setor) { return setor === 'Colaboradores' ? 'Fazenda Oásis' : String(setor || ''); }
 
         function isColaboradoresProgramacao(type = getSelectedProgramacaoType()) {
             return type === 'Colaboradores' || type === 'SPG Packing' || type === 'SPG Estufa' || type === 'Insumos';
@@ -2386,7 +2428,7 @@
         function populateTeamTypeSelect() {
             const select = document.getElementById('teamTypeSelect');
             if (!select) return;
-            select.innerHTML = TEAM_TYPES.map(type => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join('');
+            select.innerHTML = TEAM_TYPES.map(type => `<option value="${escapeHtml(type)}">${escapeHtml(nomeSetor(type))}</option>`).join('');
         }
 
         function getTeamTypeValue() {
@@ -2477,7 +2519,7 @@
                 <div>
                     <h2 class="text-sm font-black text-slate-800 uppercase tracking-wide mb-3 flex items-center gap-2">
                         <span class="p-1.5 bg-brand-50 rounded-lg text-brand-500 flex items-center justify-center"><i data-lucide="${SECTOR_ICONS[type] || 'users-round'}" class="w-3.5 h-3.5"></i></span>
-                        ${escapeHtml(type)}
+                        ${escapeHtml(nomeSetor(type))}
                         <span class="text-[10px] font-black text-slate-400 normal-case">(${teamsForType.length})</span>
                     </h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">${cardsHtml}</div>
@@ -3049,7 +3091,7 @@
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
                     <h2 class="text-sm font-black text-slate-800 uppercase tracking-wide mb-3 flex items-center gap-2">
                         <span class="p-1.5 bg-brand-50 rounded-lg text-brand-500 flex items-center justify-center"><i data-lucide="${SECTOR_ICONS[sector] || 'wrench'}" class="w-3.5 h-3.5"></i></span>
-                        ${escapeHtml(sector)}
+                        ${escapeHtml(nomeSetor(sector))}
                     </h2>
                     <div class="flex flex-wrap gap-1.5 mb-4">${baseChips}${customChips}</div>
                     <form onsubmit="event.preventDefault(); submitAddServico(this, '${sector}');" class="flex gap-2">
@@ -4153,7 +4195,7 @@
             const responsavelLabel = getResponsavelLabel(local);
             const responsavelPreviewLabel = getResponsavelPreviewLabel(local);
             
-            let subtitleText = `${local} • Semana ${weekNumber}`;
+            let subtitleText = `${nomeSetor(local)} • Semana ${weekNumber}`;
             if (isPacking) {
                 const dateVal = document.getElementById('packingDate').value;
                 if (dateVal) {
@@ -5247,7 +5289,7 @@
                         <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
                             <i data-lucide="${SECTOR_ICONS[sector] || 'layout-grid'}" class="w-5 h-5"></i>
                         </div>
-                        <h3 class="text-sm font-black text-slate-800">${escapeHtml(sector)}</h3>
+                        <h3 class="text-sm font-black text-slate-800">${escapeHtml(nomeSetor(sector))}</h3>
                     </div>
                     <p class="text-3xl font-black text-slate-800 leading-none mb-1">${total}</p>
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Serviços hoje</p>
@@ -5315,7 +5357,7 @@
             <div class="relatorio-doc-section">
                 <div class="relatorio-doc-section-title">1. Parâmetros da Análise (Filtros)</div>
                 <div class="relatorio-doc-section-body relatorio-doc-grid">
-                    <div><b>Setor:</b> ${escapeHtml(sector)}</div>
+                    <div><b>Setor:</b> ${escapeHtml(nomeSetor(sector))}</div>
                     <div><b>Período:</b> ${periodoLabel}</div>
                 </div>
             </div>
@@ -5563,13 +5605,13 @@
                 if (count === 0) {
                     return `
                     <div class="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 opacity-60">
-                        <span class="text-sm font-bold text-slate-400">${escapeHtml(sector)}</span>
+                        <span class="text-sm font-bold text-slate-400">${escapeHtml(nomeSetor(sector))}</span>
                         <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Sem programação</span>
                     </div>`;
                 }
                 return `
                 <button type="button" onclick="openCalendarSectorDayModal('${dateStr}', '${escapeHtml(sector)}')" class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-white border border-slate-200 hover:border-brand-300 hover:bg-brand-50 transition-all active:scale-[0.99] text-left">
-                    <span class="text-sm font-bold text-slate-700">${escapeHtml(sector)}</span>
+                    <span class="text-sm font-bold text-slate-700">${escapeHtml(nomeSetor(sector))}</span>
                     <span class="text-[10px] font-black text-brand-700 bg-brand-100 px-2.5 py-1 rounded-full uppercase tracking-wider">${count} serviço${count === 1 ? '' : 's'}</span>
                 </button>`;
             }).join('');
@@ -5589,7 +5631,7 @@
             const { statsHtml, tableHtml } = buildProgramacaoResultHtml(rows || [], sector);
             const [y, m, d] = dateStr.split('-');
 
-            document.getElementById('calendarDayViewTitle').querySelector('span').innerText = `${sector} • ${d}/${m}/${y}`;
+            document.getElementById('calendarDayViewTitle').querySelector('span').innerText = `${nomeSetor(sector)} • ${d}/${m}/${y}`;
             document.getElementById('calendarDayViewStats').innerHTML = statsHtml;
             document.getElementById('calendarDayViewTable').innerHTML = tableHtml;
             document.getElementById('calendarDayViewModal').classList.remove('hidden');
@@ -6006,6 +6048,456 @@
             handleProgramacaoTypeChange();
         }
 
+        // =====================================================================
+        // PROGRAMAR (rápido) e FECHAR SERVIÇOS (rápido)
+        // Programar: qual serviço? -> quem vai participar? -> qual a meta? -> conferir e salvar.
+        // Fechar: para cada serviço do dia, "foi concluído?" e, se não, "chegou em quantos %?".
+        // Grava na mesma tabela da programação (o modo completo continua igual).
+        // =====================================================================
+        const PR_SETORES = ['Colaboradores', 'Trator', 'SPG Packing', 'SPG Estufa'];
+        const PR_PASSOS = ['Serviço', 'Quem', 'Meta', 'Conferir'];
+        // lista = serviços já montados nesta janela (salvos todos juntos no fim)
+        const pr = { passo: 0, setor: 'Colaboradores', servico: '', local: '', pessoas: [], meta: '', previsao: '', solicitante: '', busca: '', salvos: 0, lista: [], nomeEquipe: null };
+        const prEl = id => document.getElementById(id);
+        const prNomeUsuario = () => (window.IrrigacaoAPI && IrrigacaoAPI.nomeUsuario && IrrigacaoAPI.nomeUsuario()) || '';
+        const prSemAcento = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        const prMulti = () => pr.setor !== 'Trator'; // Trator: um operador; os outros: várias pessoas
+        function prHojeRotulo() {
+            const d = new Date();
+            return `${daysOfWeek[(d.getDay() + 6) % 7].split('-')[0]} (${formatDayDate(d)})`;
+        }
+        function prSemanaAtual() {
+            const d = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            return String(Math.ceil(((d - Date.UTC(d.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7));
+        }
+
+        function abrirProgramacaoRapida() {
+            const setorAtual = getDashboardSelectedSector();
+            Object.assign(pr, { passo: 0, setor: PR_SETORES.includes(setorAtual) ? setorAtual : 'Colaboradores', servico: '', local: '', pessoas: [], meta: '', previsao: '', solicitante: prNomeUsuario(), busca: '', salvos: 0, lista: [], nomeEquipe: null });
+            const m = prEl('progRapida'); m.classList.remove('hidden'); m.classList.add('flex');
+            prDesenhar();
+            // Equipes cadastradas: traz a versão mais nova do sistema e redesenha se estiver na tela "Quem"
+            if (typeof loadTeams === 'function') loadTeams().then(() => { if (pr.passo === 1) prDesenhar(); }).catch(() => {});
+        }
+        function fecharProgramacaoRapida(forcar) {
+            prLerCampos();
+            if (!forcar && pr.lista.length && !confirm(`Você montou ${pr.lista.length} serviço(s) que ainda não foram salvos. Fechar mesmo assim?`)) return;
+            const m = prEl('progRapida'); m.classList.add('hidden'); m.classList.remove('flex');
+            if (pr.salvos) loadProgramacaoDashboard();
+        }
+
+        function prChip(texto, ativo, attrs) {
+            return `<button type="button" ${attrs} class="px-3 py-2 rounded-xl text-sm font-bold border-2 transition-all active:scale-95 ${ativo ? 'bg-emerald-50 border-emerald-500 text-emerald-800' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300'}">${escapeHtml(texto)}</button>`;
+        }
+        const prPergunta = (n, t, dica) => `<p class="text-[11px] font-black text-emerald-600 uppercase tracking-widest">Passo ${n} de 4${pr.lista.length ? ` · serviço ${pr.lista.length + 1}` : ''}</p><h3 class="text-xl font-black text-slate-800 mt-1">${t}</h3>${dica ? `<p class="text-xs font-medium text-slate-400 mt-1">${dica}</p>` : ''}`;
+        const prCampo = 'w-full px-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-base font-bold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white';
+
+        function prSugestoesHtml() {
+            const termo = prSemAcento(pr.servico);
+            const sugestoes = getOperacoesList(pr.setor).filter(s => !termo || prSemAcento(s).includes(termo)).slice(0, 14);
+            return sugestoes.map(s => prChip(s, s === pr.servico, `data-pr-servico="${escapeHtml(s)}"`)).join('') || '<p class="text-xs text-slate-400">Nenhuma sugestão. Pode escrever o serviço acima.</p>';
+        }
+        function prAchadosHtml() {
+            const lista = (prMulti() ? dbColaboradores : dbOperadores) || [];
+            const termo = prSemAcento(pr.busca);
+            const achados = lista.filter(n => !pr.pessoas.includes(n) && (!termo || prSemAcento(n).includes(termo))).slice(0, termo ? 30 : 12);
+            return achados.map(n => prChip('+ ' + n, false, `data-pr-pessoa="${escapeHtml(n)}"`)).join('')
+                + (pr.busca.trim() && !lista.some(n => prSemAcento(n) === termo) ? prChip('+ Adicionar "' + pr.busca.trim() + '"', false, `data-pr-pessoa="${escapeHtml(pr.busca.trim())}"`) : '');
+        }
+
+        // Equipes já cadastradas (as do setor escolhido primeiro). Tocar traz todo mundo; tocar de novo tira.
+        const prMembros = t => [t.leader, ...(t.members || [])].filter(Boolean);
+        function prEquipes() {
+            const validas = (teams || []).map((t, i) => ({ t, i })).filter(({ t }) => t && prMembros(t).length);
+            const doSetor = validas.filter(({ t }) => (t.type || TEAM_DEFAULT_TYPE) === pr.setor);
+            return doSetor.length ? doSetor : validas;
+        }
+        const prEquipeMarcada = t => prMembros(t).every(n => pr.pessoas.includes(n));
+        function prEquipesHtml() {
+            const lista = prEquipes();
+            if (!lista.length) return `<div class="mt-3 rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3 text-xs font-semibold text-slate-500">Nenhuma equipe cadastrada ainda. Escolha as pessoas abaixo e toque em <b>"Salvar como equipe"</b> para usar da próxima vez.</div>`;
+            return `<div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">${lista.map(({ t, i }) => {
+                const membros = prMembros(t), marcada = prEquipeMarcada(t);
+                const tipo = (t.type || TEAM_DEFAULT_TYPE) !== pr.setor ? ` · ${escapeHtml(nomeSetor(t.type || TEAM_DEFAULT_TYPE))}` : '';
+                return `<button type="button" data-pr-equipe="${i}" class="text-left p-3 rounded-2xl border-2 transition-all active:scale-[.98] ${marcada ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-300'}">
+                    <span class="flex items-center justify-between gap-2"><span class="text-sm font-black ${marcada ? 'text-emerald-800' : 'text-slate-800'} truncate">👥 ${escapeHtml(getTeamDisplayName(t))}</span>
+                    <span class="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full ${marcada ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}">${marcada ? '✓ ' : ''}${membros.length} pessoa${membros.length === 1 ? '' : 's'}</span></span>
+                    <span class="block mt-1 text-[11px] font-semibold text-slate-500 truncate">${escapeHtml(membros.join(', '))}${tipo}</span>
+                </button>`;
+            }).join('')}</div>`;
+        }
+        // "Salvar como equipe": aparece quando há 2+ pessoas escolhidas que ainda não formam uma equipe cadastrada
+        function prPodeSalvarEquipe() {
+            if (!prMulti() || pr.pessoas.length < 2) return false;
+            const chave = pr.pessoas.slice().sort().join('|');
+            return !(teams || []).some(t => prMembros(t).slice().sort().join('|') === chave);
+        }
+
+        function prItemAtual() {
+            return { setor: pr.setor, servico: pr.servico, local: pr.local, pessoas: pr.pessoas.slice(), meta: pr.meta, previsao: pr.previsao };
+        }
+        function prCartaoServico(it, indice) {
+            return `<div class="relative rounded-2xl ring-1 ring-slate-200 bg-white p-3.5 ${indice === null ? 'ring-2 ring-emerald-300' : ''}">
+                ${indice !== null ? `<button type="button" data-pr-remover="${indice}" aria-label="Tirar este serviço" class="absolute top-2 right-2 w-8 h-8 rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
+                <p class="text-sm font-black text-slate-800 pr-8">${escapeHtml(it.servico)}${it.local ? ` <span class="text-slate-400 font-semibold">· ${escapeHtml(it.local)}</span>` : ''}</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">${escapeHtml(nomeSetor(it.setor))}${it.previsao ? ' · até ' + escapeHtml(it.previsao) : ''}</p>
+                <p class="mt-1.5 text-xs font-semibold text-slate-600 flex items-start gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5 mt-0.5 text-emerald-600 shrink-0"></i>${escapeHtml(findMatchingTeamName(it.pessoas) || it.pessoas.join(', '))}</p>
+                ${it.meta ? `<p class="mt-1 text-xs font-bold text-amber-700">🎯 ${escapeHtml(it.meta)}</p>` : ''}
+            </div>`;
+        }
+
+        function prDesenhar() {
+            prEl('prPassos').innerHTML = PR_PASSOS.map((n, i) => `<div class="text-center"><div class="h-1.5 rounded-full ${i <= pr.passo ? 'bg-emerald-500' : 'bg-slate-200'}"></div><span class="block mt-1 text-[10px] font-black uppercase tracking-wider ${i === pr.passo ? 'text-emerald-700' : 'text-slate-400'}">${n}</span></div>`).join('');
+            const corpo = prEl('prCorpo');
+            const jaMontados = pr.lista.length && pr.passo < 3 ? `<button type="button" data-pr-ver-lista class="mb-3 w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-black"><span>✓ ${pr.lista.length} serviço${pr.lista.length === 1 ? '' : 's'} já montado${pr.lista.length === 1 ? '' : 's'}</span><span class="underline">ver</span></button>` : '';
+            if (pr.passo === 0) {
+                corpo.innerHTML = `${jaMontados}${prPergunta(1, 'Qual serviço?', 'Escolha da lista ou escreva o serviço.')}
+                    <div class="mt-4 flex flex-wrap gap-1.5">${PR_SETORES.map(s => prChip(nomeSetor(s), s === pr.setor, `data-pr-setor="${escapeHtml(s)}"`)).join('')}</div>
+                    <input id="prServico" type="text" autocomplete="off" value="${escapeHtml(pr.servico)}" placeholder="Ex.: Capina, Colheita, Transplantio..." class="${prCampo} mt-4">
+                    <div id="prSugestoes" class="mt-3 flex flex-wrap gap-1.5">${prSugestoesHtml()}</div>
+                    <label class="block mt-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Onde? (opcional)</label>
+                    <input id="prLocal" type="text" autocomplete="off" value="${escapeHtml(pr.local)}" placeholder="Ex.: Bloco 5, Estufa 2, Packing" class="${prCampo} mt-1.5">`;
+            } else if (pr.passo === 1) {
+                corpo.innerHTML = `${jaMontados}${prPergunta(2, 'Quem vai participar?', prMulti() ? 'Toque numa equipe para trazer todo mundo de uma vez.' : 'Escolha o operador.')}
+                    ${prMulti() ? `<p class="mt-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Equipes</p>${prEquipesHtml()}` : ''}
+                    <div class="mt-4 flex items-center justify-between gap-2"><p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Escolhidos (${pr.pessoas.length})</p>
+                        ${pr.pessoas.length ? '<button type="button" data-pr-limpar-pessoas class="text-xs font-bold text-slate-400 hover:text-rose-600">Limpar</button>' : ''}</div>
+                    <div class="mt-1.5 min-h-[52px] p-2 rounded-2xl border-2 border-dashed ${pr.pessoas.length ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200'} flex flex-wrap gap-1.5">
+                        ${pr.pessoas.map(n => `<span class="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-full bg-emerald-600 text-white text-sm font-bold">${escapeHtml(n)}<button type="button" data-pr-tirar="${escapeHtml(n)}" aria-label="Tirar ${escapeHtml(n)}" class="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center">×</button></span>`).join('') || '<span class="px-2 py-2 text-sm font-semibold text-slate-400">Ninguém escolhido ainda</span>'}
+                    </div>
+                    ${prPodeSalvarEquipe() ? (pr.nomeEquipe === null
+                        ? `<button type="button" data-pr-nova-equipe class="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-emerald-300 text-emerald-700 text-sm font-black hover:bg-emerald-50"><i data-lucide="bookmark-plus" class="w-4 h-4"></i> Salvar como equipe</button>`
+                        : `<div class="mt-2 p-3 rounded-2xl bg-emerald-50 ring-1 ring-emerald-200"><label class="block text-[11px] font-black text-emerald-700 uppercase tracking-widest">Nome da equipe</label>
+                            <div class="mt-1.5 flex gap-2"><input id="prNomeEquipe" type="text" autocomplete="off" value="${escapeHtml(pr.nomeEquipe)}" placeholder="Ex.: Equipe do ${escapeHtml(pr.pessoas[0].split(' ')[0])}" class="flex-1 min-w-0 px-3 py-2.5 bg-white border-2 border-emerald-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400">
+                            <button type="button" data-pr-salvar-equipe class="shrink-0 px-4 rounded-xl bg-emerald-600 text-white text-sm font-black">Salvar</button></div>
+                            <p class="mt-1.5 text-[11px] font-semibold text-emerald-700/80">Líder: ${escapeHtml(pr.pessoas[0])} (o primeiro da lista).</p></div>`) : ''}
+                    <input id="prBusca" type="search" autocomplete="off" value="${escapeHtml(pr.busca)}" placeholder="Buscar pessoa..." class="${prCampo} mt-4">
+                    <div id="prAchados" class="mt-3 flex flex-wrap gap-1.5">${prAchadosHtml()}</div>`;
+            } else if (pr.passo === 2) {
+                const rapidas = ['Concluir o serviço', 'Metade do serviço', '1 bloco', '2 blocos', '5 blocos', '100 caixas', '300 caixas'];
+                corpo.innerHTML = `${jaMontados}${prPergunta(3, 'Qual a meta?', 'O que precisa estar pronto no fim do dia. No fechamento você diz quantos % foram alcançados.')}
+                    <input id="prMeta" type="text" autocomplete="off" value="${escapeHtml(pr.meta)}" placeholder="Ex.: Terminar a capina do bloco 4" class="${prCampo} mt-4">
+                    <div class="mt-3 flex flex-wrap gap-1.5">${rapidas.map(m => prChip(m, m === pr.meta, `data-pr-meta="${escapeHtml(m)}"`)).join('')}</div>
+                    <div class="mt-5 grid grid-cols-2 gap-3">
+                        <div><label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Previsão de término</label>
+                            <input id="prPrevisao" type="time" value="${escapeHtml(pr.previsao)}" class="${prCampo} mt-1.5"></div>
+                        <div><label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Quem pediu</label>
+                            <input id="prSolicitante" type="text" list="prSolicitantes" value="${escapeHtml(pr.solicitante)}" class="${prCampo} mt-1.5">
+                            <datalist id="prSolicitantes">${(dbSolicitantes || []).map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist></div>
+                    </div>`;
+            } else {
+                const total = pr.lista.length + 1;
+                corpo.innerHTML = `${prPergunta(4, total > 1 ? `Confere os ${total} serviços?` : 'Confere?', 'Para hoje, ' + escapeHtml(prHojeRotulo()) + (pr.solicitante ? ' · pedido por ' + escapeHtml(pr.solicitante) : ''))}
+                    <div class="mt-4 space-y-2">
+                        ${pr.lista.map((it, i) => prCartaoServico(it, i)).join('')}
+                        ${prCartaoServico(prItemAtual(), null)}
+                    </div>
+                    <button type="button" data-pr-outro class="mt-3 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 border-dashed border-emerald-300 text-emerald-700 text-sm font-black hover:bg-emerald-50 active:scale-[.99]">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Programar outro serviço
+                    </button>
+                    <p class="mt-1.5 text-center text-[11px] font-semibold text-slate-400">A mesma equipe já vem escolhida no próximo; é só trocar se precisar.</p>
+                    ${pr.salvos ? `<p class="mt-3 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-xl px-3 py-2">${pr.salvos} serviço${pr.salvos === 1 ? '' : 's'} já salvo${pr.salvos === 1 ? '' : 's'} agora.</p>` : ''}`;
+            }
+            prEl('prVoltar').textContent = pr.passo === 0 ? (pr.lista.length ? 'Voltar' : 'Cancelar') : 'Voltar';
+            const total = pr.lista.length + 1;
+            prEl('prAvancar').innerHTML = pr.passo === 3 ? `<i data-lucide="check" class="w-4 h-4"></i> ${total > 1 ? `Salvar ${total} serviços` : 'Salvar'}` : 'Próximo <i data-lucide="arrow-right" class="w-4 h-4"></i>';
+            lucide.createIcons();
+        }
+
+        function prLerCampos() {
+            const v = id => { const e = prEl(id); return e ? e.value : null; };
+            if (v('prServico') !== null) pr.servico = v('prServico').trim();
+            if (v('prLocal') !== null) pr.local = v('prLocal').trim();
+            if (v('prMeta') !== null) pr.meta = v('prMeta').trim();
+            if (v('prPrevisao') !== null) pr.previsao = v('prPrevisao');
+            if (v('prSolicitante') !== null) pr.solicitante = v('prSolicitante').trim();
+            if (v('prNomeEquipe') !== null) pr.nomeEquipe = v('prNomeEquipe');
+        }
+
+        // Salva as pessoas escolhidas como uma equipe (mesmo cadastro da tela Equipes)
+        async function prSalvarEquipe() {
+            prLerCampos();
+            const nome = (pr.nomeEquipe || '').trim() || `Equipe do ${pr.pessoas[0].split(' ')[0]}`;
+            const team = { name: nome, leader: pr.pessoas[0], members: pr.pessoas.slice(1), type: TEAM_TYPES.includes(pr.setor) ? pr.setor : TEAM_DEFAULT_TYPE, rowNumber: null };
+            teams.push(team);
+            persistTeams();
+            if (typeof renderTeamsList === 'function') renderTeamsList();
+            if (typeof refreshTeamQuickButtonsInAllBlocks === 'function') refreshTeamQuickButtonsInAllBlocks();
+            pr.nomeEquipe = null;
+            prDesenhar();
+            try {
+                const result = await sendDataToGoogleSheets([{ local: 'Equipes', semana: '', programador: team.leader, operador: team.members.join(', '), diaSemana: '', blocos: team.name, tempo: '', combustivel: '', operacoes: team.type, status: '', estimativa: '' }]);
+                if (result && Array.isArray(result.rows) && result.rows[0] && result.rows[0].rowNumber) { team.rowNumber = result.rows[0].rowNumber; persistTeams(); }
+                else showMessageModal('Atenção', 'A equipe ficou salva neste aparelho, mas o sistema não confirmou. Ela pode não aparecer nos outros aparelhos.', 'error');
+            } catch (e) {
+                showMessageModal('Atenção', 'A equipe ficou salva neste aparelho, mas não foi possível enviar ao sistema agora.', 'error');
+            }
+        }
+
+        async function prAvancar() {
+            prLerCampos();
+            if (pr.passo === 0 && !pr.servico) { showMessageModal('Qual serviço?', 'Escolha ou escreva o serviço.', 'error'); return; }
+            if (pr.passo === 1 && !pr.pessoas.length) { showMessageModal('Quem vai participar?', prMulti() ? 'Escolha pelo menos uma pessoa ou equipe.' : 'Escolha o operador.', 'error'); return; }
+            if (pr.passo < 3) { pr.passo++; pr.busca = ''; prDesenhar(); prEl('prCorpo').scrollTop = 0; return; }
+            // Salvar todos os serviços montados de uma vez
+            const btn = prEl('prAvancar'); btn.disabled = true; btn.innerHTML = 'Salvando...';
+            const itens = [...pr.lista, prItemAtual()];
+            const semana = (typeof getEffectiveWeekNumber === 'function' && getEffectiveWeekNumber()) || prSemanaAtual();
+            const linhas = itens.map(it => {
+                const l = {
+                    semana, local: it.setor, programador: pr.solicitante, operador: it.pessoas.join(', '), diaSemana: prHojeRotulo(),
+                    blocos: it.local, operacoes: it.servico, status: 'Em Andamento', estimativa: it.previsao, meta: it.meta, tempo: '', combustivel: ''
+                };
+                if (it.setor === 'SPG Packing') l.processaCaixas = true;
+                return l;
+            });
+            try {
+                // Um envio por setor (o sistema grava cada envio num setor só)
+                const porSetor = {};
+                linhas.forEach(l => (porSetor[l.local] = porSetor[l.local] || []).push(l));
+                for (const grupo of Object.values(porSetor)) {
+                    const resp = await fetchWithTimeout('spg:programacao', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(grupo) });
+                    const r = await resp.json();
+                    if (!r || r.status !== 'sucesso') throw new Error('O sistema não confirmou o envio.');
+                }
+                pr.salvos += linhas.length;
+                pr.lista = [];
+                const ultimoSetor = itens[itens.length - 1].setor;
+                if (getDashboardSelectedSector() !== ultimoSetor) handleDashboardSectorChange(ultimoSetor);
+                fecharProgramacaoRapida(true);
+                showMessageModal(linhas.length > 1 ? `${linhas.length} serviços programados` : 'Serviço programado',
+                    itens.map(it => `• ${it.servico} — ${findMatchingTeamName(it.pessoas) || it.pessoas.join(', ')}${it.meta ? ' (meta: ' + it.meta + ')' : ''}`).join('\n'), 'success');
+            } catch (e) {
+                const msg = /meta|percentual/i.test(e.message || '') ? 'Falta ativar a meta no banco: rode o arquivo supabase/programacao_meta.sql no Supabase.' : (e.message || 'Verifique a conexão e tente de novo.');
+                showMessageModal('Não foi possível salvar', msg, 'error');
+            } finally { btn.disabled = false; if (!prEl('progRapida').classList.contains('hidden')) prDesenhar(); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = prEl('progRapida'); if (!modal) return;
+            prEl('prAvancar').addEventListener('click', prAvancar);
+            prEl('prVoltar').addEventListener('click', () => {
+                prLerCampos();
+                if (pr.passo > 0) { pr.passo--; prDesenhar(); return; }
+                // No primeiro passo de um serviço extra: volta para a conferência com o último montado
+                if (pr.lista.length) { Object.assign(pr, pr.lista.pop(), { passo: 3 }); pr.servico = pr.servico || ''; prDesenhar(); return; }
+                fecharProgramacaoRapida();
+            });
+            modal.addEventListener('click', e => {
+                if (e.target === modal) { fecharProgramacaoRapida(); return; }
+                const b = e.target.closest('button'); if (!b) return;
+                if (b.dataset.prSetor) { prLerCampos(); if (pr.setor !== b.dataset.prSetor) { pr.setor = b.dataset.prSetor; if (!prMulti()) pr.pessoas = pr.pessoas.slice(0, 1); } prDesenhar(); }
+                else if (b.dataset.prServico) { prLerCampos(); pr.servico = b.dataset.prServico; pr.passo = 1; prDesenhar(); }
+                else if (b.dataset.prEquipe !== undefined) {
+                    const t = (teams || [])[Number(b.dataset.prEquipe)];
+                    if (t) {
+                        const membros = prMembros(t);
+                        if (prEquipeMarcada(t)) pr.pessoas = pr.pessoas.filter(n => !membros.includes(n));
+                        else membros.forEach(n => { if (!pr.pessoas.includes(n)) pr.pessoas.push(n); });
+                    }
+                    prDesenhar();
+                }
+                else if (b.dataset.prPessoa) {
+                    const n = b.dataset.prPessoa;
+                    if (prMulti()) { if (!pr.pessoas.includes(n)) pr.pessoas.push(n); } else pr.pessoas = [n];
+                    pr.busca = ''; prDesenhar();
+                    const busca = prEl('prBusca'); if (busca && prMulti()) busca.focus();
+                }
+                else if (b.dataset.prTirar) { pr.pessoas = pr.pessoas.filter(n => n !== b.dataset.prTirar); prDesenhar(); }
+                else if (b.hasAttribute('data-pr-limpar-pessoas')) { pr.pessoas = []; prDesenhar(); }
+                else if (b.hasAttribute('data-pr-nova-equipe')) { pr.nomeEquipe = ''; prDesenhar(); const c = prEl('prNomeEquipe'); if (c) c.focus(); }
+                else if (b.hasAttribute('data-pr-salvar-equipe')) prSalvarEquipe();
+                else if (b.dataset.prMeta) { pr.meta = b.dataset.prMeta; prDesenhar(); }
+                else if (b.hasAttribute('data-pr-outro')) {
+                    // Guarda este e começa outro com a mesma equipe e o mesmo setor
+                    prLerCampos();
+                    pr.lista.push(prItemAtual());
+                    Object.assign(pr, { passo: 0, servico: '', local: '', meta: '', previsao: '', busca: '', nomeEquipe: null });
+                    prDesenhar(); prEl('prCorpo').scrollTop = 0;
+                    setTimeout(() => { const c = prEl('prServico'); if (c) c.focus(); }, 50);
+                }
+                else if (b.dataset.prRemover !== undefined) { pr.lista.splice(Number(b.dataset.prRemover), 1); prDesenhar(); }
+                else if (b.hasAttribute('data-pr-ver-lista')) { prLerCampos(); pr.passo = 3; prDesenhar(); }
+            });
+            // Digitando: só as listas mudam (o campo não é recriado e o teclado do celular não fecha)
+            modal.addEventListener('input', e => {
+                if (e.target.id === 'prServico') { pr.servico = e.target.value; prEl('prSugestoes').innerHTML = prSugestoesHtml(); }
+                else if (e.target.id === 'prBusca') { pr.busca = e.target.value; prEl('prAchados').innerHTML = prAchadosHtml(); }
+            });
+            modal.addEventListener('keydown', e => {
+                if (e.key === 'Escape') fecharProgramacaoRapida();
+                if (e.key === 'Enter' && e.target.id === 'prBusca') {
+                    e.preventDefault();
+                    const primeiro = modal.querySelector('[data-pr-pessoa]'); if (primeiro) primeiro.click();
+                } else if (e.key === 'Enter' && e.target.id === 'prNomeEquipe') { e.preventDefault(); prSalvarEquipe(); }
+                else if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); prAvancar(); }
+            });
+        });
+
+        // ---------- Fechar serviços ----------
+        let frItens = [];
+        // Avaliação: escala de 1 a 5 (a mesma dos relatórios de Produtividade); padrão 3 = média
+        const FR_NOTA_PADRAO = 3;
+        const FR_ROTULO_NOTA = { 1: 'Ruim', 2: 'Fraco', 3: 'Médio', 4: 'Bom', 5: 'Ótimo' };
+        let frAval = { ativo: false, jaAvaliado: false, nomes: [], notas: {}, detalhe: {} };
+        const frChaveAvaliacao = () => `spg_prog_avaliado_${getDashboardSelectedSector()}_${(document.getElementById('dashFilterDate') || {}).value || todayDateInputValue()}`;
+        const frNotaGeral = nome => { const v = Object.values(frAval.notas[nome] || {}); return v.length ? Math.round(v.reduce((s, x) => s + x, 0) / v.length) : FR_NOTA_PADRAO; };
+        function frEstrelas(attrs, valor, tamanho) {
+            return [1, 2, 3, 4, 5].map(v => `<button type="button" ${attrs} data-v="${v}" aria-label="Nota ${v}" class="${tamanho} leading-none transition-transform active:scale-90 ${v <= valor ? 'text-amber-400' : 'text-slate-200'}">★</button>`).join('');
+        }
+        function frAvaliacaoHtml() {
+            if (!frAval.nomes.length) return '';
+            const cab = `<div class="flex items-start justify-between gap-3">
+                <div class="min-w-0"><h3 class="text-sm font-black text-slate-800 flex items-center gap-1.5">⭐ Avaliar os colaboradores</h3>
+                <p class="text-[11px] font-semibold text-slate-400 mt-0.5">${frAval.jaAvaliado ? 'Já avaliados nesta data. Ligue para avaliar de novo.' : 'Todos começam com nota 3 (média). Mude só quem se destacou.'}</p></div>
+                <label class="shrink-0 relative inline-flex w-11 h-6 cursor-pointer" title="Avaliar hoje"><input type="checkbox" data-fa-ativo ${frAval.ativo ? 'checked' : ''} class="peer absolute inset-0 opacity-0 cursor-pointer z-10"><span class="absolute inset-0 rounded-full bg-slate-300 peer-checked:bg-emerald-600 transition-colors"></span><span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></span></label>
+            </div>`;
+            if (!frAval.ativo) return `<div class="bg-white rounded-2xl ring-1 ring-slate-200 p-4">${cab}</div>`;
+            const todos = `<div class="mt-3 flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50"><span class="text-[11px] font-black text-slate-500 uppercase tracking-wider">Todos</span><span class="flex gap-1">${frEstrelas('data-fa-todos', 0, 'text-2xl')}</span></div>`;
+            const linhas = frAval.nomes.map((n, i) => {
+                const geral = frNotaGeral(n), aberto = !!frAval.detalhe[n];
+                return `<div class="py-2.5 border-b border-slate-100 last:border-0">
+                    <div class="flex items-center gap-2">
+                        <div class="min-w-0 flex-1"><p class="text-sm font-bold text-slate-800 truncate">${escapeHtml(n)}</p>
+                            <button type="button" data-fa-detalhe="${i}" class="text-[11px] font-bold text-slate-400 hover:text-emerald-700">${FR_ROTULO_NOTA[geral]} · ${aberto ? 'menos' : 'detalhar'}</button></div>
+                        <span class="flex gap-0.5 shrink-0">${frEstrelas(`data-fa-geral="${i}"`, geral, 'text-[26px]')}</span>
+                    </div>
+                    ${aberto ? `<div class="mt-2 ml-1 space-y-1">${CLOSING_AVALIACAO_CRITERIOS.map(c => `<div class="flex items-center justify-between gap-2"><span class="text-xs font-semibold text-slate-500">${c.label}</span><span class="flex gap-0.5">${frEstrelas(`data-fa-nota="${i}" data-crit="${c.key}"`, frAval.notas[n][c.key], 'text-xl')}</span></div>`).join('')}</div>` : ''}
+                </div>`;
+            }).join('');
+            return `<div class="bg-white rounded-2xl ring-1 ring-slate-200 p-4">${cab}${todos}<div class="mt-1">${linhas}</div></div>`;
+        }
+        function abrirFechamentoRapido() {
+            const rows = (dashboardRows || []).filter(r => r.rowNumber);
+            const data = (document.getElementById('dashFilterDate') || {}).value || '';
+            prEl('frSub').textContent = `${nomeSetor(getDashboardSelectedSector())} · ${data ? data.split('-').reverse().join('/') : 'hoje'} · ${rows.length} serviço${rows.length === 1 ? '' : 's'}`;
+            frItens = rows.map(r => {
+                const conc = r.status === 'Concluído';
+                const p = r.percentual === null || r.percentual === undefined || r.percentual === '' ? (conc ? 100 : null) : Number(r.percentual);
+                return { row: r, concluido: conc ? true : (p !== null && p < 100 ? false : null), percentual: p === null ? 50 : p, adiado: r.status === 'Adiado', obs: '' };
+            });
+            // Avaliação dos colaboradores dos serviços: todos começam com nota 3 (média) em tudo
+            const nomes = [...new Set(rows.flatMap(r => normalizeSelectedCollaborators(r.operador)))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+            const chave = frChaveAvaliacao();
+            let jaAvaliado = false; try { jaAvaliado = localStorage.getItem(chave) === '1'; } catch (e) {}
+            frAval = { ativo: nomes.length > 0 && !jaAvaliado, jaAvaliado, nomes, notas: {}, detalhe: {} };
+            nomes.forEach(n => { frAval.notas[n] = Object.fromEntries(CLOSING_AVALIACAO_CRITERIOS.map(c => [c.key, FR_NOTA_PADRAO])); });
+            frDesenhar();
+            const m = prEl('fechRapido'); m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function fecharFechamentoRapido() { const m = prEl('fechRapido'); m.classList.add('hidden'); m.classList.remove('flex'); }
+
+        function frDesenhar() {
+            const corpo = prEl('frCorpo');
+            if (!frItens.length) {
+                corpo.innerHTML = '<div class="py-14 text-center text-sm font-semibold text-slate-400">Nenhum serviço programado nesta data e setor.<br>Troque a data ou o setor na página e tente de novo.</div>';
+                prEl('frSalvar').disabled = true; return;
+            }
+            prEl('frSalvar').disabled = false;
+            corpo.innerHTML = frItens.map((it, i) => {
+                const r = it.row;
+                const bt = (ativo, cor, attrs, txt) => `<button type="button" ${attrs} class="flex-1 min-h-[44px] rounded-xl text-sm font-black border-2 transition-all active:scale-95 ${ativo ? cor : 'bg-white border-slate-200 text-slate-500'}">${txt}</button>`;
+                const pctCor = it.percentual >= 80 ? 'text-emerald-600' : it.percentual >= 50 ? 'text-amber-600' : 'text-rose-600';
+                return `<div class="bg-white rounded-2xl ring-1 ring-slate-200 p-4">
+                    <p class="text-sm font-black text-slate-800">${escapeHtml(r.operacoes || 'Serviço')}${r.blocos ? ` <span class="text-slate-400 font-semibold">· ${escapeHtml(r.blocos)}</span>` : ''}</p>
+                    <p class="text-[11px] font-semibold text-slate-500 mt-0.5">${escapeHtml(r.operador || '')}</p>
+                    ${r.meta ? `<p class="text-[11px] font-bold text-amber-700 mt-1">🎯 Meta: ${escapeHtml(r.meta)}</p>` : ''}
+                    <p class="mt-3 text-[11px] font-black text-slate-400 uppercase tracking-widest">Foi concluído?</p>
+                    <div class="mt-1.5 flex gap-2">
+                        ${bt(it.concluido === true, 'bg-emerald-50 border-emerald-500 text-emerald-700', `data-fr-sim="${i}"`, '✓ Sim')}
+                        ${bt(it.concluido === false && !it.adiado, 'bg-amber-50 border-amber-500 text-amber-700', `data-fr-nao="${i}"`, 'Não')}
+                        ${bt(it.adiado, 'bg-slate-100 border-slate-500 text-slate-700', `data-fr-adiado="${i}"`, 'Adiado')}
+                    </div>
+                    ${it.concluido === false && !it.adiado ? `
+                    <div class="mt-3">
+                        <div class="flex items-center justify-between"><p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Chegou em quantos %?</p><span class="text-2xl font-black tabular-nums ${pctCor}" data-fr-valor="${i}">${it.percentual}%</span></div>
+                        <input type="range" min="0" max="95" step="5" value="${Math.min(95, it.percentual)}" data-fr-pct="${i}" class="w-full mt-2 accent-emerald-600" aria-label="Percentual alcançado">
+                        <div class="mt-2 flex gap-1.5">${[0, 25, 50, 75, 90].map(v => `<button type="button" data-fr-rapido="${i}" data-v="${v}" class="flex-1 py-1.5 rounded-lg text-xs font-black ${it.percentual === v ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}">${v}%</button>`).join('')}</div>
+                    </div>` : ''}
+                    ${it.concluido !== null || it.adiado ? `<input type="text" data-fr-obs="${i}" value="${escapeHtml(it.obs)}" placeholder="O que foi feito / por quê? (opcional)" class="mt-3 w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-medium outline-none focus:border-emerald-400 focus:bg-white">` : ''}
+                </div>`;
+            }).join('') + frAvaliacaoHtml();
+        }
+
+        async function salvarFechamentoRapido() {
+            const marcados = frItens.filter(it => it.concluido !== null || it.adiado);
+            const avaliar = frAval.ativo && frAval.nomes.length > 0;
+            if (!marcados.length && !avaliar) { showMessageModal('Nada marcado', 'Responda "Foi concluído?" em pelo menos um serviço.', 'error'); return; }
+            const updates = marcados.map(it => {
+                const u = { rowNumber: it.row.rowNumber };
+                if (it.adiado) Object.assign(u, { status: 'Adiado', percentual: it.concluido === false ? it.percentual : null });
+                else if (it.concluido) Object.assign(u, { status: 'Concluído', percentual: 100 });
+                else Object.assign(u, { status: it.percentual > 0 ? 'Em Andamento' : 'Pendente', percentual: it.percentual });
+                if (it.obs.trim()) u.realizado = [it.row.realizado, it.obs.trim()].filter(Boolean).join('\n');
+                return u;
+            });
+            const btn = prEl('frSalvar'); btn.disabled = true; btn.innerHTML = 'Salvando...';
+            try {
+                const enviar = async corpo => {
+                    const resp = await fetchWithTimeout('spg:programacao', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(corpo) });
+                    const r = await resp.json();
+                    if (!r || r.status !== 'sucesso') throw new Error('O sistema não confirmou o fechamento.');
+                };
+                if (updates.length) await enviar({ action: 'fecharServicos', updates });
+                let textoAval = '';
+                if (avaliar) {
+                    // Equipe de cada pessoa: a equipe cadastrada em que ela está (ou a do serviço)
+                    const equipeDe = nome => { const t = (teams || []).find(x => [x.leader, ...(x.members || [])].includes(nome)); return t ? getTeamDisplayName(t) : ''; };
+                    const dataIso = (document.getElementById('dashFilterDate') || {}).value || todayDateInputValue();
+                    const registros = frAval.nomes.map(n => Object.assign({ colaborador: n, equipe: equipeDe(n) }, Object.fromEntries(CLOSING_AVALIACAO_CRITERIOS.map(c => [c.key, String(frAval.notas[n][c.key])]))));
+                    await enviar({ action: 'saveAvaliacao', data: dataIso.split('-').reverse().join('/'), semana: frItens.find(x => x.row.semana)?.row.semana || getEffectiveWeekNumber(), local: getDashboardSelectedSector(), registros });
+                    try { localStorage.setItem(frChaveAvaliacao(), '1'); } catch (e) {}
+                    const mediaNotas = (registros.reduce((s, r) => s + CLOSING_AVALIACAO_CRITERIOS.reduce((a, c) => a + Number(r[c.key]), 0) / CLOSING_AVALIACAO_CRITERIOS.length, 0) / registros.length).toFixed(1).replace('.', ',');
+                    textoAval = `\n${registros.length} colaborador${registros.length === 1 ? '' : 'es'} avaliado${registros.length === 1 ? '' : 's'} · nota média ${mediaNotas}.`;
+                }
+                fecharFechamentoRapido();
+                const conc = updates.filter(u => u.status === 'Concluído').length;
+                const media = updates.length ? Math.round(updates.reduce((s, u) => s + (u.percentual || 0), 0) / updates.length) : 0;
+                showMessageModal('Fechamento salvo', (updates.length ? `${conc} de ${updates.length} serviço${updates.length === 1 ? '' : 's'} concluído${conc === 1 ? '' : 's'} · média de ${media}% da meta.` : 'Serviços sem alteração.') + textoAval, 'success');
+                loadProgramacaoDashboard();
+            } catch (e) {
+                const msg = /percentual|meta/i.test(e.message || '') ? 'Falta ativar a meta no banco: rode o arquivo supabase/programacao_meta.sql no Supabase.' : (e.message || 'Verifique a conexão e tente de novo.');
+                showMessageModal('Não foi possível salvar', msg, 'error');
+            } finally { btn.disabled = false; btn.innerHTML = '<i data-lucide="check-check" class="w-4 h-4"></i> Salvar fechamento'; lucide.createIcons(); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = prEl('fechRapido'); if (!modal) return;
+            modal.addEventListener('click', e => {
+                if (e.target === modal) { fecharFechamentoRapido(); return; }
+                const b = e.target.closest('button'); if (!b) return;
+                const it = i => frItens[Number(i)];
+                if (b.dataset.frSim !== undefined) { const x = it(b.dataset.frSim); x.concluido = true; x.adiado = false; x.percentual = 100; frDesenhar(); }
+                else if (b.dataset.frNao !== undefined) { const x = it(b.dataset.frNao); x.concluido = false; x.adiado = false; if (x.percentual >= 100) x.percentual = 50; frDesenhar(); }
+                else if (b.dataset.frAdiado !== undefined) { const x = it(b.dataset.frAdiado); x.adiado = !x.adiado; if (x.adiado) x.concluido = null; frDesenhar(); }
+                else if (b.dataset.frRapido !== undefined) { it(b.dataset.frRapido).percentual = Number(b.dataset.v); frDesenhar(); }
+                // Avaliação
+                else if (b.dataset.faGeral !== undefined) { const n = frAval.nomes[Number(b.dataset.faGeral)]; CLOSING_AVALIACAO_CRITERIOS.forEach(c => { frAval.notas[n][c.key] = Number(b.dataset.v); }); frDesenhar(); }
+                else if (b.dataset.faNota !== undefined) { const n = frAval.nomes[Number(b.dataset.faNota)]; frAval.notas[n][b.dataset.crit] = Number(b.dataset.v); frDesenhar(); }
+                else if (b.dataset.faDetalhe !== undefined) { const n = frAval.nomes[Number(b.dataset.faDetalhe)]; frAval.detalhe[n] = !frAval.detalhe[n]; frDesenhar(); }
+                else if (b.hasAttribute('data-fa-todos')) { frAval.nomes.forEach(n => CLOSING_AVALIACAO_CRITERIOS.forEach(c => { frAval.notas[n][c.key] = Number(b.dataset.v); })); frDesenhar(); }
+            });
+            modal.addEventListener('change', e => { if (e.target.hasAttribute('data-fa-ativo')) { frAval.ativo = e.target.checked; frDesenhar(); } });
+            modal.addEventListener('input', e => {
+                if (e.target.dataset.frPct !== undefined) {
+                    const i = e.target.dataset.frPct; frItens[i].percentual = Number(e.target.value);
+                    const v = modal.querySelector(`[data-fr-valor="${i}"]`); if (v) v.textContent = e.target.value + '%';
+                } else if (e.target.dataset.frObs !== undefined) frItens[e.target.dataset.frObs].obs = e.target.value;
+            });
+            modal.addEventListener('change', e => { if (e.target.dataset.frPct !== undefined) frDesenhar(); });
+            modal.addEventListener('keydown', e => { if (e.key === 'Escape') fecharFechamentoRapido(); });
+        });
+
+        // Barrinha do % alcançado na coluna Status (só aparece depois do fechamento)
+        function barraPercentualHtml(row) {
+            const p = row.percentual;
+            if (p === null || p === undefined || p === '' || (row.status === 'Concluído' && Number(p) === 100 && !row.meta)) return '';
+            const n = Math.max(0, Math.min(100, Number(p)));
+            const cor = n >= 100 ? '#10b981' : n >= 80 ? '#22c55e' : n >= 50 ? '#f59e0b' : '#f43f5e';
+            return `<div class="mt-2 mx-auto max-w-[120px]" title="${n}% da meta"><div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full" style="width:${n}%;background:${cor}"></div></div><p class="mt-1 text-[10px] font-black tabular-nums" style="color:${cor}">${n}% da meta</p></div>`;
+        }
+
         async function loadProgramacaoDashboard(date) {
             const loadId = ++_dashboardLoadId;
             const dateInput = document.getElementById('dashFilterDate');
@@ -6102,7 +6594,7 @@
             const statsHtml = renderStatCardsLive(statCards);
 
             if (!rows.length) {
-                return { statsHtml, tableHtml: `<div class="text-center text-slate-400 text-sm italic py-14 bg-white rounded-2xl border border-slate-200 shadow-sm">Nenhum serviço enviado para essa data/filtro ainda. Use "+ Nova Programação" e "Gerar e Enviar" para registrar.</div>` };
+                return { statsHtml, tableHtml: `<div class="text-center text-slate-400 text-sm italic py-14 bg-white rounded-2xl border border-slate-200 shadow-sm">Nenhum serviço programado para essa data/filtro ainda. Toque em "+ Programar" para lançar.</div>` };
             }
 
             const rowsHtml = rows.map(row => {
@@ -6130,9 +6622,10 @@
                     <td class="p-4">
                         <p class="text-[13px] font-black text-slate-800 leading-snug">${escapeHtml(row.operacoes) || '—'}</p>
                         ${row.blocos ? `<span class="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 text-[9px] font-black uppercase tracking-wider">${escapeHtml(row.blocos)}</span>` : ''}
+                        ${row.meta ? `<p class="mt-1.5 text-[11px] font-bold text-amber-700 flex items-start gap-1"><span>🎯</span><span>Meta: ${escapeHtml(row.meta)}</span></p>` : ''}
                     </td>
                     ${showRealizado ? `<td class="p-4">${feitoHtml}</td>` : ''}
-                    <td class="p-4 text-center">${statusBadgeHtml(row.status)}</td>
+                    <td class="p-4 text-center">${statusBadgeHtml(row.status)}${barraPercentualHtml(row)}</td>
                     ${editable ? `<td class="p-4 text-center">
                         ${row.rowNumber ? `
                         <div class="inline-flex items-center gap-1.5">
@@ -6251,7 +6744,9 @@
                     operacoes: row.operacoes || '',
                     status: row.status || 'Em Andamento',
                     realizado: row.realizado || '',
-                    producao: parseProducao(row.quantidade)
+                    producao: parseProducao(row.quantidade),
+                    meta: row.meta || '',
+                    percentual: (row.percentual === null || row.percentual === undefined || row.percentual === '') ? null : Number(row.percentual)
                 };
             });
 
@@ -8127,6 +8622,14 @@
                 : [];
         }
 
+        // % da meta alcançado (Fechar serviços), com barrinha, para a imagem do Encerramento
+        function percentualExportHtml(b) {
+            if (b.percentual === null || b.percentual === undefined || isNaN(b.percentual)) return '';
+            const n = Math.max(0, Math.min(100, Math.round(b.percentual)));
+            const cor = n >= 100 ? '#059669' : n >= 80 ? '#16a34a' : n >= 50 ? '#d97706' : '#e11d48';
+            return `<div style="margin:10px auto 0;width:120px;"><div style="height:7px;border-radius:999px;background:#e2e8f0;overflow:hidden;"><div style="height:7px;width:${n}%;background:${cor};border-radius:999px;"></div></div><div style="margin-top:5px;font-size:12px;font-weight:900;color:${cor};">${n}% da meta</div></div>`;
+        }
+
         function buildClosingExportHtml({ dateDisplay, dateShort, weekNumber, reportBlocks, statusCounts, horariosLabel }) {
             const local = getSelectedProgramacaoType();
             const responsavelLabel = reportBlocks[0]?.responsavelLabel || getResponsavelPreviewLabel(local);
@@ -8145,6 +8648,12 @@
             if (statusCounts['Adiado']) {
                 statCards.push({ emoji: '🚫', bg: '#f1f5f9', color: '#475569', value: statusCounts['Adiado'], label: 'Adiados', sublabel: percentOfTotalLabel(statusCounts['Adiado'], total) });
             }
+            // Média do % da meta (só dos serviços que já foram fechados com %)
+            const comPct = reportBlocks.filter(b => b.percentual !== null && b.percentual !== undefined && !isNaN(b.percentual));
+            if (comPct.length) {
+                const media = Math.round(comPct.reduce((s, b) => s + Number(b.percentual), 0) / comPct.length);
+                statCards.push({ emoji: '🎯', bg: '#fef3c7', color: '#b45309', value: media + '%', label: 'Meta alcançada', sublabel: `Média de ${comPct.length} serviço${comPct.length === 1 ? '' : 's'}` });
+            }
 
             const rowsHtml = reportBlocks.map(b => {
                 const namesHtml = b.collaborators.length
@@ -8160,6 +8669,7 @@
                     <div>
                         <div style="font-size:13px;font-weight:900;color:#1e293b;line-height:1.35;">${escapeHtml(b.operacoes) || '—'}</div>
                         ${b.local ? `<span style="display:inline-block;margin-top:5px;padding:2px 9px;border-radius:999px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(b.local)}</span>` : ''}
+                        ${b.meta ? `<div style="margin-top:6px;font-size:11.5px;font-weight:800;color:#b45309;line-height:1.35;">🎯 Meta: ${escapeHtml(b.meta)}</div>` : ''}
                     </div>`;
 
                 const bullets = splitIntoBullets(b.realizado);
@@ -8168,7 +8678,7 @@
                     : '<span style="color:#94a3b8;font-size:12.5px;">—</span>';
 
                 const s = STATUS_STYLES[b.status] || STATUS_STYLES['Em Andamento'];
-                const statusCell = `<span style="display:inline-block;padding:5px 14px;border-radius:999px;border:1px solid;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;background:${s.bg};color:${s.color};border-color:${s.border};">${escapeHtml(b.status)}</span>`;
+                const statusCell = `<span style="display:inline-block;padding:5px 14px;border-radius:999px;border:1px solid;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;background:${s.bg};color:${s.color};border-color:${s.border};">${escapeHtml(b.status)}</span>${percentualExportHtml(b)}`;
 
                 return `
                 <tr style="border-bottom:1px solid #eef2f6;">
@@ -8185,7 +8695,7 @@
                 <!-- Cabeçalho -->
                 <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:20px 24px;">
                     <h1 style="margin:0 0 4px;font-size:18px;font-weight:900;color:#1e293b;text-transform:uppercase;letter-spacing:0.12em;line-height:1.2;">${escapeHtml(documentTitle)}</h1>
-                    <h2 style="margin:0;font-size:13px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:0.06em;">${escapeHtml(local)} • Encerramento • Sem. ${weekNumber} • ${escapeHtml(dateShort)}</h2>
+                    <h2 style="margin:0;font-size:13px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:0.06em;">${escapeHtml(nomeSetor(local))} • Encerramento • Sem. ${weekNumber} • ${escapeHtml(dateShort)}</h2>
                     ${(horariosLabel !== undefined ? horariosLabel : getClosingHorariosLabel()) ? `<p style="margin:8px 0 0;font-size:11px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:0.06em;">🕒 Horário: ${escapeHtml(horariosLabel !== undefined ? horariosLabel : getClosingHorariosLabel())}</p>` : ''}
                 </div>
 
@@ -8252,6 +8762,7 @@
                     <div>
                         <div style="font-size:13px;font-weight:900;color:#1e293b;line-height:1.35;">${escapeHtml(b.operacoes) || '—'}</div>
                         ${b.local ? `<span style="display:inline-block;margin-top:5px;padding:2px 9px;border-radius:999px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(b.local)}</span>` : ''}
+                        ${b.meta ? `<div style="margin-top:6px;font-size:11.5px;font-weight:800;color:#b45309;line-height:1.35;">🎯 Meta: ${escapeHtml(b.meta)}</div>` : ''}
                     </div>`;
 
                 const s = STATUS_STYLES[b.status] || STATUS_STYLES['Em Andamento'];
@@ -8271,7 +8782,7 @@
                 <!-- Cabeçalho -->
                 <div style="background:#fff;border-radius:16px;border:1px solid #e2e8f0;padding:20px 24px;">
                     <h1 style="margin:0 0 4px;font-size:18px;font-weight:900;color:#1e293b;text-transform:uppercase;letter-spacing:0.12em;line-height:1.2;">${escapeHtml(documentTitle)}</h1>
-                    <h2 style="margin:0;font-size:13px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:0.06em;">${escapeHtml(local)} • Início das Operações • Sem. ${weekNumber} • ${escapeHtml(dateShort)}</h2>
+                    <h2 style="margin:0;font-size:13px;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:0.06em;">${escapeHtml(nomeSetor(local))} • Início das Operações • Sem. ${weekNumber} • ${escapeHtml(dateShort)}</h2>
                 </div>
 
                 <!-- Cards de estatística -->
@@ -8759,6 +9270,16 @@
         new MutationObserver(lista => { if (lista.some(m => m.target.classList && m.target.classList.contains('dash-nav-item'))) atualizar(); })
             .observe(menu, { subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
         montarPc();
+    })();
+    </script>
+    <!-- Seletor de período padrão (Dia | Mês | Ano | Intervalo) nos filtros De/Até -->
+    <script src="../../seletor-periodo.js"></script>
+    <script>
+    (function () {
+        if (!window.SeletorPeriodo) return;
+        SeletorPeriodo.paraCampos('#prodFilterStart', '#prodFilterEnd');
+        SeletorPeriodo.paraCampos('#relatorioStartDate', '#relatorioEndDate');
+        SeletorPeriodo.paraCampos('#historyStartDate', '#historyEndDate');
     })();
     </script>
 </body>

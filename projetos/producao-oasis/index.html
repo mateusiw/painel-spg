@@ -50,6 +50,8 @@
     <script src="../../supabase-config.js"></script>
     <script src="../../supabase-api.js"></script>
     <script src="../../resumo-producao.js"></script>
+    <script src="../../seletor-periodo.js"></script>
+    <script src="../../mais-filtros.js"></script>
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; background-color: #f8fafc; }
@@ -1655,14 +1657,23 @@
                 }
             });
 
-            const defaultPeriod = ["2026-01-01", "2026-12-31"];
+            // Período inicial: o ano atual inteiro
+            const anoAtual = new Date().getFullYear();
+            const defaultPeriod = [anoAtual + '-01-01', anoAtual + '-12-31'];
             (Array.isArray(periodPickers) ? periodPickers : [periodPickers]).forEach(inst => inst.setDate(defaultPeriod, true));
+            // Seletor de período padrão (o mesmo do Resumo) no lugar do calendário de cada aba
+            if (window.SeletorPeriodo) SeletorPeriodo.substituirCalendarios({
+                rotuloUltima: 'Última colheita',
+                anos: () => { const a = new Set([new Date().getFullYear()]); if (cachedApiData) [...(cachedApiData.historico || []), ...(cachedApiData.pendentes || [])].forEach(x => { const d = String(x.data_entrega || x.data_plantio || ''); if (d.length >= 4) a.add(Number(d.slice(0, 4))); }); return [...a].filter(Boolean); },
+                ultima: () => cachedApiData ? (cachedApiData.historico || []).reduce((m, h) => { const d = String(h.data_entrega || '').slice(0, 10); return d > m && d <= new Date().toISOString().slice(0, 10) ? d : m; }, '') : ''
+            });
 
             fetchData();
         }
 
         async function fetchData() {
-            document.getElementById('loadingModal').classList.remove('hidden');
+            // Sem a tela "Sincronizando Dados": ela era do tempo do Apps Script (demorava). Os dados vêm do
+            // Supabase em instantes; se der erro, continua aparecendo o aviso.
             try {
                 cachedApiData = await SPG_API.colheita.painel(SPG_LOCAL);
                 buildFilterMaps(cachedApiData);
@@ -3165,6 +3176,11 @@
             renderCompareCards();
         }
 
+        // Resolução da imagem para o WhatsApp HD: ~2000px de largura (mín. 2x), limitada a 15 MP (iPhone)
+        function ratioWhatsapp(el) {
+            const w = el.offsetWidth || 1, h = el.offsetHeight || 1;
+            return Math.max(1, Math.min(Math.max(2, 2000 / w), 4, Math.sqrt(15e6 / (w * h))));
+        }
         async function captureComparisonView() {
             const container = document.getElementById('compareMainCard');
             const btn = document.getElementById('btnCaptureComparacao');
@@ -3189,7 +3205,7 @@
             try {
                 const now = new Date();
                 const stamp = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
-                const dataUrl = await htmlToImage.toPng(container, { backgroundColor: '#ffffff', pixelRatio: 2, quality: 1 });
+                const dataUrl = await htmlToImage.toPng(container, { backgroundColor: '#ffffff', pixelRatio: ratioWhatsapp(container), quality: 1 });
                 const link = document.createElement('a');
                 link.download = `comparacao-blocos-${stamp}.png`;
                 link.href = dataUrl;
