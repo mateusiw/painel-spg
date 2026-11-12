@@ -428,11 +428,8 @@
                         </div>
                     </div>
 
+                    <!-- As entregas chegam sozinhas da Pesagem (parceiros, SPG Oásis e SPG Estufa) -->
                     <div id="parceiroCardsWrapper"></div>
-
-                    <button type="button" onclick="addDraftCard()" class="add-btn">
-                        <i data-lucide="plus" class="w-4 h-4"></i> Adicionar parceiro
-                    </button>
                 </div>
             </div>
         </div>
@@ -1556,14 +1553,8 @@
                     <summary><i data-lucide="truck" class="w-4 h-4 text-brand-600 shrink-0"></i> Aba Entregas — registrar e processar</summary>
                     <div class="ajuda-sec-body">
                         <h4>1 · Registrar a entrega</h4>
-                        <p>Clique em <b>Adicionar parceiro</b> e preencha:</p>
-                        <ul>
-                            <li><b>Cadastro do Parceiro</b> — quem trouxe as caixas.</li>
-                            <li><b>Data da Colheita</b> — o dia em que foi colhido (não precisa ser hoje).</li>
-                            <li><b>Quantidade de Caixas que ele entregou</b> — total de caixas cruas recebidas.</li>
-                            <li><b>Peso (kg)</b> — opcional, só pra registro.</li>
-                        </ul>
-                        <p>Clique em <b>Salvar Entrega</b>. O card passa a mostrar os totais.</p>
+                        <p>A entrega chega sozinha da <b>Pesagem</b>: cada parceiro pesado vira uma entrega, e a produção da SPG Oásis e da SPG Estufa entra uma por cultura por dia, com caixas, peso e unidades.</p>
+                        <p>Se precisar corrigir parceiro, data ou caixas, use o lápis no cartão da entrega.</p>
                         <h4>A faixa de status do card</h4>
                         <ul>
                             <li><b>entregues</b> — total de caixas cruas que o parceiro trouxe.</li>
@@ -3493,7 +3484,7 @@
         function renderParceiroCards() {
             const wrapper = document.getElementById('parceiroCardsWrapper');
             wrapper.innerHTML = parceiroCards.map(renderParceiroCardHtml).join('')
-                || '<div class="text-center text-slate-400 text-xs italic py-6">Nenhuma entrega no período. Clique em "Adicionar parceiro" para começar.</div>';
+                || '<div class="text-center text-slate-400 text-xs italic py-6">Nenhuma entrega no período. As entregas chegam sozinhas quando a Pesagem é registrada.</div>';
             lucide.createIcons();
             updatePreview();
         }

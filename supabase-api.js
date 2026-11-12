@@ -1654,11 +1654,21 @@
             avisoAtualizacao.innerHTML = '<style>@keyframes spgGira{to{transform:rotate(360deg)}}</style>' +
                 '<div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,.35)">' +
                 '<div style="width:44px;height:44px;margin:0 auto 14px;border:4px solid #d1fae5;border-top-color:#059669;border-radius:50%;animation:spgGira .9s linear infinite"></div>' +
-                '<p data-texto style="margin:0;font-size:15px;font-weight:700;color:#1e293b;white-space:pre-line;line-height:1.45"></p></div>';
+                '<p data-texto style="margin:0;font-size:15px;font-weight:700;color:#1e293b;white-space:pre-line;line-height:1.45"></p>' +
+                '<div data-barra style="display:none;margin-top:16px"><div style="height:8px;border-radius:99px;background:#f1f5f9;overflow:hidden"><div data-cheio style="height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#10b981,#059669);transition:width .35s ease"></div></div>' +
+                '<p data-pct style="margin:8px 0 0;font-size:12px;font-weight:800;color:#047857;font-variant-numeric:tabular-nums">0%</p></div></div>';
             document.body.appendChild(avisoAtualizacao);
         }
         avisoAtualizacao.querySelector('[data-texto]').textContent = texto;
     }
+    // Progresso da atualização (0 a 100); só recarrega depois de mostrar 100%
+    function progressoAtualizacao(pct) {
+        if (!avisoAtualizacao) return;
+        avisoAtualizacao.querySelector('[data-barra]').style.display = 'block';
+        avisoAtualizacao.querySelector('[data-cheio]').style.width = pct + '%';
+        avisoAtualizacao.querySelector('[data-pct]').textContent = pct + '%';
+    }
+    const pausa = ms => new Promise(r => setTimeout(r, ms));
     function esconderAvisoAtualizacao() { if (avisoAtualizacao) { avisoAtualizacao.remove(); avisoAtualizacao = null; } }
     function guardarVersaoVista(v) { try { localStorage.setItem(CHAVE_VERSAO_FORCADA, String(v)); } catch (e) { /* segue */ } }
 
@@ -1666,6 +1676,7 @@
     // Devolve false sem internet: nada é apagado.
     async function atualizarAplicativo(texto) {
         mostrarAvisoAtualizacao(texto || 'Atualizando o aplicativo...');
+        progressoAtualizacao(5);
         const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration().catch(() => null) : null;
         try {
             if (reg) await reg.update(); else await fetch(location.href, { cache: 'no-store' });
@@ -1673,11 +1684,16 @@
             esconderAvisoAtualizacao();
             return false;
         }
-        await sincronizar(true).catch(() => {});
+        progressoAtualizacao(40);
+        await sincronizar(true).catch(() => {});   // envia o que está pendente neste aparelho
+        progressoAtualizacao(70);
         try {
             if (window.caches) await Promise.all((await caches.keys()).map(k => caches.delete(k)));
             if (reg) await reg.unregister();
         } catch (e) { console.warn('Erro ao limpar o cache:', e); }
+        progressoAtualizacao(100);
+        mostrarAvisoAtualizacao('Atualização concluída. Abrindo a versão nova...');
+        await pausa(600);
         location.reload();
         return true;
     }
@@ -1721,6 +1737,17 @@
         if (!usuarioAtual() || atualizandoApp) return;
         const v = await versaoForcada();
         if (v) aplicarVersaoForcada(v.versao, v.nome);
+    }
+
+    // Antes de mostrar algo por cima da tela ao abrir (ex.: a mensagem do dia): confere se há versão nova.
+    // Devolve true quando o app vai se atualizar e recarregar (aí não mostra nada agora: mostra na versão nova).
+    // Sem internet ou se a conferência demorar mais que o limite, devolve false e segue.
+    function aguardarVersao(limiteMs = 6000) {
+        if (atualizandoApp) return Promise.resolve(true);
+        return Promise.race([
+            conferirVersaoForcada().catch(() => {}).then(() => atualizandoApp),
+            pausa(limiteMs).then(() => atualizandoApp)
+        ]);
     }
 
     let janelaPrincipal = false;
@@ -2164,7 +2191,7 @@
         // tempo real (registros dos outros irrigadores)
         listarRegistrosEquipe, listarMeusRegistros, listarRegistrosDia, assinarRegistros, cancelarAssinaturaRegistros, assinarAgua,
         // atualizar o app de todos
-        versaoForcada, forcarAtualizacaoTodos, assinarVersaoApp, atualizarAplicativo, atualizarTodosAparelhos, informarPagina, encerrarSessao,
+        versaoForcada, forcarAtualizacaoTodos, assinarVersaoApp, atualizarAplicativo, atualizarTodosAparelhos, aguardarVersao, informarPagina, encerrarSessao,
         // auditoria e sessões
         listarAuditoria, listarAuditoriaPeriodo, listarAuditoriaGeral, restaurarAuditoria, iniciarSessao, informarAbaSessao, encerrarSessao, listarSessoes, atividadesDaSessao, autoresAuditoriaPeriodo
     };

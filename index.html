@@ -545,12 +545,15 @@
             // Primeira entrada do dia: mensagem de início de expediente (motivacao.js)
             const u = API.usuarioAtual() || {};
             const motivacao = window.MotivacaoSPG ? opcoes => MotivacaoSPG.mostrarSeForOPrimeiroDoDia(Object.assign({ id: u.id, nome: API.nomeUsuario() }, opcoes)) : () => false;
+            // Antes da mensagem do dia, espera a conferência de versão: se houver atualização, o app
+            // atualiza e recarrega primeiro, e a mensagem aparece só depois, já na versão nova
+            const depoisDaVersao = acao => (API.aguardarVersao ? API.aguardarVersao() : Promise.resolve(false)).then(atualizando => { if (!atualizando) acao(); });
             // Quem tem um só projeto vai direto para ele (depois de fechar a mensagem do dia, se houver)
             if (projetos.length === 1) {
-                if (!motivacao({ aoFechar: () => location.replace(projetos[0].caminho) })) location.replace(projetos[0].caminho);
+                depoisDaVersao(() => { if (!motivacao({ aoFechar: () => location.replace(projetos[0].caminho) })) location.replace(projetos[0].caminho); });
                 return;
             }
-            motivacao();
+            depoisDaVersao(() => motivacao());
             // Tocar na saudação ("Bom dia, Fulano") abre a frase do dia de novo, a qualquer hora
             el('menuSaudacao').onclick = () => window.MotivacaoSPG && MotivacaoSPG.mostrar({ nome: API.nomeUsuario() });
             el('menuSaudacao').onkeydown = e => { if (e.key === 'Enter') el('menuSaudacao').onclick(); };
@@ -1184,7 +1187,6 @@
                 <div class="shrink-0 border-t border-slate-200 bg-white px-4 py-3 flex flex-wrap items-center gap-2" style="padding-bottom:max(.75rem,env(safe-area-inset-bottom))">
                     <button type="button" data-om-padrao class="foco px-3 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100">Restaurar padrão</button>
                     <div class="flex gap-2 ml-auto">
-                        <button type="button" data-om-fechar class="foco px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-bold">Cancelar</button>
                         <button type="button" data-om-salvar class="foco px-5 py-2.5 rounded-xl bg-gradient-to-b from-emerald-600 to-emerald-700 text-white text-sm font-bold shadow-md disabled:opacity-60">Salvar</button>
                     </div>
                 </div>
@@ -1365,9 +1367,9 @@
             const fechar = () => caixa.remove();
             const erro = t => { const p = caixa.querySelector('[data-om-erro]'); p.textContent = t; p.classList.toggle('hidden', !t); };
 
-            caixa.addEventListener('keydown', e => { if (e.key === 'Escape') fechar(); });
+            // Organizar menu: só o X fecha (tocar fora ou o Esc não fecham)
             caixa.addEventListener('click', async e => {
-                if (e.target === caixa || e.target.closest('[data-om-fechar]')) { fechar(); return; }
+                if (e.target.closest('[data-om-fechar]')) { fechar(); return; }
                 const b = e.target.closest('button');
                 if (!b || b.disabled) return;
                 if (b.dataset.omSubir) { moverSite(b.dataset.omSubir, -1); desenhar(); return; }
