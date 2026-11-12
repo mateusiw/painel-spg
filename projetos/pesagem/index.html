@@ -393,8 +393,17 @@
     <div id="view-pesagem" class="hidden animate-fade-in-down">
         <div class="container mx-auto p-4 flex flex-col lg:flex-row gap-8 mt-2">
             <div class="w-full lg:w-1/3 space-y-4">
+                <!-- Local (SPG Oásis / SPG Estufa) ou parceiro. Escolher o outro local SPG abre a Pesagem dele -->
+                <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4">
+                    <div id="p_parceiroWrapper">
+                        <label for="p_partner" class="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Local ou parceiro</label>
+                        <select id="p_partner" required onchange="if (pg_trocarLocal(this.value)) return; p_updateDynamicTitle(); p_toggleInputMode(); p_renderList(); p_renderReport();" class="w-full min-h-[44px] bg-slate-50 border-2 border-slate-200 rounded-xl px-3 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white"><option value="SPG Oásis" selected>SPG Oásis</option></select>
+                    </div>
+                </div>
                 <!-- Aviso de bloqueio do peso até a Colheita liberar -->
                 <div id="p_lockBanner" class="hidden"></div>
+                <!-- SPG (Oásis / Estufa): só os blocos e variedades da Colheita, com o campo do peso (kg) -->
+                <div id="p_pesarBox" class="hidden bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4"></div>
                 <!-- Quem pesou confirma aqui; o Lançar passa a sugerir o preenchimento -->
                 <div id="p_conferidoBox" class="hidden"></div>
                 <!-- Parametros do Turno (dados vindos do CSV da Colheita) -->
@@ -424,7 +433,6 @@
                     </div>
                     <form id="p_harvestForm" onsubmit="p_addItem(event)" class="space-y-4">
                         <div class="grid grid-cols-2 gap-3">
-                            <div id="p_parceiroWrapper" class="col-span-2"><div class="flex items-center justify-between gap-2 mb-1"><label for="p_partner" class="text-xs font-bold text-slate-500 uppercase">Parceiro</label></div><select id="p_partner" required onchange="p_updateDynamicTitle(); p_toggleInputMode(); p_renderList(); p_renderReport();" class="w-full p-2 border border-slate-300 rounded-lg outline-none text-sm"><option value="SPG Oásis" selected>SPG Oásis</option><option value="Sítio Araçá">Sítio Araçá</option><option value="Sítio Edivan">Sítio Edivan</option><option value="Sítio Evandro">Sítio Evandro</option><option value="Sítio São José">Sítio São José</option><option value="Sítio Márcia">Sítio Márcia</option><option value="Sítio Valdir">Sítio Valdir</option><option value="Sítio Leitão">Sítio Leitão</option><option value="Sítio Filho">Sítio Filho</option></select></div>
                             <div id="p_blocoWrapper" class="hidden"><label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Nº Bloco</label><input type="text" id="p_talhao" required oninput="p_autoFillKg()" placeholder="Ex: 1 - A" class="w-full p-2 border border-slate-300 rounded-lg outline-none text-sm"></div>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
@@ -478,8 +486,8 @@
                     </form>
                 </div>
 
-                <!-- Lista Pesagem -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <!-- Lista Pesagem (parceiros) -->
+                <div id="p_listaCard" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-4">
                         <div class="flex items-center gap-3"><h3 class="text-sm font-bold text-slate-700">Itens Gerados</h3><label id="p_btnImportCsv" class="hidden cursor-pointer flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold border border-emerald-200"><input type="file" accept=".csv" class="hidden" onchange="p_importCSV(event)"><i data-lucide="upload" class="w-3 h-3"></i> CSV</label></div>
                         <button onclick="p_clearAll()" class="text-xs text-red-500 font-bold underline">Limpar Tudo</button>
@@ -582,11 +590,10 @@
             if (sel) sel.innerHTML = `<option value="${PL.proprio}" selected>${PL.proprio}</option>`;   // a lista de parceiros entra logo abaixo (cadastro único)
             document.querySelectorAll('[data-pl-rodape]').forEach(e => { e.textContent = PL.rodape; });
             document.title = `Pesagem ${PL.curto} | Painel SPG`;
-            // Escolha do local (só aparece quem tem os dois) e volta para o Resumo da Colheita
+            // O local (SPG Oásis / SPG Estufa) é escolhido na própria lista de Parceiro; aqui fica só a volta ao Resumo da Colheita
             const box = document.getElementById('pgLocais');
             if (box) {
-                const chips = PESAGEM_PERMITIDOS.length > 1 ? `<div role="tablist" aria-label="Local da pesagem" class="flex gap-1 p-1 bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70">${PESAGEM_PERMITIDOS.map(l => `<a role="tab" aria-selected="${l.id === PL.id}" href="?local=${l.id}" class="flex-1 text-center min-h-[40px] inline-flex items-center justify-center px-4 rounded-xl text-xs font-bold ${l.id === PL.id ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500 hover:text-slate-700'}">${l.nome}</a>`).join('')}</div>` : '';
-                box.innerHTML = `${chips}<a href="${PL.resumo}" class="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl bg-white ring-1 ring-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold whitespace-nowrap"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>Resumo da Colheita ${PL.curto}</a>`;
+                box.innerHTML = `<a href="${PL.resumo}" class="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl bg-white ring-1 ring-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold whitespace-nowrap"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>Resumo da Colheita ${PL.curto}</a>`;
             }
         })();
 
@@ -605,9 +612,88 @@
             if (!sel) return;
             const atual = escolher || sel.value || PL.proprio;
             const nomes = [...new Set(lista.filter(n => n && !PG_PROPRIOS.includes(n)))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
-            sel.innerHTML = `<option value="${pg_esc(PL.proprio)}">${pg_esc(PL.proprio)}</option>` + nomes.map(n => `<option value="${pg_esc(n)}">${pg_esc(n)}</option>`).join('');
+            // Primeiro os locais SPG que a pessoa pode pesar (o atual no topo), depois os parceiros
+            const locais = [PL, ...PESAGEM_PERMITIDOS.filter(l => l.id !== PL.id)].map(l => l.proprio);
+            sel.innerHTML = locais.map(n => `<option value="${pg_esc(n)}">${pg_esc(n)}</option>`).join('') + nomes.map(n => `<option value="${pg_esc(n)}">${pg_esc(n)}</option>`).join('');
             sel.value = [PL.proprio, ...nomes].includes(atual) ? atual : PL.proprio;
         }
+        // Escolheu o outro local SPG: abre a Pesagem dele (cada local tem o seu padrão de cultura, textos e imagem)
+        function pg_trocarLocal(valor) {
+            const outro = PESAGEM_PERMITIDOS.find(l => l.id !== PL.id && l.proprio === valor);
+            if (!outro) return false;
+            try { localStorage.setItem('spg_pesagem_local', outro.id); } catch (e) { }
+            location.href = '?local=' + outro.id;
+            return true;
+        }
+
+        // ---------- Pesagem do SPG: lista dos blocos/variedades da Colheita com o campo do peso ----------
+        const pg_chaveDoItem = it => p_weightKey(it);
+        function pg_renderPesar() {
+            const box = document.getElementById('p_pesarBox'); if (!box) return;
+            const partnerEl = document.getElementById('p_partner');
+            if (!(partnerEl && partnerEl.value === PL.proprio)) { box.classList.add('hidden'); return; }
+            box.classList.remove('hidden');
+            // Mantém o cursor no campo que estava sendo digitado
+            const foco = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.pesoChave : null;
+            const itens = p_ativos().slice().sort((a, b) => String(a.talhao || '').localeCompare(String(b.talhao || ''), 'pt-BR', { numeric: true }) || String(a.variety || '').localeCompare(String(b.variety || ''), 'pt-BR') || String(a.commercialVariety || '').localeCompare(String(b.commercialVariety || ''), 'pt-BR'));
+            const travado = !c_isReleased();
+            const pesados = itens.filter(it => parseNumber(it.grossWeight) > 0);
+            const totalKg = pesados.reduce((s, it) => s + parseNumber(it.grossWeight), 0);
+            const fmtKg = n => n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+            const linha = it => {
+                const k = pg_chaveDoItem(it), modo = pg_contagem(it.variety);
+                const detalhes = [it.boxes ? `${it.boxes} cx` : '', modo !== 'peso' && parseNumber(it.totalUnits) ? `${it.totalUnits} un.` : ''].filter(Boolean).join(' · ');
+                const falta = !(parseNumber(it.grossWeight) > 0);
+                return `<li class="flex items-center gap-3 py-2.5">
+                    <div class="w-11 h-11 shrink-0 rounded-xl ${falta ? 'bg-amber-50 text-amber-700 ring-amber-200' : 'bg-emerald-50 text-emerald-700 ring-emerald-200'} ring-1 flex flex-col items-center justify-center leading-none"><span class="text-[8px] font-bold uppercase">${PL.termo}</span><span class="text-sm font-black">${pg_esc(it.talhao)}</span></div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-bold text-slate-800 truncate">${pg_esc(it.commercialVariety || it.variety || '-')}</p>
+                        <p class="text-[11px] text-slate-400 truncate">${pg_esc(it.variety || '')}${it.cycle ? ` · Ciclo ${pg_esc(it.cycle)}` : ''}${detalhes ? ` · ${detalhes}` : ''}</p>
+                    </div>
+                    <label class="relative w-28 shrink-0">
+                        <span class="sr-only">Peso em kg de ${pg_esc(PL.termo)} ${pg_esc(it.talhao)} ${pg_esc(it.commercialVariety || it.variety || '')}</span>
+                        <input type="text" inputmode="decimal" autocomplete="off" data-peso-chave="${pg_esc(k)}" value="${pg_esc(it.grossWeight || '')}" ${travado ? 'disabled placeholder="Bloqueado"' : 'placeholder="0"'}
+                            class="w-full min-h-[44px] bg-slate-50 border-2 ${falta ? 'border-slate-200' : 'border-emerald-300'} rounded-xl pl-3 pr-9 text-right text-base font-bold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white disabled:opacity-60 disabled:cursor-not-allowed">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">kg</span>
+                    </label>
+                </li>`;
+            };
+            box.innerHTML = `<div class="flex items-center justify-between gap-3 mb-1">
+                    <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4 text-emerald-600"></i> Peso por ${PL.termo.toLowerCase()}</h2>
+                    <span class="text-[11px] font-bold ${pesados.length === itens.length && itens.length ? 'text-emerald-700' : 'text-slate-400'}">${pesados.length} de ${itens.length} pesados</span>
+                </div>
+                ${itens.length
+                    ? `<ul class="divide-y divide-slate-100">${itens.map(linha).join('')}</ul>
+                       <div class="flex items-center justify-between mt-2 pt-3 border-t border-slate-200"><span class="text-xs font-bold text-slate-500 uppercase">Total</span><span class="text-lg font-black text-emerald-700">${fmtKg(totalKg)} kg</span></div>`
+                    : `<p class="py-8 text-center text-sm text-slate-400">Nenhum ${PL.termo.toLowerCase()} recebido da Colheita ainda.<br>Toque em <b>Atualizar</b> para buscar.</p>`}`;
+            if (foco) {
+                const el = box.querySelector(`[data-peso-chave="${CSS.escape(foco)}"]`);
+                if (el && !el.disabled) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (e) { } }
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+        document.addEventListener('input', e => {
+            const campo = e.target.closest && e.target.closest('[data-peso-chave]');
+            if (!campo) return;
+            formatDecimalInput(campo);
+            const item = p_harvestData.find(it => it.partner === PL.proprio && pg_chaveDoItem(it) === campo.dataset.pesoChave);
+            if (!item) return;
+            p_setItemWeight(item, campo.value);
+            campo.classList.toggle('border-emerald-300', parseNumber(campo.value) > 0);
+            campo.classList.toggle('border-slate-200', !(parseNumber(campo.value) > 0));
+            clearTimeout(pg_renderPesar._t);
+            p_saveToStorage(); p_renderReport();
+            // Atualiza contagem e total sem tirar o foco do campo
+            pg_renderPesar._t = setTimeout(pg_renderPesar, 600);
+        });
+        // Enter vai para o próximo peso
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Enter' || !(e.target.closest && e.target.closest('[data-peso-chave]'))) return;
+            e.preventDefault();
+            const campos = [...document.querySelectorAll('#p_pesarBox [data-peso-chave]:not(:disabled)')];
+            const prox = campos[campos.indexOf(e.target) + 1];
+            if (prox) prox.focus(); else e.target.blur();
+        });
         async function pg_carregarParceiros() {
             try {
                 const { data, error } = await SPG_API.cliente.from('packing_cadastros').select('valor').eq('tipo', 'produtores').order('valor');
@@ -1873,6 +1959,7 @@
                 banner.innerHTML = `<i data-lucide="lock-open" class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5"></i><div><p class="text-sm font-bold text-emerald-800">Pesagem liberada</p><p class="text-xs text-emerald-700 mt-0.5">Dados conferidos${c_release.by ? ` por <b>${c_release.by}</b>` : ''} às ${t}. Já pode lançar o peso.</p></div>`;
             }
             p_renderConferido();
+            pg_renderPesar();
             if (window.lucide) lucide.createIcons();
         }
 
@@ -2629,7 +2716,11 @@
                 unitsPerBoxInput.removeAttribute('readonly'); unitsPerBoxInput.classList.remove('bg-emerald-50', 'border-emerald-200', 'text-emerald-800'); unitsPerBoxInput.classList.add('bg-white', 'border-slate-300'); unitsPerBoxInput.setAttribute('oninput', 'formatNumberInput(this); p_calculateValues()'); unitsPerBoxInput.placeholder = "Ex: 18"; labelUnitsPerBox.classList.remove('text-emerald-600'); labelUnitsPerBox.classList.add('text-slate-500'); labelUnitsPerBox.innerText = "Média Unid. p/ Caixa";
                 totalUnitsInput.required = false; unitsPerBoxInput.required = true; prodDaysInput.required = false; plantedInput.required = false; accumInput.required = false; infoLabel.innerText = "Informações Adicionais"; unitsPerBoxWrapper.classList.remove('hidden'); unitsPerBoxWrapper.classList.add('col-span-2'); averageWeightWrapper.classList.add('hidden'); totalUnitsWrapper.classList.add('hidden');
             }
-            const shiftPanel = document.getElementById('p_shiftPanel'); if (shiftPanel) shiftPanel.classList.toggle('hidden', partner !== PL.proprio);
+            // SPG: sem formulário nem parâmetros do turno (vêm da Colheita); só a lista com o peso de cada bloco
+            const ehProprio = partner === PL.proprio;
+            const shiftPanel = document.getElementById('p_shiftPanel'); if (shiftPanel) shiftPanel.classList.add('hidden');
+            ['p_formContainer', 'p_listaCard'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.toggle('hidden', ehProprio); });
+            pg_renderPesar();
             p_applyWeightLock();
             p_calculateValues();
             p_aplicarContagem();
@@ -2827,6 +2918,12 @@
             else if (restantes.length) pk_aviso('Não consegui falar com o Packing agora. Tento de novo sozinho.', 'espera');
             else if (enviados) pk_aviso(fila[fila.length - 1].acao === 'salvar' ? '✓ Entrega enviada para a Produtividade Packing' : '✓ Entrega retirada da Produtividade Packing', 'ok');
         }
+        // A Pesagem não apaga mais nada no Packing: tira da fila as exclusões que ficaram pendentes da versão anterior
+        (function () {
+            const fila = pk_lerFila();
+            const limpa = fila.filter(x => x.acao !== 'excluir' && !(x.acao === 'local' && !(x.dados.p_caixas > 0) && !(x.dados.p_kg > 0) && !(x.dados.p_unidades > 0)));
+            if (limpa.length !== fila.length) pk_gravarFila(limpa);
+        })();
         window.addEventListener('online', () => pk_processarFila(false));
         setTimeout(() => pk_processarFila(false), 4000);
         // Item de parceiro salvo/removido na Pesagem
@@ -2862,7 +2959,12 @@
                 const culturas = new Set([...Object.keys(agora), ...Object.keys(antes)]);
                 let mudou = false;
                 culturas.forEach(c => {
-                    const a = agora[c] || { cx: 0, kg: 0, un: 0 }, b = antes[c];
+                    const b = antes[c];
+                    let a = agora[c] || { cx: 0, kg: 0, un: 0 };
+                    // Peso apagado aqui NÃO apaga no Packing: a cultura que sumiu (ou zerou) continua lá como estava,
+                    // e o kg apagado mantém o último kg enviado. Corrigir/excluir a entrega é feito no próprio Packing.
+                    if (!a.cx && !a.kg && !a.un) { if (b) agora[c] = b; return; }
+                    if (b && !(a.kg > 0) && b.kg > 0) { a = Object.assign({}, a, { kg: b.kg }); agora[c] = a; }
                     if (b && b.cx === a.cx && b.kg === a.kg && b.un === a.un) return;
                     if (!b && !a.cx && !a.kg && !a.un) return;
                     mudou = true;
@@ -2874,10 +2976,9 @@
                 }
             }, 2500);
         };
-        function pk_itemRemovido(item) {
-            if (!item || item.partner === PL.proprio || !item.packingId) return;
-            pk_enfileirar('excluir', { p_id: item.packingId });
-        }
+        // Item de parceiro removido na Pesagem (lixeira ou "Limpar Tudo"): sai só da Pesagem.
+        // A entrega continua na Produtividade Packing; se precisar, ela é excluída por lá.
+        function pk_itemRemovido(item) { }
 
         function p_addItem(e) {
             e.preventDefault();
@@ -2897,6 +2998,7 @@
         function p_confirmClearAll() { if(!p_partnerToClear) return; p_harvestData.filter(item => item.partner === p_partnerToClear).forEach(pk_itemRemovido); p_harvestData = p_harvestData.filter(item => item.partner !== p_partnerToClear); p_saveToStorage(); if (p_partnerToClear === PL.proprio) { p_forecastBlocksData = []; localStorage.setItem((PL.pfx + 'sede_forecasts'), JSON.stringify(p_forecastBlocksData)); p_loadShiftPanel(); } p_clearBlockForm(); p_renderReport(); p_renderList(); p_partnerToClear = ''; }
 
         function p_renderList() {
+            pg_renderPesar();
             const list = document.getElementById('p_itemsList'); list.innerHTML = '';
             if (p_harvestData.length === 0) { list.innerHTML = '<li class="text-center text-slate-400 italic py-2">Nenhum bloco adicionado.</li>'; return; }
             const displayData = p_getFilteredData();

@@ -406,6 +406,12 @@
         { id: 'produtividade-packing', nome: 'Produtividade Packing', descricao: 'Entregas dos parceiros, processamento por colaborador, estoque e rastreio', icone: 'package-check', grupo: 'Operação', gradiente: 'from-emerald-500 to-teal-700',
           cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/produtividade-packing/index.html',
           areas: [{ modulo: 'produtividade_packing', nome: 'Acesso à Produtividade Packing', recursos: [] }] },
+        // Antigo app "resumo-estoque-diario-spg" (tinha um Supabase próprio, com login à parte)
+        { id: 'estoque-diario', nome: 'Resumo Estoque Diário', descricao: 'Caixas por parceiro e data, processamento e separação por cliente', icone: 'calendar-check-2', grupo: 'Operação', gradiente: 'from-lime-500 to-emerald-700',
+          cor: 'bg-lime-50 text-lime-700', caminho: 'projetos/estoque-diario/index.html',
+          areas: [{ modulo: 'estoque_diario', nome: 'Acesso ao Resumo Estoque Diário', recursos: [] },
+              // Permissão extra, desligada por padrão: renomear/remover cadastros, culturas, cálculos e o painel Geral (o antigo perfil "master")
+              { modulo: 'estoque_diario_gestao', nome: 'Gestão do Estoque Diário (cadastros, culturas e cálculos)', extra: true, requer: 'estoque_diario', recursos: [] }] },
         { id: 'organograma', nome: 'Organograma', descricao: 'Equipe, cargos, líderes, aniversários e tempo de casa', icone: 'network', grupo: 'Pessoas', gradiente: 'from-indigo-500 to-violet-700',
           cor: 'bg-indigo-50 text-indigo-700', caminho: 'projetos/organograma/index.html',
           areas: [{ modulo: 'organograma', nome: 'Acesso ao Organograma', recursos: [] },
