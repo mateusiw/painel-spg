@@ -11,7 +11,7 @@
     'use strict';
     const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const MODOS = [['dia', 'Dia', 'calendar'], ['mes', 'Mês', 'calendar-range'], ['ano', 'Ano', 'calendar-days'], ['intervalo', 'Intervalo', 'calendar-search']];
-    const CAMPO = 'w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-2 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:bg-white';
+    const CAMPO = 'sp-campo w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-2 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-400 focus:bg-white';
 
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const isoDe = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -85,11 +85,54 @@
         return { ...base, modo: 'intervalo', de, ate };
     }
 
+    // ---------- Visual sem Tailwind ----------
+    // Páginas com CSS próprio (ex.: Estoque) não têm as classes do Tailwind: o seletor aparecia
+    // como botões crus do navegador. Nelas entra este CSS (classes sp-*), que usa as cores da
+    // página quando existem (--surface, --brand, --line...) e funciona no tema escuro.
+    function garantirCss() {
+        if (window.tailwind || document.getElementById('seletorPeriodoCss')) return;
+        const css = document.createElement('style');
+        css.id = 'seletorPeriodoCss';
+        css.textContent = `
+            .sp-raiz { font-family: inherit; }
+            .sp-raiz .sp-linha { display: flex; flex-direction: column; gap: 10px; }
+            @media (min-width: 1280px) { .sp-raiz .sp-linha { flex-direction: row; align-items: center; } }
+            .sp-raiz .sp-modos { display: flex; gap: 4px; padding: 4px; align-self: flex-start; flex-shrink: 0; border-radius: 16px;
+                background: var(--surface-3, #f1f5f9); box-shadow: inset 0 0 0 1px var(--line, #e2e8f0); max-width: 100%; overflow-x: auto; }
+            .sp-raiz .sp-pilula { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px; border: 0; border-radius: 12px;
+                background: transparent; color: var(--muted, #64748b); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background .15s, color .15s; }
+            .sp-raiz .sp-pilula:hover { color: var(--ink, #334155); }
+            .sp-raiz .sp-pilula.sp-ativa { background: var(--surface, #fff); color: var(--brand, #047857); box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 0 0 1px var(--line, #e2e8f0); }
+            .sp-raiz .sp-controles { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
+            @media (min-width: 1280px) { .sp-raiz .sp-controles { max-width: 32rem; } }
+            .sp-raiz .sp-seta { flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 12px;
+                background: var(--surface-3, #f1f5f9); color: var(--ink-2, #475569); cursor: pointer; }
+            .sp-raiz .sp-seta:hover { background: var(--brand-soft, #ecfdf5); color: var(--brand, #047857); }
+            .sp-raiz .sp-campo { width: 100%; min-width: 0; height: 40px; box-sizing: border-box; padding: 0 12px; border: 2px solid var(--line, #e2e8f0); border-radius: 12px;
+                background-color: var(--surface-2, #f8fafc); color: var(--ink, #334155); font: inherit; font-size: 14px; font-weight: 600; outline: none; }
+            .sp-raiz .sp-campo:focus { border-color: var(--brand, #34d399); background-color: var(--surface, #fff); }
+            .sp-raiz .sp-campo.sp-centro { text-align: center; }
+            .sp-raiz .sp-campo.sp-curto { max-width: 100px; }
+            .sp-raiz .sp-ate { align-self: center; font-size: 12px; font-weight: 700; color: var(--muted, #94a3b8); }
+            .sp-raiz .sp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+            .sp-raiz .sp-chip { min-height: 30px; padding: 4px 12px; border: 0; border-radius: 999px; background: var(--surface-3, #f1f5f9); color: var(--ink-2, #475569);
+                font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+            .sp-raiz .sp-chip:hover { background: var(--brand-soft, #ecfdf5); color: var(--brand, #047857); }
+            .sp-raiz .sp-chip.sp-ativo { background: var(--brand, #059669); color: #fff; }
+            .sp-raiz .sp-nome { margin: 8px 0 0; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 900; color: var(--ink, #1e293b); }
+            .sp-raiz .sp-nome svg { color: var(--brand, #059669); }
+            .sp-raiz svg { width: 16px; height: 16px; flex-shrink: 0; }
+            .sp-raiz .sp-pilula svg { width: 14px; height: 14px; }
+            .sp-raiz .sp-seta svg { width: 20px; height: 20px; }
+        `;
+        document.head.appendChild(css);
+    }
+
     // ---------- Desenho ----------
     function html(p, opcoes) {
-        const pilula = (ativo, attrs, conteudo) => `<button type="button" ${attrs} class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${ativo ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500 hover:text-slate-700'}">${conteudo}</button>`;
-        const chip = (id, texto, ativo) => `<button type="button" data-sp-atalho="${id}" class="px-2.5 py-1 rounded-full text-[11px] font-bold ${ativo ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}">${texto}</button>`;
-        const seta = (passo, rotulo) => `<button type="button" data-sp-passo="${passo}" aria-label="${rotulo}" title="${rotulo}" class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"><i data-lucide="${passo < 0 ? 'chevron-left' : 'chevron-right'}" class="w-5 h-5"></i></button>`;
+        const pilula = (ativo, attrs, conteudo) => `<button type="button" ${attrs} class="sp-pilula${ativo ? ' sp-ativa' : ''} flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${ativo ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500 hover:text-slate-700'}">${conteudo}</button>`;
+        const chip = (id, texto, ativo) => `<button type="button" data-sp-atalho="${id}" class="sp-chip${ativo ? ' sp-ativo' : ''} px-2.5 py-1 rounded-full text-[11px] font-bold ${ativo ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}">${texto}</button>`;
+        const seta = (passo, rotulo) => `<button type="button" data-sp-passo="${passo}" aria-label="${rotulo}" title="${rotulo}" class="sp-seta shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"><i data-lucide="${passo < 0 ? 'chevron-left' : 'chevron-right'}" class="w-5 h-5"></i></button>`;
         let anos = (opcoes.anos && opcoes.anos()) || [];
         if (!anos.length) anos = [new Date().getFullYear()];
         if (!anos.includes(p.ano)) anos = [p.ano, ...anos];
@@ -97,35 +140,37 @@
         const opcoesAno = anos.map(a => `<option value="${a}"${a === p.ano ? ' selected' : ''}>${a}</option>`).join('');
         let controles = '', chips;
         if (p.modo === 'dia') {
-            controles = `${seta(-1, 'Dia anterior')}<input type="date" data-sp-campo="dia" value="${p.dia}" class="${CAMPO} text-center">${seta(1, 'Próximo dia')}`;
+            controles = `${seta(-1, 'Dia anterior')}<input type="date" data-sp-campo="dia" value="${p.dia}" class="${CAMPO} sp-centro text-center">${seta(1, 'Próximo dia')}`;
             chips = chip('hoje', 'Hoje') + chip('ontem', 'Ontem') + (opcoes.ultima ? chip('ultima', opcoes.rotuloUltima || 'Última colheita') : '');
         } else if (p.modo === 'mes') {
             controles = `${seta(-1, 'Mês anterior')}<select data-sp-campo="mes" class="${CAMPO}">${MESES.map((m, i) => `<option value="${i}"${i === p.mes ? ' selected' : ''}>${m}</option>`).join('')}</select>
-                <select data-sp-campo="ano" class="${CAMPO} max-w-[100px]">${opcoesAno}</select>${seta(1, 'Próximo mês')}`;
+                <select data-sp-campo="ano" class="${CAMPO} sp-curto max-w-[100px]">${opcoesAno}</select>${seta(1, 'Próximo mês')}`;
             chips = chip('esteMes', 'Este mês') + chip('mesPassado', 'Mês passado');
         } else if (p.modo === 'ano') {
             controles = `${seta(-1, 'Ano anterior')}<select data-sp-campo="ano" class="${CAMPO}">${opcoesAno}</select>${seta(1, 'Próximo ano')}`;
             chips = chip('esteAno', 'Este ano') + chip('anoPassado', 'Ano passado');
         } else if (p.modo === 'intervalo') {
-            controles = `<input type="date" data-sp-campo="de" value="${p.de}" aria-label="De" class="${CAMPO}"><span class="self-center text-xs font-bold text-slate-400">até</span><input type="date" data-sp-campo="ate" value="${p.ate}" aria-label="Até" class="${CAMPO}">`;
+            controles = `<input type="date" data-sp-campo="de" value="${p.de}" aria-label="De" class="${CAMPO}"><span class="sp-ate self-center text-xs font-bold text-slate-400">até</span><input type="date" data-sp-campo="ate" value="${p.ate}" aria-label="Até" class="${CAMPO}">`;
             chips = chip('7', 'Últimos 7 dias') + chip('30', 'Últimos 30 dias');
         } else {
             chips = '';
         }
         if (opcoes.tudo !== false) chips += chip('tudo', 'Tudo', p.modo === 'tudo');
-        return `<div class="flex flex-col xl:flex-row xl:items-center gap-2.5">
-                <div role="tablist" aria-label="Tipo de período" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1 shrink-0 self-start">
+        return `<div class="sp-linha flex flex-col xl:flex-row xl:items-center gap-2.5">
+                <div role="tablist" aria-label="Tipo de período" class="sp-modos flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1 shrink-0 self-start">
                     ${MODOS.map(([id, t, ic]) => pilula(p.modo === id, `role="tab" aria-selected="${p.modo === id}" data-sp-modo="${id}"`, `<i data-lucide="${ic}" class="w-3.5 h-3.5"></i>${t}`)).join('')}
                 </div>
-                ${controles ? `<div class="flex items-center gap-2 flex-1 min-w-0 xl:max-w-lg">${controles}</div>` : ''}
-                <div class="flex flex-wrap gap-1.5">${chips}</div>
+                ${controles ? `<div class="sp-controles flex items-center gap-2 flex-1 min-w-0 xl:max-w-lg">${controles}</div>` : ''}
+                <div class="sp-chips flex flex-wrap gap-1.5">${chips}</div>
             </div>
-            <p class="mt-2 flex items-center gap-1.5 text-sm font-black text-slate-800"><i data-lucide="calendar-check" class="w-4 h-4 text-emerald-600"></i><span data-sp-nome>${esc(nome(p))}</span></p>`;
+            <p class="sp-nome mt-2 flex items-center gap-1.5 text-sm font-black text-slate-800"><i data-lucide="calendar-check" class="w-4 h-4 text-emerald-600"></i><span data-sp-nome>${esc(nome(p))}</span></p>`;
     }
 
     // Monta um seletor dentro de "elemento". aoMudar(de, ate, periodo) é chamado a cada mudança.
     function montar(elemento, opcoes) {
         const estado = { p: opcoes.periodo || deDatas(null, null) };
+        garantirCss();
+        elemento.classList.add('sp-raiz');
         const desenhar = () => { elemento.innerHTML = html(estado.p, opcoes); if (window.lucide) lucide.createIcons(); };
         const mudou = () => { desenhar(); const [de, ate] = intervalo(estado.p); opcoes.aoMudar(de, ate, estado.p); };
         elemento.addEventListener('click', ev => {

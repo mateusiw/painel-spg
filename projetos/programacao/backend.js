@@ -61,7 +61,14 @@
         'Controle Colaboradores': async (i, f) => (await porRegistro('programacao_controle_colaboradores', i, f))
             .map(r => Object.assign(baseRegistro(r), { colaborador: r.colaborador, caixas: r.caixas, oQueFez: r.o_que_fez }, horas(r))),
         'Avaliacao': async (i, f) => (await porRegistro('programacao_avaliacoes', i, f))
-            .map(r => Object.assign(baseRegistro(r), { colaborador: r.colaborador }, avaliacao(r))),
+            .map(r => Object.assign(baseRegistro(r), { colaborador: r.colaborador, servico: r.servico || '' }, avaliacao(r))),
+        // Produtividade geral: serviços de todos os setores de trabalho no período
+        'Servicos Produtividade': async (i, f) => (await buscarTudo(() => {
+            let q = sb.from('programacao_linhas').select('*').in('setor', ['Colaboradores', 'Trator', 'SPG Packing', 'SPG Estufa']);
+            if (i) q = q.gte('registrado_em', inicioDia(i));
+            if (f) q = q.lte('registrado_em', fimDia(f));
+            return q.order('id');
+        })).map(r => paraProgramacao(r, r.setor)),
         'Avaliacao Equipe': async (i, f) => (await porRegistro('programacao_avaliacoes_equipe', i, f))
             .map(r => Object.assign(baseRegistro(r), avaliacao(r))),
         'Limpeza': async (i, f) => (await buscarTudo(() => {
@@ -106,6 +113,8 @@
         };
         // Meta: só grava quando a tela mandou (o modo completo antigo não manda e não pode apagar a meta)
         if (l.meta !== undefined) campos.meta = ouVazio(l.meta);
+        // % alcançado já na hora de programar ("Programar" com o resultado do serviço)
+        if (l.percentual !== undefined) campos.percentual = pct(l.percentual);
         return campos;
     }
     const pct = v => (v === null || v === undefined || v === '') ? null : Math.max(0, Math.min(100, Math.round(Number(v)) || 0));
@@ -170,7 +179,31 @@
 
         saveAvaliacao: async d => {
             exigirLista(d.registros, 'registros');
-            if (d.registros.length) conferir(await sb.from('programacao_avaliacoes').insert(d.registros.map(i => notas(d, i, { colaborador: ouVazio(i.colaborador) }))));
+            if (!d.registros.length) return;
+            // Avaliação por serviço (Programar): grava também o serviço. Se o banco ainda não tem a
+            // coluna (falta rodar supabase/programacao_avaliacao_servico.sql), grava sem ela.
+            const comServico = d.registros.some(i => i.servico);
+            const linhas = semServico => d.registros.map(i => notas(d, i, Object.assign({ colaborador: ouVazio(i.colaborador) }, comServico && !semServico ? { servico: ouVazio(i.servico) } : {})));
+            const res = await sb.from('programacao_avaliacoes').insert(linhas(false));
+            if (res.error && comServico && /servico/i.test(res.error.message || '')) conferir(await sb.from('programacao_avaliacoes').insert(linhas(true)));
+            else conferir(res);
+        },
+
+        // Produtividade: corrigir as notas de avaliações já salvas (uma linha por avaliação)
+        updateAvaliacao: async d => {
+            exigirLista(d.updates, 'updates');
+            const CRITERIOS = ['assiduidade', 'organizacao', 'participacao', 'agilidade', 'pontualidade'];
+            await Promise.all(d.updates.filter(i => i.rowNumber).map(async i => {
+                const v = {};
+                CRITERIOS.forEach(c => { if (i[c] !== undefined) v[c] = ouVazio(i[c]); });
+                conferir(await sb.from('programacao_avaliacoes').update(v).eq('id', i.rowNumber));
+            }));
+        },
+        // Produtividade: apagar avaliações enviadas por engano
+        deleteAvaliacoes: async d => {
+            exigirLista(d.ids, 'ids');
+            const ids = d.ids.map(Number).filter(Boolean);
+            if (ids.length) conferir(await sb.from('programacao_avaliacoes').delete().in('id', ids));
         },
 
         saveAvaliacaoEquipe: async d => {

@@ -35,7 +35,9 @@
         const api = { pronto: false };
 
         async function carregar() {
-            const { data, error } = await cliente.from('colheita_catalogo').select('cultura,variedade,ativo').eq('local', local).limit(5000);
+            let { data, error } = await cliente.from('colheita_catalogo').select('cultura,variedade,ativo,contagem').eq('local', local).limit(5000);
+            // Banco sem a coluna "contagem" (falta rodar supabase/pesagem_unica.sql): lê sem ela
+            if (error && /contagem/i.test(error.message || '')) ({ data, error } = await cliente.from('colheita_catalogo').select('cultura,variedade,ativo').eq('local', local).limit(5000));
             if (!error && data) {
                 linhas = data;
                 api.pronto = true;
@@ -49,6 +51,23 @@
         }
 
         api.carregar = carregar;
+
+        // Como a cultura informa as unidades na Pesagem: 'media' (média por caixa), 'total' (total de
+        // unidades) ou 'peso' (só kg). Sem regra cadastrada: pepino = total, tomate = peso, outras = média.
+        api.CONTAGENS = { media: 'Média de unidades por caixa', total: 'Total de unidades', peso: 'Só peso (kg)' };
+        api.contagem = cultura => {
+            const procurada = igualavel(cultura);
+            const linha = linhas.find(l => l.variedade === '' && l.cultura !== '' && igualavel(l.cultura) === procurada);
+            if (linha && api.CONTAGENS[linha.contagem]) return linha.contagem;
+            return /pepino/.test(procurada) ? 'total' : /tomate/.test(procurada) ? 'peso' : 'media';
+        };
+        async function definirContagem(cultura, contagem) {
+            const { error } = await cliente.from('colheita_catalogo').update({ contagem }).eq('local', local).eq('cultura', cultura).eq('variedade', '');
+            if (error) throw new Error(/contagem/i.test(error.message || '') ? 'Rode o arquivo supabase/pesagem_unica.sql no Supabase primeiro.' : error.message);
+            linhas.forEach(l => { if (l.cultura === cultura && l.variedade === '') l.contagem = contagem; });
+            try { localStorage.setItem(K_CACHE, JSON.stringify(linhas)); } catch (e) { /* só não guarda a cópia */ }
+        }
+        api.definirContagem = definirContagem;
 
         const culturaAtiva = nome => linhas.some(l => l.cultura === nome && l.variedade === '' && l.ativo);
         api.culturas = () => linhas.filter(l => l.variedade === '' && l.cultura !== '' && l.ativo).map(l => l.cultura).sort(comparar);
@@ -162,7 +181,11 @@
                 return `<section class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
                     <header class="flex items-center justify-between gap-2 pl-4 pr-2 py-2 bg-emerald-50/70 border-b border-emerald-100">
                         <div class="min-w-0"><p class="text-sm font-black text-slate-800 ${c.ativo ? '' : 'opacity-50'}">${esc(c.nome || 'Sem cultura')}</p>
-                            <p class="flex flex-wrap items-center gap-1 text-[11px] font-semibold text-slate-500">${qtdTexto(c.qtd)} ${c.nome ? etiquetas(c, c.parecidas) : ''}</p></div>
+                            <p class="flex flex-wrap items-center gap-1 text-[11px] font-semibold text-slate-500">${qtdTexto(c.qtd)} ${c.nome ? etiquetas(c, c.parecidas) : ''}</p>
+                            ${c.nome && c.cadastrada ? `<label class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-bold text-slate-500">Na Pesagem:
+                                <select data-cat-contagem data-c="${esc(c.nome)}" aria-label="Como ${esc(c.nome)} informa as unidades na Pesagem" class="bg-white border-2 border-emerald-200 rounded-lg py-1 pl-2 pr-7 text-[11px] font-bold text-emerald-800 outline-none focus:border-emerald-500">
+                                    ${Object.entries(api.CONTAGENS).map(([v, t]) => `<option value="${v}"${api.contagem(c.nome) === v ? ' selected' : ''}>${t}</option>`).join('')}
+                                </select></label>` : ''}</div>
                         <div class="flex items-center shrink-0">${c.nome ? `<button type="button" data-cat="nova-variedade" data-c="${esc(c.nome)}" class="px-2 py-1 mr-1 rounded-lg bg-white border border-emerald-200 text-emerald-700 text-[11px] font-bold whitespace-nowrap">+ Variedade</button>${acoes(c.nome, '', c)}` : ''}</div>
                     </header>
                     <div class="divide-y divide-slate-100">${c.nome && c.semVariedade && !termo ? `<div class="pl-4 pr-2 py-2"><p class="text-sm font-semibold italic text-slate-500">Sem variedade</p><p class="text-[11px] text-slate-400">${qtdTexto(c.semVariedade)}</p></div>` : ''}${variedades.map(v => `<div class="flex items-center justify-between gap-2 pl-4 pr-2 py-1.5">
@@ -362,6 +385,19 @@
                 alvo.dataset.ligado = '1';
                 alvo.addEventListener('click', aoClicar);
                 alvo.addEventListener('input', e => { if (e.target.matches('[data-cat-busca]')) { busca = e.target.value; desenharLista(); } });
+                // "Na Pesagem": como a cultura informa as unidades (média por caixa / total / só peso)
+                alvo.addEventListener('change', async e => {
+                    const sel = e.target.closest('[data-cat-contagem]');
+                    if (!sel) return;
+                    sel.disabled = true;
+                    try {
+                        await definirContagem(sel.dataset.c, sel.value);
+                        if (callbacks.avisar) callbacks.avisar(`${sel.dataset.c}: ${api.CONTAGENS[sel.value].toLowerCase()} na Pesagem.`);
+                    } catch (err) {
+                        if (callbacks.avisar) callbacks.avisar(err.message);
+                        desenharLista();
+                    } finally { sel.disabled = false; }
+                });
             }
             alvo.innerHTML = `<div class="max-w-3xl mx-auto space-y-3">
                 <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">

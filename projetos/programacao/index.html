@@ -46,6 +46,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="../../supabase-config.js"></script>
     <script src="../../supabase-api.js"></script>
+    <script src="../../dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
     <script src="backend.js"></script>
     
     <style>
@@ -488,6 +489,10 @@
         #abasProg > button:hover { color: #1e293b; background: rgba(255,255,255,.6); }
         #abasProg > button.aba-ativa { color: rgb(var(--cor)); background: #fff; font-weight: 800; box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 0 0 1px rgba(226,232,240,.85); }
         @media (max-width: 1023px) { #abasProgLinha { display: none; } }
+        /* Sem título nem nome no topo: a primeira linha só aparece se tiver o botão do menu de projetos */
+        #topoProg > div:first-child:not(:has(#topoMenuProjetos.flex)) { display: none; }
+        /* Sem ela, as abas ganham o respiro de cima */
+        #topoProg:not(:has(#topoMenuProjetos.flex)) #abasProgLinha { padding-top: .625rem; }
         body:has(.landscape-mode-backdrop.active) .barra-abas { display: none !important; }
     </style>
 </head>
@@ -512,14 +517,7 @@
          porque é ele que guarda quais abas cada pessoa pode ver e qual está aberta) -->
     <header id="topoProg" class="print-hide">
         <div class="px-4 sm:px-6 py-2.5 flex items-center gap-2.5">
-            <a id="topoMenuProjetos" href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="hidden w-8 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>
-            <img src="../../icone-app.png" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
-            <div class="min-w-0 flex-1">
-                <p class="text-sm sm:text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 truncate">Programação de Trabalho</p>
-                <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">SPG Sede · equipes, serviços e produtividade</p>
-            </div>
-            <span id="topoUsuario" class="hidden sm:block text-xs font-bold text-slate-500 truncate max-w-[12rem]"></span>
-        </div>
+            <a id="topoMenuProjetos" href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="hidden w-8 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>        </div>
         <div id="abasProgLinha" class="px-4 sm:px-6 pb-2.5">
             <div id="abasProg" role="tablist" aria-label="Abas da Programação" class="flex gap-1 overflow-x-auto p-1 bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70"></div>
         </div>
@@ -857,7 +855,7 @@
             <div id="view-produtividade" class="dash-view hidden p-4 sm:p-6 lg:p-8">
                 <div class="mb-6">
                     <h1 class="text-2xl sm:text-3xl font-black text-slate-800">Produtividade</h1>
-                    <p class="text-sm text-slate-500 mt-1">Produção e avaliações de desempenho registradas no Encerramento do Dia.</p>
+                    <p class="text-sm text-slate-500 mt-1">Serviços, avaliações e produção de todos os setores: Fazenda Oásis, Trator, Packing e Estufa.</p>
                 </div>
 
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 mb-5 flex flex-col sm:flex-row flex-wrap gap-3">
@@ -873,13 +871,24 @@
                         <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
                         <input type="text" id="prodFilterSearch" oninput="renderProdutividadeStats()" placeholder="Buscar colaborador ou equipe..." class="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500">
                     </div>
+                    <!-- Setor: vale para a página toda (serviços, avaliações e caixas) -->
+                    <div id="prodFiltroSetor" role="tablist" aria-label="Setor" class="w-full flex gap-1 overflow-x-auto p-1 bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70"></div>
                 </div>
 
                 <div id="prodStatCards" class="mb-5"></div>
 
+                <div id="prodServicosContainer" class="mb-6"></div>
+
                 <div id="prodAvaliacaoEquipeContainer" class="mb-6"></div>
                 <div id="prodAvaliacaoContainer" class="mb-6"></div>
 
+                <!-- Caixas: só existe no Packing (Encerramento do Dia); some quando o filtro não tem caixas -->
+                <div id="prodCaixasSecao">
+                <div class="flex items-center gap-2 mb-3 mt-2">
+                    <i data-lucide="package-check" class="w-4 h-4 text-emerald-600"></i>
+                    <h2 class="text-sm font-black text-slate-800">Caixas (Packing)</h2>
+                    <span class="text-[11px] font-semibold text-slate-400">registradas no Encerramento do Dia</span>
+                </div>
                 <div id="prodTrendChartContainer" class="mb-6"></div>
 
                 <div id="prodDestaquesContainer" class="mb-6"></div>
@@ -902,6 +911,7 @@
                     </button>
                 </div>
                 <div id="prodTableContainer"></div>
+                </div>
             </div>
 
             <!-- CAIXAS (controle individual por colaborador do SPG Packing, separado
@@ -6055,13 +6065,26 @@
         // Grava na mesma tabela da programação (o modo completo continua igual).
         // =====================================================================
         const PR_SETORES = ['Colaboradores', 'Trator', 'SPG Packing', 'SPG Estufa'];
-        const PR_PASSOS = ['Serviço', 'Quem', 'Meta', 'Conferir'];
-        // lista = serviços já montados nesta janela (salvos todos juntos no fim)
-        const pr = { passo: 0, setor: 'Colaboradores', servico: '', local: '', pessoas: [], meta: '', previsao: '', solicitante: '', busca: '', salvos: 0, lista: [], nomeEquipe: null };
+        const PR_PASSOS = ['Serviços', 'Pessoas', 'Resultado', 'Avaliar'];
+        const PR_FALTA = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95];
+        // itens = serviços desta programação. Cada um tem as próprias pessoas, o resultado e as notas:
+        //   { servico, local, pessoas: [], situacao: null | 'concluido' | 'nao' | 'depois', falta: 50, notas: { nome: { criterio: 1..5 } }, detalhe: { nome: bool } }
+        // aberto = serviço cuja escolha de pessoas está aberta no passo "Pessoas"
+        const pr = { passo: 0, setor: 'Colaboradores', texto: '', itens: [], aberto: 0, previsao: '', solicitante: '', busca: '', salvos: 0, nomeEquipe: null, vozAviso: '', vozDuvidas: [], avaliar: true };
         const prEl = id => document.getElementById(id);
         const prNomeUsuario = () => (window.IrrigacaoAPI && IrrigacaoAPI.nomeUsuario && IrrigacaoAPI.nomeUsuario()) || '';
         const prSemAcento = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
         const prMulti = () => pr.setor !== 'Trator'; // Trator: um operador; os outros: várias pessoas
+        // Pessoas do serviço aberto no passo "Pessoas"
+        const prAtual = () => pr.itens[pr.aberto] || null;
+        const prP = () => (prAtual() ? prAtual().pessoas : []);
+        function prSomarPessoa(nome) {
+            const it = prAtual(); if (!it) return;
+            if (!prMulti()) it.pessoas = [nome];
+            else if (!it.pessoas.includes(nome)) it.pessoas.push(nome);
+        }
+        const prNovoItem = servico => ({ servico, local: '', pessoas: [], situacao: null, falta: 50, notas: {}, detalhe: {} });
+        const prFeito = it => it.situacao === 'concluido' ? 100 : it.situacao === 'nao' ? 100 - it.falta : null;
         function prHojeRotulo() {
             const d = new Date();
             return `${daysOfWeek[(d.getDay() + 6) % 7].split('-')[0]} (${formatDayDate(d)})`;
@@ -6074,38 +6097,235 @@
 
         function abrirProgramacaoRapida() {
             const setorAtual = getDashboardSelectedSector();
-            Object.assign(pr, { passo: 0, setor: PR_SETORES.includes(setorAtual) ? setorAtual : 'Colaboradores', servico: '', local: '', pessoas: [], meta: '', previsao: '', solicitante: prNomeUsuario(), busca: '', salvos: 0, lista: [], nomeEquipe: null });
+            Object.assign(pr, { modo: 'novo', row: null, passo: 0, setor: PR_SETORES.includes(setorAtual) ? setorAtual : 'Colaboradores', texto: '', itens: [], aberto: 0, previsao: '', solicitante: prNomeUsuario(), busca: '', salvos: 0, nomeEquipe: null, vozAviso: '', vozDuvidas: [], avaliar: true });
             const m = prEl('progRapida'); m.classList.remove('hidden'); m.classList.add('flex');
             prDesenhar();
-            // Equipes cadastradas: traz a versão mais nova do sistema e redesenha se estiver na tela "Quem"
+            // Equipes cadastradas: traz a versão mais nova do sistema e redesenha se estiver na tela "Pessoas"
             if (typeof loadTeams === 'function') loadTeams().then(() => { if (pr.passo === 1) prDesenhar(); }).catch(() => {});
         }
-        function fecharProgramacaoRapida(forcar) {
+        async function fecharProgramacaoRapida(forcar) {
             prLerCampos();
-            if (!forcar && pr.lista.length && !confirm(`Você montou ${pr.lista.length} serviço(s) que ainda não foram salvos. Fechar mesmo assim?`)) return;
+            const pendentes = pr.modo === 'editar' ? 0 : pr.itens.filter(it => it.servico.trim()).length;
+            if (!forcar && pendentes && !(await Dialogo.confirmar(`${pendentes === 1 ? 'O serviço montado ainda não foi salvo e será perdido' : `Os ${pendentes} serviços montados ainda não foram salvos e serão perdidos`}.`, { titulo: 'Fechar sem salvar?', botao: 'Fechar sem salvar', cancelar: 'Continuar', perigo: true }))) return;
+            prPararVoz();
             const m = prEl('progRapida'); m.classList.add('hidden'); m.classList.remove('flex');
             if (pr.salvos) loadProgramacaoDashboard();
+        }
+
+        // ---------- Ditado por voz (🎤): fala e o texto entra no campo ----------
+        // Usa o reconhecimento de voz do próprio navegador (Chrome/Edge no Android e no PC, Safari no iPhone).
+        // Onde não existe, o botão do microfone simplesmente não aparece.
+        const PrVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let prOuvindo = null; // { rec, campoId }
+        function prMic(campoId, pequeno) {
+            if (!PrVoz) return '';
+            const tam = pequeno ? 'w-9 h-9' : 'w-11 h-11';
+            return `<button type="button" data-pr-mic="${campoId}" aria-label="Falar em vez de digitar" title="Falar (ditado)" class="pr-mic absolute right-1.5 top-1/2 -translate-y-1/2 ${tam} rounded-xl flex items-center justify-center text-emerald-700 bg-emerald-50 hover:bg-emerald-100 active:scale-95 transition"><i data-lucide="mic" class="w-[18px] h-[18px]"></i></button>`;
+        }
+        // Campo de texto com o microfone dentro, à direita
+        const prComMic = (campoHtml, campoId, pequeno) => PrVoz ? `<div class="relative">${campoHtml}${prMic(campoId, pequeno)}</div>` : campoHtml;
+        function prMarcarMic(campoId, ligado) {
+            const b = document.querySelector(`[data-pr-mic="${campoId}"]`);
+            if (!b) return;
+            b.classList.toggle('bg-rose-500', ligado); b.classList.toggle('text-white', ligado); b.classList.toggle('animate-pulse', ligado);
+            b.classList.toggle('bg-emerald-50', !ligado); b.classList.toggle('text-emerald-700', !ligado);
+            b.setAttribute('aria-label', ligado ? 'Parar de ouvir' : 'Falar em vez de digitar');
+            b.innerHTML = `<i data-lucide="${ligado ? 'square' : 'mic'}" class="w-[18px] h-[18px]"></i>`;
+            lucide.createIcons();
+        }
+        function prPararVoz() {
+            if (!prOuvindo) return;
+            const { rec, campoId } = prOuvindo;
+            prOuvindo = null;
+            try { rec.abort(); } catch (e) {}
+            prMarcarMic(campoId, false);
+        }
+        function prOuvir(campoId) {
+            // Tocou de novo no mesmo microfone: termina de ouvir (o que já foi falado vale)
+            if (prOuvindo && prOuvindo.campoId === campoId) { try { prOuvindo.rec.stop(); } catch (e) { prPararVoz(); } return; }
+            prPararVoz();
+            const campo = prEl(campoId);
+            const ehPessoas = campoId === 'prBusca';
+            if (!campo || !PrVoz) return;
+            const rec = new PrVoz();
+            rec.lang = 'pt-BR';
+            rec.interimResults = true;
+            rec.continuous = false; // para sozinho quando a pessoa termina de falar
+            rec.maxAlternatives = 1;
+            const base = ehPessoas ? '' : campo.value.trim(); // pessoas: cada fala é uma busca nova
+            prOuvindo = { rec, campoId };
+            rec.onresult = ev => {
+                let falado = '';
+                for (let i = 0; i < ev.results.length; i++) falado += ev.results[i][0].transcript;
+                falado = falado.trim();
+                if (!base) falado = falado.charAt(0).toUpperCase() + falado.slice(1);
+                campo.value = base ? `${base} ${falado}` : falado;
+                campo.dispatchEvent(new Event('input', { bubbles: true }));
+            };
+            rec.onerror = ev => {
+                if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed')
+                    showMessageModal('Microfone bloqueado', 'Libere o microfone para este site nas configurações do navegador e tente de novo.', 'error');
+                else if (ev.error === 'network')
+                    showMessageModal('Sem internet', 'O ditado por voz precisa de internet. Digite o serviço ou tente de novo.', 'error');
+            };
+            rec.onend = () => {
+                if (!prOuvindo || prOuvindo.rec !== rec) return;
+                prOuvindo = null;
+                prMarcarMic(campoId, false);
+                if (ehPessoas && campo.value.trim()) prVozPessoas(campo.value);
+            };
+            try { rec.start(); prMarcarMic(campoId, true); }
+            catch (e) { prOuvindo = null; }
+        }
+
+        // ---------- Nomes parecidos no som ----------
+        // O ditado nem sempre acerta o nome ("Josivan" no lugar de "Jucivan", "Kauã" no lugar de "Kauan").
+        // Cada nome vira uma "forma de som" simples do português e é comparado letra a letra;
+        // a nota vai de 0 (nada a ver) a 1 (igual).
+        const PR_LIGACOES = ['de', 'da', 'do', 'dos', 'das', 'e'];
+        function prSom(palavra) {
+            let s = prSemAcento(palavra).replace(/ç/g, 's').replace(/[^a-z]/g, '');
+            s = s.replace(/ph/g, 'f').replace(/th/g, 't').replace(/y/g, 'i').replace(/w/g, 'v').replace(/k/g, 'c')
+                .replace(/ch|sh|x/g, 's').replace(/lh/g, 'li').replace(/nh/g, 'ni')
+                .replace(/qu([ei])/g, 'c$1').replace(/gu([ei])/g, 'g$1').replace(/q/g, 'c')
+                .replace(/sc([ei])/g, 's$1').replace(/c([ei])/g, 's$1')
+                .replace(/g([ei])/g, 'j$1').replace(/([aeiou])z([aeiou])/g, '$1s$2').replace(/z/g, 's')
+                .replace(/h/g, '').replace(/(.)\1+/g, '$1')
+                .replace(/[mn]$/g, 'n').replace(/o$/g, 'u').replace(/e$/g, 'i').replace(/l$/g, 'u');
+            return s;
+        }
+        function prDistancia(a, b) {
+            if (a === b) return 0;
+            const lin = Array.from({ length: b.length + 1 }, (_, j) => j);
+            for (let i = 1; i <= a.length; i++) {
+                let ant = lin[0]; lin[0] = i;
+                for (let j = 1; j <= b.length; j++) {
+                    const t = lin[j];
+                    lin[j] = Math.min(lin[j] + 1, lin[j - 1] + 1, ant + (a[i - 1] === b[j - 1] ? 0 : 1));
+                    ant = t;
+                }
+            }
+            return lin[b.length];
+        }
+        function prParecido(a, b) {
+            if (!a || !b) return 0;
+            if (b.startsWith(a) && a.length >= 3) return 0.95; // começo do nome ("rodri" -> "rodrigues")
+            return 1 - prDistancia(a, b) / Math.max(a.length, b.length);
+        }
+        // Nota do nome falado contra um nome da lista: cada palavra falada procura a palavra mais parecida
+        function prNotaNome(falado, nome) {
+            const fs = String(falado).split(/\s+/).filter(w => w && !PR_LIGACOES.includes(w)).map(prSom).filter(Boolean);
+            const ns = prSemAcento(nome).split(/\s+/).filter(w => w && !PR_LIGACOES.includes(w)).map(prSom).filter(Boolean);
+            if (!fs.length || !ns.length) return 0;
+            let soma = 0;
+            fs.forEach((w, i) => {
+                let melhor = Math.max(...ns.map(x => prParecido(w, x)));
+                if (i === 0) melhor = Math.max(melhor * 0.9, prParecido(w, ns[0])); // o primeiro falado costuma ser o primeiro nome
+                soma += melhor;
+            });
+            return soma / fs.length;
+        }
+        // Os nomes mais parecidos com o que foi falado, do mais ao menos parecido
+        function prSugerirNomes(falado, lista, max = 5) {
+            return lista.map(n => ({ n, nota: prNotaNome(falado, n) }))
+                .filter(x => x.nota >= 0.5).sort((a, b) => b.nota - a.nota).slice(0, max);
+        }
+
+        // Pessoas por voz: "Antônio Rodrigues, Carlos e Marcos de Lima" ou "equipe do Kauan".
+        // Nome que bate com segurança entra direto; nome de equipe traz todo mundo. O resto vira
+        // "Você quis dizer?" com os nomes mais parecidos para tocar no certo.
+        function prVozPessoas(falado) {
+            const lista = (prMulti() ? dbColaboradores : dbOperadores) || [];
+            const somar = prSomarPessoa;
+            const partes = prSemAcento(falado).replace(/[.;!?]/g, ',')
+                .split(/\s*,\s*|\s+e\s+|\s+com\s+|\s+mais\s+/)
+                .map(p => p.replace(/^(o|a|os|as)\s+/, '').trim()).filter(Boolean);
+            const tiraEquipe = x => x.replace(/^equipe\s+(d[oa]s?\s+)?/, '');
+            const duvidas = [];
+            let adicionados = 0;
+            partes.forEach(p => {
+                // Equipe pelo nome: "equipe do kauan" (aceita o nome falado parecido)
+                if (prMulti()) {
+                    const eq = prEquipes().map(({ t }) => ({ t, nota: Math.max(0, ...[getTeamDisplayName(t), t.name].filter(Boolean).map(x => {
+                        const nx = prSemAcento(x);
+                        return nx === p ? 1 : (/^equipe\b/.test(p) ? prNotaNome(tiraEquipe(p), tiraEquipe(nx)) : 0);
+                    })) })).sort((a, b) => b.nota - a.nota)[0];
+                    if (eq && eq.nota >= 0.8) { prMembros(eq.t).forEach(n => { somar(n); adicionados++; }); return; }
+                }
+                const sug = prSugerirNomes(p, lista.filter(n => !prP().includes(n)));
+                const [a, b] = sug;
+                // Entra direto: nome igual, ou bem parecido e sem outro nome perto
+                const certeza = a && (prSemAcento(a.n) === p || (a.nota >= 0.85 && (!b || a.nota - b.nota >= 0.12)));
+                if (certeza) { somar(a.n); adicionados++; }
+                else if (!lista.some(n => prP().includes(n) && prSemAcento(n) === p)) duvidas.push({ falado: p, nomes: sug.map(x => x.n) });
+            });
+            pr.vozDuvidas = duvidas;
+            pr.busca = '';
+            pr.vozAviso = !partes.length || (!adicionados && !duvidas.length) ? 'Não entendi nenhum nome. Fale de novo ou digite.'
+                : adicionados ? `✓ ${adicionados} pessoa${adicionados === 1 ? '' : 's'} entr${adicionados === 1 ? 'ou' : 'aram'} pela voz.` : '';
+            prDesenhar();
+        }
+        // "Você quis dizer?": um cartão por nome falado que ficou em dúvida
+        function prDuvidasHtml() {
+            if (!pr.vozDuvidas || !pr.vozDuvidas.length) return '';
+            return `<div class="mt-4 space-y-2">${pr.vozDuvidas.map((d, i) => `<div class="rounded-2xl bg-amber-50 ring-1 ring-amber-200 p-3">
+                <div class="flex items-start justify-between gap-2">
+                    <p class="text-xs font-bold text-amber-900 pt-1">Ouvi <b>“${escapeHtml(d.falado)}”</b>. ${d.nomes.length ? 'Você quis dizer:' : 'Não achei ninguém parecido. Digite o nome na busca abaixo.'}</p>
+                    <button type="button" data-pr-duvida-fechar="${i}" aria-label="Ignorar" class="shrink-0 w-9 h-9 -mt-1 -mr-1 rounded-xl text-amber-700 hover:bg-amber-100 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+                ${d.nomes.length ? `<div class="mt-2 flex flex-wrap gap-1.5">${d.nomes.map(n => `<button type="button" data-pr-duvida="${i}" data-nome="${escapeHtml(n)}" class="px-3 py-2 rounded-xl text-sm font-bold bg-white border-2 border-amber-300 text-slate-700 hover:border-emerald-400 hover:bg-emerald-50 active:scale-95 transition">+ ${escapeHtml(n)}</button>`).join('')}</div>` : ''}
+            </div>`).join('')}</div>`;
         }
 
         function prChip(texto, ativo, attrs) {
             return `<button type="button" ${attrs} class="px-3 py-2 rounded-xl text-sm font-bold border-2 transition-all active:scale-95 ${ativo ? 'bg-emerald-50 border-emerald-500 text-emerald-800' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300'}">${escapeHtml(texto)}</button>`;
         }
-        const prPergunta = (n, t, dica) => `<p class="text-[11px] font-black text-emerald-600 uppercase tracking-widest">Passo ${n} de 4${pr.lista.length ? ` · serviço ${pr.lista.length + 1}` : ''}</p><h3 class="text-xl font-black text-slate-800 mt-1">${t}</h3>${dica ? `<p class="text-xs font-medium text-slate-400 mt-1">${dica}</p>` : ''}`;
+        const prPergunta = (n, t, dica) => `<p class="text-[11px] font-black text-emerald-600 uppercase tracking-widest">Passo ${n} de 4</p><h3 class="text-xl font-black text-slate-800 mt-1">${t}</h3>${dica ? `<p class="text-xs font-medium text-slate-400 mt-1">${dica}</p>` : ''}`;
         const prCampo = 'w-full px-4 py-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-base font-bold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white';
+        const prCampoMenor = 'w-full px-3 py-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-sm font-semibold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white';
+        const prTemItem = s => pr.itens.some(it => prSemAcento(it.servico) === prSemAcento(s));
+        // Título do serviço nos passos seguintes: "1. Capina · Bloco 4"
+        const prTituloItem = (it, i) => `<span class="inline-flex w-6 h-6 mr-1.5 align-[-5px] rounded-full bg-emerald-600 text-white text-[11px] font-black items-center justify-center">${i + 1}</span>${escapeHtml(it.servico)}${it.local ? ` <span class="text-slate-400 font-semibold">· ${escapeHtml(it.local)}</span>` : ''}`;
+        const prNomesItem = it => escapeHtml(findMatchingTeamName(it.pessoas) || it.pessoas.join(', '));
 
+        // ---------- Passo 1: serviços ----------
         function prSugestoesHtml() {
-            const termo = prSemAcento(pr.servico);
+            const termo = prSemAcento(pr.texto);
             const sugestoes = getOperacoesList(pr.setor).filter(s => !termo || prSemAcento(s).includes(termo)).slice(0, 14);
-            return sugestoes.map(s => prChip(s, s === pr.servico, `data-pr-servico="${escapeHtml(s)}"`)).join('') || '<p class="text-xs text-slate-400">Nenhuma sugestão. Pode escrever o serviço acima.</p>';
+            return sugestoes.map(s => prChip((prTemItem(s) ? '✓ ' : '+ ') + s, prTemItem(s), `data-pr-servico="${escapeHtml(s)}"`)).join('') || '<p class="text-xs text-slate-400">Nenhuma sugestão. Escreva (ou fale) o serviço acima e toque em Adicionar.</p>';
         }
+        // Serviços escolhidos: cada um com o detalhe (editável, com microfone) e o local
+        function prItensHtml() {
+            if (!pr.itens.length) return `<div class="mt-2 rounded-2xl border-2 border-dashed border-slate-200 px-3 py-4 text-center text-sm font-semibold text-slate-400">Nenhum serviço escolhido ainda</div>`;
+            return `<div class="mt-2 space-y-2">${pr.itens.map((it, i) => `<div class="rounded-2xl ring-1 ring-emerald-200 bg-emerald-50/40 p-2.5">
+                <div class="flex items-start gap-2">
+                    <span class="mt-2.5 w-6 h-6 shrink-0 rounded-full bg-emerald-600 text-white text-[11px] font-black flex items-center justify-center">${i + 1}</span>
+                    <div class="flex-1 min-w-0 space-y-1.5">
+                        ${prComMic(`<input id="prItemServico${i}" data-pr-item-servico="${i}" type="text" autocomplete="off" value="${escapeHtml(it.servico)}" aria-label="Serviço ${i + 1}" placeholder="Descreva o serviço" class="${prCampoMenor} bg-white pr-12">`, `prItemServico${i}`, true)}
+                        ${prComMic(`<input id="prItemLocal${i}" data-pr-item-local="${i}" type="text" autocomplete="off" value="${escapeHtml(it.local)}" aria-label="Onde (serviço ${i + 1})" placeholder="Onde? Ex.: Bloco 5 (opcional)" class="${prCampoMenor} bg-white pr-12">`, `prItemLocal${i}`, true)}
+                    </div>
+                    <button type="button" data-pr-tirar-item="${i}" aria-label="Tirar este serviço" class="shrink-0 w-11 h-11 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            </div>`).join('')}</div>`;
+        }
+        function prAdicionarTexto() {
+            const t = (prEl('prServico') ? prEl('prServico').value : pr.texto).trim();
+            if (!t) return false;
+            if (!prTemItem(t)) pr.itens.push(prNovoItem(t));
+            pr.texto = '';
+            return true;
+        }
+
+        // ---------- Passo 2: pessoas de cada serviço ----------
         function prAchadosHtml() {
             const lista = (prMulti() ? dbColaboradores : dbOperadores) || [];
             const termo = prSemAcento(pr.busca);
-            const achados = lista.filter(n => !pr.pessoas.includes(n) && (!termo || prSemAcento(n).includes(termo))).slice(0, termo ? 30 : 12);
+            let achados = lista.filter(n => !prP().includes(n) && (!termo || prSemAcento(n).includes(termo))).slice(0, termo ? 30 : 12);
+            // Nada com esse texto (erro de digitação ou do ditado): mostra os nomes mais parecidos
+            if (termo && !achados.length) achados = prSugerirNomes(termo, lista.filter(n => !prP().includes(n)), 8).map(x => x.n);
             return achados.map(n => prChip('+ ' + n, false, `data-pr-pessoa="${escapeHtml(n)}"`)).join('')
                 + (pr.busca.trim() && !lista.some(n => prSemAcento(n) === termo) ? prChip('+ Adicionar "' + pr.busca.trim() + '"', false, `data-pr-pessoa="${escapeHtml(pr.busca.trim())}"`) : '');
         }
-
         // Equipes já cadastradas (as do setor escolhido primeiro). Tocar traz todo mundo; tocar de novo tira.
         const prMembros = t => [t.leader, ...(t.members || [])].filter(Boolean);
         function prEquipes() {
@@ -6113,11 +6333,11 @@
             const doSetor = validas.filter(({ t }) => (t.type || TEAM_DEFAULT_TYPE) === pr.setor);
             return doSetor.length ? doSetor : validas;
         }
-        const prEquipeMarcada = t => prMembros(t).every(n => pr.pessoas.includes(n));
+        const prEquipeMarcada = t => prMembros(t).every(n => prP().includes(n));
         function prEquipesHtml() {
             const lista = prEquipes();
-            if (!lista.length) return `<div class="mt-3 rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3 text-xs font-semibold text-slate-500">Nenhuma equipe cadastrada ainda. Escolha as pessoas abaixo e toque em <b>"Salvar como equipe"</b> para usar da próxima vez.</div>`;
-            return `<div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">${lista.map(({ t, i }) => {
+            if (!lista.length) return `<div class="mt-2 rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3 text-xs font-semibold text-slate-500">Nenhuma equipe cadastrada ainda. Escolha as pessoas abaixo e toque em <b>"Salvar como equipe"</b> para usar da próxima vez.</div>`;
+            return `<div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">${lista.map(({ t, i }) => {
                 const membros = prMembros(t), marcada = prEquipeMarcada(t);
                 const tipo = (t.type || TEAM_DEFAULT_TYPE) !== pr.setor ? ` · ${escapeHtml(nomeSetor(t.type || TEAM_DEFAULT_TYPE))}` : '';
                 return `<button type="button" data-pr-equipe="${i}" class="text-left p-3 rounded-2xl border-2 transition-all active:scale-[.98] ${marcada ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-300'}">
@@ -6129,97 +6349,263 @@
         }
         // "Salvar como equipe": aparece quando há 2+ pessoas escolhidas que ainda não formam uma equipe cadastrada
         function prPodeSalvarEquipe() {
-            if (!prMulti() || pr.pessoas.length < 2) return false;
-            const chave = pr.pessoas.slice().sort().join('|');
+            if (!prMulti() || prP().length < 2) return false;
+            const chave = prP().slice().sort().join('|');
             return !(teams || []).some(t => prMembros(t).slice().sort().join('|') === chave);
         }
-
-        function prItemAtual() {
-            return { setor: pr.setor, servico: pr.servico, local: pr.local, pessoas: pr.pessoas.slice(), meta: pr.meta, previsao: pr.previsao };
+        // Escolha de pessoas do serviço aberto (equipes, busca, microfone)
+        function prEscolhaHtml() {
+            const p = prP();
+            return `<div class="mt-3 pt-3 border-t border-emerald-100">
+                ${prMulti() ? `<p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Equipes</p>${prEquipesHtml()}` : ''}
+                ${prPodeSalvarEquipe() ? (pr.nomeEquipe === null
+                    ? `<button type="button" data-pr-nova-equipe class="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-emerald-300 text-emerald-700 text-sm font-black hover:bg-emerald-50"><i data-lucide="bookmark-plus" class="w-4 h-4"></i> Salvar estas pessoas como equipe</button>`
+                    : `<div class="mt-2 p-3 rounded-2xl bg-emerald-50 ring-1 ring-emerald-200"><label class="block text-[11px] font-black text-emerald-700 uppercase tracking-widest">Nome da equipe</label>
+                        <div class="mt-1.5 flex gap-2"><input id="prNomeEquipe" type="text" autocomplete="off" value="${escapeHtml(pr.nomeEquipe)}" placeholder="Ex.: Equipe do ${escapeHtml(p[0].split(' ')[0])}" class="flex-1 min-w-0 px-3 py-2.5 bg-white border-2 border-emerald-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400">
+                        <button type="button" data-pr-salvar-equipe class="shrink-0 px-4 rounded-xl bg-emerald-600 text-white text-sm font-black">Salvar</button></div>
+                        <p class="mt-1.5 text-[11px] font-semibold text-emerald-700/80">Líder: ${escapeHtml(p[0])} (o primeiro da lista).</p></div>`) : ''}
+                ${pr.vozAviso ? `<p class="mt-3 text-xs font-bold ${/^✓/.test(pr.vozAviso) ? 'text-emerald-800 bg-emerald-50 ring-emerald-200' : 'text-amber-800 bg-amber-50 ring-amber-200'} ring-1 rounded-xl px-3 py-2">${escapeHtml(pr.vozAviso)}</p>` : ''}
+                ${prDuvidasHtml()}
+                <div class="mt-3">${prComMic(`<input id="prBusca" type="search" autocomplete="off" value="${escapeHtml(pr.busca)}" placeholder="${PrVoz ? 'Buscar pessoa ou toque no 🎤 e fale os nomes' : 'Buscar pessoa...'}" class="${prCampo} ${PrVoz ? 'pr-14' : ''}">`, 'prBusca')}</div>
+                <div id="prAchados" class="mt-3 flex flex-wrap gap-1.5">${prAchadosHtml()}</div>
+            </div>`;
         }
-        function prCartaoServico(it, indice) {
-            return `<div class="relative rounded-2xl ring-1 ring-slate-200 bg-white p-3.5 ${indice === null ? 'ring-2 ring-emerald-300' : ''}">
-                ${indice !== null ? `<button type="button" data-pr-remover="${indice}" aria-label="Tirar este serviço" class="absolute top-2 right-2 w-8 h-8 rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
-                <p class="text-sm font-black text-slate-800 pr-8">${escapeHtml(it.servico)}${it.local ? ` <span class="text-slate-400 font-semibold">· ${escapeHtml(it.local)}</span>` : ''}</p>
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">${escapeHtml(nomeSetor(it.setor))}${it.previsao ? ' · até ' + escapeHtml(it.previsao) : ''}</p>
-                <p class="mt-1.5 text-xs font-semibold text-slate-600 flex items-start gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5 mt-0.5 text-emerald-600 shrink-0"></i>${escapeHtml(findMatchingTeamName(it.pessoas) || it.pessoas.join(', '))}</p>
-                ${it.meta ? `<p class="mt-1 text-xs font-bold text-amber-700">🎯 ${escapeHtml(it.meta)}</p>` : ''}
+        function prPessoasHtml() {
+            const primeiro = pr.itens[0];
+            const usarEmTodos = pr.itens.length > 1 && primeiro && primeiro.pessoas.length && pr.itens.some((it, i) => i > 0 && !it.pessoas.length)
+                ? `<button type="button" data-pr-copiar-todos class="mt-3 w-full flex items-center justify-center gap-2 min-h-[44px] rounded-xl bg-emerald-50 ring-1 ring-emerald-200 text-emerald-800 text-sm font-black hover:bg-emerald-100"><i data-lucide="copy" class="w-4 h-4"></i> Usar as pessoas do serviço 1 nos que estão vazios</button>` : '';
+            return usarEmTodos + `<div class="mt-3 space-y-3">${pr.itens.map((it, i) => {
+                const aberto = i === pr.aberto;
+                const anterior = i > 0 && pr.itens[i - 1].pessoas.length && !it.pessoas.length;
+                return `<div class="rounded-2xl p-3 ${aberto ? 'ring-2 ring-emerald-400 bg-white shadow-sm' : 'ring-1 ring-slate-200 bg-white'}">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="text-sm font-black text-slate-800 min-w-0">${prTituloItem(it, i)}</p>
+                        <span class="shrink-0 text-[10px] font-black px-2 py-1 rounded-full ${it.pessoas.length ? 'bg-emerald-600 text-white' : 'bg-amber-100 text-amber-800'}">${it.pessoas.length ? `${it.pessoas.length} pessoa${it.pessoas.length === 1 ? '' : 's'}` : 'falta escolher'}</span>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-1.5">
+                        ${it.pessoas.map(p => `<span class="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-full bg-emerald-600 text-white text-sm font-bold">${escapeHtml(p)}<button type="button" data-pr-tirar="${i}" data-nome="${escapeHtml(p)}" aria-label="Tirar ${escapeHtml(p)}" class="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center">×</button></span>`).join('')}
+                    </div>
+                    ${aberto ? prEscolhaHtml() : `<div class="mt-2 flex flex-wrap gap-2">
+                        <button type="button" data-pr-abrir="${i}" class="min-h-[44px] px-4 rounded-xl bg-white ring-1 ring-slate-200 text-slate-700 text-sm font-black hover:bg-slate-50 flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4"></i>${it.pessoas.length ? 'Mudar pessoas' : 'Escolher pessoas'}</button>
+                        ${anterior ? `<button type="button" data-pr-copiar="${i}" class="min-h-[44px] px-4 rounded-xl bg-emerald-50 ring-1 ring-emerald-200 text-emerald-800 text-sm font-black hover:bg-emerald-100 flex items-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i>Mesmas do serviço ${i}</button>` : ''}
+                    </div>`}
+                </div>`;
+            }).join('')}</div>`;
+        }
+
+        // ---------- Passo 3: resultado de cada serviço ----------
+        // Cartão "Foi concluído?" de um serviço. No Editar (noEditar) aparece também "Adiado"
+        // e o terceiro botão vira "Em andamento".
+        function prResultadoItemHtml(it, i, noEditar) {
+            const bt = (valor, ativo, cor, txt) => `<button type="button" data-pr-situacao="${i}" data-v="${valor}" class="flex-1 min-w-[28%] min-h-[44px] px-2 rounded-xl text-sm font-black border-2 transition-all active:scale-95 ${ativo ? cor : 'bg-white border-slate-200 text-slate-500'}">${txt}</button>`;
+            const feito = prFeito(it);
+            const cor = feito === null ? 'text-slate-400' : feito >= 80 ? 'text-emerald-600' : feito >= 50 ? 'text-amber-600' : 'text-rose-600';
+            return `<div class="rounded-2xl ring-1 ring-slate-200 bg-white p-3.5">
+                ${noEditar ? '' : `<p class="text-sm font-black text-slate-800">${prTituloItem(it, i)}</p>
+                <p class="mt-1 text-[11px] font-semibold text-slate-500 flex items-start gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5 mt-px text-emerald-600 shrink-0"></i>${prNomesItem(it)}</p>`}
+                <p class="${noEditar ? '' : 'mt-3 '}text-[11px] font-black text-slate-400 uppercase tracking-widest">Foi concluído?</p>
+                <div class="mt-1.5 flex flex-wrap gap-2">
+                    ${bt('concluido', it.situacao === 'concluido', 'bg-emerald-50 border-emerald-500 text-emerald-700', '✓ Sim · 100%')}
+                    ${bt('nao', it.situacao === 'nao', 'bg-amber-50 border-amber-500 text-amber-700', 'Não')}
+                    ${bt('depois', it.situacao === 'depois' || (noEditar && !it.situacao), 'bg-slate-100 border-slate-500 text-slate-700', noEditar ? 'Em andamento' : 'Fecho depois')}
+                    ${noEditar ? bt('adiado', it.situacao === 'adiado', 'bg-slate-100 border-slate-500 text-slate-700', 'Adiado') : ''}
+                </div>
+                ${it.situacao === 'nao' ? `<div class="mt-3 rounded-xl bg-amber-50/60 ring-1 ring-amber-100 p-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-[11px] font-black text-amber-800 uppercase tracking-widest">Falta quantos %?</p>
+                        <p class="text-right leading-tight"><span class="block text-xl font-black tabular-nums text-amber-700">falta ${it.falta}%</span><span class="block text-[11px] font-black tabular-nums ${cor}">feito ${feito}%</span></p>
+                    </div>
+                    <div class="mt-2 grid grid-cols-6 gap-1.5">${PR_FALTA.map(v => `<button type="button" data-pr-falta="${i}" data-v="${v}" class="min-h-[40px] rounded-lg text-xs font-black tabular-nums ${it.falta === v ? 'bg-amber-500 text-white' : 'bg-white ring-1 ring-amber-200 text-amber-800 hover:bg-amber-100'}">${v}%</button>`).join('')}</div>
+                </div>` : ''}
             </div>`;
         }
 
+        // ---------- Editar um serviço já salvo (botão "Editar" da tabela) ----------
+        // Usa a mesma janela do Programar: serviço, local, pessoas (equipes, voz, sugestões) e resultado.
+        function abrirEdicaoServico(rowNumber) {
+            const row = (dashboardRows || []).find(r => r.rowNumber === rowNumber);
+            if (!row) return;
+            const p = row.percentual === null || row.percentual === undefined || row.percentual === '' ? null : Number(row.percentual);
+            const situacao = row.status === 'Concluído' ? 'concluido' : row.status === 'Adiado' ? 'adiado' : (p !== null && p < 100 ? 'nao' : null);
+            const item = Object.assign(prNovoItem(row.operacoes || ''), {
+                local: row.blocos || '', pessoas: normalizeSelectedCollaborators(row.operador), situacao,
+                falta: situacao === 'nao' ? 100 - p : 50, realizado: row.realizado || ''
+            });
+            Object.assign(pr, { modo: 'editar', row, passo: 0, setor: row.local || getDashboardSelectedSector(), texto: '', itens: [item], aberto: 0, busca: '', salvos: 0, nomeEquipe: null, vozAviso: '', vozDuvidas: [], avaliar: false });
+            const m = prEl('progRapida'); m.classList.remove('hidden'); m.classList.add('flex');
+            prDesenhar(); prEl('prCorpo').scrollTop = 0;
+            if (typeof loadTeams === 'function') loadTeams().then(() => { if (pr.modo === 'editar' && !prEl('progRapida').classList.contains('hidden')) { prLerCampos(); prDesenhar(); } }).catch(() => {});
+        }
+        function prEditarHtml() {
+            const it = pr.itens[0];
+            const rotulo = t => `<p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">${t}</p>`;
+            return `<div class="space-y-5">
+                <div>${rotulo('Serviço')}
+                    <div class="mt-1.5">${prComMic(`<input id="prItemServico0" data-pr-item-servico="0" type="text" autocomplete="off" value="${escapeHtml(it.servico)}" placeholder="Descreva o serviço" class="${prCampo} ${PrVoz ? 'pr-14' : ''}">`, 'prItemServico0')}</div></div>
+                <div>${rotulo('Onde? (opcional)')}
+                    <div class="mt-1.5">${prComMic(`<input id="prItemLocal0" data-pr-item-local="0" type="text" autocomplete="off" value="${escapeHtml(it.local)}" placeholder="Ex.: Bloco 5" class="${prCampo} ${PrVoz ? 'pr-14' : ''}">`, 'prItemLocal0')}</div></div>
+                <div>
+                    <div class="flex items-center justify-between gap-2">${rotulo(`${prMulti() ? 'Quem participa' : 'Operador'} (${it.pessoas.length})`)}
+                        ${it.pessoas.length ? '<button type="button" data-pr-limpar-pessoas class="min-h-[36px] px-2 text-xs font-bold text-slate-400 hover:text-rose-600">Limpar</button>' : ''}</div>
+                    <div class="mt-1.5 min-h-[52px] p-2 rounded-2xl border-2 border-dashed ${it.pessoas.length ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200'} flex flex-wrap gap-1.5">
+                        ${it.pessoas.map(p => `<span class="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-full bg-emerald-600 text-white text-sm font-bold">${escapeHtml(p)}<button type="button" data-pr-tirar="0" data-nome="${escapeHtml(p)}" aria-label="Tirar ${escapeHtml(p)}" class="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center">×</button></span>`).join('') || '<span class="px-2 py-2 text-sm font-semibold text-slate-400">Ninguém escolhido</span>'}
+                    </div>
+                    ${prEscolhaHtml()}
+                </div>
+                <div>${rotulo('Resultado')}<div class="mt-1.5">${prResultadoItemHtml(it, 0, true)}</div></div>
+                <div>${rotulo('O que foi feito (opcional)')}
+                    <div class="mt-1.5">${prComMic(`<input id="prRealizado" type="text" autocomplete="off" value="${escapeHtml(it.realizado || '')}" placeholder="Ex.: Faltou o canteiro 3 por causa da chuva" class="${prCampo} ${PrVoz ? 'pr-14' : ''}">`, 'prRealizado')}</div></div>
+            </div>`;
+        }
+        async function prSalvarEdicao() {
+            const it = pr.itens[0], row = pr.row;
+            if (!it.servico.trim()) { showMessageModal('Qual serviço?', 'Escreva (ou fale) o serviço.', 'error'); return; }
+            if (!it.pessoas.length) { showMessageModal('Quem participa?', prMulti() ? 'Escolha pelo menos uma pessoa.' : 'Escolha o operador.', 'error'); return; }
+            prPararVoz();
+            const feito = prFeito(it);
+            const status = it.situacao === 'concluido' ? 'Concluído' : it.situacao === 'adiado' ? 'Adiado' : it.situacao === 'nao' && feito === 0 ? 'Pendente' : 'Em Andamento';
+            const realizado = String(it.realizado || '').trim();
+            const btn = prEl('prAvancar'); btn.disabled = true; btn.innerHTML = 'Salvando...';
+            const enviar = async corpo => {
+                const resp = await fetchWithTimeout('spg:programacao', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(corpo) });
+                const r = await resp.json();
+                if (!r || r.status !== 'sucesso') throw new Error('O sistema não confirmou a alteração.');
+            };
+            try {
+                await enviar({ action: 'updateRows', updates: [{
+                    rowNumber: row.rowNumber, local: row.local, semana: row.semana, programador: row.programador, operador: it.pessoas.join(', '),
+                    diaSemana: row.diaSemana, blocos: it.local.trim(), tempo: row.tempo, combustivel: row.combustivel, operacoes: it.servico.trim(),
+                    status, estimativa: row.estimativa, percentual: feito, categoria: row.categoria, produto: row.produto, alvo: row.alvo
+                }] });
+                if (realizado !== String(row.realizado || '').trim()) await enviar({ action: 'updateRealizado', updates: [{ rowNumber: row.rowNumber, realizado, status }] });
+                pr.salvos = 1;
+                fecharProgramacaoRapida(true);
+                showMessageModal('Serviço atualizado', `${it.servico.trim()} — ${status === 'Concluído' ? 'concluído' : feito !== null ? `${feito}% feito, falta ${it.falta}%` : status.toLowerCase()}.`, 'success');
+            } catch (e) {
+                const msg = /percentual/i.test(e.message || '') ? 'Falta ativar o % no banco: rode o arquivo supabase/programacao_meta.sql no Supabase.' : (e.message || 'Verifique a conexão e tente de novo.');
+                showMessageModal('Não foi possível salvar', msg, 'error');
+            } finally { btn.disabled = false; if (!prEl('progRapida').classList.contains('hidden')) prDesenhar(); }
+        }
+
+        function prResultadoHtml() {
+            const todosConcluidos = pr.itens.every(it => it.situacao === 'concluido');
+            return `${pr.itens.length > 1 ? `<button type="button" data-pr-todos-concluidos class="mt-3 w-full flex items-center justify-center gap-2 min-h-[44px] rounded-xl ${todosConcluidos ? 'bg-emerald-600 text-white' : 'bg-emerald-50 ring-1 ring-emerald-200 text-emerald-800 hover:bg-emerald-100'} text-sm font-black"><i data-lucide="check-check" class="w-4 h-4"></i> Todos concluídos</button>` : ''}
+                <div class="mt-3 space-y-3">${pr.itens.map((it, i) => prResultadoItemHtml(it, i)).join('')}</div>
+                <p class="mt-2 text-[11px] font-semibold text-slate-400">Sem resposta conta como "Fecho depois": o serviço fica em andamento e você fecha no "Fechar serviços".</p>
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                    <div><label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Previsão de término</label>
+                        <input id="prPrevisao" type="time" value="${escapeHtml(pr.previsao)}" class="${prCampo} mt-1.5"></div>
+                    <div><label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Quem pediu</label>
+                        <input id="prSolicitante" type="text" list="prSolicitantes" value="${escapeHtml(pr.solicitante)}" class="${prCampo} mt-1.5">
+                        <datalist id="prSolicitantes">${(dbSolicitantes || []).map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist></div>
+                </div>`;
+        }
+
+        // ---------- Passo 4: avaliar as pessoas em cada serviço ----------
+        // Todos começam com nota 3 (média) em tudo; mude só quem se destacou
+        function prPrepararNotas() {
+            pr.itens.forEach(it => {
+                Object.keys(it.notas).forEach(n => { if (!it.pessoas.includes(n)) delete it.notas[n]; });
+                it.pessoas.forEach(n => { if (!it.notas[n]) it.notas[n] = Object.fromEntries(CLOSING_AVALIACAO_CRITERIOS.map(c => [c.key, FR_NOTA_PADRAO])); });
+            });
+        }
+        const prNotaGeral = (it, n) => { const v = Object.values(it.notas[n] || {}); return v.length ? Math.round(v.reduce((s, x) => s + x, 0) / v.length) : FR_NOTA_PADRAO; };
+        function prEstrelas(attrs, valor, tamanho) {
+            return [1, 2, 3, 4, 5].map(v => `<button type="button" ${attrs} data-v="${v}" aria-label="Nota ${v}" class="${tamanho} min-w-[30px] min-h-[36px] leading-none transition-transform active:scale-90 ${v <= valor ? 'text-amber-400' : 'text-slate-200'}">★</button>`).join('');
+        }
+        function prSituacaoSelo(it) {
+            if (it.situacao === 'concluido') return '<span class="shrink-0 text-[10px] font-black px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">✓ Concluído</span>';
+            if (it.situacao === 'nao') return `<span class="shrink-0 text-[10px] font-black px-2 py-1 rounded-full bg-amber-100 text-amber-800">${prFeito(it)}% feito</span>`;
+            return '<span class="shrink-0 text-[10px] font-black px-2 py-1 rounded-full bg-slate-100 text-slate-600">Fecha depois</span>';
+        }
+        function prAvaliarHtml() {
+            const chave = `<label class="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-white ring-1 ring-slate-200 p-3 cursor-pointer">
+                <span class="min-w-0"><span class="block text-sm font-black text-slate-800">⭐ Avaliar agora</span><span class="block text-[11px] font-semibold text-slate-400">Todos começam com nota 3 (média). Mude só quem se destacou.</span></span>
+                <span class="shrink-0 relative inline-flex w-11 h-6"><input type="checkbox" data-pr-avaliar ${pr.avaliar ? 'checked' : ''} class="peer absolute inset-0 opacity-0 cursor-pointer z-10"><span class="absolute inset-0 rounded-full bg-slate-300 peer-checked:bg-emerald-600 transition-colors"></span><span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></span></span>
+            </label>`;
+            const cartoes = pr.itens.map((it, i) => {
+                const linhas = it.pessoas.map(n => {
+                    const geral = prNotaGeral(it, n), aberto = !!it.detalhe[n];
+                    const id = `data-i="${i}" data-nome="${escapeHtml(n)}"`;
+                    return `<div class="py-2 border-b border-slate-100 last:border-0">
+                        <div class="flex items-center gap-2">
+                            <div class="min-w-0 flex-1"><p class="text-sm font-bold text-slate-800 truncate">${escapeHtml(n)}</p>
+                                <button type="button" data-pr-detalhe ${id} class="text-[11px] font-bold text-slate-400 hover:text-emerald-700">${FR_ROTULO_NOTA[geral]} · ${aberto ? 'menos' : 'detalhar'}</button></div>
+                            <span class="flex shrink-0">${pr.avaliar ? prEstrelas(`data-pr-geral ${id}`, geral, 'text-[24px]') : ''}</span>
+                        </div>
+                        ${aberto && pr.avaliar ? `<div class="mt-1.5 ml-1 space-y-0.5">${CLOSING_AVALIACAO_CRITERIOS.map(c => `<div class="flex items-center justify-between gap-2"><span class="text-xs font-semibold text-slate-500">${c.label}</span><span class="flex">${prEstrelas(`data-pr-nota ${id} data-crit="${c.key}"`, it.notas[n][c.key], 'text-lg')}</span></div>`).join('')}</div>` : ''}
+                    </div>`;
+                }).join('');
+                return `<div class="rounded-2xl ring-1 ring-slate-200 bg-white p-3.5">
+                    <div class="flex items-start justify-between gap-2"><p class="text-sm font-black text-slate-800 min-w-0">${prTituloItem(it, i)}</p>${prSituacaoSelo(it)}</div>
+                    ${pr.avaliar && it.pessoas.length > 1 ? `<div class="mt-2 flex items-center justify-between gap-2 px-2.5 py-1 rounded-xl bg-slate-50"><span class="text-[11px] font-black text-slate-500 uppercase tracking-wider">Todos deste serviço</span><span class="flex">${prEstrelas(`data-pr-todos="${i}"`, 0, 'text-[22px]')}</span></div>` : ''}
+                    <div class="mt-1">${pr.avaliar ? linhas : `<p class="mt-1 text-xs font-semibold text-slate-500">${prNomesItem(it)}</p>`}</div>
+                </div>`;
+            }).join('');
+            return `${chave}<div class="mt-3 space-y-3">${cartoes}</div>
+                ${pr.salvos ? `<p class="mt-3 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-xl px-3 py-2">${pr.salvos} serviço${pr.salvos === 1 ? '' : 's'} já salvo${pr.salvos === 1 ? '' : 's'} agora.</p>` : ''}`;
+        }
+
         function prDesenhar() {
+            prPararVoz();
+            const editando = pr.modo === 'editar';
+            prEl('prTitulo').innerHTML = editando ? '<i data-lucide="pencil" class="w-5 h-5 text-emerald-600"></i> Editar serviço' : '<i data-lucide="calendar-plus" class="w-5 h-5 text-emerald-600"></i> Programar serviço';
+            prEl('prPassos').classList.toggle('hidden', editando);
+            if (editando) {
+                prEl('prCorpo').innerHTML = prEditarHtml();
+                prEl('prVoltar').classList.add('invisible');
+                prEl('prAvancar').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Salvar alterações';
+                lucide.createIcons();
+                return;
+            }
             prEl('prPassos').innerHTML = PR_PASSOS.map((n, i) => `<div class="text-center"><div class="h-1.5 rounded-full ${i <= pr.passo ? 'bg-emerald-500' : 'bg-slate-200'}"></div><span class="block mt-1 text-[10px] font-black uppercase tracking-wider ${i === pr.passo ? 'text-emerald-700' : 'text-slate-400'}">${n}</span></div>`).join('');
             const corpo = prEl('prCorpo');
-            const jaMontados = pr.lista.length && pr.passo < 3 ? `<button type="button" data-pr-ver-lista class="mb-3 w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-black"><span>✓ ${pr.lista.length} serviço${pr.lista.length === 1 ? '' : 's'} já montado${pr.lista.length === 1 ? '' : 's'}</span><span class="underline">ver</span></button>` : '';
+            const n = pr.itens.length;
             if (pr.passo === 0) {
-                corpo.innerHTML = `${jaMontados}${prPergunta(1, 'Qual serviço?', 'Escolha da lista ou escreva o serviço.')}
+                corpo.innerHTML = `${prPergunta(1, 'Quais serviços?', PrVoz ? 'Toque em quantos quiser, escreva ou toque no 🎤 e fale o serviço.' : 'Toque em quantos quiser ou escreva o serviço.')}
                     <div class="mt-4 flex flex-wrap gap-1.5">${PR_SETORES.map(s => prChip(nomeSetor(s), s === pr.setor, `data-pr-setor="${escapeHtml(s)}"`)).join('')}</div>
-                    <input id="prServico" type="text" autocomplete="off" value="${escapeHtml(pr.servico)}" placeholder="Ex.: Capina, Colheita, Transplantio..." class="${prCampo} mt-4">
+                    <div class="mt-4 flex gap-2">
+                        <div class="flex-1 min-w-0">${prComMic(`<input id="prServico" type="text" autocomplete="off" enterkeyhint="done" value="${escapeHtml(pr.texto)}" placeholder="Ex.: Capina das bordas do bloco 4" class="${prCampo} ${PrVoz ? 'pr-14' : ''}">`, 'prServico')}</div>
+                        <button type="button" data-pr-adicionar class="shrink-0 px-4 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white text-sm font-black shadow-md shadow-emerald-600/25 active:scale-95 flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i><span class="hidden sm:inline">Adicionar</span></button>
+                    </div>
                     <div id="prSugestoes" class="mt-3 flex flex-wrap gap-1.5">${prSugestoesHtml()}</div>
-                    <label class="block mt-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Onde? (opcional)</label>
-                    <input id="prLocal" type="text" autocomplete="off" value="${escapeHtml(pr.local)}" placeholder="Ex.: Bloco 5, Estufa 2, Packing" class="${prCampo} mt-1.5">`;
+                    <p class="mt-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Escolhidos (${n})</p>
+                    ${prItensHtml()}`;
             } else if (pr.passo === 1) {
-                corpo.innerHTML = `${jaMontados}${prPergunta(2, 'Quem vai participar?', prMulti() ? 'Toque numa equipe para trazer todo mundo de uma vez.' : 'Escolha o operador.')}
-                    ${prMulti() ? `<p class="mt-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Equipes</p>${prEquipesHtml()}` : ''}
-                    <div class="mt-4 flex items-center justify-between gap-2"><p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Escolhidos (${pr.pessoas.length})</p>
-                        ${pr.pessoas.length ? '<button type="button" data-pr-limpar-pessoas class="text-xs font-bold text-slate-400 hover:text-rose-600">Limpar</button>' : ''}</div>
-                    <div class="mt-1.5 min-h-[52px] p-2 rounded-2xl border-2 border-dashed ${pr.pessoas.length ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200'} flex flex-wrap gap-1.5">
-                        ${pr.pessoas.map(n => `<span class="inline-flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-full bg-emerald-600 text-white text-sm font-bold">${escapeHtml(n)}<button type="button" data-pr-tirar="${escapeHtml(n)}" aria-label="Tirar ${escapeHtml(n)}" class="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center">×</button></span>`).join('') || '<span class="px-2 py-2 text-sm font-semibold text-slate-400">Ninguém escolhido ainda</span>'}
-                    </div>
-                    ${prPodeSalvarEquipe() ? (pr.nomeEquipe === null
-                        ? `<button type="button" data-pr-nova-equipe class="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-emerald-300 text-emerald-700 text-sm font-black hover:bg-emerald-50"><i data-lucide="bookmark-plus" class="w-4 h-4"></i> Salvar como equipe</button>`
-                        : `<div class="mt-2 p-3 rounded-2xl bg-emerald-50 ring-1 ring-emerald-200"><label class="block text-[11px] font-black text-emerald-700 uppercase tracking-widest">Nome da equipe</label>
-                            <div class="mt-1.5 flex gap-2"><input id="prNomeEquipe" type="text" autocomplete="off" value="${escapeHtml(pr.nomeEquipe)}" placeholder="Ex.: Equipe do ${escapeHtml(pr.pessoas[0].split(' ')[0])}" class="flex-1 min-w-0 px-3 py-2.5 bg-white border-2 border-emerald-200 rounded-xl text-sm font-bold outline-none focus:border-emerald-400">
-                            <button type="button" data-pr-salvar-equipe class="shrink-0 px-4 rounded-xl bg-emerald-600 text-white text-sm font-black">Salvar</button></div>
-                            <p class="mt-1.5 text-[11px] font-semibold text-emerald-700/80">Líder: ${escapeHtml(pr.pessoas[0])} (o primeiro da lista).</p></div>`) : ''}
-                    <input id="prBusca" type="search" autocomplete="off" value="${escapeHtml(pr.busca)}" placeholder="Buscar pessoa..." class="${prCampo} mt-4">
-                    <div id="prAchados" class="mt-3 flex flex-wrap gap-1.5">${prAchadosHtml()}</div>`;
+                corpo.innerHTML = `${prPergunta(2, 'Quem participa de cada serviço?', prMulti() ? 'Abra cada serviço e escolha as pessoas, uma equipe inteira ou fale os nomes no 🎤.' : 'Escolha o operador de cada serviço.')}
+                    ${prPessoasHtml()}`;
             } else if (pr.passo === 2) {
-                const rapidas = ['Concluir o serviço', 'Metade do serviço', '1 bloco', '2 blocos', '5 blocos', '100 caixas', '300 caixas'];
-                corpo.innerHTML = `${jaMontados}${prPergunta(3, 'Qual a meta?', 'O que precisa estar pronto no fim do dia. No fechamento você diz quantos % foram alcançados.')}
-                    <input id="prMeta" type="text" autocomplete="off" value="${escapeHtml(pr.meta)}" placeholder="Ex.: Terminar a capina do bloco 4" class="${prCampo} mt-4">
-                    <div class="mt-3 flex flex-wrap gap-1.5">${rapidas.map(m => prChip(m, m === pr.meta, `data-pr-meta="${escapeHtml(m)}"`)).join('')}</div>
-                    <div class="mt-5 grid grid-cols-2 gap-3">
-                        <div><label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Previsão de término</label>
-                            <input id="prPrevisao" type="time" value="${escapeHtml(pr.previsao)}" class="${prCampo} mt-1.5"></div>
-                        <div><label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest">Quem pediu</label>
-                            <input id="prSolicitante" type="text" list="prSolicitantes" value="${escapeHtml(pr.solicitante)}" class="${prCampo} mt-1.5">
-                            <datalist id="prSolicitantes">${(dbSolicitantes || []).map(n => `<option value="${escapeHtml(n)}">`).join('')}</datalist></div>
-                    </div>`;
+                corpo.innerHTML = `${prPergunta(3, n > 1 ? 'Como ficou cada serviço?' : 'Como ficou o serviço?', 'Concluído conta 100%. Se não terminou, diga quanto ainda falta.')}
+                    ${prResultadoHtml()}`;
             } else {
-                const total = pr.lista.length + 1;
-                corpo.innerHTML = `${prPergunta(4, total > 1 ? `Confere os ${total} serviços?` : 'Confere?', 'Para hoje, ' + escapeHtml(prHojeRotulo()) + (pr.solicitante ? ' · pedido por ' + escapeHtml(pr.solicitante) : ''))}
-                    <div class="mt-4 space-y-2">
-                        ${pr.lista.map((it, i) => prCartaoServico(it, i)).join('')}
-                        ${prCartaoServico(prItemAtual(), null)}
-                    </div>
-                    <button type="button" data-pr-outro class="mt-3 w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 border-dashed border-emerald-300 text-emerald-700 text-sm font-black hover:bg-emerald-50 active:scale-[.99]">
-                        <i data-lucide="plus" class="w-4 h-4"></i> Programar outro serviço
-                    </button>
-                    <p class="mt-1.5 text-center text-[11px] font-semibold text-slate-400">A mesma equipe já vem escolhida no próximo; é só trocar se precisar.</p>
-                    ${pr.salvos ? `<p class="mt-3 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-xl px-3 py-2">${pr.salvos} serviço${pr.salvos === 1 ? '' : 's'} já salvo${pr.salvos === 1 ? '' : 's'} agora.</p>` : ''}`;
+                corpo.innerHTML = `${prPergunta(4, 'Avaliar as pessoas', 'Desempenho de quem participou, em cada serviço.')}
+                    ${prAvaliarHtml()}`;
             }
-            prEl('prVoltar').textContent = pr.passo === 0 ? (pr.lista.length ? 'Voltar' : 'Cancelar') : 'Voltar';
-            const total = pr.lista.length + 1;
-            prEl('prAvancar').innerHTML = pr.passo === 3 ? `<i data-lucide="check" class="w-4 h-4"></i> ${total > 1 ? `Salvar ${total} serviços` : 'Salvar'}` : 'Próximo <i data-lucide="arrow-right" class="w-4 h-4"></i>';
+            // Só o X fecha a janela: no primeiro passo o botão Voltar some
+            prEl('prVoltar').textContent = 'Voltar';
+            prEl('prVoltar').classList.toggle('invisible', pr.passo === 0);
+            prEl('prAvancar').innerHTML = pr.passo === 3 ? `<i data-lucide="check" class="w-4 h-4"></i> Finalizar${n > 1 ? ` (${n} serviços)` : ''}` : 'Avançar <i data-lucide="arrow-right" class="w-4 h-4"></i>';
             lucide.createIcons();
         }
 
         function prLerCampos() {
             const v = id => { const e = prEl(id); return e ? e.value : null; };
-            if (v('prServico') !== null) pr.servico = v('prServico').trim();
-            if (v('prLocal') !== null) pr.local = v('prLocal').trim();
-            if (v('prMeta') !== null) pr.meta = v('prMeta').trim();
+            if (v('prServico') !== null) pr.texto = v('prServico');
+            document.querySelectorAll('#progRapida [data-pr-item-servico]').forEach(e => { const it = pr.itens[+e.dataset.prItemServico]; if (it) it.servico = e.value; });
+            document.querySelectorAll('#progRapida [data-pr-item-local]').forEach(e => { const it = pr.itens[+e.dataset.prItemLocal]; if (it) it.local = e.value; });
             if (v('prPrevisao') !== null) pr.previsao = v('prPrevisao');
             if (v('prSolicitante') !== null) pr.solicitante = v('prSolicitante').trim();
             if (v('prNomeEquipe') !== null) pr.nomeEquipe = v('prNomeEquipe');
+            if (v('prRealizado') !== null && pr.itens[0]) pr.itens[0].realizado = v('prRealizado');
         }
 
-        // Salva as pessoas escolhidas como uma equipe (mesmo cadastro da tela Equipes)
+        // Salva as pessoas do serviço aberto como uma equipe (mesmo cadastro da tela Equipes)
         async function prSalvarEquipe() {
             prLerCampos();
-            const nome = (pr.nomeEquipe || '').trim() || `Equipe do ${pr.pessoas[0].split(' ')[0]}`;
-            const team = { name: nome, leader: pr.pessoas[0], members: pr.pessoas.slice(1), type: TEAM_TYPES.includes(pr.setor) ? pr.setor : TEAM_DEFAULT_TYPE, rowNumber: null };
+            const pessoas = prP();
+            if (pessoas.length < 2) return;
+            const nome = (pr.nomeEquipe || '').trim() || `Equipe do ${pessoas[0].split(' ')[0]}`;
+            const team = { name: nome, leader: pessoas[0], members: pessoas.slice(1), type: TEAM_TYPES.includes(pr.setor) ? pr.setor : TEAM_DEFAULT_TYPE, rowNumber: null };
             teams.push(team);
             persistTeams();
             if (typeof renderTeamsList === 'function') renderTeamsList();
@@ -6235,41 +6621,93 @@
             }
         }
 
+        function prIrPara(passo) {
+            pr.passo = passo; pr.busca = ''; pr.vozAviso = ''; pr.vozDuvidas = []; pr.nomeEquipe = null;
+            prDesenhar(); prEl('prCorpo').scrollTop = 0;
+        }
+        function prAbrirServico(i) {
+            prLerCampos();
+            pr.aberto = i; pr.busca = ''; pr.vozAviso = ''; pr.vozDuvidas = []; pr.nomeEquipe = null;
+            prDesenhar();
+        }
+
         async function prAvancar() {
             prLerCampos();
-            if (pr.passo === 0 && !pr.servico) { showMessageModal('Qual serviço?', 'Escolha ou escreva o serviço.', 'error'); return; }
-            if (pr.passo === 1 && !pr.pessoas.length) { showMessageModal('Quem vai participar?', prMulti() ? 'Escolha pelo menos uma pessoa ou equipe.' : 'Escolha o operador.', 'error'); return; }
-            if (pr.passo < 3) { pr.passo++; pr.busca = ''; prDesenhar(); prEl('prCorpo').scrollTop = 0; return; }
-            // Salvar todos os serviços montados de uma vez
+            if (pr.modo === 'editar') { prSalvarEdicao(); return; }
+            if (pr.passo === 0) {
+                prAdicionarTexto(); // o que ficou escrito no campo também entra
+                pr.itens = pr.itens.filter(it => it.servico.trim());
+                if (!pr.itens.length) { showMessageModal('Quais serviços?', 'Escolha, escreva ou fale pelo menos um serviço.', 'error'); return; }
+                // Abre o primeiro serviço que ainda não tem pessoas
+                const vazio = pr.itens.findIndex(it => !it.pessoas.length);
+                pr.aberto = vazio >= 0 ? vazio : 0;
+                prIrPara(1); return;
+            }
+            if (pr.passo === 1) {
+                const vazio = pr.itens.findIndex(it => !it.pessoas.length);
+                if (vazio >= 0) {
+                    pr.aberto = vazio; prDesenhar();
+                    showMessageModal('Quem participa?', `Escolha ${prMulti() ? 'as pessoas' : 'o operador'} do serviço ${vazio + 1}: ${pr.itens[vazio].servico}.`, 'error');
+                    return;
+                }
+                prIrPara(2); return;
+            }
+            if (pr.passo === 2) { prPrepararNotas(); prIrPara(3); return; }
+
+            // Finalizar: grava os serviços (com o resultado) e, se ligado, a avaliação de cada serviço
+            prPararVoz();
+            const itens = pr.itens.filter(it => it.servico.trim() && it.pessoas.length);
+            if (!itens.length) { showMessageModal('Nada para salvar', 'Monte pelo menos um serviço.', 'error'); return; }
             const btn = prEl('prAvancar'); btn.disabled = true; btn.innerHTML = 'Salvando...';
-            const itens = [...pr.lista, prItemAtual()];
             const semana = (typeof getEffectiveWeekNumber === 'function' && getEffectiveWeekNumber()) || prSemanaAtual();
             const linhas = itens.map(it => {
+                const feito = prFeito(it);
                 const l = {
-                    semana, local: it.setor, programador: pr.solicitante, operador: it.pessoas.join(', '), diaSemana: prHojeRotulo(),
-                    blocos: it.local, operacoes: it.servico, status: 'Em Andamento', estimativa: it.previsao, meta: it.meta, tempo: '', combustivel: ''
+                    semana, local: pr.setor, programador: pr.solicitante, operador: it.pessoas.join(', '), diaSemana: prHojeRotulo(),
+                    blocos: it.local.trim(), operacoes: it.servico.trim(), estimativa: pr.previsao, tempo: '', combustivel: '',
+                    status: it.situacao === 'concluido' ? 'Concluído' : (it.situacao === 'nao' && feito === 0 ? 'Pendente' : 'Em Andamento')
                 };
-                if (it.setor === 'SPG Packing') l.processaCaixas = true;
+                if (feito !== null) l.percentual = feito;
+                if (pr.setor === 'SPG Packing') l.processaCaixas = true;
                 return l;
             });
+            const enviar = async corpo => {
+                const resp = await fetchWithTimeout('spg:programacao', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(corpo) });
+                const r = await resp.json();
+                if (!r || r.status !== 'sucesso') throw new Error('O sistema não confirmou o envio.');
+            };
+            let servicosSalvos = false;
             try {
-                // Um envio por setor (o sistema grava cada envio num setor só)
-                const porSetor = {};
-                linhas.forEach(l => (porSetor[l.local] = porSetor[l.local] || []).push(l));
-                for (const grupo of Object.values(porSetor)) {
-                    const resp = await fetchWithTimeout('spg:programacao', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(grupo) });
-                    const r = await resp.json();
-                    if (!r || r.status !== 'sucesso') throw new Error('O sistema não confirmou o envio.');
-                }
+                await enviar(linhas);
+                servicosSalvos = true;
                 pr.salvos += linhas.length;
-                pr.lista = [];
-                const ultimoSetor = itens[itens.length - 1].setor;
-                if (getDashboardSelectedSector() !== ultimoSetor) handleDashboardSectorChange(ultimoSetor);
+                let textoAval = '';
+                if (pr.avaliar) {
+                    const hoje = todayDateInputValue();
+                    const registros = itens.flatMap(it => it.pessoas.map(n => Object.assign(
+                        { colaborador: n, equipe: findMatchingTeamName(it.pessoas) || '', servico: [it.servico.trim(), it.local.trim()].filter(Boolean).join(' · ') },
+                        Object.fromEntries(CLOSING_AVALIACAO_CRITERIOS.map(c => [c.key, String((it.notas[n] || {})[c.key] || FR_NOTA_PADRAO)])))));
+                    if (registros.length) {
+                        await enviar({ action: 'saveAvaliacao', data: hoje.split('-').reverse().join('/'), semana, local: pr.setor, registros });
+                        // O "Fechar serviços" de hoje já sabe que houve avaliação
+                        try { localStorage.setItem(`spg_prog_avaliado_${pr.setor}_${hoje}`, '1'); } catch (e) {}
+                        textoAval = `\n\n${registros.length} ${registros.length === 1 ? 'avaliação salva' : 'avaliações salvas'}.`;
+                    }
+                }
+                if (getDashboardSelectedSector() !== pr.setor) handleDashboardSectorChange(pr.setor);
                 fecharProgramacaoRapida(true);
-                showMessageModal(linhas.length > 1 ? `${linhas.length} serviços programados` : 'Serviço programado',
-                    itens.map(it => `• ${it.servico} — ${findMatchingTeamName(it.pessoas) || it.pessoas.join(', ')}${it.meta ? ' (meta: ' + it.meta + ')' : ''}`).join('\n'), 'success');
+                showMessageModal(linhas.length > 1 ? `${linhas.length} serviços salvos` : 'Serviço salvo',
+                    itens.map(it => {
+                        const feito = prFeito(it);
+                        return `• ${it.servico.trim()} — ${findMatchingTeamName(it.pessoas) || it.pessoas.join(', ')} (${it.situacao === 'concluido' ? 'concluído' : feito !== null ? `${feito}% feito, falta ${it.falta}%` : 'fecha depois'})`;
+                    }).join('\n') + textoAval, 'success');
             } catch (e) {
-                const msg = /meta|percentual/i.test(e.message || '') ? 'Falta ativar a meta no banco: rode o arquivo supabase/programacao_meta.sql no Supabase.' : (e.message || 'Verifique a conexão e tente de novo.');
+                let msg = /meta|percentual/i.test(e.message || '') ? 'Falta ativar o % no banco: rode o arquivo supabase/programacao_meta.sql no Supabase.' : (e.message || 'Verifique a conexão e tente de novo.');
+                // Os serviços entraram, só a avaliação falhou: não deixa salvar os serviços de novo
+                if (servicosSalvos) {
+                    fecharProgramacaoRapida(true);
+                    msg = 'Os serviços foram salvos, mas a avaliação não. ' + msg;
+                }
                 showMessageModal('Não foi possível salvar', msg, 'error');
             } finally { btn.disabled = false; if (!prEl('progRapida').classList.contains('hidden')) prDesenhar(); }
         }
@@ -6279,59 +6717,119 @@
             prEl('prAvancar').addEventListener('click', prAvancar);
             prEl('prVoltar').addEventListener('click', () => {
                 prLerCampos();
-                if (pr.passo > 0) { pr.passo--; prDesenhar(); return; }
-                // No primeiro passo de um serviço extra: volta para a conferência com o último montado
-                if (pr.lista.length) { Object.assign(pr, pr.lista.pop(), { passo: 3 }); pr.servico = pr.servico || ''; prDesenhar(); return; }
-                fecharProgramacaoRapida();
+                if (pr.passo > 0) prIrPara(pr.passo - 1);
+                // No primeiro passo não há para onde voltar (só o X fecha a programação)
             });
             modal.addEventListener('click', e => {
-                if (e.target === modal) { fecharProgramacaoRapida(); return; }
+                // Tocar fora da janela não fecha (só o X fecha a programação)
                 const b = e.target.closest('button'); if (!b) return;
-                if (b.dataset.prSetor) { prLerCampos(); if (pr.setor !== b.dataset.prSetor) { pr.setor = b.dataset.prSetor; if (!prMulti()) pr.pessoas = pr.pessoas.slice(0, 1); } prDesenhar(); }
-                else if (b.dataset.prServico) { prLerCampos(); pr.servico = b.dataset.prServico; pr.passo = 1; prDesenhar(); }
+                if (b.dataset.prMic) { prOuvir(b.dataset.prMic); return; }
+                pr.vozAviso = ''; // qualquer outro toque tira o aviso do ditado de pessoas
+                const item = i => pr.itens[Number(i)];
+                // Passo 1: serviços
+                if (b.dataset.prSetor) {
+                    prLerCampos();
+                    if (pr.setor !== b.dataset.prSetor) { pr.setor = b.dataset.prSetor; if (!prMulti()) pr.itens.forEach(it => { it.pessoas = it.pessoas.slice(0, 1); }); }
+                    prDesenhar();
+                }
+                else if (b.dataset.prServico) {
+                    // Liga/desliga o serviço da lista (pode escolher vários)
+                    prLerCampos();
+                    const s = b.dataset.prServico;
+                    if (prTemItem(s)) pr.itens = pr.itens.filter(it => prSemAcento(it.servico) !== prSemAcento(s));
+                    else pr.itens.push(prNovoItem(s));
+                    pr.texto = '';
+                    prDesenhar();
+                }
+                else if (b.hasAttribute('data-pr-adicionar')) {
+                    prLerCampos();
+                    const ok = prAdicionarTexto();
+                    if (ok) prDesenhar();
+                    const c = prEl('prServico'); if (c) c.focus();
+                }
+                else if (b.dataset.prTirarItem !== undefined) { prLerCampos(); pr.itens.splice(Number(b.dataset.prTirarItem), 1); prDesenhar(); }
+                // Passo 2: pessoas
+                else if (b.dataset.prAbrir !== undefined) prAbrirServico(Number(b.dataset.prAbrir));
+                else if (b.dataset.prCopiar !== undefined) {
+                    const i = Number(b.dataset.prCopiar);
+                    item(i).pessoas = item(i - 1).pessoas.slice();
+                    prDesenhar();
+                }
+                else if (b.hasAttribute('data-pr-copiar-todos')) {
+                    pr.itens.forEach((it, i) => { if (i > 0 && !it.pessoas.length) it.pessoas = pr.itens[0].pessoas.slice(); });
+                    prDesenhar();
+                }
+                else if (b.hasAttribute('data-pr-limpar-pessoas')) { const it = prAtual(); if (it) it.pessoas = []; prDesenhar(); }
+                else if (b.dataset.prTirar !== undefined) { const it = item(b.dataset.prTirar); it.pessoas = it.pessoas.filter(p => p !== b.dataset.nome); prDesenhar(); }
                 else if (b.dataset.prEquipe !== undefined) {
-                    const t = (teams || [])[Number(b.dataset.prEquipe)];
-                    if (t) {
+                    const t = (teams || [])[Number(b.dataset.prEquipe)], it = prAtual();
+                    if (t && it) {
                         const membros = prMembros(t);
-                        if (prEquipeMarcada(t)) pr.pessoas = pr.pessoas.filter(n => !membros.includes(n));
-                        else membros.forEach(n => { if (!pr.pessoas.includes(n)) pr.pessoas.push(n); });
+                        if (prEquipeMarcada(t)) it.pessoas = it.pessoas.filter(p => !membros.includes(p));
+                        else membros.forEach(prSomarPessoa);
                     }
                     prDesenhar();
                 }
                 else if (b.dataset.prPessoa) {
-                    const n = b.dataset.prPessoa;
-                    if (prMulti()) { if (!pr.pessoas.includes(n)) pr.pessoas.push(n); } else pr.pessoas = [n];
+                    prSomarPessoa(b.dataset.prPessoa);
                     pr.busca = ''; prDesenhar();
-                    const busca = prEl('prBusca'); if (busca && prMulti()) busca.focus();
+                    const busca = prEl('prBusca'); if (busca && prMulti()) busca.focus({ preventScroll: true });
                 }
-                else if (b.dataset.prTirar) { pr.pessoas = pr.pessoas.filter(n => n !== b.dataset.prTirar); prDesenhar(); }
-                else if (b.hasAttribute('data-pr-limpar-pessoas')) { pr.pessoas = []; prDesenhar(); }
+                else if (b.dataset.prDuvida !== undefined) {
+                    // Escolheu o nome certo no "Você quis dizer?"
+                    prSomarPessoa(b.dataset.nome);
+                    pr.vozDuvidas.splice(Number(b.dataset.prDuvida), 1);
+                    prDesenhar();
+                }
+                else if (b.dataset.prDuvidaFechar !== undefined) { pr.vozDuvidas.splice(Number(b.dataset.prDuvidaFechar), 1); prDesenhar(); }
                 else if (b.hasAttribute('data-pr-nova-equipe')) { pr.nomeEquipe = ''; prDesenhar(); const c = prEl('prNomeEquipe'); if (c) c.focus(); }
                 else if (b.hasAttribute('data-pr-salvar-equipe')) prSalvarEquipe();
-                else if (b.dataset.prMeta) { pr.meta = b.dataset.prMeta; prDesenhar(); }
-                else if (b.hasAttribute('data-pr-outro')) {
-                    // Guarda este e começa outro com a mesma equipe e o mesmo setor
+                // Passo 3: resultado
+                else if (b.dataset.prSituacao !== undefined) {
                     prLerCampos();
-                    pr.lista.push(prItemAtual());
-                    Object.assign(pr, { passo: 0, servico: '', local: '', meta: '', previsao: '', busca: '', nomeEquipe: null });
-                    prDesenhar(); prEl('prCorpo').scrollTop = 0;
-                    setTimeout(() => { const c = prEl('prServico'); if (c) c.focus(); }, 50);
+                    const it = item(b.dataset.prSituacao);
+                    it.situacao = it.situacao === b.dataset.v ? null : b.dataset.v;
+                    prDesenhar();
                 }
-                else if (b.dataset.prRemover !== undefined) { pr.lista.splice(Number(b.dataset.prRemover), 1); prDesenhar(); }
-                else if (b.hasAttribute('data-pr-ver-lista')) { prLerCampos(); pr.passo = 3; prDesenhar(); }
+                else if (b.dataset.prFalta !== undefined) { prLerCampos(); item(b.dataset.prFalta).falta = Number(b.dataset.v); prDesenhar(); }
+                else if (b.hasAttribute('data-pr-todos-concluidos')) {
+                    prLerCampos();
+                    const todos = pr.itens.every(it => it.situacao === 'concluido');
+                    pr.itens.forEach(it => { it.situacao = todos ? null : 'concluido'; });
+                    prDesenhar();
+                }
+                // Passo 4: avaliação
+                else if (b.hasAttribute('data-pr-geral')) { const it = item(b.dataset.i); CLOSING_AVALIACAO_CRITERIOS.forEach(c => { it.notas[b.dataset.nome][c.key] = Number(b.dataset.v); }); prDesenhar(); }
+                else if (b.hasAttribute('data-pr-nota')) { item(b.dataset.i).notas[b.dataset.nome][b.dataset.crit] = Number(b.dataset.v); prDesenhar(); }
+                else if (b.hasAttribute('data-pr-detalhe')) { const it = item(b.dataset.i); it.detalhe[b.dataset.nome] = !it.detalhe[b.dataset.nome]; prDesenhar(); }
+                else if (b.dataset.prTodos !== undefined) { const it = item(b.dataset.prTodos); it.pessoas.forEach(n => CLOSING_AVALIACAO_CRITERIOS.forEach(c => { it.notas[n][c.key] = Number(b.dataset.v); })); prDesenhar(); }
             });
-            // Digitando: só as listas mudam (o campo não é recriado e o teclado do celular não fecha)
+            modal.addEventListener('change', e => {
+                if (e.target.hasAttribute('data-pr-avaliar')) { prLerCampos(); pr.avaliar = e.target.checked; prDesenhar(); }
+            });
+            // Digitando (ou falando): só as listas mudam (o campo não é recriado e o teclado do celular não fecha)
             modal.addEventListener('input', e => {
-                if (e.target.id === 'prServico') { pr.servico = e.target.value; prEl('prSugestoes').innerHTML = prSugestoesHtml(); }
-                else if (e.target.id === 'prBusca') { pr.busca = e.target.value; prEl('prAchados').innerHTML = prAchadosHtml(); }
+                const t = e.target;
+                if (t.id === 'prServico') { pr.texto = t.value; prEl('prSugestoes').innerHTML = prSugestoesHtml(); }
+                else if (t.id === 'prBusca') { pr.busca = t.value; prEl('prAchados').innerHTML = prAchadosHtml(); }
+                else if (t.dataset.prItemServico !== undefined) { const it = pr.itens[+t.dataset.prItemServico]; if (it) it.servico = t.value; }
+                else if (t.dataset.prItemLocal !== undefined) { const it = pr.itens[+t.dataset.prItemLocal]; if (it) it.local = t.value; }
             });
             modal.addEventListener('keydown', e => {
-                if (e.key === 'Escape') fecharProgramacaoRapida();
-                if (e.key === 'Enter' && e.target.id === 'prBusca') {
+                // Esc não fecha (só o X fecha a programação)
+                if (e.key !== 'Enter') return;
+                if (e.target.id === 'prBusca') {
                     e.preventDefault();
                     const primeiro = modal.querySelector('[data-pr-pessoa]'); if (primeiro) primeiro.click();
-                } else if (e.key === 'Enter' && e.target.id === 'prNomeEquipe') { e.preventDefault(); prSalvarEquipe(); }
-                else if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); prAvancar(); }
+                } else if (e.target.id === 'prNomeEquipe') { e.preventDefault(); prSalvarEquipe(); }
+                else if (e.target.id === 'prServico') {
+                    // Enter no campo do serviço: adiciona e continua no campo (campo vazio: avança)
+                    e.preventDefault();
+                    prLerCampos();
+                    if (prAdicionarTexto()) { prDesenhar(); const c = prEl('prServico'); if (c) c.focus(); }
+                    else prAvancar();
+                }
+                else if (e.target.tagName === 'INPUT' && e.target.type !== 'checkbox') { e.preventDefault(); prAvancar(); }
             });
         });
 
@@ -6825,6 +7323,10 @@
         let produtividadeRows = [];
         let produtividadeAvaliacaoRows = [];
         let produtividadeAvaliacaoEquipeRows = [];
+        let produtividadeServicoRows = [];      // serviços da programação de todos os setores (Produtividade geral)
+        let produtividadeSetor = 'todos';       // filtro de setor da Produtividade
+        const PROD_SETORES = [['todos', 'Todos', 'layers'], ['Colaboradores', 'Fazenda Oásis', 'sprout'], ['Trator', 'Trator', 'tractor'], ['SPG Packing', 'Packing', 'package'], ['SPG Estufa', 'Estufa', 'warehouse']];
+        const prodNoSetor = row => produtividadeSetor === 'todos' || row.local === produtividadeSetor;
         let produtividadeMode = 'colaborador';
         let _produtividadeColaboradoresCache = [];
         let _produtividadeLoadId = 0;
@@ -6852,27 +7354,30 @@
             const endInput = document.getElementById('prodFilterEnd');
             if (!startInput || !endInput) return;
 
-            const cacheKey = `produtividade_v3_${startInput.value}_${endInput.value}`;
+            const cacheKey = `produtividade_v4_${startInput.value}_${endInput.value}`;
             const cached = getReportCache(cacheKey);
             if (cached) {
                 produtividadeRows = cached.controle || [];
                 produtividadeAvaliacaoRows = cached.avaliacoes || [];
                 produtividadeAvaliacaoEquipeRows = cached.avaliacoesEquipe || [];
+                produtividadeServicoRows = cached.servicos || [];
                 renderProdutividadeStats();
             } else {
                 document.getElementById('prodStatCards').innerHTML = '';
                 document.getElementById('prodAvaliacaoContainer').innerHTML = '';
                 document.getElementById('prodAvaliacaoEquipeContainer').innerHTML = '';
+                document.getElementById('prodServicosContainer').innerHTML = '';
                 document.getElementById('prodTableContainer').innerHTML = `<div class="text-center text-slate-400 text-sm italic py-14 bg-white rounded-2xl border border-slate-200 shadow-sm">Carregando estatísticas...</div>`;
             }
 
             const SCRIPT_URL = "spg:programacao";
             try {
                 const baseParams = { startDate: startInput.value, endDate: endInput.value };
-                const [controleResult, avaliacaoResult, avaliacaoEquipeResult] = await Promise.allSettled([
+                const [controleResult, avaliacaoResult, avaliacaoEquipeResult, servicosResult] = await Promise.allSettled([
                     fetchWithTimeout(`${SCRIPT_URL}?${new URLSearchParams({ ...baseParams, local: 'Controle Colaboradores' })}`, { redirect: 'follow' }).then(response => response.json()),
                     fetchWithTimeout(`${SCRIPT_URL}?${new URLSearchParams({ ...baseParams, local: 'Avaliacao' })}`, { redirect: 'follow' }).then(response => response.json()),
-                    fetchWithTimeout(`${SCRIPT_URL}?${new URLSearchParams({ ...baseParams, local: 'Avaliacao Equipe' })}`, { redirect: 'follow' }).then(response => response.json())
+                    fetchWithTimeout(`${SCRIPT_URL}?${new URLSearchParams({ ...baseParams, local: 'Avaliacao Equipe' })}`, { redirect: 'follow' }).then(response => response.json()),
+                    fetchWithTimeout(`${SCRIPT_URL}?${new URLSearchParams({ ...baseParams, local: 'Servicos Produtividade' })}`, { redirect: 'follow' }).then(response => response.json())
                 ]);
                 if (loadId !== _produtividadeLoadId) return;
                 const controleData = controleResult.status === 'fulfilled' ? controleResult.value : null;
@@ -6887,10 +7392,15 @@
                 produtividadeAvaliacaoEquipeRows = (avaliacaoEquipeData && avaliacaoEquipeData.status === 'sucesso' && avaliacaoEquipeData.rows)
                     ? avaliacaoEquipeData.rows.filter(row => row && row.equipe && PROD_AVALIACAO_CRITERIOS.some(c => avaliacaoNota(row[c.key]) !== null))
                     : (cached ? cached.avaliacoesEquipe || [] : []);
+                const servicosData = servicosResult.status === 'fulfilled' ? servicosResult.value : null;
+                produtividadeServicoRows = (servicosData && servicosData.status === 'sucesso' && servicosData.rows)
+                    ? servicosData.rows.filter(row => row && String(row.operador || '').trim() && String(row.operacoes || '').trim())
+                    : (cached ? cached.servicos || [] : []);
+                if (servicosResult.status === 'rejected') console.error('Erro ao buscar serviços:', servicosResult.reason);
                 if (controleResult.status === 'rejected') console.error('Erro ao buscar controle de colaboradores:', controleResult.reason);
                 if (avaliacaoResult.status === 'rejected') console.error('Erro ao buscar avaliações:', avaliacaoResult.reason);
                 if (avaliacaoEquipeResult.status === 'rejected') console.error('Erro ao buscar avaliações de equipe:', avaliacaoEquipeResult.reason);
-                setReportCache(cacheKey, { controle: produtividadeRows, avaliacoes: produtividadeAvaliacaoRows, avaliacoesEquipe: produtividadeAvaliacaoEquipeRows });
+                setReportCache(cacheKey, { controle: produtividadeRows, avaliacoes: produtividadeAvaliacaoRows, avaliacoesEquipe: produtividadeAvaliacaoEquipeRows, servicos: produtividadeServicoRows });
             } catch (err) {
                 if (loadId !== _produtividadeLoadId) return;
                 console.error('Erro ao buscar dados de produtividade:', err);
@@ -6898,6 +7408,7 @@
                     produtividadeRows = [];
                     produtividadeAvaliacaoRows = [];
                     produtividadeAvaliacaoEquipeRows = [];
+                    produtividadeServicoRows = [];
                 }
             }
             renderProdutividadeStats();
@@ -6930,6 +7441,7 @@
             produtividadeRows.forEach(row => {
                 const nome = row.colaborador || '—';
                 const equipe = row.equipe || 'Sem equipe';
+                if (!prodNoSetor(row)) return;
                 if (search && !nome.toLowerCase().includes(search) && !equipe.toLowerCase().includes(search)) return;
 
                 const caixas = parseFloat(String(row.caixas || '').replace(',', '.')) || 0;
@@ -6957,13 +7469,22 @@
 
             const topColaborador = colaboradoresRanked[0];
 
+            // Cartões do topo: valem para todos os setores (serviços da programação + caixas do Packing)
+            const resumo = prodResumoServicos(search);
+            const pessoasComAlgo = new Set([...resumo.pessoas.map(p => p.nome), ...colaboradoresRanked.map(c => c.nome),
+                ...produtividadeAvaliacaoRows.filter(prodNoSetor).map(r => String(r.colaborador || '')).filter(n => n && (!search || n.toLowerCase().includes(search)))]);
             const statCards = [
-                { icon: 'package-check', bg: '#dcfce7', color: '#16a34a', value: totalCaixas, label: 'Caixas no período', sublabel: `${diasGeral.size} dia(s) com registro` },
-                { icon: 'user-check', bg: '#dbeafe', color: '#2563eb', value: colaboradoresRanked.length, label: 'Colaboradores', sublabel: 'Com registro no período' },
-                { icon: 'users-round', bg: '#ede9fe', color: '#7c3aed', value: equipesRanked.length, label: 'Equipes', sublabel: 'Ativas no período' },
-                { icon: 'crown', bg: '#fef3c7', color: '#d97706', value: topColaborador ? topColaborador.caixas : 0, label: 'Top colaborador', sublabel: topColaborador ? topColaborador.nome : '—' },
+                { icon: 'clipboard-check', bg: '#dcfce7', color: '#16a34a', value: resumo.total, label: 'Serviços no período', sublabel: `${resumo.concluidos} concluído(s)` },
+                { icon: 'gauge', bg: '#fef3c7', color: '#d97706', value: resumo.mediaFeito === null ? '—' : Math.round(resumo.mediaFeito) + '%', label: '% médio feito', sublabel: resumo.medidos ? `em ${resumo.medidos} serviço(s) fechado(s)` : 'Nenhum serviço fechado' },
+                { icon: 'user-check', bg: '#dbeafe', color: '#2563eb', value: pessoasComAlgo.size, label: 'Colaboradores', sublabel: 'Com serviço ou avaliação' },
+                { icon: 'package-check', bg: '#ede9fe', color: '#7c3aed', value: totalCaixas, label: 'Caixas (Packing)', sublabel: totalCaixas ? `${diasGeral.size} dia(s) com registro` : 'Sem caixas no filtro' },
             ];
             document.getElementById('prodStatCards').innerHTML = renderStatCardsLive(statCards);
+            renderProdutividadeSetores();
+            renderProdutividadeServicos(resumo);
+            // A parte de caixas só aparece quando há caixas no filtro
+            const temCaixas = colaboradoresRanked.length > 0;
+            document.getElementById('prodCaixasSecao').classList.toggle('hidden', !temCaixas);
 
             renderProdutividadeAvaliacoesEquipe(search);
             renderProdutividadeAvaliacoes(search);
@@ -6981,6 +7502,130 @@
                 ? renderProdutividadeColaboradorTable(colaboradoresRanked)
                 : renderProdutividadeEquipeTable(equipesRanked);
             lucide.createIcons();
+        }
+
+        // ---------- Produtividade geral: serviços da programação de todos os setores ----------
+        // Concluído conta 100%; serviço fechado com % conta o que foi feito; sem % ainda não entra na média.
+        const prodFeitoDe = row => row.status === 'Concluído' ? 100
+            : (row.percentual === null || row.percentual === undefined || row.percentual === '' ? null : Number(row.percentual));
+        let prodServicosAbertos = new Set();
+        function prodResumoServicos(search) {
+            const porPessoa = {};
+            let total = 0, concluidos = 0, somaFeito = 0, medidos = 0;
+            produtividadeServicoRows.filter(prodNoSetor).forEach(row => {
+                const nomes = normalizeSelectedCollaborators(row.operador);
+                const daBusca = !search || nomes.some(n => n.toLowerCase().includes(search));
+                if (!daBusca) return;
+                const feito = prodFeitoDe(row);
+                total++;
+                if (row.status === 'Concluído') concluidos++;
+                if (feito !== null) { somaFeito += feito; medidos++; }
+                nomes.forEach(nome => {
+                    if (search && !nome.toLowerCase().includes(search)) return;
+                    const p = porPessoa[nome] || (porPessoa[nome] = { nome, servicos: [], concluidos: 0, andamento: 0, adiados: 0, somaFeito: 0, medidos: 0, setores: new Set(), dias: new Set() });
+                    p.servicos.push(row);
+                    if (row.status === 'Concluído') p.concluidos++;
+                    else if (row.status === 'Adiado') p.adiados++;
+                    else p.andamento++;
+                    if (feito !== null) { p.somaFeito += feito; p.medidos++; }
+                    p.setores.add(nomeSetor(row.local));
+                    if (row.dataRegistro) p.dias.add(row.dataRegistro);
+                });
+            });
+            const pessoas = Object.values(porPessoa).map(p => Object.assign(p, { mediaFeito: p.medidos ? p.somaFeito / p.medidos : null }))
+                .sort((a, b) => (b.mediaFeito ?? -1) - (a.mediaFeito ?? -1) || b.concluidos - a.concluidos || b.servicos.length - a.servicos.length || a.nome.localeCompare(b.nome, 'pt-BR'));
+            return { pessoas, total, concluidos, medidos, mediaFeito: medidos ? somaFeito / medidos : null };
+        }
+        function renderProdutividadeSetores() {
+            const el = document.getElementById('prodFiltroSetor');
+            if (!el) return;
+            el.innerHTML = PROD_SETORES.map(([id, nome, icone]) => {
+                const ativo = produtividadeSetor === id;
+                return `<button type="button" role="tab" aria-selected="${ativo}" data-prod-setor="${id}" class="flex-1 shrink-0 inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${ativo ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500 hover:text-slate-700'}"><i data-lucide="${icone}" class="w-3.5 h-3.5"></i>${nome}</button>`;
+            }).join('');
+            el.onclick = e => {
+                const b = e.target.closest('[data-prod-setor]');
+                if (!b || b.dataset.prodSetor === produtividadeSetor) return;
+                produtividadeSetor = b.dataset.prodSetor;
+                renderProdutividadeStats();
+            };
+        }
+        const prodCorFeito = v => v === null ? '#94a3b8' : v >= 80 ? '#10b981' : v >= 50 ? '#f59e0b' : '#f43f5e';
+        function prodBarraFeito(v) {
+            if (v === null) return '<span class="text-[11px] font-bold text-slate-400">sem fechamento</span>';
+            const n = Math.max(0, Math.min(100, Math.round(v)));
+            return `<div class="flex items-center gap-2 justify-center"><div class="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full" style="width:${n}%;background:${prodCorFeito(n)}"></div></div><span class="text-xs font-black tabular-nums" style="color:${prodCorFeito(n)}">${n}%</span></div>`;
+        }
+        function renderProdutividadeServicos(resumo) {
+            const container = document.getElementById('prodServicosContainer');
+            if (!container) return;
+            const setorNome = (PROD_SETORES.find(x => x[0] === produtividadeSetor) || [])[1];
+            const titulo = `<h2 class="text-sm font-black text-slate-800 flex items-center gap-2"><i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-600"></i> Serviços por colaborador${produtividadeSetor === 'todos' ? '' : ` · ${escapeHtml(setorNome)}`}</h2>`;
+            if (!resumo.pessoas.length) {
+                container.innerHTML = `<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">${titulo}<p class="text-xs text-slate-400 italic mt-2">Nenhum serviço programado no período${produtividadeSetor === 'todos' ? '' : ' neste setor'}.</p></div>`;
+                return;
+            }
+            // Pódio: maior % médio feito (com pelo menos 1 serviço fechado)
+            const medals = ['🥇', '🥈', '🥉'];
+            const podio = resumo.pessoas.filter(p => p.mediaFeito !== null).slice(0, 3);
+            const podioHtml = podio.length ? `<div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">${podio.map((p, i) => `
+                <div class="flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 p-3">
+                    <span class="text-xl w-7 text-center shrink-0">${medals[i]}</span>
+                    <div class="min-w-0 flex-1"><p class="text-sm font-black text-slate-800 truncate">${escapeHtml(p.nome)}</p>
+                        <p class="text-[10px] font-bold text-slate-500">${p.servicos.length} serviço(s) · ${p.concluidos} concluído(s)</p></div>
+                    <span class="shrink-0 text-base font-black tabular-nums" style="color:${prodCorFeito(p.mediaFeito)}">${Math.round(p.mediaFeito)}%</span>
+                </div>`).join('')}</div>` : '';
+            const linhas = resumo.pessoas.map(p => {
+                const aberto = prodServicosAbertos.has(p.nome);
+                const detalhe = aberto ? `<tr class="bg-slate-50/70"><td colspan="6" class="px-3 pb-3">
+                    <div class="space-y-1.5 pt-1">${p.servicos.slice().sort((a, b) => (b.rowNumber || 0) - (a.rowNumber || 0)).map(s => {
+                        const feito = prodFeitoDe(s);
+                        return `<div class="flex items-center gap-3 rounded-xl bg-white ring-1 ring-slate-200 px-3 py-2">
+                            <div class="min-w-0 flex-1"><p class="text-xs font-black text-slate-800 truncate">${escapeHtml(s.operacoes)}${s.blocos ? ` <span class="text-slate-400 font-semibold">· ${escapeHtml(s.blocos)}</span>` : ''}</p>
+                                <p class="text-[10px] font-semibold text-slate-400">${escapeHtml(s.dataRegistro || s.diaSemana || '')} · ${escapeHtml(nomeSetor(s.local))}</p></div>
+                            <div class="shrink-0 text-right">${statusBadgeHtml(s.status)}${feito !== null && s.status !== 'Concluído' ? `<p class="mt-1 text-[10px] font-black tabular-nums" style="color:${prodCorFeito(feito)}">${feito}% feito</p>` : ''}</div>
+                        </div>`;
+                    }).join('')}</div></td></tr>` : '';
+                return `<tr class="border-b border-slate-100 hover:bg-slate-50/70">
+                    <td class="p-3"><div class="flex items-center gap-2">${initialsAvatarHtml(p.nome)}<div class="min-w-0"><p class="font-black text-slate-800 text-xs truncate">${escapeHtml(p.nome)}</p><p class="text-[9px] text-slate-400 truncate">${escapeHtml([...p.setores].join(', '))}</p></div></div></td>
+                    <td class="p-3 text-center text-xs font-black text-slate-700">${p.servicos.length}</td>
+                    <td class="p-3 text-center text-xs font-black text-emerald-700">${p.concluidos}</td>
+                    <td class="p-3 text-center text-xs font-bold text-slate-500">${p.andamento}${p.adiados ? ` <span class="text-slate-400">(+${p.adiados} adiado${p.adiados === 1 ? '' : 's'})</span>` : ''}</td>
+                    <td class="p-3">${prodBarraFeito(p.mediaFeito)}</td>
+                    <td class="p-3 text-center"><button type="button" data-prod-ver="${escapeHtml(p.nome)}" aria-expanded="${aberto}" class="inline-flex items-center gap-1 min-h-[36px] px-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-lg whitespace-nowrap"><i data-lucide="${aberto ? 'chevron-up' : 'list'}" class="w-3.5 h-3.5"></i>${aberto ? 'Fechar' : 'Ver serviços'}</button></td>
+                </tr>${detalhe}`;
+            }).join('');
+            container.innerHTML = `<section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 sm:p-5 border-b border-slate-100">
+                    <div class="flex items-start justify-between gap-3 flex-wrap mb-4">
+                        <div>${titulo}<p class="text-[11px] text-slate-400 mt-1">Da programação de trabalho. Concluído conta 100%; não concluído conta o que foi feito.</p></div>
+                        <div class="text-right"><p class="text-2xl font-black tabular-nums" style="color:${prodCorFeito(resumo.mediaFeito)}">${resumo.mediaFeito === null ? '—' : Math.round(resumo.mediaFeito) + '%'}</p>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider">${resumo.pessoas.length} colaborador(es) · ${resumo.total} serviço(s)</p></div>
+                    </div>
+                    ${podioHtml}
+                </div>
+                <div class="overflow-auto max-h-[70vh]">
+                    <table class="w-full min-w-[720px] text-left border-collapse">
+                        <thead class="sticky top-0 z-10"><tr class="bg-slate-50 text-slate-500 text-[9px] uppercase tracking-wider">
+                            <th class="p-3 font-black">Colaborador</th>
+                            <th class="p-3 font-black text-center">Serviços</th>
+                            <th class="p-3 font-black text-center">Concluídos</th>
+                            <th class="p-3 font-black text-center">Em andamento</th>
+                            <th class="p-3 font-black text-center">% médio feito</th>
+                            <th class="p-3 font-black text-center">Detalhes</th>
+                        </tr></thead>
+                        <tbody>${linhas}</tbody>
+                    </table>
+                </div>
+            </section>`;
+            container.onclick = e => {
+                const b = e.target.closest('[data-prod-ver]');
+                if (!b) return;
+                const n = b.dataset.prodVer;
+                if (prodServicosAbertos.has(n)) prodServicosAbertos.delete(n); else prodServicosAbertos.add(n);
+                renderProdutividadeServicos(prodResumoServicos((document.getElementById('prodFilterSearch')?.value || '').trim().toLowerCase()));
+                lucide.createIcons();
+            };
         }
 
         const PROD_AVALIACAO_CRITERIOS = [
@@ -7003,7 +7648,7 @@
         function renderProdutividadeAvaliacoesEquipe(search) {
             const container = document.getElementById('prodAvaliacaoEquipeContainer');
             if (!container) return;
-            const rows = produtividadeAvaliacaoEquipeRows.filter(row => !search || String(row.equipe || '').toLowerCase().includes(search));
+            const rows = produtividadeAvaliacaoEquipeRows.filter(row => prodNoSetor(row) && (!search || String(row.equipe || '').toLowerCase().includes(search)));
             if (!rows.length) {
                 container.innerHTML = `<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5"><h2 class="text-sm font-black text-slate-800 flex items-center gap-2"><i data-lucide="users-round" class="w-4 h-4 text-purple-500"></i> Avaliação das equipes</h2><p class="text-xs text-slate-400 italic mt-2">Nenhuma avaliação de equipe encontrada no período.</p></div>`;
                 return;
@@ -7053,6 +7698,7 @@
             if (!container) return;
 
             const rows = produtividadeAvaliacaoRows.filter(row => {
+                if (!prodNoSetor(row)) return false;
                 const nome = String(row.colaborador || '');
                 const equipe = String(row.equipe || '');
                 return !search || nome.toLowerCase().includes(search) || equipe.toLowerCase().includes(search);
@@ -7123,6 +7769,11 @@
                     ${PROD_AVALIACAO_CRITERIOS.map(c => `<td class="p-3 text-center text-xs font-black text-slate-600">${formatAvaliacaoMedia(media(acc.criterios[c.key]))}</td>`).join('')}
                     <td class="p-3 text-center"><span class="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 px-2.5 py-1 text-xs font-black">${formatAvaliacaoMedia(mediaGeral)} ★</span></td>
                     <td class="p-3 text-center text-xs font-bold text-slate-500">${acc.datas.size}</td>
+                    <td class="p-3 text-center">
+                        <button type="button" data-av-editar="${escapeHtml(nome)}" title="Corrigir ou excluir as avaliações de ${escapeHtml(nome)}" class="inline-flex items-center gap-1 min-h-[36px] px-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black rounded-lg transition-colors whitespace-nowrap">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Editar
+                        </button>
+                    </td>
                 </tr>`).join('');
 
             container.innerHTML = `
@@ -7131,7 +7782,7 @@
                         <div class="flex items-start justify-between gap-3 flex-wrap mb-4">
                             <div>
                                 <h2 class="text-sm font-black text-slate-800 flex items-center gap-2"><i data-lucide="star" class="w-4 h-4 text-amber-500"></i> Avaliações individuais</h2>
-                                <p class="text-[11px] text-slate-400 mt-1">Médias das avaliações registradas no Encerramento do Dia.</p>
+                                <p class="text-[11px] text-slate-400 mt-1">Médias das avaliações feitas no Programar, no Fechar serviços e no Encerramento do Dia.</p>
                             </div>
                             <div class="text-right">
                                 <p class="text-2xl font-black text-amber-600">${formatAvaliacaoMedia(media(geral))} ★</p>
@@ -7141,17 +7792,172 @@
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">${criterioCards}</div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full min-w-[760px] text-left border-collapse">
+                        <table class="w-full min-w-[860px] text-left border-collapse">
                             <thead><tr class="bg-slate-50 text-slate-500 text-[9px] uppercase tracking-wider">
                                 <th class="p-3 font-black">Colaborador</th>
                                 ${PROD_AVALIACAO_CRITERIOS.map(c => `<th class="p-3 font-black text-center">${c.label}</th>`).join('')}
                                 <th class="p-3 font-black text-center">Média</th>
                                 <th class="p-3 font-black text-center">Avaliações</th>
+                                <th class="p-3 font-black text-center">Ações</th>
                             </tr></thead>
                             <tbody>${pessoasHtml}</tbody>
                         </table>
                     </div>
                 </section>`;
+            container.onclick = e => {
+                const b = e.target.closest('[data-av-editar]');
+                if (b) abrirAvaliacoesColaborador(b.dataset.avEditar);
+            };
+        }
+
+        // ---------- Corrigir / excluir avaliações de um colaborador (Produtividade) ----------
+        // Mostra cada avaliação da pessoa no período escolhido: dá para mudar as notas ou excluir.
+        let avEd = null; // { nome, itens: [{ row, notas, original }] }
+        const avNotasDe = row => Object.fromEntries(PROD_AVALIACAO_CRITERIOS.map(c => [c.key, avaliacaoNota(row[c.key]) || FR_NOTA_PADRAO]));
+        const avMudou = it => PROD_AVALIACAO_CRITERIOS.some(c => it.notas[c.key] !== it.original[c.key]);
+        const avDataOrdem = row => { const d = String(row.data || row.dataRegistro || ''); const [dd, mm, aa] = d.split('/'); return aa ? `${aa}-${mm}-${dd}` : d; };
+
+        function abrirAvaliacoesColaborador(nome) {
+            const itens = produtividadeAvaliacaoRows
+                .filter(r => String(r.colaborador || '') === nome && r.rowNumber && prodNoSetor(r))
+                .sort((a, b) => avDataOrdem(b).localeCompare(avDataOrdem(a)) || (b.rowNumber - a.rowNumber))
+                .map(row => { const notas = avNotasDe(row); return { row, notas, original: { ...notas } }; });
+            avEd = { nome, itens };
+            let caixa = document.getElementById('avalEditModal');
+            if (!caixa) {
+                caixa = document.createElement('div');
+                caixa.id = 'avalEditModal';
+                caixa.className = 'fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm sm:p-4';
+                caixa.setAttribute('role', 'dialog');
+                caixa.setAttribute('aria-modal', 'true');
+                caixa.setAttribute('aria-labelledby', 'avalEditTitulo');
+                caixa.innerHTML = `<div class="bg-white w-full sm:max-w-xl max-h-[94dvh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+                    <div class="px-5 pt-5 pb-3 border-b border-slate-100 shrink-0 flex items-start justify-between gap-3">
+                        <div class="min-w-0"><h2 id="avalEditTitulo" class="text-base font-black text-slate-800 flex items-center gap-2"><i data-lucide="star" class="w-5 h-5 text-amber-500"></i><span data-av-titulo></span></h2>
+                            <p data-av-sub class="text-[11px] font-semibold text-slate-400 mt-0.5"></p></div>
+                        <button type="button" data-av-fechar aria-label="Fechar" class="w-11 h-11 -mr-2 -mt-1 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 flex items-center justify-center shrink-0"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+                    <div data-av-corpo class="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-slate-50/60"></div>
+                    <div class="px-5 py-4 border-t border-slate-100 flex flex-wrap items-center gap-3 shrink-0" style="padding-bottom:max(1rem,env(safe-area-inset-bottom))">
+                        <button type="button" data-av-excluir-todas class="min-h-[44px] px-3 rounded-xl text-sm font-black text-red-600 hover:bg-red-50 flex items-center gap-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i><span></span></button>
+                        <button type="button" data-av-salvar class="ml-auto min-h-[48px] px-5 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white font-black text-sm shadow-md shadow-emerald-600/25 ring-1 ring-emerald-700/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:active:scale-100"></button>
+                    </div>
+                </div>`;
+                document.body.appendChild(caixa);
+                caixa.addEventListener('click', avClique);
+            }
+            caixa.classList.remove('hidden');
+            avDesenhar();
+        }
+
+        function avDesenhar() {
+            const caixa = document.getElementById('avalEditModal');
+            if (!caixa || !avEd) return;
+            const { nome, itens } = avEd;
+            const mudadas = itens.filter(avMudou).length;
+            caixa.querySelector('[data-av-titulo]').textContent = nome;
+            caixa.querySelector('[data-av-sub]').textContent = `${itens.length} avaliação(ões) no período escolhido · toque nas estrelas para corrigir`;
+            const estrelas = (attrs, valor, tam) => [1, 2, 3, 4, 5].map(v => `<button type="button" ${attrs} data-v="${v}" aria-label="Nota ${v}" class="${tam} min-w-[30px] min-h-[36px] leading-none transition-transform active:scale-90 ${v <= valor ? 'text-amber-400' : 'text-slate-200'}">★</button>`).join('');
+            caixa.querySelector('[data-av-corpo]').innerHTML = itens.length ? itens.map((it, i) => {
+                const r = it.row;
+                const media = PROD_AVALIACAO_CRITERIOS.reduce((s, c) => s + it.notas[c.key], 0) / PROD_AVALIACAO_CRITERIOS.length;
+                const detalhes = [r.local ? nomeSetor(r.local) : '', r.servico || '', r.equipe || ''].filter(Boolean).map(escapeHtml).join(' · ');
+                return `<div class="bg-white rounded-2xl ring-1 ${avMudou(it) ? 'ring-2 ring-amber-300' : 'ring-slate-200'} p-4">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="text-sm font-black text-slate-800 flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-600"></i>${escapeHtml(r.data || r.dataRegistro || '—')}
+                                <span class="ml-1 inline-flex items-center rounded-full bg-amber-100 text-amber-700 px-2 py-0.5 text-[11px] font-black">${formatAvaliacaoMedia(media)} ★</span>
+                                ${avMudou(it) ? '<span class="text-[10px] font-black text-amber-600 uppercase tracking-wider">alterada</span>' : ''}</p>
+                            ${detalhes ? `<p class="mt-0.5 text-[11px] font-semibold text-slate-500 truncate">${detalhes}</p>` : ''}
+                        </div>
+                        <button type="button" data-av-excluir="${i}" aria-label="Excluir esta avaliação" title="Excluir esta avaliação" class="shrink-0 w-11 h-11 -mt-1 -mr-1 rounded-xl text-red-500 hover:bg-red-50 flex items-center justify-center"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                    <div class="mt-2 flex items-center justify-between gap-2 px-2.5 py-1 rounded-xl bg-slate-50">
+                        <span class="text-[11px] font-black text-slate-500 uppercase tracking-wider">Todas as notas</span>
+                        <span class="flex">${estrelas(`data-av-todas="${i}"`, 0, 'text-[22px]')}</span>
+                    </div>
+                    <div class="mt-1 divide-y divide-slate-100">${PROD_AVALIACAO_CRITERIOS.map(c => `<div class="flex items-center justify-between gap-2 py-0.5">
+                        <span class="text-xs font-bold ${it.notas[c.key] !== it.original[c.key] ? 'text-amber-700' : 'text-slate-600'}">${c.label}</span>
+                        <span class="flex">${estrelas(`data-av-nota="${i}" data-crit="${c.key}"`, it.notas[c.key], 'text-xl')}</span>
+                    </div>`).join('')}</div>
+                </div>`;
+            }).join('') : '<div class="py-14 text-center text-sm font-semibold text-slate-400">Nenhuma avaliação desta pessoa no período.</div>';
+            const todas = caixa.querySelector('[data-av-excluir-todas]');
+            todas.classList.toggle('hidden', itens.length < 2);
+            todas.querySelector('span').textContent = `Excluir todas (${itens.length})`;
+            const salvar = caixa.querySelector('[data-av-salvar]');
+            salvar.disabled = !mudadas;
+            salvar.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> ${!mudadas ? 'Salvar' : mudadas === 1 ? 'Salvar 1 alteração' : `Salvar ${mudadas} alterações`}`;
+            lucide.createIcons();
+        }
+
+        // Atualiza a tela de Produtividade (e a cópia guardada) depois de corrigir ou excluir
+        function avAtualizarRelatorio() {
+            const ini = document.getElementById('prodFilterStart'), fim = document.getElementById('prodFilterEnd');
+            if (ini && fim) setReportCache(`produtividade_v4_${ini.value}_${fim.value}`, { controle: produtividadeRows, avaliacoes: produtividadeAvaliacaoRows, avaliacoesEquipe: produtividadeAvaliacaoEquipeRows, servicos: produtividadeServicoRows });
+            renderProdutividadeStats();
+        }
+        async function avEnviar(corpo) {
+            const resp = await fetchWithTimeout('spg:programacao', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(corpo) });
+            const r = await resp.json();
+            if (!r || r.status !== 'sucesso') throw new Error('O sistema não confirmou.');
+        }
+        async function avExcluir(lista) {
+            const ids = lista.map(it => it.row.rowNumber);
+            const n = ids.length, nome = avEd.nome;
+            const ok = await Dialogo.confirmar(n === 1
+                ? `A avaliação de ${avEd.nome} do dia ${lista[0].row.data || lista[0].row.dataRegistro || ''} será apagada. Isso não pode ser desfeito.`
+                : `As ${n} avaliações de ${avEd.nome} neste período serão apagadas. Isso não pode ser desfeito.`,
+                { titulo: n === 1 ? 'Excluir esta avaliação?' : `Excluir ${n} avaliações?`, botao: 'Excluir', perigo: true });
+            if (!ok) return;
+            try {
+                await avEnviar({ action: 'deleteAvaliacoes', ids });
+                const apagados = new Set(ids);
+                produtividadeAvaliacaoRows = produtividadeAvaliacaoRows.filter(r => !apagados.has(r.rowNumber));
+                avEd.itens = avEd.itens.filter(it => !apagados.has(it.row.rowNumber));
+                avAtualizarRelatorio();
+                if (!avEd.itens.length) avFechar(true); else avDesenhar();
+                showMessageModal(n === 1 ? 'Avaliação excluída' : 'Avaliações excluídas', `${n === 1 ? '1 avaliação' : `${n} avaliações`} de ${nome} apagada${n === 1 ? '' : 's'}.`, 'success');
+            } catch (e) {
+                showMessageModal('Não foi possível excluir', e.message || 'Verifique a conexão e tente de novo.', 'error');
+            }
+        }
+        async function avSalvar() {
+            const mudadas = avEd.itens.filter(avMudou);
+            if (!mudadas.length) return;
+            const btn = document.querySelector('#avalEditModal [data-av-salvar]');
+            btn.disabled = true; btn.innerHTML = 'Salvando...';
+            try {
+                await avEnviar({ action: 'updateAvaliacao', updates: mudadas.map(it => Object.assign({ rowNumber: it.row.rowNumber }, Object.fromEntries(PROD_AVALIACAO_CRITERIOS.map(c => [c.key, String(it.notas[c.key])])))) });
+                mudadas.forEach(it => {
+                    PROD_AVALIACAO_CRITERIOS.forEach(c => { it.row[c.key] = String(it.notas[c.key]); });
+                    it.original = { ...it.notas };
+                });
+                avAtualizarRelatorio();
+                const nome = avEd.nome;
+                avFechar(true);
+                showMessageModal('Notas corrigidas', `${mudadas.length === 1 ? '1 avaliação' : `${mudadas.length} avaliações`} de ${nome} atualizada${mudadas.length === 1 ? '' : 's'}.`, 'success');
+            } catch (e) {
+                showMessageModal('Não foi possível salvar', e.message || 'Verifique a conexão e tente de novo.', 'error');
+                avDesenhar();
+            }
+        }
+        async function avFechar(forcar) {
+            if (!forcar && avEd && avEd.itens.some(avMudou) && !(await Dialogo.confirmar('As notas que você mudou ainda não foram salvas e serão perdidas.', { titulo: 'Fechar sem salvar?', botao: 'Fechar sem salvar', cancelar: 'Continuar', perigo: true }))) return;
+            const caixa = document.getElementById('avalEditModal');
+            if (caixa) caixa.classList.add('hidden');
+            avEd = null;
+        }
+        function avClique(e) {
+            const b = e.target.closest('button');
+            if (!b || !avEd) return;
+            const it = i => avEd.itens[Number(i)];
+            if (b.hasAttribute('data-av-fechar')) avFechar();
+            else if (b.hasAttribute('data-av-salvar')) avSalvar();
+            else if (b.hasAttribute('data-av-excluir-todas')) avExcluir(avEd.itens.slice());
+            else if (b.dataset.avExcluir !== undefined) avExcluir([it(b.dataset.avExcluir)]);
+            else if (b.dataset.avNota !== undefined) { it(b.dataset.avNota).notas[b.dataset.crit] = Number(b.dataset.v); avDesenhar(); }
+            else if (b.dataset.avTodas !== undefined) { const x = it(b.dataset.avTodas); PROD_AVALIACAO_CRITERIOS.forEach(c => { x.notas[c.key] = Number(b.dataset.v); }); avDesenhar(); }
         }
 
         // ==========================================
@@ -7349,6 +8155,7 @@
                 const nome = row.colaborador || '—';
                 const equipe = row.equipe || 'Sem equipe';
                 if (search && !nome.toLowerCase().includes(search) && !equipe.toLowerCase().includes(search)) return;
+                if (!prodNoSetor(row)) return;
                 if (!row.data) return;
                 const caixas = parseFloat(String(row.caixas || '').replace(',', '.')) || 0;
                 totalsByDate[row.data] = (totalsByDate[row.data] || 0) + caixas;
@@ -8985,6 +9792,8 @@
         let editingProgramacaoRow = null;
 
         function editProgramacaoRow(rowNumber) {
+            // Editar agora usa a mesma janela do "Programar" (pessoas, voz e resultado em %)
+            if (typeof abrirEdicaoServico === 'function') { abrirEdicaoServico(rowNumber); return; }
             const row = dashboardRows.find(r => r.rowNumber === rowNumber);
             if (!row) return;
             editingProgramacaoRow = row;
@@ -9258,7 +10067,6 @@
             const varios = linkMenu && linkMenu.style.display !== 'none';
             topoMenu.classList.toggle('hidden', !varios);
             topoMenu.classList.toggle('flex', varios);
-            document.getElementById('topoUsuario').textContent = window.IrrigacaoAPI ? IrrigacaoAPI.nomeUsuario() : '';
             if (window.lucide) lucide.createIcons();
         }
         abasPc.addEventListener('click', e => { const b = e.target.closest('[data-aba]'); if (b) abrir(b.dataset.aba); });

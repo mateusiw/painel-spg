@@ -15,6 +15,7 @@ e completo do padrão, bom para copiar.
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="../../supabase-config.js"></script>
 <script src="../../supabase-api.js"></script>                           <!-- window.IrrigacaoAPI: login, módulos, fila offline -->
+<script src="../../dialogo.js"></script>                                <!-- pop-ups modernos: Dialogo.avisar / Dialogo.confirmar (obrigatório) -->
 <script src="../../lista-moderna.js"></script>                          <!-- listas suspensas modernas (obrigatório) -->
 <script src="../../trava-fundo.js"></script>                            <!-- trava a rolagem do fundo com modal aberto -->
 <script src="../../seletor-periodo.js"></script>                        <!-- quando houver filtro de datas -->
@@ -39,6 +40,9 @@ e completo do padrão, bom para copiar.
 - **Cartões**: `bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4`.
 - **Campos**: rótulo com a classe `.rotulo` (ícone + texto uppercase cinza) e campo com a classe `.campo`
   (`bg-slate-50`, borda 2px `slate-200`, `rounded-xl`, foco verde). Copiar `.rotulo` e `.campo` do Descarte.
+- **Pop-ups**: nunca usar `alert`, `confirm` ou `prompt` do navegador. Usar `await Dialogo.avisar(texto, { titulo, tipo })`
+  (`tipo`: info | sucesso | erro | aviso) e `if (!(await Dialogo.confirmar(texto, { titulo, botao, perigo: true }))) return;`.
+  Para pedir um texto (nome de algo novo), fazer uma janela própria no padrão (ver "Nova guia" no Organizar menu do Painel).
 - **Listas suspensas**: sempre `<select>` normal + `lista-moderna.js`. Para manter a lista do navegador em algum
   campo, usar `data-nativo`. Para seleção múltipla, usar um painel com caixinhas (ver o filtro de Parceiro em
   Descarte → Recentes).

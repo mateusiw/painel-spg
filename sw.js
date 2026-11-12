@@ -1,4 +1,4 @@
-const CACHE = 'sistema-v206';
+const CACHE = 'sistema-v230';
 
 // Arquivos do próprio app. Este service worker fica na raiz e atende todos os projetos.
 const ARQUIVOS_APP = [
@@ -11,6 +11,7 @@ const ARQUIVOS_APP = [
   './resumo-producao.js',
   './seletor-periodo.js',
   './trava-fundo.js',
+  './dialogo.js',
   './barra-abas.js',
   './mais-filtros.js',
   './motivacao.js',
@@ -42,6 +43,8 @@ const ARQUIVOS_APP = [
   './projetos/aplicacoes-fitossanitarias/backend.js',
   './projetos/aplicacoes-fitossanitarias/logo.png',
   './projetos/descarte-parceiros/index.html',
+  './projetos/produtividade-packing/',
+  './projetos/produtividade-packing/index.html',
   './projetos/checklist/checklists.js',
   './projetos/checklist/listas/banco.js',
   './projetos/checklist/listas/tema-irrigacao.css',
@@ -68,6 +71,8 @@ const ARQUIVOS_APP = [
   './projetos/producao-estufa/index.html',
   './projetos/producao-estufa/logo-estufa.png',
   './projetos/resumo-colheita-estufa/index.html',
+  './projetos/pesagem/',
+  './projetos/pesagem/index.html',
   './projetos/estoque/index.html',
   './projetos/estoque/icon.png',
   './projetos/resumo-colheita-estufa/lancamentos.js',

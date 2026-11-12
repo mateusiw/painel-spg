@@ -427,6 +427,7 @@
 </style>
     <script src="../../../lista-moderna.js"></script>
     <script src="../../../trava-fundo.js"></script>
+    <script src="../../../dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
 </head>
 <body>
 
@@ -753,9 +754,9 @@
         atualizarSePrevisualizando();
     });
 
-    document.getElementById('btnRemoverEmpregadora').addEventListener('click', () => {
+    document.getElementById('btnRemoverEmpregadora').addEventListener('click', async () => {
         const nomeSelecionado = document.getElementById('selectEmpregador').value;
-        if (!confirm(`Excluir a empregadora "${nomeSelecionado}" e a lista de funcionários salva dela?`)) return;
+        if (!(await Dialogo.confirmar(`A empregadora "${nomeSelecionado}" e a lista de funcionários salva dela serão apagadas.`, { titulo: 'Excluir empregadora?', botao: 'Excluir', perigo: true }))) return;
         const custom = carregarEmpregadorasCustom();
         delete custom[nomeSelecionado];
         salvarEmpregadorasCustom(custom);
@@ -785,8 +786,8 @@
         const funcionarios = document.getElementById('novoEmpregadorFuncionarios').value
             .split('\n').map(n => n.trim()).filter(Boolean);
 
-        if (!nome) { alert('Informe o nome da empregadora.'); return; }
-        if (!funcionarios.length) { alert('Informe pelo menos um funcionário.'); return; }
+        if (!nome) { Dialogo.avisar('Informe o nome da empregadora.', { tipo: 'aviso', titulo: 'Falta o nome' }); return; }
+        if (!funcionarios.length) { Dialogo.avisar('Informe pelo menos um funcionário.', { tipo: 'aviso', titulo: 'Falta funcionário' }); return; }
 
         const custom = carregarEmpregadorasCustom();
         custom[nome] = { cpf, funcionarios };
@@ -907,12 +908,12 @@
         const tipoCronograma = document.getElementById('tipoCronograma').value;
 
         if (!mesAnoValor) {
-            alert('Selecione o mês/ano do cronograma.');
+            Dialogo.avisar('Selecione o mês/ano do cronograma.', { tipo: 'aviso', titulo: 'Falta o mês' });
             return;
         }
 
         if (!nomes.length) {
-            alert('Marque pelo menos um funcionário na lista.');
+            Dialogo.avisar('Marque pelo menos um funcionário na lista.', { tipo: 'aviso', titulo: 'Ninguém marcado' });
             return;
         }
 

@@ -6,7 +6,7 @@
     const API = window.IrrigacaoAPI;
     const MENU = '../../index.html';
     const NOVO = '__novo__';
-    const PROJETOS = API.PROJETOS.filter(p => !p.soAdmin);
+    const PROJETOS = API.PROJETOS.filter(p => !p.soAdmin && !p.espelho);   // espelho: acesso dado em outro projeto (ex.: Pesagem)
 
     if (!API.isAdmin()) { location.replace(MENU); return; }
 

@@ -10,7 +10,11 @@
     const estilo = document.createElement('style');
     estilo.textContent = `
         html.trava-fundo.trava-com-barra { scrollbar-gutter: stable; }
-        html.trava-fundo, html.trava-fundo body { overflow: hidden !important; overscroll-behavior: none; }
+        /* Só o <html> trava. Com overflow:hidden também no <body>, ele virava uma caixa de rolagem
+           própria e o que é "sticky" (menu lateral, barra do topo) grudava no topo dele, que fica
+           deslocado quando a página já tinha rolado: o menu subia e sobrava um branco embaixo. */
+        html.trava-fundo { overflow: hidden !important; overscroll-behavior: none; }
+        html.trava-fundo body { overscroll-behavior: none; }
     `;
     (document.head || document.documentElement).appendChild(estilo);
 

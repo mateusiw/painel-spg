@@ -18,6 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="./supabase-config.js"></script>
     <script src="./supabase-api.js"></script>
+    <script src="./dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
 
     <style>
         :root { --mata: #1b3a2a; --mata-escura: #122a1e; --limao: #a6c63b; --ceu: #38bdf8; }
@@ -874,6 +875,8 @@
             novo.title = aba.p.nome;
             novo.dataset.aba = aba.id;
             novo.className = 'block w-full h-full border-0';
+            // Ditado por voz (ex.: "Programar" da Programação de Trabalho) dentro da aba
+            novo.allow = 'microphone';
             novo.addEventListener('load', () => aoCarregarQuadro(aba));
             novo.src = aba.p.caminho;
             aba.quadro = novo;
@@ -1198,7 +1201,9 @@
                     return `<section class="bg-white rounded-2xl ring-1 ring-slate-200 overflow-hidden">
                         <div class="flex items-center gap-2 px-3 py-2.5 bg-slate-100/70 border-b border-slate-200">
                             <i data-lucide="folder" class="w-4 h-4 text-emerald-700 shrink-0"></i>
-                            <input type="text" data-om-guia="${esc(g)}" value="${esc(g)}" maxlength="40" aria-label="Nome da guia" class="flex-1 min-w-0 bg-transparent text-xs font-extrabold uppercase tracking-wider text-slate-700 outline-none focus:bg-white rounded-lg px-2 py-1.5">
+                            <span class="flex-1 min-w-0 truncate text-xs font-extrabold uppercase tracking-wider text-slate-700 px-1">${esc(g)} <span class="text-slate-400 font-bold normal-case tracking-normal">· ${lista.length} ${lista.length === 1 ? 'site' : 'sites'}</span></span>
+                            ${seta(`data-om-guia-editar="${esc(g)}"`, 'pencil', 'Renomear a guia', false)}
+                            <button type="button" data-om-guia-excluir="${esc(g)}" aria-label="Excluir a guia" title="Excluir a guia" class="foco w-8 h-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             ${seta(`data-om-guia-subir="${esc(g)}"`, 'chevron-up', 'Subir a guia', gi === 0)}
                             ${seta(`data-om-guia-descer="${esc(g)}"`, 'chevron-down', 'Descer a guia', gi === guias.length - 1)}
                         </div>
@@ -1214,8 +1219,133 @@
                             </li>`).join('')}
                         </ul>
                     </section>`;
-                }).join('');
+                }).join('') + `<button type="button" data-om-nova-guia class="foco w-full min-h-[48px] flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-700 text-sm font-bold"><i data-lucide="folder-plus" class="w-4 h-4"></i>Nova guia</button>`;
                 icones();
+            }
+
+            // --- Janelinha (pop-up) por cima do Organizar menu: nova guia, renomear e excluir ---
+            // aoConfirmar(painel) devolve um texto de erro (a janela fica aberta) ou nada (fecha).
+            function popupGuia({ icone, titulo, texto, corpoHtml, botao, perigo, aoConfirmar }) {
+                const fundo = document.createElement('div');
+                fundo.className = 'fixed inset-0 z-[90] bg-slate-950/50 backdrop-blur-[2px] flex items-end sm:items-center justify-center sm:p-5';
+                fundo.setAttribute('role', 'dialog');
+                fundo.setAttribute('aria-modal', 'true');
+                fundo.setAttribute('aria-labelledby', 'tituloPopupGuia');
+                const corBotao = perigo ? 'from-red-500 to-red-600 shadow-red-600/25 ring-red-700/20' : 'from-emerald-500 to-emerald-600 shadow-emerald-600/25 ring-emerald-700/20';
+                const corIcone = perigo ? 'bg-red-50 text-red-600 ring-red-100' : 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+                fundo.innerHTML = `<div data-painel class="bg-white w-full sm:max-w-md max-h-[90dvh] rounded-t-3xl sm:rounded-3xl shadow-2xl ring-1 ring-slate-200/80 flex flex-col overflow-hidden transition duration-200 ease-out translate-y-4 opacity-0">
+                    <div class="px-5 pt-5 pb-3 flex items-start gap-3 shrink-0">
+                        <span class="w-11 h-11 rounded-2xl ring-1 ${corIcone} flex items-center justify-center shrink-0"><i data-lucide="${icone}" class="w-5 h-5"></i></span>
+                        <div class="min-w-0 flex-1 pt-0.5">
+                            <h4 id="tituloPopupGuia" class="text-base font-extrabold text-slate-800 leading-tight">${titulo}</h4>
+                            ${texto ? `<p class="text-xs text-slate-500 mt-1 leading-relaxed">${texto}</p>` : ''}
+                        </div>
+                        <button type="button" data-pg-fechar aria-label="Fechar" class="foco w-11 h-11 -mt-2 -mr-2 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+                    <div class="px-5 pb-2 overflow-y-auto min-h-0">${corpoHtml || ''}</div>
+                    <p data-pg-erro role="alert" class="hidden mx-5 mt-1 text-xs font-bold text-red-600"></p>
+                    <div class="px-5 pt-3 pb-5 flex gap-2 shrink-0" style="padding-bottom:max(1.25rem,env(safe-area-inset-bottom))">
+                        <button type="button" data-pg-fechar class="foco flex-1 min-h-[44px] bg-white ring-1 ring-slate-200 hover:bg-slate-50 rounded-xl text-slate-600 font-bold text-sm">Cancelar</button>
+                        <button type="button" data-pg-ok class="foco flex-1 min-h-[44px] bg-gradient-to-b ${corBotao} text-white rounded-xl shadow-md ring-1 font-bold text-sm active:scale-95 transition">${botao}</button>
+                    </div>
+                </div>`;
+                document.body.appendChild(fundo);
+                icones();
+                const painel = fundo.querySelector('[data-painel]');
+                requestAnimationFrame(() => painel.classList.remove('translate-y-4', 'opacity-0'));
+                const sair = () => fundo.remove();
+                const ok = () => {
+                    const msg = aoConfirmar(painel);
+                    const p = fundo.querySelector('[data-pg-erro]');
+                    if (msg) { p.textContent = msg; p.classList.remove('hidden'); return; }
+                    sair();
+                };
+                fundo.addEventListener('click', e => {
+                    if (e.target === fundo || e.target.closest('[data-pg-fechar]')) { sair(); return; }
+                    if (e.target.closest('[data-pg-ok]')) ok();
+                });
+                fundo.addEventListener('keydown', e => {
+                    e.stopPropagation(); // o Esc fecha só esta janelinha, não o Organizar menu
+                    if (e.key === 'Escape') sair();
+                    if (e.key === 'Enter' && e.target.matches('input[type=text]')) { e.preventDefault(); ok(); }
+                });
+                const primeiro = painel.querySelector('input[type=text]');
+                if (primeiro) setTimeout(() => { primeiro.focus(); primeiro.select(); }, 60);
+            }
+            const campoNomeGuia = valor => `<label class="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5" for="pgNome">Nome da guia</label>
+                <input id="pgNome" type="text" data-pg-nome value="${esc(valor || '')}" maxlength="40" autocomplete="off" placeholder="Ex.: Produção" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white">`;
+            // Nome vazio ou repetido (sem diferenciar maiúsculas) não vale
+            const validarNome = (nome, ignorar) => {
+                if (!nome) return 'Digite o nome da guia.';
+                if (ordemGrupos().some(g => g !== ignorar && g.toLowerCase() === nome.toLowerCase())) return 'Já existe uma guia com esse nome.';
+                return '';
+            };
+            // Leva os sites para a guia (no fim dela) mantendo a ordem das guias
+            function levarPara(ids, destino) {
+                const ordem = ordemGrupos();
+                if (!ordem.includes(destino)) ordem.push(destino);
+                const indo = itens.filter(i => ids.includes(i.id));
+                itens = itens.filter(i => !ids.includes(i.id));
+                indo.forEach(i => { i.grupo = destino; });
+                const ultimo = itens.map(i => i.grupo).lastIndexOf(destino);
+                itens.splice(ultimo < 0 ? itens.length : ultimo + 1, 0, ...indo);
+                reagrupar(ordem.filter(g => itens.some(i => i.grupo === g)));
+            }
+            function novaGuia(marcado) {
+                const lista = ordemGrupos().map(g => `<p class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mt-3 mb-1">${esc(g)}</p>` +
+                    itens.filter(i => i.grupo === g).map(i => `<label class="flex items-center gap-3 min-h-[44px] px-3 rounded-xl hover:bg-slate-50 cursor-pointer">
+                        <input type="checkbox" data-pg-site="${esc(i.id)}"${i.id === marcado ? ' checked' : ''} class="w-4 h-4 accent-emerald-600 shrink-0">
+                        <i data-lucide="${esc(i.icone)}" class="w-4 h-4 text-emerald-700 shrink-0"></i>
+                        <span class="text-sm font-semibold text-slate-700 truncate">${esc(i.nome)}</span>
+                    </label>`).join('')).join('');
+                popupGuia({
+                    icone: 'folder-plus', titulo: 'Nova guia', botao: 'Criar guia',
+                    texto: 'Dê um nome e escolha os sites que vão para ela. A guia aparece no fim do menu.',
+                    corpoHtml: campoNomeGuia('') + `<p class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mt-4">Sites desta guia</p><div class="-mx-1">${lista}</div>`,
+                    aoConfirmar: painel => {
+                        const nome = painel.querySelector('[data-pg-nome]').value.trim().replace(/\s+/g, ' ');
+                        const problema = validarNome(nome);
+                        if (problema) return problema;
+                        const ids = [...painel.querySelectorAll('[data-pg-site]:checked')].map(c => c.dataset.pgSite);
+                        if (!ids.length) return 'Escolha pelo menos um site para a guia.';
+                        levarPara(ids, nome);
+                        erro(''); desenhar();
+                    }
+                });
+            }
+            function renomearGuia(g) {
+                popupGuia({
+                    icone: 'pencil', titulo: 'Renomear guia', botao: 'Salvar nome',
+                    texto: `Os sites de “${esc(g)}” continuam nela, só o nome muda.`,
+                    corpoHtml: campoNomeGuia(g),
+                    aoConfirmar: painel => {
+                        const nome = painel.querySelector('[data-pg-nome]').value.trim().replace(/\s+/g, ' ');
+                        const problema = validarNome(nome, g);
+                        if (problema) return problema;
+                        itens.forEach(i => { if (i.grupo === g) i.grupo = nome; });
+                        erro(''); desenhar();
+                    }
+                });
+            }
+            function excluirGuia(g) {
+                const outras = ordemGrupos().filter(x => x !== g);
+                const qtd = itens.filter(i => i.grupo === g).length;
+                if (!outras.length) {
+                    popupGuia({ icone: 'triangle-alert', titulo: 'Não dá para excluir', botao: 'Entendi', perigo: true,
+                        texto: 'Esta é a única guia do menu. Crie outra guia antes de excluir esta.', aoConfirmar: () => {} });
+                    return;
+                }
+                popupGuia({
+                    icone: 'trash-2', titulo: `Excluir a guia “${esc(g)}”?`, botao: 'Excluir guia', perigo: true,
+                    texto: `${qtd === 1 ? 'O site desta guia não é apagado: ele vai' : `Os ${qtd} sites desta guia não são apagados: eles vão`} para a guia escolhida abaixo.`,
+                    corpoHtml: `<label class="block text-[10px] font-extrabold uppercase tracking-widest text-slate-400 mb-1.5" for="pgDestino">Mover os sites para</label>
+                        <select id="pgDestino" data-pg-destino class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-emerald-500">${outras.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('')}</select>`,
+                    aoConfirmar: painel => {
+                        const destino = painel.querySelector('[data-pg-destino]').value;
+                        levarPara(itens.filter(i => i.grupo === g).map(i => i.id), destino);
+                        erro(''); desenhar();
+                    }
+                });
             }
             // Troca o site de lugar com o vizinho dentro da mesma guia
             function moverSite(id, passo) {
@@ -1244,6 +1374,9 @@
                 if (b.dataset.omDescer) { moverSite(b.dataset.omDescer, 1); desenhar(); return; }
                 if (b.dataset.omGuiaSubir) { moverGuia(b.dataset.omGuiaSubir, -1); desenhar(); return; }
                 if (b.dataset.omGuiaDescer) { moverGuia(b.dataset.omGuiaDescer, 1); desenhar(); return; }
+                if (b.dataset.omGuiaEditar) { renomearGuia(b.dataset.omGuiaEditar); return; }
+                if (b.dataset.omGuiaExcluir) { excluirGuia(b.dataset.omGuiaExcluir); return; }
+                if (b.hasAttribute('data-om-nova-guia')) { novaGuia(); return; }
                 if (b.hasAttribute('data-om-padrao')) {
                     const ordem = API.menuPadrao();
                     itens = ordem.map(o => ({ ...o, icone: (API.PROJETOS.find(p => p.id === o.id) || {}).icone }));
@@ -1267,40 +1400,16 @@
             caixa.addEventListener('change', e => {
                 const mover = e.target.closest('[data-om-mover]');
                 if (mover) {
-                    const site = itens.find(i => i.id === mover.dataset.omMover);
-                    const guias = ordemGrupos();
-                    let destino = mover.value;
-                    if (destino === '__nova__') {
-                        destino = (prompt('Nome da nova guia:') || '').trim();
-                        if (!destino) { desenhar(); return; }
-                        if (!guias.includes(destino)) guias.push(destino);
-                    }
-                    site.grupo = destino;
-                    // vai para o fim da guia escolhida
-                    itens = itens.filter(i => i !== site);
-                    const ultimo = itens.map(i => i.grupo).lastIndexOf(site.grupo);
-                    itens.splice(ultimo + 1, 0, site);
-                    reagrupar(guias.filter(g => itens.some(i => i.grupo === g)));
+                    const id = mover.dataset.omMover;
+                    // "+ Nova guia…": abre a janelinha já com este site marcado; a lista volta ao que era
+                    if (mover.value === '__nova__') { desenhar(); novaGuia(id); return; }
+                    levarPara([id], mover.value);
                     desenhar();
                 }
             });
             caixa.addEventListener('input', e => {
                 const nome = e.target.closest('[data-om-nome]');
-                if (nome) { itens.find(i => i.id === nome.dataset.omNome).nome = nome.value || padrao.get(nome.dataset.omNome).nome; return; }
-                const guia = e.target.closest('[data-om-guia]');
-                if (guia) {
-                    // Renomeia a guia de todos os sites dela (sem redesenhar, para não perder o cursor)
-                    const antigo = guia.dataset.omGuia, novo = guia.value.trim();
-                    if (!novo || (novo !== antigo && ordemGrupos().includes(novo))) { erro(novo ? 'Já existe uma guia com esse nome.' : 'Toda guia precisa de um nome.'); return; }
-                    erro('');
-                    itens.forEach(i => { if (i.grupo === antigo) i.grupo = novo; });
-                    guia.dataset.omGuia = novo;
-                    caixa.querySelectorAll('[data-om-guia-subir], [data-om-guia-descer]').forEach(x => {
-                        if (x.dataset.omGuiaSubir === antigo) x.dataset.omGuiaSubir = novo;
-                        if (x.dataset.omGuiaDescer === antigo) x.dataset.omGuiaDescer = novo;
-                    });
-                    caixa.querySelectorAll('[data-om-mover] option').forEach(o => { if (o.value === antigo) { o.value = novo; o.textContent = novo; } });
-                }
+                if (nome) itens.find(i => i.id === nome.dataset.omNome).nome = nome.value || padrao.get(nome.dataset.omNome).nome;
             });
             desenhar();
         }

@@ -9,7 +9,7 @@
     const sb = API.cliente;
     const el = id => document.getElementById(id);
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const sitesDoPainel = () => API.PROJETOS.filter(p => !p.soAdmin);
+    const sitesDoPainel = () => API.PROJETOS.filter(p => !p.soAdmin && !p.espelho);
     const modulosDe = p => p.areas.filter(a => !a.extra).map(a => a.modulo);
 
     let sites = new Map(), tipos = [], abertoAviso = null, siteAberto = null;

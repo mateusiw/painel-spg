@@ -22,6 +22,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="../../supabase-config.js"></script>
     <script src="../../supabase-api.js"></script>
+    <script src="../../dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -549,7 +550,7 @@
         let isAuthLancamentos = spg_podeLancar(spg_temLocal);
         const spg_bloqueiosIniciais = JSON.stringify((SPG_API.usuarioAtual() || {}).bloqueios || []);
         function spg_abaLiberada(tab) {
-            if (tab === 'pesagem') return isAuthPesagem;
+            if (tab === 'pesagem') return false;   // a Pesagem saiu daqui: agora é o projeto Pesagem (projetos/pesagem)
             if (tab === 'lancamentos') return isAuthLancamentos;
             return isAuthColheita && SPG_API.recursoLiberado('colheita_estufa.' + tab);
         }
@@ -973,6 +974,7 @@
         function showLogin() { location.replace(SPG_MENU_URL); }
 
         function switchTab(tab) {
+            if (tab === 'pesagem' && isAuthPesagem) { location.href = '../pesagem/index.html?local=' + SPG_LOCAL; return; }   // PESAGEM_UNICA
             if (!spg_abaLiberada(tab)) { const abas = spg_abasPermitidas(); if (!abas.length) { showLogin(); return; } tab = abas[0]; }
             if ((tab === 'colheita' || tab === 'campo') && !isAuthColheita) { showLogin('colheita'); return; }
             if (tab === 'pesagem' && !isAuthPesagem) { showLogin('pesagem'); return; }
@@ -1118,8 +1120,11 @@
             btnMenu.classList.toggle('hidden', !variosProjetos);
             btnMenu.classList.toggle('flex', variosProjetos);
             const abasPermitidas = spg_abasPermitidas();
-            if (!abasPermitidas.length) { showLogin(); return; }
-            switchTab(abasPermitidas.includes(lastTab) ? lastTab : abasPermitidas.includes('colheita') ? 'colheita' : abasPermitidas[0]);
+            // Quem só tem a Pesagem vai direto para o projeto Pesagem
+            if (!abasPermitidas.length) { if (isAuthPesagem) { location.replace('../pesagem/index.html?local=' + SPG_LOCAL); return; } showLogin(); return; }
+            let abaInicial = abasPermitidas.includes(lastTab) ? lastTab : abasPermitidas.includes('colheita') ? 'colheita' : abasPermitidas[0];
+            if (abaInicial === 'pesagem' && abasPermitidas.length > 1) abaInicial = abasPermitidas.find(a => a !== 'pesagem');   // PESAGEM_UNICA
+            switchTab(abaInicial);
 
             // Inicializa as duas telas independentemente de qual abre primeiro
             c_updateDynamicTitle();

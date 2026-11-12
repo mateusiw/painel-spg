@@ -347,14 +347,14 @@
           cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/resumo-colheita-oasis/index.html', local: 'oasis',
           areas: [
               { modulo: 'colheita_oasis', nome: 'Campo e Colheita', recursos: recursos('colheita', [['campo', 'Campo', 'truck'], ['colheita', 'Colheita', 'tractor']]) },
-              { modulo: 'pesagem_oasis', nome: 'Pesagem', recursos: [] },
+              { modulo: 'pesagem_oasis', nome: 'Pesagem', recursos: [], menu: false },   // menu: false -> a Pesagem fica no projeto Pesagem
               { modulo: 'lancamentos_oasis', nome: 'Lançamentos', recursos: recursos('lancar', [['colheita', 'Colheita', 'tractor'], ['previsao', 'Calendário', 'calendar-days'], ['descarte', 'Descarte', 'trash-2']]) }
           ] },
         { id: 'resumo-colheita-estufa', nome: 'Resumo da Colheita Estufa', descricao: 'Pepino: campo, colheita, pesagem e lançamentos', icone: 'tractor', grupo: 'Operação', gradiente: 'from-teal-500 to-cyan-700',
           cor: 'bg-teal-50 text-teal-700', caminho: 'projetos/resumo-colheita-estufa/index.html', local: 'estufa',
           areas: [
               { modulo: 'colheita_estufa', nome: 'Campo e Colheita', recursos: recursos('colheita_estufa', [['campo', 'Campo', 'truck'], ['colheita', 'Colheita', 'tractor']]) },
-              { modulo: 'pesagem_estufa', nome: 'Pesagem', recursos: [] },
+              { modulo: 'pesagem_estufa', nome: 'Pesagem', recursos: [], menu: false },
               { modulo: 'lancamentos_estufa', nome: 'Lançamentos', recursos: recursos('lancar_estufa', [['colheita', 'Colheita', 'tractor'], ['previsao', 'Calendário', 'calendar-days'], ['descarte', 'Descarte', 'trash-2']]) }
           ] },
         { id: 'producao-oasis', nome: 'Produção Oásis', descricao: 'Previsões, produtividade, calendário, ranking e análise', icone: 'bar-chart-3', grupo: 'Indicadores', gradiente: 'from-indigo-500 to-violet-600',
@@ -397,6 +397,15 @@
           areas: [{ modulo: 'descarte_parceiros', nome: 'Acesso ao Descarte de Parceiros', recursos: [] },
               // Permissão extra, desligada por padrão: editar/excluir qualquer descarte e as fotos (sem ela, só o que a pessoa registrou)
               { modulo: 'descarte_parceiros_editar', nome: 'Editar e excluir descartes', extra: true, requer: 'descarte_parceiros', recursos: [] }] },
+        // Pesagem única (SPG Oásis e SPG Estufa): usa os acessos de Pesagem de cada Resumo da Colheita.
+        // espelho: não aparece no Cadastro de Usuários (o acesso é dado nos dois Resumos da Colheita)
+        { id: 'pesagem', nome: 'Pesagem', descricao: 'Pesagem da SPG Oásis, SPG Estufa e parceiros, direto para a Produtividade Packing', icone: 'scale', grupo: 'Operação', gradiente: 'from-orange-500 to-amber-600',
+          cor: 'bg-orange-50 text-orange-700', caminho: 'projetos/pesagem/index.html', espelho: true,
+          areas: [{ modulo: 'pesagem_oasis', nome: 'Pesagem SPG Oásis', recursos: [] }, { modulo: 'pesagem_estufa', nome: 'Pesagem SPG Estufa', recursos: [] }] },
+        // Antigo app "produtividade-spg-packing" (tinha um Supabase próprio): entregas, processamento por colaborador e estoque
+        { id: 'produtividade-packing', nome: 'Produtividade Packing', descricao: 'Entregas dos parceiros, processamento por colaborador, estoque e rastreio', icone: 'package-check', grupo: 'Operação', gradiente: 'from-emerald-500 to-teal-700',
+          cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/produtividade-packing/index.html',
+          areas: [{ modulo: 'produtividade_packing', nome: 'Acesso à Produtividade Packing', recursos: [] }] },
         { id: 'organograma', nome: 'Organograma', descricao: 'Equipe, cargos, líderes, aniversários e tempo de casa', icone: 'network', grupo: 'Pessoas', gradiente: 'from-indigo-500 to-violet-700',
           cor: 'bg-indigo-50 text-indigo-700', caminho: 'projetos/organograma/index.html',
           areas: [{ modulo: 'organograma', nome: 'Acesso ao Organograma', recursos: [] },
@@ -486,7 +495,8 @@
         return PROJETOS.filter(p => {
             if (p.soAdmin) return isAdmin();
             const doProjeto = locaisDoProjeto(p.id);
-            return p.areas.some(a => areaLiberada(a, u)) && (!doProjeto || doProjeto.some(id => locais.includes(id)));
+            // Área com menu: false (ex.: Pesagem dos Resumos da Colheita) não faz o projeto aparecer no menu
+            return p.areas.some(a => a.menu !== false && areaLiberada(a, u)) && (!doProjeto || doProjeto.some(id => locais.includes(id)));
         });
     }
 
@@ -583,7 +593,7 @@
     function gravarFila(fila) {
         if (!gravar(K.fila, fila)) {
             const msg = "Não foi possível guardar o dado neste aparelho (armazenamento cheio). Libere espaço e registre de novo.";
-            if (window.showAlert) window.showAlert("Erro ao salvar", msg); else alert(msg);
+            if (window.showAlert) window.showAlert("Erro ao salvar", msg); else if (window.Dialogo) Dialogo.avisar(msg, { tipo: "erro", titulo: "Erro ao salvar" }); else alert(msg);
         }
         emitir();
         agendarSync();
@@ -1975,7 +1985,33 @@
         window.addEventListener('hashchange', () => { if (!projetoDestaPagina() && /^#?\/?$/.test(location.hash)) informarPagina('', ''); });
     }
     // Cada página conta onde está: o projeto ao abrir e a aba ao trocar
+    // O nome do site dado em "Organizar menu" também vale na própria página: o título ao lado
+    // da logo (o <h1> que mostra o nome padrão do site) e o título da aba do navegador.
+    // Ex.: "Produção Oásis" renomeado para "Produção Brócolis" aparece assim no topo da página.
+    function aplicarNomeNaPagina() {
+        const p = projetoDestaPagina();
+        if (!p) return;
+        const padrao = (MENU_PADRAO.find(o => o.id === p.id) || {}).nome;
+        if (!padrao) return;
+        document.querySelectorAll('h1').forEach(h => {
+            if (!h.dataset.nomeSite && h.textContent.trim() === padrao) h.dataset.nomeSite = padrao;
+            if (h.dataset.nomeSite && h.textContent !== p.nome) h.textContent = p.nome;
+        });
+        const raiz = document.documentElement;
+        if (raiz.dataset.tituloPadrao === undefined) raiz.dataset.tituloPadrao = document.title;
+        const titulo = raiz.dataset.tituloPadrao;
+        if (titulo.includes(padrao)) document.title = titulo.replace(padrao, p.nome);
+    }
+    // O Painel salvou uma organização nova: as páginas abertas (abas do Painel) já trocam o nome
+    window.addEventListener('storage', e => {
+        if (e.key !== K_MENU) return;
+        aplicarMenu(ler(K_MENU, null));
+        aplicarNomeNaPagina();
+    });
     function acompanharPagina() {
+        aplicarNomeNaPagina();
+        // Página aberta direto (fora do Painel): confere se o nome mudou em outro aparelho
+        if (janelaPrincipal && projetoDestaPagina()) carregarMenu().then(mudou => { if (mudou) aplicarNomeNaPagina(); });
         const p = projetoDestaPagina();
         if (p) informarPagina(p.nome, ''); else if (!janelaDeCima()) informarPagina('', '');
         ['switchTab', 'switchDashboardView', 'switchMainTab'].forEach(nome => {

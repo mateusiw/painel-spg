@@ -22,6 +22,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="../../supabase-config.js"></script>
     <script src="../../supabase-api.js"></script>
+    <script src="../../dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -549,7 +550,7 @@
         let isAuthLancamentos = spg_podeLancar(spg_temLocal);
         const spg_bloqueiosIniciais = JSON.stringify((SPG_API.usuarioAtual() || {}).bloqueios || []);
         function spg_abaLiberada(tab) {
-            if (tab === 'pesagem') return isAuthPesagem;
+            if (tab === 'pesagem') return false;   // a Pesagem saiu daqui: agora é o projeto Pesagem (projetos/pesagem)
             if (tab === 'lancamentos') return isAuthLancamentos;
             return isAuthColheita && SPG_API.recursoLiberado('colheita.' + tab);
         }
@@ -960,6 +961,7 @@
         function showLogin() { location.replace(SPG_MENU_URL); }
 
         function switchTab(tab) {
+            if (tab === 'pesagem' && isAuthPesagem) { location.href = '../pesagem/index.html?local=' + SPG_LOCAL; return; }   // PESAGEM_UNICA
             if (!spg_abaLiberada(tab)) { const abas = spg_abasPermitidas(); if (!abas.length) { showLogin(); return; } tab = abas[0]; }
             if ((tab === 'colheita' || tab === 'campo') && !isAuthColheita) { showLogin('colheita'); return; }
             if (tab === 'pesagem' && !isAuthPesagem) { showLogin('pesagem'); return; }
@@ -1105,8 +1107,11 @@
             btnMenu.classList.toggle('hidden', !variosProjetos);
             btnMenu.classList.toggle('flex', variosProjetos);
             const abasPermitidas = spg_abasPermitidas();
-            if (!abasPermitidas.length) { showLogin(); return; }
-            switchTab(abasPermitidas.includes(lastTab) ? lastTab : abasPermitidas.includes('colheita') ? 'colheita' : abasPermitidas[0]);
+            // Quem só tem a Pesagem vai direto para o projeto Pesagem
+            if (!abasPermitidas.length) { if (isAuthPesagem) { location.replace('../pesagem/index.html?local=' + SPG_LOCAL); return; } showLogin(); return; }
+            let abaInicial = abasPermitidas.includes(lastTab) ? lastTab : abasPermitidas.includes('colheita') ? 'colheita' : abasPermitidas[0];
+            if (abaInicial === 'pesagem' && abasPermitidas.length > 1) abaInicial = abasPermitidas.find(a => a !== 'pesagem');   // PESAGEM_UNICA
+            switchTab(abaInicial);
 
             // Inicializa as duas telas independentemente de qual abre primeiro
             c_updateDynamicTitle();
@@ -2565,21 +2570,154 @@
             submitBtn.innerHTML = '<i data-lucide="save" class="w-4 h-4 inline"></i> <span>Salvar Alterações</span>'; submitBtn.classList.remove('bg-slate-800', 'hover:bg-slate-900'); submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700'); formTitle.innerHTML = '<i data-lucide="pencil" class="text-blue-600 inline"></i> Editando Bloco'; formContainer.classList.add('border-blue-300', 'ring-2', 'ring-blue-100'); formContainer.scrollIntoView({ behavior: 'smooth', block: 'center' }); p_renderList(); lucide.createIcons();
         }
 
+        // -------------------------------------------------------------
+        // LIGAÇÃO COM A PRODUTIVIDADE PACKING
+        // Item de PARCEIRO adicionado aqui (ex.: Sítio Valdir: caixas, peso e unidades) vira uma
+        // entrega no Packing (aba Entregas). Editar o item atualiza; remover tira de lá (se ainda
+        // não tiver lotes processados). Sem internet, fica guardado no aparelho e vai depois.
+        // Banco: supabase/packing_resumo_colheita.sql
+        // -------------------------------------------------------------
+        const PK_FILA = 'spg_packing_pendentes';
+        const pk_lerFila = () => { try { return JSON.parse(localStorage.getItem(PK_FILA) || '[]'); } catch (e) { return []; } };
+        const pk_gravarFila = f => { try { localStorage.setItem(PK_FILA, JSON.stringify(f)); } catch (e) { } };
+        const pk_novoId = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+            : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });
+        function pk_aviso(texto, tipo) {
+            let el = document.getElementById('pkAviso');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'pkAviso';
+                el.setAttribute('role', 'status');
+                el.style.cssText = 'position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:90;max-width:calc(100% - 32px);transition:opacity .25s;';
+                document.body.appendChild(el);
+            }
+            const cores = { ok: 'background:#065f46;color:#fff', espera: 'background:#334155;color:#fff', alerta: 'background:#b45309;color:#fff' };
+            el.innerHTML = `<div style="${cores[tipo] || cores.ok};padding:10px 16px;border-radius:14px;font-size:13px;font-weight:700;box-shadow:0 10px 30px -10px rgba(15,23,42,.5);display:flex;align-items:center;gap:8px">${texto}</div>`;
+            el.style.opacity = '1';
+            clearTimeout(el._t); el._t = setTimeout(() => { el.style.opacity = '0'; }, 3500);
+        }
+        // Dados que vão para o Packing (o mesmo item, como ficou na tela)
+        function pk_dadosDoItem(item) {
+            return {
+                p_id: item.packingId, p_data: f_todayISO(), p_produtor: item.partner, p_cultura: item.variety || '',
+                p_caixas: parseNumber(item.boxes) || 0,
+                p_kg: parseNumber(item.harvestWeight || item.grossWeight) || null,
+                p_unidades: parseNumber(item.totalUnits) || null
+            };
+        }
+        async function pk_executar(acao, dados) {
+            const cli = SPG_API.cliente;
+            if (acao === 'local') {
+                const { data, error } = await cli.rpc('packing_entrega_local_do_dia', { p_local: dados.p_local, p_data: dados.p_data, p_cultura: dados.p_cultura, p_caixas: dados.p_caixas, p_kg: dados.p_kg, p_unidades: dados.p_unidades });
+                if (error) throw error;
+                return data;
+            }
+            if (acao === 'oasis') {
+                const { data, error } = await cli.rpc('packing_entrega_oasis_do_dia', { p_data: dados.p_data, p_caixas: dados.p_caixas, p_kg: dados.p_kg, p_unidades: dados.p_unidades });
+                if (error) throw error;
+                return data;
+            }
+            if (acao === 'salvar') {
+                const { error } = await cli.rpc('packing_entrega_da_colheita', dados);
+                if (error) throw error;
+                return 'ok';
+            }
+            const { data, error } = await cli.rpc('packing_excluir_entrega_da_colheita', { p_id: dados.p_id });
+            if (error) throw error;
+            return data;
+        }
+        // Coloca na fila (a mais nova ação de cada entrega substitui a anterior) e tenta enviar já
+        function pk_enfileirar(acao, dados, silencioso) {
+            const fila = pk_lerFila().filter(x => x.dados.p_id !== dados.p_id);
+            fila.push({ acao, dados });
+            pk_gravarFila(fila);
+            return pk_processarFila(!silencioso);
+        }
+        let pk_enviando = false;
+        async function pk_processarFila(avisar) {
+            if (pk_enviando) return;
+            const fila = pk_lerFila();
+            if (!fila.length) return;
+            if (!navigator.onLine) { if (avisar) pk_aviso('Sem internet: a entrega vai para o Packing quando a conexão voltar.', 'espera'); return; }
+            pk_enviando = true;
+            const restantes = [];
+            let enviados = 0, comLotes = 0;
+            for (const it of fila) {
+                try {
+                    const r = await pk_executar(it.acao, it.dados);
+                    if (r === 'tem_lotes') comLotes++; else enviados++;
+                } catch (e) {
+                    // Sem permissão / banco sem a função: não adianta repetir
+                    const definitivo = /permiss|function|does not exist|schema cache/i.test(e.message || '');
+                    if (!definitivo) restantes.push(it);
+                    else if (avisar) pk_aviso('Não foi possível enviar ao Packing: ' + (e.message || 'erro'), 'alerta');
+                }
+            }
+            // A fila pode ter recebido itens enquanto enviava: tira só o que foi tratado agora
+            // (e que não mudou de lá para cá) e mantém o resto, inclusive o que chegou depois
+            const tratados = new Set(fila.map(x => JSON.stringify(x)));
+            const novos = pk_lerFila().filter(x => !tratados.has(JSON.stringify(x)));
+            pk_gravarFila(restantes.filter(x => !novos.some(n => n.dados.p_id === x.dados.p_id)).concat(novos));
+            pk_enviando = false;
+            if (novos.length) setTimeout(() => pk_processarFila(avisar), 0);
+            if (!avisar) return;
+            if (comLotes) pk_aviso('A entrega continua no Packing: ela já tem lotes processados. Exclua por lá, se precisar.', 'alerta');
+            else if (restantes.length) pk_aviso('Não consegui falar com o Packing agora. Tento de novo sozinho.', 'espera');
+            else if (enviados) pk_aviso(fila[fila.length - 1].acao === 'salvar' ? '✓ Entrega enviada para a Produtividade Packing' : '✓ Entrega retirada da Produtividade Packing', 'ok');
+        }
+        window.addEventListener('online', () => pk_processarFila(false));
+        setTimeout(() => pk_processarFila(false), 4000);
+        // Item de parceiro salvo/removido na Pesagem
+        function pk_itemSalvo(item) {
+            if (!item || item.partner === 'SPG Oásis') return;
+            if (!item.packingId) item.packingId = pk_novoId();
+            pk_enfileirar('salvar', pk_dadosDoItem(item));
+        }
+        // SPG Oásis = "Fazenda Oásis" no Packing: UMA entrega por dia, só com os totais do dia
+        // (caixas, kg e unidades de todos os blocos ativos), sem bloco nem variedade.
+        // Vai sozinha sempre que os blocos/pesos mudam (inclusive vindos de outro aparelho).
+        const PK_OASIS_ULTIMO = 'spg_packing_oasis_ultimo';
+        let pk_oasisTimer = null;
+        function pk_oasisTotais() {
+            let cx = 0, kg = 0, un = 0;
+            p_ativos().forEach(it => { cx += parseNumber(it.boxes); kg += parseNumber(it.harvestWeight || it.grossWeight); un += parseNumber(it.totalUnits); });
+            return { p_data: f_todayISO(), p_caixas: Math.round(cx), p_kg: Math.round(kg * 1000) / 1000, p_unidades: Math.round(un) };
+        }
+        window.pk_oasisAgendar = function () {
+            if (!isAuthPesagem) return;
+            clearTimeout(pk_oasisTimer);
+            pk_oasisTimer = setTimeout(() => {
+                const t = pk_oasisTotais();
+                const chave = JSON.stringify(t);
+                let ultimo = null; try { ultimo = localStorage.getItem(PK_OASIS_ULTIMO); } catch (e) { }
+                if (ultimo === chave) return;                       // nada mudou desde o último envio
+                // Dia novo sem nada pesado ainda: não há o que mandar
+                if (!t.p_caixas && !t.p_kg && !t.p_unidades && (!ultimo || JSON.parse(ultimo).p_data !== t.p_data)) return;
+                try { localStorage.setItem(PK_OASIS_ULTIMO, chave); } catch (e) { }
+                pk_enfileirar('oasis', Object.assign({ p_id: 'oasis-' + t.p_data }, t), true);
+            }, 2500);
+        };
+        function pk_itemRemovido(item) {
+            if (!item || item.partner === 'SPG Oásis' || !item.packingId) return;
+            pk_enfileirar('excluir', { p_id: item.packingId });
+        }
+
         function p_addItem(e) {
             e.preventDefault();
             const plantedRawVal = document.getElementById('p_plantedUnits').value; const accumRawVal = document.getElementById('p_accumulatedUnits').value; const totalBlockRaw = document.getElementById('p_totalBlockPlants').value;
             const calcPercentage = parseNumber(plantedRawVal) > 0 ? Math.round((parseNumber(accumRawVal) / parseNumber(plantedRawVal)) * 100) : 0; const calcBlockPercentage = parseNumber(totalBlockRaw) > 0 ? Math.round((parseNumber(accumRawVal) / parseNumber(totalBlockRaw)) * 100) : 0;
             const newItem = { partner: document.getElementById('p_partner').value, talhao: document.getElementById('p_talhao').value, variety: document.getElementById('p_variety').value, commercialVariety: document.getElementById('p_commercialVariety').value, boxes: document.getElementById('p_boxes').value, grossWeight: document.getElementById('p_grossWeight').value, unitsPerBox: document.getElementById('p_unitsPerBox').value, harvestWeight: document.getElementById('p_harvestWeight').value, totalUnits: document.getElementById('p_totalUnits').value, averageWeight: document.getElementById('p_averageWeight').value, productionDays: document.getElementById('p_productionDays').value, totalBlockPlants: totalBlockRaw, plantedUnits: plantedRawVal, cycle: document.getElementById('p_cycle').value, accumulatedUnits: accumRawVal, accumulatedKg: document.getElementById('p_accumulatedKg').value, totalBlockKg: document.getElementById('p_totalBlockKg').value, percentage: calcPercentage, blockPercentage: calcBlockPercentage, status: document.getElementById('p_harvestStatus').value, estimatedCompletion: document.getElementById('p_estimatedCompletion').value, blockEstimatedBoxes: document.getElementById('p_blockEstimatedBoxes').value };
-            if (p_editingIndex >= 0) { const old = p_harvestData[p_editingIndex]; newItem.active = old.active !== false; if (old.fromColheita) { newItem.fromColheita = true; newItem._colheitaHash = old._colheitaHash; newItem.transplantDate = old.transplantDate; newItem.harvestStartDate = old.harvestStartDate; } p_harvestData[p_editingIndex] = newItem; p_editingIndex = -1; } else { newItem.active = true; p_harvestData.push(newItem); }
+            if (p_editingIndex >= 0) { const old = p_harvestData[p_editingIndex]; newItem.active = old.active !== false; if (old.packingId && old.partner === newItem.partner) newItem.packingId = old.packingId; else if (old.packingId) pk_itemRemovido(old); if (old.fromColheita) { newItem.fromColheita = true; newItem._colheitaHash = old._colheitaHash; newItem.transplantDate = old.transplantDate; newItem.harvestStartDate = old.harvestStartDate; } p_harvestData[p_editingIndex] = newItem; p_editingIndex = -1; } else { newItem.active = true; p_harvestData.push(newItem); }
             p_saveToStorage(); p_clearBlockForm(); p_renderReport(); p_renderList();
+            pk_itemSalvo(newItem);
             p_scheduleSyncFromColheita();
         }
 
-        function p_removeItem(index) { if (p_editingIndex === index) { p_clearBlockForm(); p_editingIndex = -1; } p_harvestData.splice(index, 1); p_saveToStorage(); p_renderReport(); p_renderList(); }
+        function p_removeItem(index) { if (p_editingIndex === index) { p_clearBlockForm(); p_editingIndex = -1; } pk_itemRemovido(p_harvestData[index]); p_harvestData.splice(index, 1); p_saveToStorage(); p_renderReport(); p_renderList(); }
         function p_toggleItemActive(index) { if (p_harvestData[index]) { p_harvestData[index].active = p_harvestData[index].active === false ? true : false; p_saveToStorage(); p_renderReport(); p_renderList(); } }
         let p_partnerToClear = '';
         function p_clearAll() { const partnerSelect = document.getElementById('p_partner'); const currentPartner = partnerSelect ? partnerSelect.value : ''; if(!currentPartner) return; p_partnerToClear = currentPartner; showConfirm('Atenção!', `Tem certeza que deseja limpar <b>todos os blocos</b> de <span class="text-red-600 font-bold">${currentPartner}</span>?<br><br><span class="text-[10px] text-slate-400 uppercase tracking-wide font-bold">Esta ação não pode ser desfeita.</span>`, 'danger', '<i data-lucide="trash-2" class="w-4 h-4"></i> Limpar', p_confirmClearAll); }
-        function p_confirmClearAll() { if(!p_partnerToClear) return; p_harvestData = p_harvestData.filter(item => item.partner !== p_partnerToClear); p_saveToStorage(); if (p_partnerToClear === 'SPG Oásis') { p_forecastBlocksData = []; localStorage.setItem('spg_sede_forecasts', JSON.stringify(p_forecastBlocksData)); p_loadShiftPanel(); } p_clearBlockForm(); p_renderReport(); p_renderList(); p_partnerToClear = ''; }
+        function p_confirmClearAll() { if(!p_partnerToClear) return; p_harvestData.filter(item => item.partner === p_partnerToClear).forEach(pk_itemRemovido); p_harvestData = p_harvestData.filter(item => item.partner !== p_partnerToClear); p_saveToStorage(); if (p_partnerToClear === 'SPG Oásis') { p_forecastBlocksData = []; localStorage.setItem('spg_sede_forecasts', JSON.stringify(p_forecastBlocksData)); p_loadShiftPanel(); } p_clearBlockForm(); p_renderReport(); p_renderList(); p_partnerToClear = ''; }
 
         function p_renderList() {
             const list = document.getElementById('p_itemsList'); list.innerHTML = '';

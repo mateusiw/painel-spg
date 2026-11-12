@@ -16,6 +16,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="../../supabase-config.js"></script>
     <script src="../../supabase-api.js"></script>
+    <script src="../../dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
     <script src="../../resumo-producao.js"></script>
     <script src="../../seletor-periodo.js"></script>
     <script src="../../mais-filtros.js"></script>
@@ -2351,7 +2352,7 @@
         async function captureComparisonView() {
             const container = document.getElementById('compareMainCard');
             const btn = document.getElementById('btnCaptureComparacao');
-            if (!container || typeof htmlToImage === 'undefined') { alert('Biblioteca de captura não carregada. Verifique sua conexão.'); return; }
+            if (!container || typeof htmlToImage === 'undefined') { Dialogo.avisar('A ferramenta de imagem não carregou. Verifique sua conexão e tente de novo.', { tipo: 'erro', titulo: 'Imagem não gerada' }); return; }
 
             // Feedback visual no botão
             const originalHTML = btn.innerHTML;
@@ -2385,7 +2386,7 @@
                 link.href = dataUrl;
                 link.click();
             } catch(err) {
-                alert('Erro ao gerar imagem: ' + err.message);
+                Dialogo.avisar(err.message, { tipo: 'erro', titulo: 'Erro ao gerar a imagem' });
             } finally {
                 uiEls.forEach(el => { el.style.display = el.dataset.prevDisplay || ''; });
                 if (wrapper) wrapper.style.gridTemplateColumns = prevGridStyle;
@@ -2457,7 +2458,7 @@
         function addPlantioToSchedule() {
             const e = document.getElementById('simAddEstufa').value.trim() || 'N/A', s = document.getElementById('simAddSetor').value.trim() || 'N/A', d = document.getElementById('simAddData').value;
             const pls = getSimVal('simAddPlantas') || getSimVal('simPlantasSetor');
-            if (!d) return alert("Por favor, selecione uma data de plantio.");
+            if (!d) return Dialogo.avisar('Selecione uma data de plantio.', { tipo: 'aviso', titulo: 'Falta a data' });
             simCronograma.push({ id: simCronogramaId++, estufa: e, setor: s, plantas: pls, dataPlantio: d });
             const a = getSimVal('simAprov'), f = getSimVal('simFrutos') || 1, pM = getSimVal('simPesoMedio'), mK = getSimVal('simMetaKg');
             const iSD = mK > 0 ? Math.max(1, Math.round((pls * ((a/100)*f*(pM/1000))) / mK)) : 0;

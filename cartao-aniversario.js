@@ -256,7 +256,7 @@
         botao.disabled = true;
         botao.textContent = rotulo;
         try { await fazer(); }
-        catch (e) { if (e && e.name !== 'AbortError') alert(e.message || 'Não foi possível gerar a imagem.'); }
+        catch (e) { if (e && e.name !== 'AbortError') (window.Dialogo ? Dialogo.avisar(e.message || 'Não foi possível gerar a imagem.', { tipo: 'erro', titulo: 'Imagem não gerada' }) : alert(e.message || 'Não foi possível gerar a imagem.')); }
         finally { botao.disabled = false; botao.innerHTML = original; }
     }
 

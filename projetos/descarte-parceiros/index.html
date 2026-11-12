@@ -42,6 +42,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="../../supabase-config.js"></script>
     <script src="../../supabase-api.js"></script>
+    <script src="../../dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
     <script src="../../lista-moderna.js"></script>
     <script src="../../trava-fundo.js"></script>
     <script src="../../seletor-periodo.js"></script>
@@ -1847,7 +1848,7 @@
 
         async function importarHistoricoPlanilha() {
             if (!SPG_API.isAdmin()) return;
-            if (!confirm('Copiar para o sistema todos os descartes que estão na planilha "Controle de Descarte Parceiros"?\n\nA planilha não é alterada. Pode repetir depois: o que já foi copiado é atualizado, sem duplicar.')) return;
+            if (!(await Dialogo.confirmar('A planilha não é alterada. Pode repetir depois: o que já foi copiado é atualizado, sem duplicar.', { titulo: 'Copiar os descartes da planilha "Controle de Descarte Parceiros"?', botao: 'Copiar' }))) return;
             const botao = document.getElementById('importarBtn');
             const overlay = document.getElementById('loadingOverlay');
             const textoOverlay = overlay.querySelector('span');
