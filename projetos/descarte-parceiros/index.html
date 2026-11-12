@@ -2037,32 +2037,65 @@
             return { id: data.id, url: data.url };
         }
 
+        // Aviso flutuante do envio das fotos: "Enviando foto 1 de 2 para o Google Drive…" → "Fotos salvas no Google Drive"
+        let avisoDriveTimer = null;
+        function avisoDrive(estado, texto) {
+            let c = el('avisoDrive');
+            if (!c) {
+                c = document.createElement('div');
+                c.id = 'avisoDrive'; c.setAttribute('role', 'status'); c.setAttribute('aria-live', 'polite'); c.setAttribute('data-sem-trava', '');
+                c.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));z-index:90;max-width:calc(100% - 32px);transition:opacity .25s;pointer-events:none';
+                document.body.appendChild(c);
+            }
+            const cores = { enviando: 'bg-sky-600', ok: 'bg-emerald-600', espera: 'bg-amber-600' };
+            const icone = { enviando: 'loader-circle', ok: 'check-circle-2', espera: 'cloud-off' }[estado];
+            c.innerHTML = `<div class="${cores[estado]} text-white rounded-2xl shadow-lg px-4 py-3 flex items-center gap-2.5 text-sm font-bold"><i data-lucide="${icone}" class="w-5 h-5 shrink-0${estado === 'enviando' ? ' animate-spin' : ''}"></i><span>${esc(texto)}</span></div>`;
+            c.style.opacity = '1';
+            if (window.lucide) lucide.createIcons();
+            clearTimeout(avisoDriveTimer);
+            if (estado !== 'enviando') avisoDriveTimer = setTimeout(() => { c.style.opacity = '0'; }, estado === 'ok' ? 3500 : 6000);
+        }
+
         let processando = false;
-        async function processarPendentes() {
-            if (processando || !navigator.onLine) return;
+        // avisar: mostra também os avisos de "sem internet" (no registro e quando a pessoa toca no aviso)
+        async function processarPendentes(avisar) {
+            if (processando) return;
+            const pendentes = await listarPendentes();
+            const total = pendentes.reduce((s, p) => s + p.fotos.length - (p.enviadas || []).length, 0);
+            if (!total) return;
+            if (!navigator.onLine) {
+                if (avisar === true) avisoDrive('espera', `Sem internet: ${total === 1 ? 'a foto fica guardada' : `as ${total} fotos ficam guardadas`} no aparelho e ${total === 1 ? 'sobe' : 'sobem'} para o Google Drive quando a conexão voltar.`);
+                return;
+            }
             processando = true;
+            let enviadas = 0, falhou = false;
             try {
-                for (const p of await listarPendentes()) {
+                for (const p of pendentes) {
                     p.enviadas = p.enviadas || [];
                     for (let i = p.enviadas.length; i < p.fotos.length; i++) {
+                        avisoDrive('enviando', `Enviando foto ${enviadas + 1} de ${total} para o Google Drive…`);
                         p.enviadas.push(await subirFoto(p.fotos[i], `${p.nomeBase} ${i + 1}.jpg`, p.pasta));
+                        enviadas++;
                         await salvarPendente(p); // guarda o progresso: se cair no meio, não reenvia as que já subiram
                     }
                     p.ids.forEach(id => API.enfileirar('descarte_parceiros', 'update', { id, valores: { fotos: p.enviadas } }));
                     await apagarPendente(p.chave);
                 }
             } catch (e) {
+                falhou = true;
                 console.warn('Fotos do descarte: tenta de novo mais tarde.', e);
+                avisoDrive('espera', `Não consegui enviar ${total - enviadas === 1 ? 'a foto' : `${total - enviadas} fotos`} agora. ${total - enviadas === 1 ? 'Ela fica guardada' : 'Elas ficam guardadas'} no aparelho e o envio é tentado de novo sozinho.`);
             } finally {
                 processando = false;
                 mostrarAvisoFotos();
             }
+            if (!falhou) avisoDrive('ok', `${enviadas === 1 ? 'Foto salva' : `${enviadas} fotos salvas`} no Google Drive.`);
         }
 
         window.guardarFotosDoDescarte = async function (pacote) {
             await salvarPendente(Object.assign({ enviadas: [] }, pacote));
             mostrarAvisoFotos();
-            processarPendentes();
+            processarPendentes(true);
         };
 
         // Aviso na linha do status: quantas fotos ainda estão só no aparelho
@@ -2075,7 +2108,7 @@
                 aviso.type = 'button'; aviso.id = 'fotosPendentes';
                 aviso.title = 'Fotos guardadas no aparelho, aguardando enviar para o Google Drive. Toque para tentar agora.';
                 aviso.className = 'flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-700';
-                aviso.onclick = processarPendentes;
+                aviso.onclick = () => processarPendentes(true);
                 el('syncStatusBtn').before(aviso);
             }
             aviso.classList.toggle('hidden', !faltam);
@@ -2224,10 +2257,13 @@
         const nomePeriodoRecentes = () => seletorRecentes ? SeletorPeriodo.nome(seletorRecentes.periodo()) : `${el('recDe').value} a ${el('recAte').value}`;
 
         const LIMITE_LINHAS = 3000;
-        async function carregarRecentes() {
+        // silencioso: recarrega sem o "carregando" (usado quando chega um registro novo de outro aparelho)
+        async function carregarRecentes(silencioso) {
             const lista = el('recLista');
-            lista.innerHTML = '<div class="col-span-full py-16 flex justify-center"><i data-lucide="loader-circle" class="w-8 h-8 text-emerald-300 animate-spin"></i></div>';
-            if (window.lucide) lucide.createIcons();
+            if (silencioso !== true) {
+                lista.innerHTML = '<div class="col-span-full py-16 flex justify-center"><i data-lucide="loader-circle" class="w-8 h-8 text-emerald-300 animate-spin"></i></div>';
+                if (window.lucide) lucide.createIcons();
+            }
             let de = el('recDe').value, ate = el('recAte').value;
             if (de && ate && de > ate) [de, ate] = [ate, de];
             let q = API.cliente.from('descarte_parceiros').select('*');
@@ -3212,6 +3248,32 @@
         el('pnAtualizar').addEventListener('click', carregarPainel);
         let pnRedim;
         addEventListener('resize', () => { clearTimeout(pnRedim); pnRedim = setTimeout(() => { if (!el('viewPainel').classList.contains('hidden') && pn.linhas.length) desenharPainel(); }, 200); });
+
+        // ---------- Tempo real: descarte novo/alterado em outro aparelho aparece sem F5 ----------
+        // Precisa da tabela na publicação "supabase_realtime" (supabase/descarte_parceiros.sql).
+        // Vários registros chegam juntos (um por parceiro): espera um instante e recarrega uma vez só.
+        let rtTimer = null, rtNovos = new Set();
+        function aplicarMudancasRemotas() {
+            clearTimeout(rtTimer);
+            rtTimer = setTimeout(() => {
+                if (ed) { aplicarMudancasRemotas(); return; }   // edição aberta: atualiza depois que fechar
+                if (rtNovos.size) {
+                    const nomes = [...rtNovos]; rtNovos = new Set();
+                    avisoDrive('ok', `Novo descarte registrado: ${nomes.slice(0, 3).join(', ')}${nomes.length > 3 ? '…' : ''}`);
+                }
+                if (abaAtual === 'recentes') carregarRecentes(true);
+                else if (abaAtual === 'painel') carregarPainel();
+            }, 1500);
+        }
+        try {
+            API.cliente.channel('descarte-parceiros-ao-vivo')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'descarte_parceiros' }, payload => {
+                    const novo = payload.new || {};
+                    if (payload.eventType === 'INSERT' && novo.criado_por !== meuId() && novo.parceiro) rtNovos.add(novo.parceiro);
+                    aplicarMudancasRemotas();
+                })
+                .subscribe();
+        } catch (e) { console.warn('Descarte: tempo real indisponível', e); }
     })();
     </script>
 </body>

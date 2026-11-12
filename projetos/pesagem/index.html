@@ -540,9 +540,6 @@
         </div>
     </div>
 
-    <div id="syncModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300">
-        <div class="bg-white rounded-3xl shadow-2xl px-12 py-8 flex flex-col items-center justify-center gap-4"><i data-lucide="loader-2" class="w-10 h-10 text-slate-800 animate-spin"></i><h3 id="syncModalTitle" class="text-lg font-bold text-slate-800">Sincronizando Dados</h3><p id="syncModalSub" class="hidden text-xs text-slate-500 -mt-2 text-center"></p></div>
-    </div>
 
     <!-- SCRIPT PRINCIPAL UNIFICADO E ESTRUTURADO -->
     <script>
@@ -1090,21 +1087,17 @@
             }
             setTimeout(() => {
                 if (!ok || errorMsg) showAlert('Não foi possível atualizar', [errorMsg || 'Erro de conexão.', 'Os dados deste aparelho continuam salvos. Tente de novo em instantes.'], 'error');
-                else showAlert('Dados atualizados!', ['As abas foram atualizadas com os dados mais recentes.']);
             }, 320);
         }
 
-        function spg_showSyncModal(title, sub) {
-            const modal = document.getElementById('syncModal'); if (!modal) return;
-            document.getElementById('syncModalTitle').innerText = title || 'Sincronizando Dados';
-            const subEl = document.getElementById('syncModalSub'); subEl.innerText = sub || ''; subEl.classList.toggle('hidden', !sub);
-            lockPageScroll(); modal.classList.remove('hidden'); setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        // A janela "Sincronizando Dados" (da época do Apps Script) saiu: os dados carregam por trás,
+        // sem travar a tela. No botão Atualizar, só o ícone gira enquanto busca.
+        function spg_showSyncModal() {
+            const ic = document.querySelector('#refreshBtn svg'); if (ic) ic.classList.add('animate-spin');
         }
 
         function spg_hideSyncModal() {
-            const modal = document.getElementById('syncModal'); if (!modal) return;
-            modal.classList.add('opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); document.getElementById('syncModalTitle').innerText = 'Sincronizando Dados'; document.getElementById('syncModalSub').classList.add('hidden'); unlockPageScroll(); }, 300);
+            const ic = document.querySelector('#refreshBtn svg'); if (ic) ic.classList.remove('animate-spin');
         }
 
         function spg_updateSyncBadge() {
@@ -1616,9 +1609,6 @@
         }
 
         async function c_syncAppOnLoad() {
-            const modal = document.getElementById('syncModal');
-            if (modal) { lockPageScroll(); modal.classList.remove('hidden'); setTimeout(() => modal.classList.remove('opacity-0'), 10); }
-            const forceCloseTimeout = setTimeout(() => { if (modal && !modal.classList.contains('hidden')) { modal.classList.add('opacity-0'); setTimeout(() => { modal.classList.add('hidden'); unlockPageScroll(); }, 300); } }, 8000);
             try {
                 // Primeiro traz o que foi lançado em outros aparelhos
                 await spg_ensureInitialPull();
@@ -1635,7 +1625,7 @@
                 if (!dataHist.error) { localStorage.setItem((PL.pfx + 'harvest_history'), JSON.stringify(dataHist)); c_refreshAllAccumulated(); }
                 await c_syncForecasts(true);
             } catch (error) { } 
-            finally { clearTimeout(forceCloseTimeout); try { loadAllCultures(); } catch(e) {} if (modal && !modal.classList.contains('hidden')) { modal.classList.add('opacity-0'); setTimeout(() => { modal.classList.add('hidden'); unlockPageScroll(); }, 300); } }
+            finally { try { loadAllCultures(); } catch(e) {} }
         }
 
         function p_enrichWithPlantsDates() {
@@ -1670,9 +1660,6 @@
         }
 
         async function p_syncAppOnLoad() {
-            const modal = document.getElementById('syncModal');
-            if (modal) { lockPageScroll(); modal.classList.remove('hidden'); setTimeout(() => modal.classList.remove('opacity-0'), 10); }
-            const forceCloseTimeout = setTimeout(() => { if (modal && !modal.classList.contains('hidden')) { modal.classList.add('opacity-0'); setTimeout(() => { modal.classList.add('hidden'); unlockPageScroll(); }, 300); } }, 8000);
             try {
                 // Traz os dados da Colheita lançados em outros aparelhos
                 await spg_ensureInitialPull();
@@ -1680,7 +1667,7 @@
                 if (!dataPlants.error) localStorage.setItem((PL.pfx + 'plants_data'), JSON.stringify(dataPlants));
                 if (!dataHist.error) { localStorage.setItem((PL.pfx + 'harvest_history'), JSON.stringify(dataHist)); p_enrichWithPlantsDates(); p_saveToStorage(); }
             } catch (error) { }
-            finally { clearTimeout(forceCloseTimeout); if (modal && !modal.classList.contains('hidden')) { modal.classList.add('opacity-0'); setTimeout(() => { modal.classList.add('hidden'); unlockPageScroll(); }, 300); } p_renderReport(); }
+            finally { p_renderReport(); }
         }
 
         function c_updateCommercialInput() {
