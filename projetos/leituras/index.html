@@ -20,6 +20,7 @@
     <script src="../../dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
     <script src="../../lista-moderna.js"></script>
     <script src="../../trava-fundo.js"></script>
+    <script src="../../album-fotos.js"></script>                          <!-- álbum de fotos em tela cheia -->
     <script src="../../seletor-periodo.js"></script>
     <script src="../../barra-abas.js"></script>
 
@@ -164,6 +165,7 @@
                         <button type="button" data-modo="cartoes" onclick="setModoHist('cartoes')" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Cartões</button>
                         <button type="button" data-modo="tabela" onclick="setModoHist('tabela')" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="table-2" class="w-3.5 h-3.5"></i> Tabela</button>
                     </div>
+                    <button type="button" id="hAlbum" onclick="abrirAlbum()" title="Ver as fotos das leituras filtradas, uma atrás da outra" class="ml-auto btn-sec !min-h-[40px]"><i data-lucide="images" class="w-4 h-4 text-emerald-600"></i> <span>Álbum</span></button>
                 </div>
             </div>
             <div id="hResumo" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
@@ -190,15 +192,6 @@
 
     <!-- Dica do gráfico do histórico -->
     <div id="hDica" class="fixed z-[90] hidden pointer-events-none bg-slate-900 text-white text-xs rounded-xl shadow-xl px-3 py-2 leading-relaxed max-w-[240px]"></div>
-
-    <!-- Foto ampliada -->
-    <div id="fotoModal" class="hidden fixed inset-0 bg-black/85 z-[70] flex flex-col items-center justify-center p-4" onclick="if (event.target === this) fecharFoto()">
-        <img id="fotoGrande" class="max-w-full max-h-[78vh] rounded-xl shadow-2xl bg-white" alt="Foto do visor">
-        <div class="flex gap-2 mt-4">
-            <a id="fotoDrive" href="#" target="_blank" rel="noopener" class="btn-sec"><i data-lucide="external-link" class="w-4 h-4"></i> Abrir no Drive</a>
-            <button type="button" class="btn-sec" onclick="fecharFoto()">Fechar</button>
-        </div>
-    </div>
 
     <!-- Carregando -->
     <div id="carregandoModal" class="hidden fixed inset-0 bg-slate-900/50 z-[80] flex items-center justify-center p-6" role="status">
@@ -377,13 +370,30 @@
             if (aba === 'historico') renderHistorico();
         }
         const thumbDrive = (f, larg = 200) => f && f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w${larg}` : (f && f.url) || '';
-        function verFoto(i, id) {
-            const r = linhaLocal(tipoHist, id); const f = r && (r.fotos || [])[i]; if (!f) return;
-            el('fotoGrande').src = f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w1600` : f.url;
-            el('fotoDrive').href = f.link || (f.id ? `https://drive.google.com/file/d/${f.id}/view` : f.url);
-            el('fotoModal').classList.remove('hidden');
+        // ---------- Álbum (album-fotos.js): todas as fotos do que está filtrado no histórico ----------
+        let histVisiveis = [];
+        function itensAlbum() {
+            const ehChuva = tipoHist === 'chuva';
+            return histVisiveis.flatMap(r => (r.fotos || []).map((f, i) => ({
+                id: r.id, i,
+                src: f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w1600` : f.url,
+                mini: thumbDrive(f, 300),
+                link: f.link || (f.id ? `https://drive.google.com/file/d/${f.id}/view` : f.url),
+                titulo: `${ehChuva ? r.local : r.unidade} · ${dataBR(r.data)}`,
+                sub: [ehChuva ? `${fmt(r.volume_mm, 1)} mm` : (r.consumo != null ? `${fmt(r.consumo)} kWh` : `Leitura ${fmt(r.leitura, 2)}`),
+                      r.responsavel ? 'por ' + r.responsavel : '', r.origem !== 'planilha' && r.registrado_em ? horaBR(r.registrado_em) : ''].filter(Boolean).join(' · ')
+            })));
         }
-        function fecharFoto() { el('fotoModal').classList.add('hidden'); el('fotoGrande').src = ''; }
+        const tituloAlbum = () => `${tipoHist === 'chuva' ? 'Pluviômetro' : 'Energia'}${el('hLocal').value ? ' · ' + el('hLocal').value : ''}`;
+        // Abre na foto tocada e dá para seguir pelas fotos de todas as leituras filtradas
+        function verFoto(i, id) {
+            const itens = itensAlbum();
+            const k = itens.findIndex(x => x.id === id && x.i === i);
+            AlbumFotos.abrir({ itens, inicio: Math.max(0, k), titulo: tituloAlbum() });
+        }
+        function abrirAlbum() {
+            if (!AlbumFotos.abrir({ itens: itensAlbum(), grade: true, titulo: tituloAlbum() })) avisar('Nenhuma foto nas leituras filtradas.', 'Álbum', 'info');
+        }
 
         function guardarPendente(t, linha) {
             const pend = lerJSON(K_PEND, { chuva: [], energia: [] });
@@ -710,6 +720,10 @@
             // Chuva: dia da leitura. Energia: o consumo vale para o dia anterior à leitura
             const diaRef = r => ehChuva ? r.data : diaDoConsumo(r);
             const doPeriodo = lista.filter(r => (!filtroLocal || r[campoLocal] === filtroLocal) && (!de || diaRef(r) >= de) && (!ate || diaRef(r) <= ate));
+            histVisiveis = doPeriodo;
+            const nFotos = doPeriodo.reduce((s, r) => s + (r.fotos || []).length, 0);
+            el('hAlbum').querySelector('span').textContent = nFotos ? `Álbum (${nFotos})` : 'Álbum';
+            el('hAlbum').disabled = !nFotos; el('hAlbum').classList.toggle('opacity-50', !nFotos);
             const valor = r => ehChuva ? Number(r.volume_mm || 0) : Number(r.consumo || 0);
             const total = doPeriodo.reduce((s, r) => s + valor(r), 0);
             const unid = ehChuva ? 'mm' : 'kWh', casas = ehChuva ? 1 : 0;

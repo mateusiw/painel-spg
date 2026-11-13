@@ -45,6 +45,7 @@
     <script src="../../dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
     <script src="../../lista-moderna.js"></script>
     <script src="../../trava-fundo.js"></script>
+    <script src="../../album-fotos.js"></script>                          <!-- álbum de fotos em tela cheia -->
     <script src="../../seletor-periodo.js"></script>
     <script src="../../barra-abas.js"></script>
     <script src="../../mais-filtros.js"></script>
@@ -376,7 +377,10 @@
                     </span>
                     Peso separado
                 </label>
-                <button type="button" id="recCopiar" title="Copia parceiro, kg, motivo e cultura do que está filtrado (uma linha por descarte, pronto para colar na planilha)" class="ml-auto flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white ring-1 ring-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95 transition">
+                <button type="button" id="recAlbum" title="Ver as fotos dos descartes filtrados, uma atrás da outra" class="ml-auto flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white ring-1 ring-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95 transition disabled:opacity-50">
+                    <i data-lucide="images" class="w-4 h-4 text-emerald-600"></i> <span>Álbum</span>
+                </button>
+                <button type="button" id="recCopiar" title="Copia parceiro, kg, motivo e cultura do que está filtrado (uma linha por descarte, pronto para colar na planilha)" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-white ring-1 ring-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 active:scale-95 transition">
                     <i data-lucide="clipboard-copy" class="w-4 h-4 text-emerald-600"></i> <span>Copiar dados</span>
                 </button>
             </div>
@@ -2387,6 +2391,9 @@
                 && (!motivo || String(g.motivo || '').trim() === motivo)
                 && (!termo || semAcento([g.parceiros.join(' '), g.cultura, g.motivo, g.id_exclusivo, g.criado_por_nome].join(' ')).includes(termo)));
             ultimosVisiveis = visiveis;
+            const nFotosAlbum = visiveis.reduce((s, g) => s + g.fotos.length, 0);
+            el('recAlbum').querySelector('span').textContent = nFotosAlbum ? `Álbum (${nFotosAlbum})` : 'Álbum';
+            el('recAlbum').disabled = !nFotosAlbum;
             const total = visiveis.reduce((s, g) => s + g.descarte, 0);
             const comProd = visiveis.filter(g => !g.andamento && g.producao > 0);
             const pctMedio = comProd.length ? num(comProd.reduce((s, g) => s + g.descarte, 0) / comProd.reduce((s, g) => s + g.producao, 0) * 100) + '%' : '—';
@@ -2589,10 +2596,31 @@
         const fecharFotos = () => { const c = el('fotoAmpliada'); c.classList.add('hidden'); c.classList.remove('flex'); };
         el('recLista').addEventListener('click', e => {
             const ver = e.target.closest('[data-ver-fotos]');
-            if (ver) { const g = grupos[Number(ver.dataset.verFotos)]; abrirFotos(g.fotos, 0, `${g.parceiros.join(' + ')} · ${dataBR(g.data_colheita)}`); return; }
+            if (ver) { abrirAlbumDescarte(grupos[Number(ver.dataset.verFotos)]); return; }
             const editar = e.target.closest('[data-editar]');
             if (editar) abrirEdicao(Number(editar.dataset.editar));
         });
+
+        // ---------- Álbum (album-fotos.js): todas as fotos dos descartes filtrados ----------
+        // Abre na foto do cartão tocado e dá para seguir pelas fotos dos outros descartes.
+        function itensAlbumDescarte() {
+            return ultimosVisiveis.flatMap(g => g.fotos.map(f => ({
+                g,
+                src: f.url || (f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w1600` : ''),
+                mini: f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w300` : f.url,
+                link: f.link || (f.id ? `https://drive.google.com/file/d/${f.id}/view` : ''),
+                titulo: `${nomeGrupoRec(g)} · ${g.cultura || '—'}`,
+                sub: [`Colheita ${dataBR(g.data_colheita)}`, `${num(g.descarte)} kg`, g.motivo, g.criado_por_nome ? 'por ' + g.criado_por_nome : ''].filter(Boolean).join(' · ')
+            })));
+        }
+        function abrirAlbumDescarte(grupo) {
+            const itens = itensAlbumDescarte();
+            const inicio = grupo ? itens.findIndex(x => x.g === grupo) : 0;
+            if (grupo && inicio < 0) { abrirFotos(grupo.fotos, 0, `${grupo.parceiros.join(' + ')} · ${dataBR(grupo.data_colheita)}`); return; }
+            if (!window.AlbumFotos || !AlbumFotos.abrir({ itens, inicio: Math.max(0, inicio), grade: !grupo, titulo: 'Fotos do descarte' }))
+                showMessageModal('Álbum', 'Nenhuma foto nos descartes filtrados.', 'info');
+        }
+        el('recAlbum').addEventListener('click', () => abrirAlbumDescarte(null));
         el('fotoAmpliada').addEventListener('click', e => {
             const passo = e.target.closest('[data-foto-passo]');
             if (passo) { fotoAtual = (fotoAtual + Number(passo.dataset.fotoPasso) + fotosAbertas.length) % fotosAbertas.length; mostrarFoto(); return; }

@@ -21,6 +21,7 @@ e completo do padrão, bom para copiar.
 <script src="../../seletor-periodo.js"></script>                        <!-- quando houver filtro de datas -->
 <script src="../../barra-abas.js"></script>                             <!-- quando a página tiver abas -->
 <script src="../../mais-filtros.js"></script>                           <!-- quando houver barra de filtros -->
+<script src="../../album-fotos.js"></script>                            <!-- quando houver fotos para ver: AlbumFotos.abrir({ itens, inicio, grade, titulo }) -->
 ```
 
 Ícone da aba: `../../favicon.png`; ícone de app: `../../icone-app.png`.
