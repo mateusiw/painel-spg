@@ -532,6 +532,13 @@
                 Você conferiu todas as informações? Se sim, toque em registrar.<br><br>
                 <span class="text-amber-600 font-bold">Caso tenha enviado alguma informação errada, informe ao responsável para que ele possa corrigir no sistema.</span>
             </p>
+            <!-- Responsável: aparece quando várias pessoas usam o mesmo login (Cadastro de Usuários) -->
+            <div id="caixaResponsavel" class="hidden mt-5 text-left">
+                <label class="rotulo" for="confResp"><i data-lucide="user" class="w-3.5 h-3.5 text-emerald-500"></i> Responsável</label>
+                <select id="confResp" class="campo w-full font-bold" onchange="aoMudarRespDescarte()"></select>
+                <input id="confRespOutro" type="text" maxlength="40" class="campo w-full mt-2 hidden" placeholder="Digite o nome..." aria-label="Nome do responsável" oninput="erroRespDescarte(false)">
+                <p id="confRespErro" role="alert" class="hidden mt-2 text-xs font-bold text-rose-600">Selecione o responsável pelo registro.</p>
+            </div>
             <div class="grid grid-cols-2 gap-3 mt-6">
                 <button onclick="hideConfirmModal()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-sm transition-colors uppercase">
                     Cancelar
@@ -1636,12 +1643,46 @@
                 return;
             }
             if (discardData.length === 0) { showMessageModal('Atenção', 'Adicione o registro primeiro.', 'error'); return; } 
-            document.getElementById('confirmModal').classList.remove('hidden'); 
-            lucide.createIcons(); 
+            montarResponsaveisDescarte();
+            document.getElementById('confirmModal').classList.remove('hidden');
+            lucide.createIcons();
         }
         function hideConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
-        function executeSend() { 
+
+        // ---------- Responsável pelo registro ----------
+        // Quando várias pessoas usam o mesmo login (ex.: o celular da equipe), quem registra escolhe
+        // o próprio nome a cada registro; nunca vem marcado. Sem pessoas cadastradas, vale o nome do login.
+        let responsavelEnvio = '';
+        const pessoasDoLogin = () => (SPG_API.pessoasDoUsuario ? SPG_API.pessoasDoUsuario() : []);
+        const escResp = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        function erroRespDescarte(mostrar) { document.getElementById('confRespErro').classList.toggle('hidden', !mostrar); }
+        function montarResponsaveisDescarte() {
+            const pessoas = pessoasDoLogin(), sel = document.getElementById('confResp');
+            document.getElementById('caixaResponsavel').classList.toggle('hidden', !pessoas.length);
+            erroRespDescarte(false);
+            if (!pessoas.length) return;
+            sel.innerHTML = '<option value="">Selecione...</option>' + pessoas.map(n => `<option>${escResp(n)}</option>`).join('') + '<option value="__outro__">Outra pessoa (digitar)</option>';
+            sel.value = '';
+            document.getElementById('confRespOutro').value = '';
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        function aoMudarRespDescarte() {
+            const outro = document.getElementById('confResp').value === '__outro__';
+            document.getElementById('confRespOutro').classList.toggle('hidden', !outro);
+            if (outro) document.getElementById('confRespOutro').focus();
+            erroRespDescarte(false);
+        }
+        function nomeRespDescarte() {
+            if (!pessoasDoLogin().length) return SPG_API.nomeUsuario() || '';
+            const v = document.getElementById('confResp').value;
+            return v === '__outro__' ? document.getElementById('confRespOutro').value.replace(/\s+/g, ' ').trim() : v;
+        }
+
+        function executeSend() {
             if (isSending) return;
+            const resp = nomeRespDescarte();
+            if (!resp) { erroRespDescarte(true); return; }
+            responsavelEnvio = resp;
             hideConfirmModal();
             registrarDescarte();
         }
@@ -1794,7 +1835,7 @@
                     producao: discardData[0].productionQuantity ? parsePTBRNumber(discardData[0].productionQuantity) : 0,
                     andamento: !!discardData[0].inProgress,
                     motivo: discardData[0].reason,
-                    quem: SPG_API.nomeUsuario() || '',
+                    quem: responsavelEnvio || SPG_API.nomeUsuario() || '',
                     fotos: discardData[0].photos || []
                 });
                 const blob = await (await fetch(imagemDataUrl)).blob();
@@ -1843,7 +1884,7 @@
                         producao_kg: producaoTotal !== null && producaoTotal > 0 ? Math.round((producaoTotal / partes) * 1000) / 1000 : null,
                         producao_em_andamento: emAndamento,
                         registrado_em: registradoEm,
-                        criado_por_nome: SPG_API.nomeUsuario() || '',
+                        criado_por_nome: responsavelEnvio || SPG_API.nomeUsuario() || '',
                         origem: 'app'
                     });
                 });
