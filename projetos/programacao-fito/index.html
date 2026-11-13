@@ -93,10 +93,10 @@
             <img src="../../icone-app.png" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
             <div class="min-w-0">
                 <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 truncate">Programação Fitossanitária</h1>
-                <p id="fitoSubtitulo" class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">SPG Sede · Aplicações por bloco e checklist</p>
+                <p id="fitoSubtitulo" class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">SPG Oásis · Aplicações por bloco e checklist</p>
             </div>
         </div>
-        <!-- Local (SPG Sede / Estufa): aparece para quem tem acesso aos dois -->
+        <!-- Local (SPG Oásis / SPG Estufa): aparece para quem tem acesso aos dois -->
         <div id="fitoLocalCaixa" class="hidden shrink-0 w-36 sm:w-44">
             <select id="fitoLocal" class="campo !min-h-[40px] !py-1.5 !text-xs !font-bold" aria-label="Local da programação" onchange="trocarLocalFito(this.value)"></select>
         </div>
@@ -270,14 +270,14 @@
         const podeSeparar = () => API.temModulo('programacao_fito_separar');
         const veSeparacao = () => podeProgramar() || podeSeparar();
 
-        // ---------- Local: SPG Sede e Estufa (cada um com as suas programações e pedidos de separação) ----------
-        // A Sede vale para todos (era o único local); a Estufa, para quem tem o local Estufa no cadastro (ou é administrador).
+        // ---------- Local: SPG Oásis e SPG Estufa (cada um com as suas programações e pedidos de separação) ----------
+        // A Oásis vale para todos (era o único local; antes chamado de Sede); a Estufa, para quem tem o local Estufa no cadastro (ou é administrador).
         // Os modelos de aplicação valem para os dois locais.
-        const NOMES_LOCAIS_FITO = { sede: 'SPG Sede', estufa: 'SPG Estufa' };
+        const NOMES_LOCAIS_FITO = { oasis: 'SPG Oásis', estufa: 'SPG Estufa' };
         function locaisFito() {
             const u = API.usuarioAtual() || {};
             const meus = API.isAdmin() ? Object.keys(NOMES_LOCAIS_FITO) : (Array.isArray(u.locais) ? u.locais : []);
-            const ids = ['sede'].concat(meus.includes('estufa') ? ['estufa'] : []);
+            const ids = ['oasis'].concat(meus.includes('estufa') ? ['estufa'] : []);
             return ids.map(id => ({ id, nome: NOMES_LOCAIS_FITO[id] }));
         }
         const FITO_LOCAL = (() => {
@@ -286,12 +286,12 @@
             if (ids.includes(salvo)) return salvo;
             const u = API.usuarioAtual() || {};
             // Quem é só da Estufa já abre nela
-            return ids.includes('estufa') && Array.isArray(u.locais) && u.locais.includes('estufa') && !u.locais.includes('sede') ? 'estufa' : 'sede';
+            return ids.includes('estufa') && Array.isArray(u.locais) && u.locais.includes('estufa') && !u.locais.includes('oasis') ? 'estufa' : 'oasis';
         })();
         function lerGuardadoInicio(k) { try { return localStorage.getItem('fito_' + k) || ''; } catch (e) { return ''; } }
         const nomeLocalFito = () => NOMES_LOCAIS_FITO[FITO_LOCAL] || FITO_LOCAL;
-        // Cópias no aparelho separadas por local (a Sede mantém os nomes antigos)
-        const sufixoFito = FITO_LOCAL === 'sede' ? '' : '@' + FITO_LOCAL;
+        // Cópias no aparelho separadas por local (a Oásis mantém os nomes antigos)
+        const sufixoFito = FITO_LOCAL === 'oasis' ? '' : '@' + FITO_LOCAL;
         function trocarLocalFito(id) {
             if (id === FITO_LOCAL || !locaisFito().some(l => l.id === id)) return;
             try { localStorage.setItem('fito_local', id); } catch (e) { }
@@ -432,7 +432,7 @@
             id: r.id, data: r.data, diaSemana: r.dia_semana, turno: r.turno, responsavel: r.responsavel, observacao: r.observacao,
             totalOperacoes: r.total_operacoes, feitas: r.feitas, naoFeitas: r.nao_feitas, status: r.status,
             equipeInicio: r.equipe_inicio, descansoInicio: r.descanso_inicio, descansoFim: r.descanso_fim, equipeFim: r.equipe_fim,
-            jornadaPor: r.jornada_por, jornadaEm: r.jornada_em, local: r.local || 'sede'
+            jornadaPor: r.jornada_por, jornadaEm: r.jornada_em, local: r.local || 'oasis'
         });
         const opDoBanco = (r, p) => ({
             id: r.id, programacaoId: r.programacao_id, ordem: r.ordem, data: p ? p.data : '', turno: p ? p.turno : '',
@@ -514,7 +514,7 @@
                 programacoes = r.data.map(progDoBanco);
                 gravarCache(CACHE_LISTA, programacoes);
             } catch (e) {
-                if (/local/i.test(e.message || '')) e = new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (coluna "local" da Sede e da Estufa).');
+                if (/local/i.test(e.message || '')) e = new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (coluna "local" da Oásis e da Estufa).');
                 const c = lerCache(CACHE_LISTA);
                 if (c) programacoes = c; else if (!silencioso) erro(e);
             } finally { carregando(false); }
@@ -781,7 +781,7 @@
                 carregando(false);
                 filtro = 'pendentes'; irPara('lista');
                 Dialogo.avisar(`Programação da semana salva: ${ordem.length} ${ordem.length === 1 ? 'dia' : 'dias'} (${ordem.map(rotuloDia).join(', ')}), ${editor.operacoes.length} operação(ões).\n\nCada dia aparece na lista com o seu checklist. Se alguma aplicação não for feita, quem aplica marca NÃO FEITO e informa o motivo.`, { titulo: 'Semana programada', tipo: 'sucesso' });
-            } catch (e) { erro(/local/i.test(e.message || '') ? new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (coluna "local" da Sede e da Estufa).') : e); }
+            } catch (e) { erro(/local/i.test(e.message || '') ? new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (coluna "local" da Oásis e da Estufa).') : e); }
         }
         async function salvarProgramacao() {
             if (!podeProgramar()) return;
