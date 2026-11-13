@@ -95,7 +95,7 @@
                 <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 space-y-4">
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="rotulo" for="fData"><i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-500"></i> Data da leitura</label><input id="fData" type="date" class="campo font-bold" onchange="atualizarResumo()"></div>
-                        <div><label class="rotulo" for="fResp"><i data-lucide="user" class="w-3.5 h-3.5 text-emerald-500"></i> Responsável</label><input id="fResp" type="text" class="campo" placeholder="Seu nome" oninput="atualizarResumo()"></div>
+                        <div><label class="rotulo" for="fResp"><i data-lucide="user" class="w-3.5 h-3.5 text-emerald-500"></i> Responsável</label><select id="fResp" class="campo font-bold" onchange="aoMudarResp()"></select><input id="fRespOutro" type="text" class="campo mt-2 hidden" placeholder="Nome de quem leu" aria-label="Nome de quem leu" oninput="atualizarResumo()"></div>
                     </div>
                     <div>
                         <label class="rotulo" for="fLocal"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-500"></i> <span id="rotuloLocal">Local</span></label>
@@ -107,18 +107,18 @@
                     <div id="caixaChuva" class="rounded-2xl bg-sky-50/70 ring-1 ring-sky-100 p-4 text-center">
                         <label class="rotulo justify-center !text-sky-700" for="fMm">Volume medido</label>
                         <div class="flex items-center justify-center gap-2 max-w-[240px] mx-auto">
-                            <input id="fMm" type="text" inputmode="decimal" autocomplete="off" placeholder="0" class="valor-grande" oninput="atualizarResumo()">
+                            <input id="fMm" type="text" inputmode="decimal" autocomplete="off" placeholder="0" class="valor-grande" oninput="formatarCampo(this, 2, true); atualizarResumo()">
                             <span class="text-lg font-bold text-slate-400">mm</span>
                         </div>
                         <div id="classeChuva" class="mt-3"></div>
                     </div>
                     <div id="caixaEnergia" class="hidden rounded-2xl bg-amber-50/70 ring-1 ring-amber-100 p-4 text-center">
                         <label class="rotulo justify-center !text-amber-700" for="fKwh">Leitura do relógio</label>
-                        <input id="fKwh" type="text" inputmode="numeric" autocomplete="off" placeholder="0" class="valor-grande max-w-[280px] mx-auto block" oninput="atualizarResumo()">
+                        <input id="fKwh" type="text" inputmode="numeric" autocomplete="off" placeholder="0" class="valor-grande max-w-[280px] mx-auto block" oninput="formatarCampo(this, 2, false); atualizarResumo()">
                         <div id="infoAnterior" class="mt-3 text-xs font-semibold text-slate-500"></div>
                         <div id="caixaAnterior" class="hidden mt-3 text-left">
                             <label class="rotulo" for="fAnterior">Leitura anterior (primeira leitura desta unidade no sistema)</label>
-                            <input id="fAnterior" type="text" inputmode="numeric" class="campo" placeholder="Opcional: para já calcular o consumo" oninput="atualizarResumo()">
+                            <input id="fAnterior" type="text" inputmode="numeric" class="campo" placeholder="Opcional: para já calcular o consumo" oninput="formatarCampo(this, 2, false); atualizarResumo()">
                         </div>
                     </div>
 
@@ -212,7 +212,8 @@
             if (!navigator.onLine) return;
             if (!await API.sessaoValida()) { location.replace('../../index.html'); return; }
             try { await API.atualizarPerfil(); } catch (e) { return; }
-            if (!API.temModulo('leituras')) location.replace('../../index.html');
+            if (!API.temModulo('leituras')) { location.replace('../../index.html'); return; }
+            montarResponsaveis();   // a lista de pessoas pode ter mudado no Cadastro
         })();
 
         const LOCAIS = {
@@ -239,7 +240,26 @@
         const el = id => document.getElementById(id);
         const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const icones = () => { if (window.lucide) lucide.createIcons(); };
-        const numero = v => { const s = String(v ?? '').trim().replace(/\s/g, ''); if (!s) return NaN; return Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s); };
+        // Valor de um campo já formatado (22.222 ou 12,5): ponto = milhar, vírgula = decimal
+        const numCampo = id => { const t = el(id).value.trim().replace(/\./g, '').replace(',', '.'); return t ? Number(t) : NaN; };
+        // Formata o número enquanto digita: 22222 -> 22.222 ; 12,5 fica 12,5. Mantém o cursor no lugar.
+        // pontoDecimal: o ponto digitado vira vírgula (chuva em mm); senão o ponto é só o separador de milhar.
+        function formatarCampo(input, casas, pontoDecimal) {
+            const antes = input.value, pos = input.selectionStart == null ? antes.length : input.selectionStart;
+            const sig = pontoDecimal ? /[\d,.]/g : /[\d,]/g;
+            const alvo = (antes.slice(0, pos).match(sig) || []).length;
+            const bruto = (pontoDecimal ? antes.replace(/\./g, ',') : antes.replace(/\./g, '')).replace(/[^\d,]/g, '');
+            const v = bruto.indexOf(',');
+            const inteiro = (v < 0 ? bruto : bruto.slice(0, v)).replace(/^0+(?=\d)/, '');
+            const dec = v < 0 || !casas ? null : bruto.slice(v + 1).replace(/,/g, '').slice(0, casas);
+            const novo = (inteiro || (dec !== null ? '0' : '')).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (dec !== null ? ',' + dec : '');
+            if (novo === antes) return;
+            input.value = novo;
+            if (document.activeElement !== input) return;
+            let k = 0, i = 0;
+            while (i < novo.length && k < alvo) { if (/[\d,]/.test(novo[i])) k++; i++; }
+            try { input.setSelectionRange(i, i); } catch (e) { /* campo sem cursor */ }
+        }
         const fmt = (n, casas = 0) => (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: casas });
         const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const hojeISO = () => iso(new Date());
@@ -374,6 +394,23 @@
         // ------------------------------------------------------------
         //  Formulário
         // ------------------------------------------------------------
+        // Responsável: as pessoas que usam este login (Cadastro de Usuários). Nunca vem marcado:
+        // o mesmo login é usado por várias pessoas, então quem registra escolhe o próprio nome.
+        function montarResponsaveis() {
+            const sel = el('fResp'), atual = sel.value;
+            const pessoas = API.pessoasDoUsuario();
+            const nomes = pessoas.length ? pessoas : [API.nomeUsuario()].filter(Boolean);
+            sel.innerHTML = '<option value="">Quem leu?</option>' + nomes.map(n => `<option>${esc(n)}</option>`).join('') + '<option value="__outro__">Outra pessoa (digitar)</option>';
+            sel.value = nomes.includes(atual) || atual === '__outro__' ? atual : '';
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        function aoMudarResp() {
+            const outro = el('fResp').value === '__outro__';
+            el('fRespOutro').classList.toggle('hidden', !outro);
+            if (outro && !el('fRespOutro').value) el('fRespOutro').focus();
+            atualizarResumo();
+        }
+        function nomeResp() { const v = el('fResp').value; return v === '__outro__' ? el('fRespOutro').value.replace(/\s+/g, ' ').trim() : v; }
         function nomeLocal() { const v = el('fLocal').value; return v === '__outro__' ? el('fLocalOutro').value.trim() : v; }
         function setTipo(t) {
             tipo = t;
@@ -394,18 +431,19 @@
         }
         // Calcula tudo o que vai no boletim a partir do formulário
         function calcular() {
-            const data = el('fData').value, local = nomeLocal(), resp = el('fResp').value.trim(), obs = el('fObs').value.trim();
+            const data = el('fData').value, local = nomeLocal(), resp = nomeResp(), obs = el('fObs').value.trim();
             if (tipo === 'chuva') {
-                const mm = numero(el('fMm').value);
+                const mm = numCampo('fMm');
                 const classe = classeChuva(mm);
                 const linha = !isNaN(mm) && data && local ? { data, local, volume_mm: mm } : null;
                 const acumulado = data && local ? acumuladoChuva(local, data.slice(0, 7), linha) : null;
-                return { tipo, data, local, resp, obs, mm, classe, acumulado };
+                const ultimoReg = local ? chuva.find(r => r.local === local) || null : null;
+                return { tipo, data, local, resp, obs, mm, classe, acumulado, ultimoReg };
             }
-            const leitura = numero(el('fKwh').value);
+            const leitura = numCampo('fKwh');
             const dia = data ? somarDias(data, -1) : '';   // dia do consumo (o registro fica com esta data)
             const ant = local && dia ? anteriorDe(local, dia) : null;
-            const anteriorManual = numero(el('fAnterior').value);
+            const anteriorManual = numCampo('fAnterior');
             const leituraAnterior = ant ? Number(ant.leitura) : (!isNaN(anteriorManual) ? anteriorManual : null);
             const consumo = !isNaN(leitura) && leituraAnterior != null && leitura >= leituraAnterior ? leitura - leituraAnterior : null;
             const mesRef = dia ? dia.slice(0, 7) : '';
@@ -413,7 +451,8 @@
             const acumulado = local && mesRef ? acumuladoEnergia(local, mesRef, extra) : null;
             const ultimos = energia.filter(r => r.unidade === local && r.consumo != null && (!dia || r.data <= dia)).slice(0, 5);
             const percentual = consumo != null && ultimos[0] && Number(ultimos[0].consumo) > 0 ? (consumo - Number(ultimos[0].consumo)) / Number(ultimos[0].consumo) * 100 : null;
-            return { tipo, data, dia, local, resp, obs, leitura, ant, leituraAnterior, consumo, mesRef, acumulado, ultimos, percentual, menorQueAnterior: !isNaN(leitura) && leituraAnterior != null && leitura < leituraAnterior };
+            const ultimoReg = local ? energia.find(r => r.unidade === local) || null : null;
+            return { tipo, data, dia, local, resp, obs, leitura, ant, ultimoReg, leituraAnterior, consumo, mesRef, acumulado, ultimos, percentual, menorQueAnterior: !isNaN(leitura) && leituraAnterior != null && leitura < leituraAnterior };
         }
         function atualizarResumo() {
             const c = calcular();
@@ -451,12 +490,28 @@
                     </div>
                     ${!ehChuva && c.percentual != null ? `<p class="text-xs font-bold ${c.percentual > 0 ? 'text-rose-600' : c.percentual < 0 ? 'text-emerald-700' : 'text-slate-500'}">${c.percentual > 0 ? `Subiu ${fmt(c.percentual, 1)}%` : c.percentual < 0 ? `Caiu ${fmt(Math.abs(c.percentual), 1)}%` : 'Igual'} em relação à leitura anterior</p>` : ''}
                     ${titular ? `<div class="rounded-2xl bg-slate-50 ring-1 ring-slate-200/70 px-3 py-2.5"><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Titular da unidade consumidora</p><p class="text-sm font-bold text-slate-800">${esc(titular.nome)}</p><p class="text-xs font-semibold text-slate-500">UC ${esc(titular.uc)}</p></div>` : ''}
+                    ${blocoUltimo(c)}
                     ${!ehChuva && c.ultimos.length ? `<div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">Últimos consumos</p><div class="rounded-2xl ring-1 ring-slate-100 divide-y divide-slate-100 overflow-hidden">${c.ultimos.map(r => `<div class="flex justify-between px-3 py-1.5 text-[13px]"><span class="text-slate-500">${dataBR(diaDoConsumo(r)).slice(0, 5)}</span><b class="text-slate-800">${fmt(r.consumo)} kWh</b></div>`).join('')}</div></div>` : ''}
                     ${c.obs ? `<p class="text-sm text-slate-600 bg-slate-50 rounded-2xl px-3 py-2"><b class="text-slate-800">Obs.:</b> ${esc(c.obs)}</p>` : ''}
                     ${lista.length ? `<div class="grid grid-cols-2 gap-2">${lista.map(f => `<img src="${f}" alt="Foto do visor" class="w-full h-40 object-cover rounded-2xl ring-1 ring-slate-200">`).join('')}</div>` : ''}
                 </div>
             </div>`;
             icones();
+        }
+
+        // Último registro do local (aparece na hora ao registrar, e quando outro aparelho registra)
+        function blocoUltimo(c) {
+            const r = c.ultimoReg, ehChuva = c.tipo === 'chuva';
+            if (!r || (ehChuva ? !isNaN(c.mm) : !isNaN(c.leitura))) return '';
+            const situacao = r._pendente ? '<span class="text-amber-600">no aparelho, enviando...</span>' : '<span class="text-emerald-700">enviado</span>';
+            const linha = (rot, v, cls = 'text-slate-800') => `<div class="flex justify-between gap-3"><span class="text-slate-500">${rot}</span><b class="${cls} text-right">${v}</b></div>`;
+            return `<div class="rounded-2xl ${ehChuva ? 'bg-sky-50/70 ring-sky-100' : 'bg-amber-50/70 ring-amber-100'} ring-1 px-3 py-2.5 space-y-1 text-[13px]">
+                <p class="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wider text-slate-400"><span>Último registro</span><span class="normal-case tracking-normal font-bold">${situacao}</span></p>
+                ${ehChuva
+                    ? linha('Data', dataBR(r.data)) + linha('Volume', `${fmt(r.volume_mm, 1)} mm`, 'text-sky-700')
+                    : linha('Dia do consumo', dataBR(r.data)) + linha('Leitura', fmt(r.leitura, 2)) + linha('Consumo', r.consumo != null ? `${fmt(r.consumo, 2)} kWh` : '—', 'text-amber-700')}
+                ${r.responsavel ? linha('Responsável', esc(r.responsavel)) : ''}
+            </div>`;
         }
 
         // ---------- Fotos ----------
@@ -507,12 +562,13 @@
         // ------------------------------------------------------------
         function limparFormulario(perguntar) {
             const fazer = () => {
-                ['fMm', 'fKwh', 'fAnterior', 'fObs', 'fLocalOutro'].forEach(id => { el(id).value = ''; });
+                ['fMm', 'fKwh', 'fAnterior', 'fObs', 'fLocalOutro', 'fRespOutro'].forEach(id => { el(id).value = ''; });
+                el('fResp').value = ''; el('fResp').dispatchEvent(new Event('change', { bubbles: true })); el('fRespOutro').classList.add('hidden');
                 el('fData').value = hojeISO();
                 fotos[tipo] = []; renderFotos(); atualizarResumo();
             };
             if (!perguntar) return fazer();
-            Dialogo.confirmar('Apagar o valor, as observações e as fotos deste formulário?', { titulo: 'Limpar?', botao: 'Limpar', perigo: true }).then(ok => { if (ok) fazer(); });
+            Dialogo.confirmar('Apagar o responsável, o valor, as observações e as fotos deste formulário?', { titulo: 'Limpar?', botao: 'Limpar', perigo: true }).then(ok => { if (ok) fazer(); });
         }
         async function previsaoTempo() {
             try {
@@ -536,7 +592,7 @@
         async function registrar() {
             const c = calcular();
             if (!c.data) return avisar('Informe a data da leitura.');
-            if (!c.resp) return avisar('Informe o responsável.');
+            if (!c.resp) return avisar('Escolha no Responsável o nome de quem fez a leitura.', 'Quem leu?');
             if (!c.local) return avisar(tipo === 'chuva' ? 'Escolha o local do pluviômetro.' : 'Escolha a unidade (relógio).');
             if (tipo === 'chuva' && (isNaN(c.mm) || c.mm < 0)) return avisar('Informe o volume medido em mm.');
             if (tipo === 'energia' && (isNaN(c.leitura) || c.leitura < 0)) return avisar('Informe a leitura do relógio.');
@@ -693,6 +749,49 @@
         const fotosNaFila = id => lerJSON(K_FOTOS_PEND, []).some(x => x.id === id);
 
         // ------------------------------------------------------------
+        //  Tempo real: registros e exclusões de outros aparelhos aparecem na hora
+        //  (supabase/leituras.sql põe as tabelas na publicação do Realtime)
+        // ------------------------------------------------------------
+        let timerRemoto = null;
+        function aplicarRemoto(t, payload) {
+            const novo = payload.new || {}, velho = payload.old || {};
+            const id = novo.id || velho.id;
+            if (!id) return;
+            const lista = (t === 'chuva' ? chuva : energia).filter(r => r.id !== id);
+            if (payload.eventType !== 'DELETE') lista.push(novo);
+            ordenar(lista);
+            if (t === 'chuva') chuva = lista; else energia = lista;
+            // Já chegou ao servidor (ou foi apagado): sai dos pendentes deste aparelho
+            const pend = lerJSON(K_PEND, { chuva: [], energia: [] });
+            if ((pend[t] || []).some(r => r.id === id)) { pend[t] = pend[t].filter(r => r.id !== id); gravarJSON(K_PEND, pend); }
+            clearTimeout(timerRemoto);
+            timerRemoto = setTimeout(() => {
+                gravarJSON(K_CACHE, { chuva: chuva.filter(r => !r._pendente), energia: energia.filter(r => !r._pendente) });
+                atualizarResumo();
+                if (aba === 'historico') renderHistorico();
+            }, 250);
+        }
+        function ouvirTempoReal() {
+            let conectou = false;
+            try {
+                sb.channel('leituras-ao-vivo')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'leituras_chuva' }, p => aplicarRemoto('chuva', p))
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'leituras_energia' }, p => aplicarRemoto('energia', p))
+                    .subscribe(st => {
+                        // Ao reconectar (o sinal caiu), busca o que mudou enquanto estava desligado
+                        if (st === 'SUBSCRIBED') { if (conectou) carregarDados(true); conectou = true; }
+                    });
+            } catch (e) { console.warn('Leituras: tempo real indisponível', e); }
+            // Celular que ficou em segundo plano: confere de novo ao voltar (no máximo 1 vez por minuto)
+            let ultimaBusca = Date.now();
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState !== 'visible' || Date.now() - ultimaBusca < 60000) return;
+                ultimaBusca = Date.now();
+                carregarDados(true);
+            });
+        }
+
+        // ------------------------------------------------------------
         //  Abas e início
         // ------------------------------------------------------------
         const ABAS = [{ id: 'registrar', nome: 'Registrar', icone: 'clipboard-pen', cor: '5, 150, 105' }, { id: 'historico', nome: 'Histórico', icone: 'chart-column', cor: '2, 132, 199' }];
@@ -713,8 +812,8 @@
             medir(); window.addEventListener('resize', medir);
             if (window.BarraAbas) barra = BarraAbas.criar({ rotulo: 'Seções das leituras', abas: () => ABAS.map(a => ({ ...a, ativa: a.id === aba })), abrir: id => trocarAba(id) });
             el('fData').value = hojeISO();
-            el('fResp').value = localStorage.getItem('leit_responsavel') || API.nomeUsuario();
-            el('fResp').addEventListener('change', () => localStorage.setItem('leit_responsavel', el('fResp').value.trim()));
+            try { localStorage.removeItem('leit_responsavel'); } catch (e) { }
+            montarResponsaveis();
             // Período do histórico: começa no mês atual
             const d = new Date();
             const seletor = SeletorPeriodo.montar(el('hPeriodo'), {
@@ -728,6 +827,7 @@
             setTipo('chuva');
             trocarAba('registrar');
             carregarDados(!!c).then(processarFotosPendentes);
+            ouvirTempoReal();
             window.addEventListener('online', () => { carregarDados(true).then(processarFotosPendentes); });
         })();
     </script>

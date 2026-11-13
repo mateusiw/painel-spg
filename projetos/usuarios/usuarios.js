@@ -492,6 +492,15 @@
                         </div>
                     </div>
                 </section>
+                <section class="space-y-2.5 border-t border-slate-100 pt-5">
+                    ${titulo('users', 'Pessoas que usam este login')}
+                    <p class="text-[11px] text-slate-500">Quando várias pessoas entram com o mesmo usuário (ex.: o celular da equipe), cadastre os nomes aqui. Nos registros, o app pergunta qual delas fez.</p>
+                    ${r.pessoas.length ? `<div class="flex flex-wrap gap-1.5">${r.pessoas.map((p, i) => `<span class="inline-flex items-center gap-1 pl-3 pr-1 py-1 rounded-full bg-emerald-50 ring-1 ring-emerald-200 text-[12px] font-bold text-emerald-800">${esc(p)}<button type="button" data-acao="tirarPessoa" data-id="${i}" aria-label="Tirar ${esc(p)}" class="w-7 h-7 inline-flex items-center justify-center rounded-full text-emerald-700 hover:bg-emerald-100"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></span>`).join('')}</div>` : ''}
+                    <div class="flex gap-2">
+                        <input id="edPessoa" data-campo="novaPessoa" value="${esc(r.novaPessoa)}" maxlength="40" placeholder="Nome da pessoa" aria-label="Nome da pessoa" class="${campo}">
+                        <button type="button" data-acao="addPessoa" class="flex items-center gap-1 px-3 rounded-xl border-2 border-slate-200 text-xs font-bold text-slate-600 hover:border-slate-400 shrink-0"><i data-lucide="plus" class="w-3.5 h-3.5"></i>Adicionar</button>
+                    </div>
+                </section>
                 ${secaoAcessos}
                 ${!novo && !admin && !eu ? `<div class="border-t border-slate-100 pt-3"><button type="button" data-acao="ativo" class="w-full text-xs font-bold py-2.5 rounded-xl ${u.ativo ? 'text-red-600 hover:bg-red-50' : 'text-emerald-700 hover:bg-emerald-50'}">${u.ativo ? 'Desativar usuário' : 'Reativar usuário'}</button></div>` : ''}
             </div>
@@ -512,9 +521,10 @@
         const u = atual();
         r = u
             ? { nome: u.nome || '', nome_curto: u.nome_curto || '', papel: u.papel, senha: '', verSenha: false,
-                locais: listaDe(u.locais, ['oasis']), modulos: listaDe(u.modulos, ['irrigacao']), bloqueios: listaDe(u.bloqueios, []) }
+                locais: listaDe(u.locais, ['oasis']), modulos: listaDe(u.modulos, ['irrigacao']), bloqueios: listaDe(u.bloqueios, []),
+                pessoas: listaDe(u.pessoas, []), novaPessoa: '' }
             : { usuario: '', nome: '', nome_curto: '', papel: 'irrigador', senha: '', verSenha: false, curtoAuto: true, loginAuto: true,
-                locais: [localFiltro !== 'todos' && localFiltro !== 'sem' ? localFiltro : API.localAtual()], modulos: [], bloqueios: [] };
+                locais: [localFiltro !== 'todos' && localFiltro !== 'sem' ? localFiltro : API.localAtual()], modulos: [], bloqueios: [], pessoas: [], novaPessoa: '' };
         renderEditor();
         renderLista();
     }
@@ -525,6 +535,14 @@
         erroEditor = '';
         renderEditor();
         renderLista();
+    }
+
+    // Pessoas que usam o mesmo login (sem repetir, ignorando maiúsculas e acentos)
+    function adicionarPessoa() {
+        const nome = String(r.novaPessoa || '').replace(/\s+/g, ' ').trim();
+        r.novaPessoa = '';
+        if (!nome || r.pessoas.some(p => semAcento(p) === semAcento(nome))) return;
+        r.pessoas = r.pessoas.concat(nome).sort((a, b) => a.localeCompare(b, 'pt-BR'));
     }
 
     const alternar = (lista, id) => lista.includes(id) ? lista.filter(x => x !== id) : lista.concat(id);
@@ -562,13 +580,15 @@
         const validos = PROJETOS.flatMap(p => p.areas).filter(a => r.modulos.includes(a.modulo)).flatMap(a => a.recursos.map(x => x.id));
         const bloqueios = r.bloqueios.filter(b => validos.includes(b));
         const senha = r.senha;
+        adicionarPessoa();
         salvando = true;
         renderEditor();
         try {
             if (novo) {
-                await API.criarUsuario({ usuario: r.usuario, senha, nome, nome_curto: curto, papel: r.papel, locais: r.locais, modulos: r.modulos, bloqueios });
+                await API.criarUsuario({ usuario: r.usuario, senha, nome, nome_curto: curto, papel: r.papel, locais: r.locais, modulos: r.modulos, bloqueios, pessoas: r.pessoas });
             } else {
                 const valores = { nome, nome_curto: curto || null };
+                if (JSON.stringify(r.pessoas) !== JSON.stringify(listaDe(u.pessoas, []))) valores.pessoas = r.pessoas;
                 const eu = u.id === (API.usuarioAtual() || {}).id;
                 if (!eu && !u.administrador && r.papel !== u.papel) valores.papel = r.papel;
                 if (!u.administrador) {
@@ -636,6 +656,8 @@
             else if (acao === 'recurso') r.bloqueios = alternar(r.bloqueios, id);
             else if (acao === 'local') r.locais = alternar(r.locais, id);
             else if (acao === 'papel') r.papel = id;
+            else if (acao === 'addPessoa') { adicionarPessoa(); setTimeout(() => { const c = el('edPessoa'); if (c) c.focus(); }, 0); }
+            else if (acao === 'tirarPessoa') r.pessoas = r.pessoas.filter((_, i) => i !== Number(id));
             else if (acao === 'verSenha') r.verSenha = !r.verSenha;
             else if (acao === 'gerar') { r.senha = gerarSenha(); r.verSenha = true; }
             else return;
@@ -674,6 +696,14 @@
             r[c] = e.target.value;
             if (c === 'nome_curto') r.curtoAuto = false;
         }
+    });
+
+    // Enter no nome da pessoa = Adicionar
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' || e.target.id !== 'edPessoa') return;
+        e.preventDefault();
+        adicionarPessoa(); erroEditor = ''; renderEditor();
+        setTimeout(() => { const c = el('edPessoa'); if (c) c.focus(); }, 0);
     });
 
     el('janelaCancelar').addEventListener('click', fecharJanela);

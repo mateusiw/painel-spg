@@ -293,6 +293,9 @@
     // Único gestor que pode gerenciar usuários
     function isAdmin() { const u = usuarioAtual(); return isGestor() && u.administrador === true; }
     function nomeUsuario(u) { u = u || usuarioAtual(); return u ? (u.nome_curto || u.nome) : ''; }
+    // Pessoas que usam o mesmo login (Cadastro de Usuários > "Pessoas que usam este login").
+    // Lista vazia = só o dono do login usa.
+    function pessoasDoUsuario(u) { u = u || usuarioAtual(); return u && Array.isArray(u.pessoas) ? u.pessoas.filter(Boolean) : []; }
 
     async function login(usuario, senha) {
         const login = String(usuario || '').trim().toLowerCase();
@@ -845,6 +848,7 @@
         if (Array.isArray(dados.locais) && dados.locais.length) valores.locais = dados.locais;
         if (Array.isArray(dados.modulos)) valores.modulos = dados.modulos;
         if (Array.isArray(dados.bloqueios)) valores.bloqueios = dados.bloqueios;
+        if (Array.isArray(dados.pessoas) && dados.pessoas.length) valores.pessoas = dados.pessoas;
         await atualizarUsuario(r.id, valores);
         return r.id;
     }
@@ -2177,7 +2181,7 @@
 
     window.IrrigacaoAPI = {
         // login
-        login, logout, usuarioAtual, isGestor, isAdmin, nomeUsuario, atualizarPerfil, listarPerfis, aniversariosOrganograma, producaoEstufaPainel, sessaoValida,
+        login, logout, usuarioAtual, isGestor, isAdmin, nomeUsuario, pessoasDoUsuario, atualizarPerfil, listarPerfis, aniversariosOrganograma, producaoEstufaPainel, sessaoValida,
         // cliente do banco e fila offline, para os projetos com backend próprio (respeitam as regras de acesso)
         cliente: sb, enfileirar,
         // projetos e módulos
