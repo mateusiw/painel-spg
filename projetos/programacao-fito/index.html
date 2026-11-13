@@ -22,6 +22,8 @@
     <script src="../../lista-moderna.js"></script>
     <script src="../../trava-fundo.js"></script>
     <script src="../../barra-abas.js"></script>
+    <script src="../../seletor-periodo.js"></script>                      <!-- período dos Registros -->
+    <script src="../../album-fotos.js"></script>                          <!-- álbum das fotos dos Registros -->
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -175,6 +177,27 @@
             </div>
             <div id="filtrosSep" role="tablist" aria-label="Filtrar pedidos" class="flex w-fit bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1"></div>
             <div id="listaSeparacoes" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+        </section>
+
+        <!-- ================= REGISTROS (aplicações feitas e produtos separados; mesmo formato do histórico da Energia) ================= -->
+        <section id="view-registros" class="hidden space-y-4">
+            <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div id="regTipos" role="group" aria-label="Tipo de registro" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1"></div>
+                    <select id="regBloco" class="campo !w-auto min-w-[170px]" onchange="renderRegistros()" aria-label="Bloco"></select>
+                </div>
+                <div id="regPeriodo"></div>
+                <!-- Exibição: cartões ou tabela (como em Leituras → Energia) -->
+                <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+                    <div id="regModo" role="tablist" aria-label="Exibição" class="flex bg-slate-100 rounded-xl p-1 gap-1">
+                        <button type="button" data-modo="cartoes" onclick="setModoReg('cartoes')" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Cartões</button>
+                        <button type="button" data-modo="tabela" onclick="setModoReg('tabela')" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="table-2" class="w-3.5 h-3.5"></i> Tabela</button>
+                    </div>
+                    <button type="button" id="regAlbum" onclick="abrirAlbumRegistros()" title="Ver as fotos dos registros filtrados, uma atrás da outra" class="ml-auto btn-sec !min-h-[40px]"><i data-lucide="images" class="w-4 h-4 text-emerald-600"></i> <span>Álbum</span></button>
+                </div>
+            </div>
+            <div id="regResumo" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+            <div id="regLista" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 items-start"></div>
         </section>
     </main>
 
@@ -389,7 +412,9 @@
         function normalizarFoto(f) {
             if (!f) return null;
             if (typeof f === 'string') { const id = idDrive(f); return { id, url: id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1600` : f, link: f }; }
-            return { id: f.id || idDrive(f.url || f.link), url: f.url || '', link: f.link || '' };
+            const foto = { id: f.id || idDrive(f.url || f.link), url: f.url || '', link: f.link || '' };
+            if (f.bloco) foto.bloco = String(f.bloco);   // foto da separação: de qual bloco é
+            return foto;
         }
         const listaFotos = v => (Array.isArray(v) ? v : String(v || '').split('\n').filter(Boolean)).map(normalizarFoto).filter(Boolean);
         const miniatura = f => f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w400` : f.url;
@@ -455,7 +480,7 @@
         // ------------------------------------------------------------
         //  Abas e navegação
         // ------------------------------------------------------------
-        const ABAS = [{ id: 'programacoes', nome: 'Programações', icone: 'clipboard-list', cor: '5, 150, 105' }, { id: 'separacao', nome: 'Separação', icone: 'package-check', cor: '217, 119, 6' }, { id: 'modelos', nome: 'Modelos', icone: 'library', cor: '79, 70, 229' }];
+        const ABAS = [{ id: 'programacoes', nome: 'Programações', icone: 'clipboard-list', cor: '5, 150, 105' }, { id: 'separacao', nome: 'Separação', icone: 'package-check', cor: '217, 119, 6' }, { id: 'registros', nome: 'Registros', icone: 'history', cor: '14, 116, 144' }, { id: 'modelos', nome: 'Modelos', icone: 'library', cor: '79, 70, 229' }];
         const abasVisiveis = () => ABAS.filter(a => (a.id !== 'modelos' || podeModelos()) && (a.id !== 'separacao' || veSeparacao())).map(a => {
             const abertos = a.id === 'separacao' ? separacoes.filter(s => s.status === 'ABERTA').length : 0;
             return abertos ? { ...a, nome: `${a.nome} (${abertos})` } : a;
@@ -473,21 +498,22 @@
             if (id === 'modelos' && !podeModelos()) id = 'programacoes';
             if (id === 'separacao' && !veSeparacao()) id = 'programacoes';
             aba = id;
-            irPara(id === 'modelos' ? 'modelos' : id === 'separacao' ? 'separacao' : 'lista');
+            irPara(id === 'modelos' ? 'modelos' : id === 'separacao' ? 'separacao' : id === 'registros' ? 'registros' : 'lista');
         }
         function irPara(view) {
             if (view === 'modelos' && !podeModelos()) view = 'lista';
             if (view === 'separacao' && !veSeparacao()) view = 'lista';
             viewAtual = view;
-            ['lista', 'editor', 'exec', 'modelos', 'separacao'].forEach(v => el('view-' + v).classList.toggle('hidden', v !== view));
+            ['lista', 'editor', 'exec', 'modelos', 'separacao', 'registros'].forEach(v => el('view-' + v).classList.toggle('hidden', v !== view));
             el('barraFiltros').classList.toggle('hidden', view !== 'lista');
             el('barraFixa').classList.toggle('max-lg:hidden', view !== 'lista');   // no celular, fora da lista, não há o que mostrar
-            aba = view === 'modelos' ? 'modelos' : view === 'separacao' ? 'separacao' : 'programacoes';
+            aba = view === 'modelos' ? 'modelos' : view === 'separacao' ? 'separacao' : view === 'registros' ? 'registros' : 'programacoes';
             desenharAbas(); if (barra) barra.atualizar();
             window.scrollTo(0, 0);
             if (view === 'lista') renderLista();
             if (view === 'modelos') renderModelos();
             if (view === 'separacao') { renderSeparacoes(); carregarSeparacoes(); }
+            if (view === 'registros') { montarRegistros(); renderRegistros(); carregarRegistros(); }
         }
         function atualizarPermissoes() {
             el('btnNova').classList.toggle('hidden', !podeProgramar());
@@ -499,6 +525,7 @@
         }
         async function atualizarTudo() {
             if (viewAtual === 'exec' && atual) { await abrirExecucao(atual.id, true); return; }
+            if (viewAtual === 'registros') carregarRegistros();
             await Promise.all([carregarLista(), carregarModelos(), carregarSeparacoes()]);
         }
 
@@ -1425,7 +1452,7 @@
         function setFiltroSep(f) { filtroSep = f; renderSeparacoes(); }
         function renderSeparacoes() {
             el('sepExplica').innerHTML = podeSeparar()
-                ? 'Pedidos de separação de produtos para as aplicações. Marque cada produto conforme for separando e toque em <b>Concluir separação</b> no fim: quem pediu recebe o aviso.'
+                ? 'Pedidos de separação de produtos para as aplicações. Os produtos vêm <b>por bloco</b>: separe um bloco de cada vez, marque cada produto e tire a foto dos produtos daquele bloco. No fim, toque em <b>Concluir separação</b>: quem pediu recebe o aviso.'
                 : 'Para pedir a separação dos produtos de uma aplicação, toque no ícone <b>de caixa</b> no cartão da programação. Quem tem a permissão "Separar produtos" recebe o aviso no celular.';
             el('filtrosSep').innerHTML = FILTROS_SEP.map(([id, nome]) => `<button type="button" role="tab" aria-selected="${filtroSep === id}" onclick="setFiltroSep('${id}')" class="px-3.5 min-h-[40px] rounded-xl text-xs font-bold transition-all ${filtroSep === id ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500'}">${nome}</button>`).join('');
             const lista = separacoes.filter(s => filtroSep === 'abertas' ? s.status === 'ABERTA' : filtroSep === 'separadas' ? s.status === 'SEPARADA' : true);
@@ -1439,6 +1466,143 @@
             alvo.innerHTML = lista.map(cartaoSeparacao).join('');
             icones();
         }
+        // Separação por bloco: cada item e cada foto levam o bloco ("bloco"). Pedidos antigos
+        // (sem bloco) ficam num grupo só, como antes. k / n = posição no pedido inteiro.
+        const rotuloBlocoSep = b => !b ? 'Produtos' : /^(bloco|blocos|estufa)\b/i.test(b) ? b : `Bloco ${b}`;
+        function gruposSeparacao(s) {
+            const grupos = [];
+            const grupo = b => { let g = grupos.find(x => x.bloco === b); if (!g) grupos.push(g = { bloco: b, itens: [], fotos: [] }); return g; };
+            s.itens.forEach((it, k) => grupo(String(it.bloco || '')).itens.push({ it, k }));
+            if (!grupos.length) grupo('');
+            // Produtos em ordem alfabética (nomes parecidos ficam juntos, ex.: FULL GROW e FULL GROW DN)
+            grupos.forEach(g => g.itens.sort((a, b) => porNome(a.it.nome, b.it.nome)));
+            // Foto sem bloco (pedido antigo) ou de um bloco que saiu do pedido: vai para o primeiro grupo
+            s.fotos.forEach((f, n) => (grupos.find(x => x.bloco === String(f.bloco || '')) || grupos[0]).fotos.push({ f, n }));
+            return grupos;
+        }
+        // Com mais de um bloco: total de cada produto somando os blocos (para tirar do estoque de uma vez)
+        function totalSeparacaoHtml(s) {
+            if (gruposSeparacao(s).length < 2) return '';
+            const total = new Map();
+            s.itens.forEach(it => {
+                const chave = String(it.nome || '').trim().toUpperCase() + '|' + (it.unidade || '');
+                const t = total.get(chave) || { nome: String(it.nome || '').trim(), unidade: it.unidade || '', soma: 0, valido: true };
+                const n = numeroDe(it.quantidade);
+                if (isNaN(n)) t.valido = false; else t.soma += n;
+                total.set(chave, t);
+            });
+            return `<details class="mt-3 rounded-2xl ring-1 ring-slate-200/80 overflow-hidden group">
+                <summary class="flex items-center gap-2 px-3 min-h-[44px] cursor-pointer select-none text-[12px] font-extrabold text-slate-600 bg-slate-50">
+                    <i data-lucide="sigma" class="w-4 h-4 text-amber-500"></i><span class="flex-1">Total dos blocos · ${total.size} produto${total.size === 1 ? '' : 's'}</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180"></i></summary>
+                <div class="divide-y divide-slate-100">${[...total.values()].map(t => `<div class="flex items-center gap-3 px-3 py-2">
+                    <span class="flex-1 min-w-0 text-[13px] font-semibold text-slate-700 truncate">${esc(t.nome)}</span>
+                    <span class="text-[13px] font-extrabold text-slate-900 whitespace-nowrap">${t.valido ? esc(fmtNumero(t.soma)) : '—'} ${esc(t.unidade)}</span></div>`).join('')}</div>
+            </details>`;
+        }
+
+        // ---------- Ver a separação por BLOCO ou por PRODUTO ----------
+        // Por produto: tudo de um produto junto (ex.: FULL GROW em todos os blocos), em ordem alfabética,
+        // para separar de uma vez; as fotos continuam por bloco. A escolha fica guardada no aparelho.
+        let modoSep = localStorage.getItem('fito_sep_modo') === 'produto' ? 'produto' : 'bloco';
+        function setModoSep(m) { modoSep = m; localStorage.setItem('fito_sep_modo', m); renderSeparacoes(); }
+        const chaveProduto = it => String(it.nome || '').trim().toUpperCase() + '|' + (it.unidade || '');
+        const porNome = (a, b) => String(a).localeCompare(String(b), 'pt-BR', { numeric: true, sensitivity: 'base' });
+        function produtosSeparacao(s) {
+            const mapa = new Map();
+            s.itens.forEach((it, k) => {
+                const c = chaveProduto(it);
+                const p = mapa.get(c) || { chave: c, nome: String(it.nome || '').trim(), unidade: it.unidade || '', itens: [], soma: 0, valido: true };
+                p.itens.push({ it, k });
+                const n = numeroDe(it.quantidade);
+                if (isNaN(n)) p.valido = false; else p.soma += n;
+                mapa.set(c, p);
+            });
+            return [...mapa.values()].sort((a, b) => porNome(a.nome, b.nome));
+        }
+        function visaoSeparacaoHtml(s, aberta, marcar) {
+            const grupos = gruposSeparacao(s);
+            if (grupos.length < 2) return blocosSeparacaoHtml(s, aberta, marcar);
+            const botao = (m, icone, texto) => `<button type="button" onclick="setModoSep('${m}')" aria-pressed="${modoSep === m}" class="flex-1 min-h-[40px] flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold ${modoSep === m ? 'bg-white shadow-sm ring-1 ring-slate-200 text-emerald-700' : 'text-slate-500'}"><i data-lucide="${icone}" class="w-3.5 h-3.5"></i>${texto}</button>`;
+            const seletor = `<div class="mt-3 flex gap-1 bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/60 p-1">${botao('bloco', 'map-pin', 'Por bloco')}${botao('produto', 'package', 'Por produto')}</div>`;
+            return seletor + (modoSep === 'produto' ? produtosSeparacaoHtml(s, grupos, aberta, marcar) : blocosSeparacaoHtml(s, aberta, marcar) + totalSeparacaoHtml(s));
+        }
+        function produtosSeparacaoHtml(s, grupos, aberta, marcar) {
+            const lista = produtosSeparacao(s).map(p => {
+                const feitos = p.itens.filter(x => x.it.separado).length;
+                const tudo = feitos === p.itens.length;
+                const cabecalho = `<span class="flex-1 min-w-0"><span class="block text-[13px] font-extrabold ${aberta && tudo ? 'text-slate-400 line-through' : 'text-slate-800'} truncate">${esc(p.nome)}</span>
+                    <span class="block text-[11px] font-bold text-slate-500">${p.itens.length} bloco${p.itens.length === 1 ? '' : 's'}${aberta ? ` · ${feitos} de ${p.itens.length} separados` : ''}</span></span>
+                    <span class="text-sm font-black text-slate-900 whitespace-nowrap">${p.valido ? esc(fmtNumero(p.soma)) : '—'} ${esc(p.unidade)}</span>`;
+                const linhas = p.itens.slice().sort((a, b) => porNome(a.it.bloco || '', b.it.bloco || '')).map(({ it, k }) => {
+                    const linha = `<span class="flex-1 min-w-0 text-[12px] font-semibold ${it.separado ? 'text-slate-400 line-through' : 'text-slate-600'} truncate">${esc(rotuloBlocoSep(it.bloco))}</span><span class="text-[13px] font-extrabold ${it.separado ? 'text-slate-400' : 'text-slate-900'} whitespace-nowrap">${esc(it.quantidade)} ${esc(it.unidade)}</span>`;
+                    return marcar
+                        ? `<button type="button" onclick="marcarItemSeparado('${esc(s.id)}', ${k})" aria-pressed="${!!it.separado}" class="w-full flex items-center gap-3 pl-6 pr-3 min-h-[44px] text-left active:bg-emerald-50"><span class="marca-sep ${it.separado ? 'on' : ''}"><i data-lucide="check" class="w-4 h-4"></i></span>${linha}</button>`
+                        : `<div class="flex items-center gap-3 pl-6 pr-3 py-2">${s.status === 'SEPARADA' || it.separado ? `<i data-lucide="${it.separado ? 'check' : 'minus'}" class="w-4 h-4 shrink-0 ${it.separado ? 'text-emerald-600' : 'text-slate-300'}"></i>` : ''}${linha}</div>`;
+                }).join('');
+                return `<div class="rounded-2xl ring-1 ${aberta && tudo ? 'ring-emerald-200' : 'ring-slate-200/80'} overflow-hidden">
+                    ${marcar
+                        ? `<button type="button" onclick="marcarProdutoSeparado('${esc(s.id)}', ${esc(JSON.stringify(p.chave))})" aria-pressed="${tudo}" title="Marcar ${esc(p.nome)} em todos os blocos" class="w-full flex items-center gap-3 px-3 min-h-[52px] text-left ${tudo ? 'bg-emerald-50' : 'bg-slate-50'} active:bg-emerald-100"><span class="marca-sep ${tudo ? 'on' : ''}"><i data-lucide="check-check" class="w-4 h-4"></i></span>${cabecalho}</button>`
+                        : `<div class="flex items-center gap-3 px-3 min-h-[48px] ${aberta && tudo ? 'bg-emerald-50' : 'bg-slate-50'}">${cabecalho}</div>`}
+                    <div class="divide-y divide-slate-100 border-t border-slate-100">${linhas}</div>
+                </div>`;
+            }).join('');
+            // Fotos continuam por bloco: resumo de quais já têm foto
+            const fotos = `<div class="mt-3 rounded-2xl bg-slate-50 ring-1 ring-slate-200/80 px-3 py-2.5">
+                <p class="rotulo !mb-1.5"><i data-lucide="camera" class="w-3.5 h-3.5 text-emerald-500"></i> Fotos por bloco</p>
+                <div class="flex flex-wrap gap-1.5">${grupos.map(g => `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold ${g.fotos.length ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-white text-amber-700 ring-1 ring-amber-200'}"><i data-lucide="${g.fotos.length ? 'check' : 'camera-off'}" class="w-3 h-3"></i>${esc(rotuloBlocoSep(g.bloco))}${g.fotos.length ? ` · ${g.fotos.length}` : ''}</span>`).join('')}</div>
+                ${marcar ? `<button type="button" onclick="setModoSep('bloco')" class="mt-2 min-h-[36px] text-xs font-bold text-emerald-700 flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> Tirar as fotos na visão Por bloco</button>` : ''}
+            </div>`;
+            return `<div class="mt-3 space-y-2">${lista}</div>${fotos}`;
+        }
+        // Marca (ou desmarca) um produto em todos os blocos de uma vez
+        async function marcarProdutoSeparado(id, chave) {
+            const s = separacoes.find(x => x.id === id); if (!s || s.status !== 'ABERTA' || !podeSeparar()) return;
+            const doProduto = s.itens.filter(i => chaveProduto(i) === chave);
+            const marcarTodos = doProduto.some(i => !i.separado);
+            const antes = s.itens.map(i => ({ ...i }));
+            s.itens = s.itens.map(i => chaveProduto(i) === chave ? { ...i, separado: marcarTodos } : i);
+            renderSeparacoes();
+            try { erroBanco(await sb.from('fito_separacoes').update({ itens: s.itens, atualizado_em: new Date().toISOString() }).eq('id', id).eq('status', 'ABERTA')); gravarCache(CACHE_SEP, separacoes); }
+            catch (e) { s.itens = antes; renderSeparacoes(); erroSep(e); }
+        }
+
+        // Visão "por bloco": produtos e fotos de cada bloco
+        function blocosSeparacaoHtml(s, aberta, marcar) {
+                return gruposSeparacao(s).map((g, gi, todos) => {
+                    const porBloco = todos.length > 1 || !!g.bloco;
+                    const feitosG = g.itens.filter(x => x.it.separado).length;
+                    const prontoG = feitosG === g.itens.length && g.fotos.length > 0;
+                    const nomeG = rotuloBlocoSep(g.bloco);
+                    return `<div class="mt-3 rounded-2xl ring-1 ${porBloco && aberta && prontoG ? 'ring-emerald-200' : 'ring-slate-200/80'} overflow-hidden">
+                    ${porBloco ? `<div class="flex items-center gap-2 px-3 py-2 ${aberta && prontoG ? 'bg-emerald-50' : 'bg-slate-50'} border-b border-slate-100">
+                        <i data-lucide="${aberta && prontoG ? 'check-circle-2' : 'map-pin'}" class="w-4 h-4 shrink-0 ${aberta && prontoG ? 'text-emerald-600' : 'text-rose-500'}"></i>
+                        <span class="flex-1 min-w-0 text-[13px] font-extrabold text-slate-800 truncate">${esc(nomeG)}</span>
+                        ${aberta ? `<span class="text-[11px] font-bold ${feitosG === g.itens.length ? 'text-emerald-700' : 'text-slate-500'} whitespace-nowrap">${feitosG} de ${g.itens.length}</span>` : ''}
+                    </div>` : ''}
+                    <div class="divide-y divide-slate-100">
+                    ${g.itens.map(({ it, k }, j) => {
+                        const linha = `<span class="flex-1 min-w-0 text-[13px] font-semibold ${it.separado ? 'text-slate-400 line-through' : 'text-slate-700'} truncate">${esc(it.nome)}</span><span class="text-[13px] font-extrabold ${it.separado ? 'text-slate-400' : 'text-slate-900'} whitespace-nowrap">${esc(it.quantidade)} ${esc(it.unidade)}</span>`;
+                        return marcar
+                            ? `<button type="button" onclick="marcarItemSeparado('${esc(s.id)}', ${k})" aria-pressed="${!!it.separado}" class="w-full flex items-center gap-3 px-3 min-h-[48px] text-left ${j % 2 ? 'bg-slate-50/70' : ''} active:bg-emerald-50"><span class="marca-sep ${it.separado ? 'on' : ''}"><i data-lucide="check" class="w-4 h-4"></i></span>${linha}</button>`
+                            : `<div class="flex items-center gap-3 px-3 py-2 ${j % 2 ? 'bg-slate-50/70' : ''}">${s.status === 'SEPARADA' || it.separado ? `<i data-lucide="${it.separado ? 'check' : 'minus'}" class="w-4 h-4 shrink-0 ${it.separado ? 'text-emerald-600' : 'text-slate-300'}"></i>` : ''}${linha}</div>`;
+                    }).join('')}
+                    </div>
+                    ${marcar || g.fotos.length ? `<div class="px-3 py-2.5 border-t border-slate-100">
+                        <p class="rotulo !mb-2"><i data-lucide="camera" class="w-3.5 h-3.5 text-emerald-500"></i> Fotos ${porBloco ? 'do ' + esc(nomeG) : 'dos produtos separados'}${g.fotos.length ? ` · ${g.fotos.length}` : ''}</p>
+                        <div class="flex flex-wrap gap-2">
+                            ${g.fotos.map(({ f, n }, j) => `<div class="relative">${imgFoto(f, `Foto ${j + 1} ${porBloco ? 'do ' + nomeG : 'da separação'}`)}${marcar ? `<button type="button" onclick="removerFotoSeparacao('${esc(s.id)}', ${n})" class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white shadow ring-1 ring-slate-200 text-rose-600 flex items-center justify-center" aria-label="Tirar a foto ${j + 1}"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}</div>`).join('')}
+                            ${marcar && g.fotos.length < MAX_FOTOS_SEPARACAO ? `<label class="thumb !border-dashed !border-2 flex flex-col items-center justify-center gap-1 text-emerald-700 cursor-pointer hover:bg-emerald-50">
+                                <i data-lucide="camera" class="w-5 h-5"></i><span class="text-[10px] font-bold">Adicionar</span>
+                                <input type="file" accept="image/*" multiple class="hidden" onchange="anexarFotosSeparacao('${esc(s.id)}', this, ${gi})">
+                            </label>` : ''}
+                        </div>
+                        ${marcar && !g.fotos.length && EXIGIR_FOTO_SEPARACAO ? `<p class="mt-1.5 text-[11px] font-medium text-amber-700">Tire pelo menos uma foto ${porBloco ? 'dos produtos do ' + esc(nomeG) : 'dos produtos separados'} para concluir.</p>` : ''}
+                    </div>` : ''}
+                </div>`;
+                }).join('');
+        }
+
         function cartaoSeparacao(s) {
             const aberta = s.status === 'ABERTA';
             const marcar = aberta && podeSeparar();
@@ -1457,25 +1621,7 @@
                     </div>
                     ${podeProgramar() ? `<button type="button" onclick="apagarPedido('${esc(s.id)}')" class="btn-sec btn-perigo !px-0 w-11 shrink-0" title="Apagar pedido" aria-label="Apagar este pedido de separação"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                 </div>
-                <div class="mt-3 rounded-2xl ring-1 ring-slate-100 overflow-hidden divide-y divide-slate-100">
-                    ${s.itens.map((it, k) => {
-                        const linha = `<span class="flex-1 min-w-0 text-[13px] font-semibold ${it.separado ? 'text-slate-400 line-through' : 'text-slate-700'} truncate">${esc(it.nome)}</span><span class="text-[13px] font-extrabold ${it.separado ? 'text-slate-400' : 'text-slate-900'} whitespace-nowrap">${esc(it.quantidade)} ${esc(it.unidade)}</span>`;
-                        return marcar
-                            ? `<button type="button" onclick="marcarItemSeparado('${esc(s.id)}', ${k})" aria-pressed="${!!it.separado}" class="w-full flex items-center gap-3 px-3 min-h-[48px] text-left ${k % 2 ? 'bg-slate-50/70' : ''} active:bg-emerald-50"><span class="marca-sep ${it.separado ? 'on' : ''}"><i data-lucide="check" class="w-4 h-4"></i></span>${linha}</button>`
-                            : `<div class="flex items-center gap-3 px-3 py-2 ${k % 2 ? 'bg-slate-50/70' : ''}">${s.status === 'SEPARADA' || it.separado ? `<i data-lucide="${it.separado ? 'check' : 'minus'}" class="w-4 h-4 shrink-0 ${it.separado ? 'text-emerald-600' : 'text-slate-300'}"></i>` : ''}${linha}</div>`;
-                    }).join('')}
-                </div>
-                ${marcar || s.fotos.length ? `<div class="mt-3">
-                    <p class="rotulo !mb-2"><i data-lucide="camera" class="w-3.5 h-3.5 text-emerald-500"></i> Fotos dos produtos separados${s.fotos.length ? ` · ${s.fotos.length}` : ''}</p>
-                    <div class="flex flex-wrap gap-2">
-                        ${s.fotos.map((f, n) => `<div class="relative">${imgFoto(f, `Foto ${n + 1} da separação`)}${marcar ? `<button type="button" onclick="removerFotoSeparacao('${esc(s.id)}', ${n})" class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white shadow ring-1 ring-slate-200 text-rose-600 flex items-center justify-center" aria-label="Tirar a foto ${n + 1}"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}</div>`).join('')}
-                        ${marcar && s.fotos.length < MAX_FOTOS_SEPARACAO ? `<label class="thumb !border-dashed !border-2 flex flex-col items-center justify-center gap-1 text-emerald-700 cursor-pointer hover:bg-emerald-50">
-                            <i data-lucide="camera" class="w-5 h-5"></i><span class="text-[10px] font-bold">Adicionar</span>
-                            <input type="file" accept="image/*" multiple class="hidden" onchange="anexarFotosSeparacao('${esc(s.id)}', this)">
-                        </label>` : ''}
-                    </div>
-                    ${marcar && !s.fotos.length && EXIGIR_FOTO_SEPARACAO ? '<p class="mt-1.5 text-[11px] font-medium text-amber-700">Tire pelo menos uma foto dos produtos separados para concluir.</p>' : ''}
-                </div>` : ''}
+                ${visaoSeparacaoHtml(s, aberta, marcar)}
                 ${s.observacao ? `<p class="mt-2 text-xs text-slate-600 leading-relaxed"><b class="text-slate-500">Obs.:</b> ${esc(s.observacao)}</p>` : ''}
                 ${s.obsSeparacao ? `<p class="mt-1 text-xs text-slate-600 leading-relaxed"><b class="text-slate-500">Separação:</b> ${esc(s.obsSeparacao)}</p>` : ''}
                 <p class="mt-auto pt-3 text-[11px] font-medium text-slate-400">Pedido por ${esc(nomeProprio(s.solicitante) || '—')} em ${esc(dataHora(s.criadoEm))}${s.status === 'SEPARADA' ? ` · separado por ${esc(nomeProprio(s.separador))} em ${esc(dataHora(s.separadoEm))}` : ''}</p>
@@ -1494,22 +1640,26 @@
             catch (e) { s.itens = antes; renderSeparacoes(); erroSep(e); }
         }
         // Envia as fotos para o Drive (subpasta "AAAA-MM Separação de produtos" na pasta da Fito) e grava no pedido
-        async function anexarFotosSeparacao(id, input) {
+        // gi = grupo (bloco) do pedido em que a foto foi tirada
+        async function anexarFotosSeparacao(id, input, gi) {
             const arquivos = Array.from(input.files || []).filter(f => f.type.startsWith('image/'));
             input.value = '';
             const s = separacoes.find(x => x.id === id); if (!s || s.status !== 'ABERTA' || !podeSeparar() || !arquivos.length) return;
-            if (s.fotos.length + arquivos.length > MAX_FOTOS_SEPARACAO) return avisar(`Cada pedido aceita até ${MAX_FOTOS_SEPARACAO} fotos.`, 'Limite de fotos');
+            const g = gruposSeparacao(s)[gi || 0];
+            const bloco = g ? g.bloco : '';
+            if ((g ? g.fotos.length : s.fotos.length) + arquivos.length > MAX_FOTOS_SEPARACAO) return avisar(`Cada ${bloco ? 'bloco' : 'pedido'} aceita até ${MAX_FOTOS_SEPARACAO} fotos.`, 'Limite de fotos');
             if (!navigator.onLine) return avisar('As fotos vão direto para o Drive: conecte-se à internet para enviar.', 'Sem internet');
             const dia = s.data || hojeISO();
             const pasta = `${dia.slice(0, 7)} Separação de produtos`;
-            const locais = String(s.locais || '').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 40);
+            const locais = String(bloco ? rotuloBlocoSep(bloco) : s.locais || '').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 40);
             const d = new Date(), carimbo = `${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
             const novas = [];
             try {
                 for (let n = 0; n < arquivos.length; n++) {
                     carregando(true, `Enviando foto ${n + 1} de ${arquivos.length} para o Drive...`);
                     const dataUrl = await comprimirImagem(arquivos[n]);
-                    novas.push(await enviarFotoDrive(dataUrl, `${dia} ${s.turno || ''} - Separação - ${locais || 'produtos'} - ${carimbo}-${s.fotos.length + n + 1}.jpg`, pasta));
+                    const foto = await enviarFotoDrive(dataUrl, `${dia} ${s.turno || ''} - Separação - ${locais || 'produtos'} - ${carimbo}-${s.fotos.length + n + 1}.jpg`, pasta);
+                    novas.push(bloco ? Object.assign({}, foto, { bloco }) : foto);
                 }
             } catch (e) { if (!novas.length) { erro(e); return; } avisar(`Só ${novas.length} de ${arquivos.length} foto(s) foram enviadas: ${e.message || e}`, 'Envio incompleto'); }
             const fotos = s.fotos.concat(novas);
@@ -1529,7 +1679,13 @@
         }
         async function concluirSeparacao(id) {
             const s = separacoes.find(x => x.id === id); if (!s || s.status !== 'ABERTA' || !podeSeparar()) return;
-            if (EXIGIR_FOTO_SEPARACAO && !s.fotos.length) return avisar('Tire pelo menos uma foto dos produtos separados antes de concluir.', 'Falta a foto');
+            if (EXIGIR_FOTO_SEPARACAO) {
+                // Separação por bloco: cada bloco precisa da sua foto
+                const semFoto = gruposSeparacao(s).filter(g => !g.fotos.length);
+                if (semFoto.length) return avisar(semFoto.length === 1 && !semFoto[0].bloco
+                    ? 'Tire pelo menos uma foto dos produtos separados antes de concluir.'
+                    : `Falta foto em: ${juntarNomes(semFoto.map(g => rotuloBlocoSep(g.bloco)))}. Tire pelo menos uma foto dos produtos de cada bloco antes de concluir.`, 'Falta a foto');
+            }
             const faltam = s.itens.filter(i => !i.separado).length;
             if (faltam && !(await Dialogo.confirmar(`${faltam} ${faltam === 1 ? 'produto ainda não foi marcado' : 'produtos ainda não foram marcados'} como separado. Concluir assim mesmo?`, { titulo: 'Concluir separação', botao: 'Concluir' }))) return;
             const obs = await pedirTexto('Concluir separação', 'Alguma observação para quem pediu? (opcional, ex.: faltou produto, entregue na casa de química)', '');
@@ -1580,75 +1736,94 @@
             carregando(false);
             const chaveNome = s => String(s || '').trim().toLowerCase();
             const modeloDaOperacao = o => modelos.find(m => chaveNome(m.nome) && (chaveNome(m.nome) === chaveNome(o.nomeAplicacao) || chaveNome(m.nome) === chaveNome(o.tratamento)));
-            // Cada bloco conta uma vez: o mesmo modelo em 2 blocos = 2 x a dose do modelo.
-            // Bloco sem modelo cadastrado usa as doses digitadas na própria programação.
-            const porProduto = new Map();
+            // Separação POR BLOCO: cada bloco tem a sua lista (fica mais fácil separar e fotografar).
+            // Vale a dose escrita na PROGRAMAÇÃO (a mesma do checklist). O modelo só entra quando a
+            // operação não tem nenhuma dose preenchida (antes o modelo vinha primeiro e, se a dose foi
+            // ajustada na programação, a separação saía com a dose antiga do modelo).
+            // O mesmo bloco duas vezes na programação soma as duas.
+            const porBloco = new Map();   // bloco -> Map(produto -> { nome, unidade, soma, valido })
             const modelosUsados = new Set();
             let semModelo = 0;
+            const temDose = lista => (lista || []).some(x => String(x.nome || '').trim() && !isNaN(numeroDe(x.dose)));
             p.operacoes.forEach(o => {
                 const m = modeloDaOperacao(o);
-                const produtos = m && m.produtos.some(x => String(x.nome || '').trim()) ? m.produtos : o.produtos;
+                const produtos = !temDose(o.produtos) && m && temDose(m.produtos) ? m.produtos : o.produtos;
                 if (produtos === o.produtos) { if (o.produtos.some(x => String(x.nome || '').trim())) semModelo++; } else modelosUsados.add(m.nome);
+                const bloco = String(o.bloco || '').trim();
+                if (!porBloco.has(bloco)) porBloco.set(bloco, new Map());
+                const doBloco = porBloco.get(bloco);
                 produtos.forEach(x => {
                     const nome = String(x.nome || '').trim(); if (!nome) return;
                     const chave = nome.toUpperCase() + '|' + (x.unidade || '');
-                    const item = porProduto.get(chave) || { nome, unidade: x.unidade || 'L', soma: 0, valido: true };
+                    const item = doBloco.get(chave) || { nome, unidade: x.unidade || 'L', soma: 0, valido: true };
                     const n = numeroDe(x.dose);
                     if (isNaN(n)) item.valido = false; else item.soma += n;
-                    porProduto.set(chave, item);
+                    doBloco.set(chave, item);
                 });
             });
-            const blocos = [...new Set(p.operacoes.map(o => String(o.bloco || '').trim()).filter(Boolean))];
+            const blocos = [...porBloco.keys()].filter(Boolean);
             pedido = {
                 programacaoId: p.id, data: p.data, turno: p.turno,
                 locais: blocos.length ? `${blocos.length === 1 ? 'Bloco' : 'Blocos'} ${juntarNomes(blocos)}` : '',
                 // Já vem preenchida (dá para mudar); produto sem dose numérica fica para digitar
-                itens: [...porProduto.values()].map(i => {
-                    const total = i.valido && i.soma ? fmtNumero(i.soma) : '';
-                    return { nome: i.nome, unidade: i.unidade, quantidade: total, sugerido: total };
-                }),
+                blocos: [...porBloco.entries()].filter(([, itens]) => itens.size).map(([bloco, itens]) => ({
+                    bloco,
+                    itens: [...itens.values()].map(i => {
+                        const total = i.valido && i.soma ? fmtNumero(i.soma) : '';
+                        return { nome: i.nome, unidade: i.unidade, quantidade: total, sugerido: total };
+                    })
+                })),
                 origem: { modelos: [...modelosUsados], semModelo },
                 observacao: ''
             };
-            if (!pedido.itens.length) pedido.itens.push({ nome: '', unidade: 'L', quantidade: '', sugerido: '' });
+            if (!pedido.blocos.length) pedido.blocos.push({ bloco: blocos[0] || '', itens: [] });
+            pedido.blocos.forEach(b => { if (!b.itens.length) b.itens.push({ nome: '', unidade: 'L', quantidade: '', sugerido: '' }); });
             el('pedidoSub').textContent = `Aplicação de ${fmtData(p.data)} · ${nomeProprio(p.turno)}`;
             renderPedido();
             el('pedidoModal').classList.remove('hidden');
         }
+        const itensDoPedido = () => pedido.blocos.flatMap(b => b.itens);
         function renderPedido() {
-            const temSugestao = pedido.itens.some(i => i.sugerido && String(i.quantidade).trim() !== i.sugerido);
+            const todos = itensDoPedido();
+            const temSugestao = todos.some(i => i.sugerido && String(i.quantidade).trim() !== i.sugerido);
             const origem = pedido.origem || { modelos: [], semModelo: 0 };
             const textoOrigem = origem.modelos.length
-                ? `Quantidades preenchidas com as doses ${origem.modelos.length === 1 ? 'do modelo' : 'dos modelos'} ${esc(juntarNomes(origem.modelos.map(n => '"' + n + '"')))}${origem.semModelo ? ` e, nos blocos sem modelo, com as doses da programação` : ''}. Confira e ajuste se precisar.`
-                : (pedido.itens.some(i => i.sugerido) ? 'Quantidades preenchidas com a soma das doses da programação (nenhum modelo com o mesmo nome da aplicação). Confira e ajuste se precisar.' : '');
+                ? `Quantidades preenchidas com as doses da programação; nos blocos sem dose na programação, com ${origem.modelos.length === 1 ? 'o modelo' : 'os modelos'} ${esc(juntarNomes(origem.modelos.map(n => '"' + n + '"')))}. Confira e ajuste se precisar.`
+                : (todos.some(i => i.sugerido) ? 'Quantidades preenchidas com as doses da programação de cada bloco. Confira e ajuste se precisar.' : '');
             el('pedidoCorpo').innerHTML = `
                 <div><label class="rotulo" for="pedLocais"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i> Locais da aplicação</label>
                     <input id="pedLocais" class="campo" value="${esc(pedido.locais)}" placeholder="Ex.: Blocos 11 e 12" oninput="pedido.locais = this.value"></div>
                 <div>
                     <div class="flex items-end justify-between gap-2 mb-2">
-                        <span class="rotulo !mb-0"><i data-lucide="package" class="w-3.5 h-3.5 text-amber-500"></i> Produtos e quantidade a separar</span>
+                        <span class="rotulo !mb-0"><i data-lucide="package" class="w-3.5 h-3.5 text-amber-500"></i> Produtos a separar${pedido.blocos.length > 1 || pedido.blocos[0].bloco ? ' por bloco' : ''}</span>
                         ${temSugestao ? `<button type="button" onclick="usarSomaDoses()" class="min-h-[36px] text-xs font-bold text-emerald-700 flex items-center gap-1"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Voltar às quantidades sugeridas</button>` : ''}
                     </div>
-                    <div class="space-y-2">${pedido.itens.map((i, k) => `<div class="flex gap-2">
-                        <input class="campo flex-1 min-w-0" value="${esc(i.nome)}" placeholder="Produto" aria-label="Produto" oninput="pedido.itens[${k}].nome = this.value">
-                        <input class="campo !w-24" inputmode="decimal" value="${esc(i.quantidade)}" placeholder="${esc(i.sugerido || 'Qtd.')}" aria-label="Quantidade${i.sugerido ? ' (soma das doses: ' + esc(i.sugerido) + ')' : ''}" title="${i.sugerido ? 'Soma das doses: ' + esc(i.sugerido) : ''}" oninput="pedido.itens[${k}].quantidade = this.value">
-                        <select class="campo !w-20" aria-label="Unidade" onchange="pedido.itens[${k}].unidade = this.value">${UNIDADES.map(u => `<option ${i.unidade === u ? 'selected' : ''}>${u}</option>`).join('')}</select>
-                        <button type="button" onclick="removerItemPedido(${k})" class="btn-sec !px-2.5" title="Remover produto" aria-label="Remover produto"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    <div class="space-y-3">${pedido.blocos.map((b, bi) => `<div class="rounded-2xl ring-1 ring-slate-200/80 overflow-hidden">
+                        ${pedido.blocos.length > 1 || b.bloco ? `<p class="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[13px] font-extrabold text-slate-800"><i data-lucide="map-pin" class="w-4 h-4 text-rose-500"></i>${esc(rotuloBlocoSep(b.bloco))}</p>` : ''}
+                        <div class="p-2.5 space-y-2">${b.itens.map((i, k) => `<div class="flex gap-2">
+                            <input class="campo flex-1 min-w-0" value="${esc(i.nome)}" placeholder="Produto" aria-label="Produto" oninput="pedido.blocos[${bi}].itens[${k}].nome = this.value">
+                            <input class="campo !w-24" inputmode="decimal" value="${esc(i.quantidade)}" placeholder="${esc(i.sugerido || 'Qtd.')}" aria-label="Quantidade${i.sugerido ? ' (sugerida: ' + esc(i.sugerido) + ')' : ''}" title="${i.sugerido ? 'Sugerida: ' + esc(i.sugerido) : ''}" oninput="pedido.blocos[${bi}].itens[${k}].quantidade = this.value">
+                            <select class="campo !w-20" aria-label="Unidade" onchange="pedido.blocos[${bi}].itens[${k}].unidade = this.value">${UNIDADES.map(u => `<option ${i.unidade === u ? 'selected' : ''}>${u}</option>`).join('')}</select>
+                            <button type="button" onclick="removerItemPedido(${bi}, ${k})" class="btn-sec !px-2.5" title="Remover produto" aria-label="Remover produto"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>`).join('')}
+                        <button type="button" onclick="adicionarItemPedido(${bi})" class="min-h-[36px] text-xs font-bold text-emerald-700 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar produto${pedido.blocos.length > 1 || b.bloco ? ' neste bloco' : ''}</button>
+                        </div>
                     </div>`).join('')}</div>
                     ${textoOrigem ? `<p class="mt-1.5 text-[11px] font-medium text-slate-500 leading-relaxed">${textoOrigem}</p>` : ''}
-                    <button type="button" onclick="adicionarItemPedido()" class="mt-2 min-h-[36px] text-xs font-bold text-emerald-700 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar produto</button>
                 </div>
                 <div><label class="rotulo" for="pedObs"><i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-500"></i> Observação (opcional)</label>
                     <textarea id="pedObs" class="campo" rows="2" placeholder="Ex.: deixar na casa de química até as 16h" oninput="pedido.observacao = this.value">${esc(pedido.observacao)}</textarea></div>`;
             icones();
         }
-        function usarSomaDoses() { pedido.itens.forEach(i => { if (i.sugerido) i.quantidade = i.sugerido; }); renderPedido(); }
-        function adicionarItemPedido() { pedido.itens.push({ nome: '', unidade: 'L', quantidade: '', sugerido: '' }); renderPedido(); }
-        function removerItemPedido(k) { pedido.itens.splice(k, 1); if (!pedido.itens.length) adicionarItemPedido(); else renderPedido(); }
+        function usarSomaDoses() { itensDoPedido().forEach(i => { if (i.sugerido) i.quantidade = i.sugerido; }); renderPedido(); }
+        function adicionarItemPedido(bi) { pedido.blocos[bi || 0].itens.push({ nome: '', unidade: 'L', quantidade: '', sugerido: '' }); renderPedido(); }
+        function removerItemPedido(bi, k) { const b = pedido.blocos[bi]; b.itens.splice(k, 1); if (!b.itens.length) adicionarItemPedido(bi); else renderPedido(); }
         function fecharPedido() { el('pedidoModal').classList.add('hidden'); }
         async function enviarPedido() {
             if (!pedido || !podeProgramar()) return;
-            const itens = pedido.itens.filter(i => String(i.nome).trim() || String(i.quantidade).trim());
+            // Cada item leva o bloco (separação e fotos por bloco)
+            const itens = pedido.blocos.flatMap(b => b.itens.map(i => Object.assign({}, i, { bloco: b.bloco })))
+                .filter(i => String(i.nome).trim() || String(i.quantidade).trim());
             if (!itens.length) return avisar('Adicione pelo menos um produto.');
             const semNome = itens.find(i => !String(i.nome).trim());
             if (semNome) return avisar('Há uma quantidade sem o nome do produto.');
@@ -1660,7 +1835,8 @@
                 erroBanco(await sb.from('fito_separacoes').insert({
                     id, local: FITO_LOCAL, programacao_id: pedido.programacaoId, data_aplicacao: pedido.data || null, turno: pedido.turno || '',
                     locais: String(pedido.locais || '').trim(), observacao: String(pedido.observacao || '').trim(), solicitante: API.nomeUsuario(),
-                    itens: itens.map(i => ({ nome: String(i.nome).trim(), unidade: i.unidade || '', quantidade: String(i.quantidade).trim(), separado: false }))
+                    itens: itens.map(i => Object.assign({ nome: String(i.nome).trim(), unidade: i.unidade || '', quantidade: String(i.quantidade).trim(), separado: false },
+                        i.bloco ? { bloco: i.bloco } : {}))
                 }));
                 avisarSeparacao(id, 'aberta');
                 fecharPedido(); pedido = null;
@@ -1668,6 +1844,291 @@
                 carregando(false);
                 Dialogo.avisar('Pedido enviado. Quem separa os produtos recebe o aviso no celular e acompanha na aba Separação.', { titulo: 'Pedido enviado', tipo: 'sucesso' });
             } catch (e) { erroSep(e); }
+        }
+
+        // ------------------------------------------------------------
+        //  REGISTROS: aplicações feitas e produtos separados, no mesmo formato do histórico
+        //  da Energia (Leituras): período, resumo, Cartões | Tabela e álbum das fotos.
+        // ------------------------------------------------------------
+        let regTipo = lerGuardado('reg_tipo') === 'separados' ? 'separados' : 'aplicacoes';
+        let regModo = lerGuardado('reg_modo') === 'tabela' ? 'tabela' : 'cartoes';
+        let regPeriodo = null, regSeletor = null;
+        const regDados = { aplicacoes: null, separados: null };   // { chave: 'de|ate', lista }
+        let regVisiveis = [];
+        const podeVerSeparados = () => veSeparacao();
+
+        function montarRegistros() {
+            if (!podeVerSeparados()) regTipo = 'aplicacoes';
+            const tipos = [['aplicacoes', 'sprout', 'Aplicações feitas', 'text-emerald-600'], ['separados', 'package-check', 'Produtos separados', 'text-amber-600']]
+                .filter(t => t[0] === 'aplicacoes' || podeVerSeparados());
+            el('regTipos').innerHTML = tipos.map(([id, icone, nome, cor]) => `<button type="button" onclick="setTipoReg('${id}')" aria-pressed="${regTipo === id}" class="flex items-center justify-center gap-1.5 px-3 min-h-[40px] rounded-xl text-xs font-bold ${regTipo === id ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-slate-800' : 'text-slate-500'}"><i data-lucide="${icone}" class="w-4 h-4 ${cor}"></i>${nome}</button>`).join('');
+            if (!regSeletor && window.SeletorPeriodo) {
+                const d = new Date();
+                regSeletor = SeletorPeriodo.montar(el('regPeriodo'), {
+                    periodo: { modo: 'mes', dia: hojeISO(), mes: d.getMonth(), ano: d.getFullYear(), de: hojeISO(), ate: hojeISO() },
+                    anos: () => { const a = new Date().getFullYear(); return [a - 2, a - 1, a]; },
+                    aoMudar: (de, ate) => { regPeriodo = [de, ate]; renderRegistros(); carregarRegistros(); }
+                });
+                regPeriodo = SeletorPeriodo.intervalo(regSeletor.periodo());
+            }
+            icones();
+        }
+        function setTipoReg(t) { regTipo = t; guardar('reg_tipo', t); el('regBloco').value = ''; montarRegistros(); renderRegistros(); carregarRegistros(); }
+        function setModoReg(m) { regModo = m; guardar('reg_modo', m); renderRegistros(); }
+
+        // Busca no banco os registros do período (aplicações: pela data da programação)
+        async function carregarRegistros() {
+            if (!regPeriodo) return;
+            const [de, ate] = regPeriodo, tipo = regTipo, chave = `${de}|${ate}`;
+            const cacheLocal = 'fito_cache_reg_' + tipo + sufixoFito;
+            if (!regDados[tipo] || regDados[tipo].chave !== chave) {
+                const c = lerCache(cacheLocal);
+                regDados[tipo] = c && c.chave === chave ? c : { chave, lista: null };
+                renderRegistros();
+            }
+            try {
+                let lista;
+                if (tipo === 'aplicacoes') {
+                    const r = erroBanco(await sb.from('fito_operacoes')
+                        .select('*, fito_programacoes!inner(data, turno, local)')
+                        .eq('fito_programacoes.local', FITO_LOCAL).gte('fito_programacoes.data', de).lte('fito_programacoes.data', ate)
+                        .in('status', ['FEITO', 'NAO_FEITO']).limit(3000));
+                    lista = r.data.map(o => {
+                        const op = opDoBanco(o, o.fito_programacoes || {});
+                        const foto = (f, tipoFoto) => ({ ...f, tipoFoto });
+                        op.fotos = op.fotosPh.map(f => foto(f, 'pH')).concat(op.fotosVolume.map(f => foto(f, 'Volume')), op.fotosOutras.map(f => foto(f, 'Aplicação')));
+                        return op;
+                    }).sort((a, b) => String(b.data).localeCompare(String(a.data)) || String(b.executadoEm || '').localeCompare(String(a.executadoEm || '')));
+                } else {
+                    const r = erroBanco(await sb.from('fito_separacoes').select('*').eq('local', FITO_LOCAL).eq('status', 'SEPARADA')
+                        .gte('data_aplicacao', de).lte('data_aplicacao', ate).order('data_aplicacao', { ascending: false }).limit(1000));
+                    lista = r.data.map(sepDoBanco).sort((a, b) => String(b.data).localeCompare(String(a.data)) || String(b.separadoEm).localeCompare(String(a.separadoEm)));
+                }
+                if (regPeriodo[0] !== de || regPeriodo[1] !== ate || regTipo !== tipo) return;   // trocou no meio
+                regDados[tipo] = { chave, lista };
+                gravarCache(cacheLocal, regDados[tipo]);
+            } catch (e) {
+                if (!regDados[tipo].lista) regDados[tipo].erro = e.message || String(e);
+            }
+            if (viewAtual === 'registros' && regTipo === tipo) renderRegistros();
+        }
+
+        // Separação filtrada por bloco: só os produtos e as fotos daquele bloco
+        function separacaoDoBloco(s, bloco) {
+            if (!bloco) return s;
+            const temBloco = s.itens.some(i => i.bloco);
+            const itens = temBloco ? s.itens.filter(i => String(i.bloco) === bloco) : s.itens;
+            const fotos = s.fotos.some(f => f.bloco) ? s.fotos.filter(f => String(f.bloco) === bloco) : s.fotos;
+            return { ...s, itens, fotos, locais: temBloco ? rotuloBlocoSep(bloco) : s.locais };
+        }
+        const blocosDaSeparacao = s => {
+            const comBloco = [...new Set(s.itens.map(i => String(i.bloco || '')).filter(Boolean))];
+            return comBloco.length ? comBloco : (String(s.locais || '').match(/[0-9A-Z]+(?=\s*(,|e\b|$))/g) || []).map(x => x.trim());
+        };
+        const totaisProdutos = itens => {
+            const m = new Map();
+            itens.forEach(it => {
+                const c = chaveProduto(it), t = m.get(c) || { nome: String(it.nome || '').trim(), unidade: it.unidade || '', soma: 0, valido: true };
+                const n = numeroDe(it.quantidade); if (isNaN(n)) t.valido = false; else t.soma += n;
+                m.set(c, t);
+            });
+            return [...m.values()].sort((a, b) => porNome(a.nome, b.nome));
+        };
+
+        function renderRegistros() {
+            if (!el('regLista')) return;
+            const ehApl = regTipo === 'aplicacoes';
+            const dados = regDados[regTipo];
+            el('regModo').querySelectorAll('[data-modo]').forEach(b => {
+                b.className = 'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ' + (b.dataset.modo === regModo ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500');
+                b.setAttribute('aria-selected', b.dataset.modo === regModo);
+            });
+            if (!dados || !dados.lista) {
+                el('regResumo').innerHTML = '';
+                el('regLista').innerHTML = `<div class="col-span-full bg-white rounded-3xl ring-1 ring-slate-200 p-10 text-center">${dados && dados.erro
+                    ? `<i data-lucide="wifi-off" class="w-10 h-10 mx-auto text-slate-300"></i><p class="mt-2 text-sm font-semibold text-slate-500">Não foi possível buscar os registros.</p><p class="text-xs text-slate-400 mt-1">${esc(dados.erro)}</p>`
+                    : `<i data-lucide="loader-circle" class="w-8 h-8 mx-auto text-emerald-600 animate-spin"></i><p class="mt-2 text-sm font-semibold text-slate-400">Buscando registros...</p>`}</div>`;
+                icones(); return;
+            }
+            // Blocos do período (filtro)
+            const todosBlocos = [...new Set(ehApl ? dados.lista.map(o => String(o.bloco || '').trim()) : dados.lista.flatMap(blocosDaSeparacao))].filter(Boolean).sort(porNome);
+            const selB = el('regBloco'), atualB = selB.value;
+            selB.innerHTML = `<option value="">Todos os blocos</option>` + todosBlocos.map(b => `<option value="${esc(b)}" ${b === atualB ? 'selected' : ''}>${esc(rotuloBlocoSep(b))}</option>`).join('');
+            if (!todosBlocos.includes(atualB)) selB.value = '';
+            const bloco = selB.value;
+            const lista = ehApl
+                ? dados.lista.filter(o => !bloco || String(o.bloco || '').trim() === bloco)
+                : dados.lista.filter(s => !bloco || blocosDaSeparacao(s).includes(bloco)).map(s => separacaoDoBloco(s, bloco));
+            regVisiveis = lista;
+            const nFotos = lista.reduce((s, r) => s + (r.fotos || []).length, 0);
+            el('regAlbum').querySelector('span').textContent = nFotos ? `Álbum (${nFotos})` : 'Álbum';
+            el('regAlbum').disabled = !nFotos; el('regAlbum').classList.toggle('opacity-50', !nFotos);
+
+            // Resumo em blocos com ícone (igual ao da Energia)
+            const tile = (icone, rot, val, cor, fundo, sub) => `<div class="bg-white rounded-2xl ring-1 ring-slate-200/80 shadow-sm p-3.5 flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl ${fundo} ${cor} flex items-center justify-center shrink-0"><i data-lucide="${icone}" class="w-5 h-5"></i></span>
+                <span class="min-w-0"><span class="block text-[10px] font-black text-slate-400 uppercase tracking-wider">${rot}</span><span class="block text-lg font-black text-slate-800 tabular-nums leading-tight truncate">${val}</span>${sub ? `<span class="block text-[10px] font-semibold text-slate-400 truncate">${sub}</span>` : ''}</span></div>`;
+            const comFoto = lista.filter(r => (r.fotos || []).length).length;
+            if (ehApl) {
+                const feitas = lista.filter(o => o.status === 'FEITO').length;
+                const blocosN = new Set(lista.map(o => o.bloco)).size;
+                el('regResumo').innerHTML = tile('clipboard-list', 'Registros', lista.length, 'text-slate-600', 'bg-slate-100', `${blocosN} bloco${blocosN === 1 ? '' : 's'}`)
+                    + tile('circle-check-big', 'Feitas', feitas, 'text-emerald-600', 'bg-emerald-50', lista.length ? `${Math.round(feitas / lista.length * 100)}% do total` : '')
+                    + tile('circle-x', 'Não feitas', lista.length - feitas, 'text-rose-600', 'bg-rose-50')
+                    + tile('images', 'Com foto', comFoto, 'text-emerald-600', 'bg-emerald-50', nFotos ? `${nFotos} foto${nFotos === 1 ? '' : 's'}` : '');
+            } else {
+                const produtos = new Set(lista.flatMap(s => s.itens.map(chaveProduto))).size;
+                const blocosN = new Set(lista.flatMap(blocosDaSeparacao)).size;
+                el('regResumo').innerHTML = tile('package-check', 'Separações', lista.length, 'text-amber-600', 'bg-amber-50')
+                    + tile('package', 'Produtos', produtos, 'text-slate-600', 'bg-slate-100', 'produtos diferentes')
+                    + tile('map-pin', 'Blocos', blocosN, 'text-rose-600', 'bg-rose-50')
+                    + tile('images', 'Com foto', comFoto, 'text-emerald-600', 'bg-emerald-50', nFotos ? `${nFotos} foto${nFotos === 1 ? '' : 's'}` : '');
+            }
+
+            const vazio = `<div class="col-span-full bg-white rounded-3xl ring-1 ring-slate-200 p-10 text-center"><i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-300"></i><p class="mt-2 text-sm font-semibold text-slate-400">${ehApl ? 'Nenhuma aplicação registrada no período.' : 'Nenhuma separação concluída no período.'}</p></div>`;
+            if (!lista.length) { el('regLista').innerHTML = vazio; icones(); return; }
+            el('regLista').innerHTML = regModo === 'cartoes'
+                ? lista.map((r, i) => ehApl ? cartaoAplicacaoReg(r, i) : cartaoSeparadoReg(r, i)).join('')
+                : (ehApl ? tabelaAplicacoesReg(lista) : tabelaSeparadosReg(lista));
+            icones();
+        }
+
+        // ----- Cartões (mesmo desenho dos cartões da Energia) -----
+        const caixaReg = (rot, v, fundo, corRot, corVal) => `<div class="rounded-2xl ${fundo} px-2.5 py-2 min-w-0"><p class="text-[9px] font-black ${corRot} uppercase tracking-wider">${rot}</p><p class="text-[15px] font-black ${corVal} tabular-nums leading-tight truncate">${v}</p></div>`;
+        function capaReg(r, i, gradiente) {
+            const fs = r.fotos || [];
+            const capa = fs.length
+                ? `<button type="button" onclick="verFotoReg(${i}, 0)" class="absolute inset-0 w-full h-full" aria-label="Ver foto"><img src="${esc(miniatura(fs[0]).replace('sz=w400', 'sz=w800'))}" alt="" loading="lazy" referrerpolicy="no-referrer" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"></button>`
+                : `<div class="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/45"><i data-lucide="image-off" class="w-9 h-9"></i><span class="text-[10px] font-black uppercase tracking-widest">Sem foto</span></div>`;
+            return { capa, qtd: fs.length > 1 ? `<span class="pointer-events-none absolute top-3 right-3 flex items-center gap-1 bg-black/55 backdrop-blur text-white text-[11px] font-bold px-2 py-1 rounded-full"><i data-lucide="images" class="w-3.5 h-3.5"></i>${fs.length}</span>` : '', gradiente };
+        }
+        function cartaoAplicacaoReg(o, i) {
+            const c = capaReg(o, i), feito = o.status === 'FEITO';
+            const horario = o.horaInicio || o.horaFim ? `${o.horaInicio || '—'}–${o.horaFim || '—'}` : '—';
+            const executado = String(o.executadoEm || '');
+            return `<article class="group bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                <div class="relative aspect-[16/10] bg-gradient-to-br ${feito ? 'from-lime-500 to-green-800' : 'from-rose-400 to-rose-700'} overflow-hidden">
+                    ${c.capa}
+                    <div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pb-3.5 pt-12 text-white">
+                        <h3 class="text-[17px] font-extrabold leading-tight drop-shadow">${esc(o.bloco ? rotuloBlocoSep(o.bloco) : 'Sem bloco')}</h3>
+                        <p class="text-[11px] font-semibold text-white/80 mt-0.5">Aplicação ${fmtData(o.data)}${o.turno ? ' · ' + esc(nomeProprio(o.turno)) : ''}</p>
+                    </div>
+                    <span class="pointer-events-none absolute top-3 left-3 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/95 ${feito ? 'text-emerald-800' : 'text-rose-700'} shadow-sm">${feito ? 'Feito' : 'Não feito'}</span>
+                    ${c.qtd}
+                </div>
+                <div class="p-4 space-y-3">
+                    <div class="min-w-0">
+                        ${o.nomeAplicacao && o.nomeAplicacao !== o.tratamento ? `<p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate">${esc(o.nomeAplicacao)}</p>` : ''}
+                        <p class="text-sm font-extrabold text-slate-800 leading-snug">${esc(o.tratamento || '—')}</p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        ${caixaReg('pH', esc(o.phMedido || '—'), 'bg-sky-50', 'text-sky-400', 'text-sky-700')}
+                        ${caixaReg('Volume', o.volumeAplicado ? esc(litros(o.volumeAplicado)) + ' L' : '—', 'bg-emerald-50', 'text-emerald-500', 'text-emerald-700')}
+                        ${caixaReg('Horário', esc(horario), 'bg-slate-50', 'text-slate-400', 'text-slate-700')}
+                    </div>
+                    ${o.produtos.length ? `<div class="flex flex-wrap gap-1.5">${o.produtos.map(p => `<span class="text-[11px] font-bold px-2 py-1 rounded-lg bg-slate-50 ring-1 ring-slate-200 text-slate-600">${esc(p.nome)}${p.dose ? ` · <span class="text-slate-900">${esc(p.dose)} ${esc(p.unidade)}</span>` : ''}</span>`).join('')}</div>` : ''}
+                    ${o.observacaoExec ? `<div class="flex items-start gap-2 text-sm text-slate-700"><i data-lucide="message-square" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i><span class="font-semibold leading-snug">${esc(o.observacaoExec)}</span></div>` : ''}
+                    <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+                        <div class="min-w-0 text-[11px] font-semibold text-slate-400 leading-tight">
+                            <p class="truncate">por ${esc(nomeProprio(o.executor) || '—')}</p>
+                            <p class="truncate">${executado ? `${feito ? 'Feito' : 'Registrado'} em ${esc(fmtData(executado.slice(0, 10)))}${executado.length > 10 ? ' ' + esc(executado.slice(11, 16)) : ''}` : ''}</p>
+                        </div>
+                        ${(o.fotos || []).length > 1 ? `<button type="button" onclick="verFotoReg(${i}, 0, true)" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 text-xs font-bold active:scale-95 transition"><i data-lucide="images" class="w-3.5 h-3.5"></i>Fotos</button>` : ''}
+                    </div>
+                </div>
+            </article>`;
+        }
+        function cartaoSeparadoReg(s, i) {
+            const c = capaReg(s, i);
+            const totais = totaisProdutos(s.itens), blocos = blocosDaSeparacao(s);
+            const mostrar = totais.slice(0, 8);
+            return `<article class="group bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                <div class="relative aspect-[16/10] bg-gradient-to-br from-amber-500 to-orange-700 overflow-hidden">
+                    ${c.capa}
+                    <div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pb-3.5 pt-12 text-white">
+                        <h3 class="text-[17px] font-extrabold leading-tight drop-shadow truncate">${esc(s.locais || 'Separação de produtos')}</h3>
+                        <p class="text-[11px] font-semibold text-white/80 mt-0.5">Aplicação ${fmtData(s.data)}${s.turno ? ' · ' + esc(nomeProprio(s.turno)) : ''}</p>
+                    </div>
+                    <span class="pointer-events-none absolute top-3 left-3 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/95 text-amber-800 shadow-sm">Separado</span>
+                    ${c.qtd}
+                </div>
+                <div class="p-4 space-y-3">
+                    <div class="grid grid-cols-3 gap-2">
+                        ${caixaReg('Produtos', totais.length, 'bg-amber-50', 'text-amber-500', 'text-amber-700')}
+                        ${caixaReg('Blocos', blocos.length || '—', 'bg-slate-50', 'text-slate-400', 'text-slate-700')}
+                        ${caixaReg('Fotos', (s.fotos || []).length, 'bg-emerald-50', 'text-emerald-500', 'text-emerald-700')}
+                    </div>
+                    <div class="rounded-2xl ring-1 ring-slate-100 divide-y divide-slate-100 overflow-hidden">${mostrar.map((t, k) => `<div class="flex items-center gap-3 px-3 py-1.5 ${k % 2 ? 'bg-slate-50/70' : ''}"><span class="flex-1 min-w-0 text-[12px] font-semibold text-slate-700 truncate">${esc(t.nome)}</span><span class="text-[12px] font-extrabold text-slate-900 whitespace-nowrap">${t.valido ? esc(fmtNumero(t.soma)) : '—'} ${esc(t.unidade)}</span></div>`).join('')}
+                        ${totais.length > mostrar.length ? `<p class="px-3 py-1.5 text-[11px] font-bold text-slate-400">+ ${totais.length - mostrar.length} produto${totais.length - mostrar.length === 1 ? '' : 's'}</p>` : ''}</div>
+                    ${s.obsSeparacao ? `<div class="flex items-start gap-2 text-sm text-slate-700"><i data-lucide="message-square" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i><span class="font-semibold leading-snug">${esc(s.obsSeparacao)}</span></div>` : ''}
+                    <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+                        <div class="min-w-0 text-[11px] font-semibold text-slate-400 leading-tight">
+                            <p class="truncate">separado por ${esc(nomeProprio(s.separador) || '—')}${s.separadoEm ? ' em ' + esc(dataHora(s.separadoEm)) : ''}</p>
+                            <p class="truncate">pedido por ${esc(nomeProprio(s.solicitante) || '—')}</p>
+                        </div>
+                        ${(s.fotos || []).length > 1 ? `<button type="button" onclick="verFotoReg(${i}, 0, true)" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 text-xs font-bold active:scale-95 transition"><i data-lucide="images" class="w-3.5 h-3.5"></i>Fotos</button>` : ''}
+                    </div>
+                </div>
+            </article>`;
+        }
+
+        // ----- Tabelas (cabeçalho e primeira coluna fixos) -----
+        const thReg = (t, extra) => `<th class="px-3 py-2.5 ${extra || ''}">${t}</th>`;
+        const miniaturasReg = (r, i) => (r.fotos || []).length
+            ? `<div class="flex gap-1">${r.fotos.slice(0, 4).map((f, k) => `<button type="button" onclick="verFotoReg(${i}, ${k})" aria-label="Ver foto ${k + 1}" class="p-0"><img src="${esc(miniatura(f))}" alt="" loading="lazy" class="w-10 h-10 rounded-lg object-cover ring-1 ring-slate-200 bg-slate-100"></button>`).join('')}${r.fotos.length > 4 ? `<span class="self-center text-[11px] font-bold text-slate-400">+${r.fotos.length - 4}</span>` : ''}</div>`
+            : '<span class="text-slate-300">—</span>';
+        const tabelaReg = (cabecalho, linhas) => `<div class="col-span-full bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden">
+            <div class="overflow-auto max-h-[70vh]"><table class="w-full text-sm">
+                <thead class="sticky top-0 bg-slate-50 z-10"><tr class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 text-left">${cabecalho}</tr></thead>
+                <tbody>${linhas}</tbody></table></div></div>`;
+        function tabelaAplicacoesReg(lista) {
+            return tabelaReg(
+                `<th class="px-4 py-2.5 sticky left-0 bg-slate-50 z-10">Data</th>${thReg('Bloco')}${thReg('Tratamento')}${thReg('Produtos')}${thReg('pH', 'text-right')}${thReg('Volume', 'text-right')}${thReg('Horário')}${thReg('Situação')}${thReg('Fotos')}${thReg('Aplicado por')}${thReg('Obs.')}`,
+                lista.map((o, i) => `<tr class="border-t border-slate-100 align-top">
+                    <td class="px-4 py-2.5 font-bold text-slate-800 whitespace-nowrap sticky left-0 bg-white">${fmtData(o.data)}<span class="block text-[10px] font-semibold text-slate-400">${esc(nomeProprio(o.turno))}</span></td>
+                    <td class="px-3 py-2.5 font-bold text-slate-700 whitespace-nowrap">${esc(o.bloco || '—')}</td>
+                    <td class="px-3 py-2.5 text-slate-700 min-w-[160px]">${esc(o.tratamento || '—')}</td>
+                    <td class="px-3 py-2.5 text-xs text-slate-600 min-w-[200px]">${o.produtos.map(p => `${esc(p.nome)}${p.dose ? ` <b class="text-slate-800 whitespace-nowrap">${esc(p.dose)} ${esc(p.unidade)}</b>` : ''}`).join('<br>') || '—'}</td>
+                    <td class="px-3 py-2.5 text-right text-slate-600 whitespace-nowrap">${esc(o.phMedido || '—')}</td>
+                    <td class="px-3 py-2.5 text-right font-extrabold text-emerald-700 whitespace-nowrap">${o.volumeAplicado ? esc(litros(o.volumeAplicado)) + ' L' : '—'}</td>
+                    <td class="px-3 py-2.5 text-slate-600 whitespace-nowrap tabular-nums">${o.horaInicio || o.horaFim ? `${esc(o.horaInicio || '—')}–${esc(o.horaFim || '—')}` : '—'}</td>
+                    <td class="px-3 py-2.5"><span class="chip st-${o.status}">${STATUS_LABEL[o.status] || o.status}</span></td>
+                    <td class="px-3 py-1.5 whitespace-nowrap">${miniaturasReg(o, i)}</td>
+                    <td class="px-3 py-2.5 text-slate-600 whitespace-nowrap">${esc(nomeProprio(o.executor) || '—')}</td>
+                    <td class="px-3 py-2.5 text-slate-500 text-xs min-w-[160px]">${esc(o.observacaoExec)}</td>
+                </tr>`).join(''));
+        }
+        function tabelaSeparadosReg(lista) {
+            return tabelaReg(
+                `<th class="px-4 py-2.5 sticky left-0 bg-slate-50 z-10">Aplicação</th>${thReg('Blocos')}${thReg('Produtos separados')}${thReg('Fotos')}${thReg('Separado por')}${thReg('Separado em')}${thReg('Pedido por')}${thReg('Obs.')}`,
+                lista.map((s, i) => `<tr class="border-t border-slate-100 align-top">
+                    <td class="px-4 py-2.5 font-bold text-slate-800 whitespace-nowrap sticky left-0 bg-white">${fmtData(s.data)}<span class="block text-[10px] font-semibold text-slate-400">${esc(nomeProprio(s.turno))}</span></td>
+                    <td class="px-3 py-2.5 text-slate-700 min-w-[110px]">${esc(s.locais || '—')}</td>
+                    <td class="px-3 py-2.5 text-xs text-slate-600 min-w-[220px]">${totaisProdutos(s.itens).map(t => `${esc(t.nome)} <b class="text-slate-800 whitespace-nowrap">${t.valido ? esc(fmtNumero(t.soma)) : '—'} ${esc(t.unidade)}</b>`).join('<br>')}</td>
+                    <td class="px-3 py-1.5 whitespace-nowrap">${miniaturasReg(s, i)}</td>
+                    <td class="px-3 py-2.5 text-slate-600 whitespace-nowrap">${esc(nomeProprio(s.separador) || '—')}</td>
+                    <td class="px-3 py-2.5 text-slate-500 whitespace-nowrap tabular-nums">${esc(dataHora(s.separadoEm))}</td>
+                    <td class="px-3 py-2.5 text-slate-600 whitespace-nowrap">${esc(nomeProprio(s.solicitante) || '—')}</td>
+                    <td class="px-3 py-2.5 text-slate-500 text-xs min-w-[160px]">${esc([s.observacao, s.obsSeparacao].filter(Boolean).join(' · '))}</td>
+                </tr>`).join(''));
+        }
+
+        // ----- Fotos: álbum de um registro ou de todos os filtrados -----
+        function itensAlbumReg(lista) {
+            const ehApl = regTipo === 'aplicacoes';
+            return lista.flatMap(r => (r.fotos || []).map(f => ({
+                src: fotoGrande(f), mini: miniatura(f), link: linkFoto(f),
+                titulo: ehApl ? `${r.bloco ? rotuloBlocoSep(r.bloco) : 'Sem bloco'} · ${r.tratamento || ''}` : (f.bloco ? rotuloBlocoSep(f.bloco) : (r.locais || 'Separação')),
+                sub: `${ehApl ? (f.tipoFoto ? 'Foto ' + f.tipoFoto + ' · ' : '') : 'Separação · '}${fmtData(r.data)}`
+            })));
+        }
+        function verFotoReg(i, k, grade) {
+            const r = regVisiveis[i]; if (!r || !window.AlbumFotos) return;
+            AlbumFotos.abrir({ itens: itensAlbumReg([r]), inicio: k || 0, grade: !!grade, titulo: regTipo === 'aplicacoes' ? `${r.bloco ? rotuloBlocoSep(r.bloco) : 'Sem bloco'} · ${fmtData(r.data)}` : `Separação · ${fmtData(r.data)}` });
+        }
+        function abrirAlbumRegistros() {
+            if (!window.AlbumFotos || !AlbumFotos.abrir({ itens: itensAlbumReg(regVisiveis), grade: true, titulo: regTipo === 'aplicacoes' ? 'Aplicações feitas' : 'Produtos separados' }))
+                avisar('Nenhuma foto nos registros filtrados.', 'Álbum');
         }
 
         // ------------------------------------------------------------

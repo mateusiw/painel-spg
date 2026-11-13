@@ -1764,7 +1764,44 @@
             const aba = e.button === 1 && e.target.closest('[data-aba]');
             if (aba) { e.preventDefault(); fecharAba(aba.dataset.aba); }
         });
-        window.addEventListener('hashchange', () => { if (!el('telaMenu').classList.contains('hidden')) rotear(); });
+        // --- Câmera / galeria: não sair do projeto com o "voltar" de quem cancelou a foto ---
+        // No Android, cancelar a câmera (ou a galeria) com o botão/gesto de voltar às vezes também
+        // volta a página: o Painel ia de "#/checklist" para "#/" e mostrava a tela de início.
+        // Enquanto a câmera está aberta e logo depois que a pessoa volta dela, esse "voltar" é ignorado.
+        let protegerVoltarAte = 0;
+        const protegerVoltar = ms => { protegerVoltarAte = Date.now() + ms; };
+        const documentosVigiados = new WeakSet();
+        function vigiarSeletorDeArquivo(win) {
+            let doc;
+            try { doc = win && win.document; } catch (e) { return; }   // quadro de outro endereço
+            if (!doc || documentosVigiados.has(doc)) return;
+            documentosVigiados.add(doc);
+            const ehArquivo = e => e.target && e.target.matches && e.target.matches('input[type="file"]');
+            // Abriu a câmera/galeria: protege até voltar dela (no máximo 1 minuto)
+            doc.addEventListener('click', e => { if (ehArquivo(e)) protegerVoltar(60000); }, true);
+            // Escolheu a foto ou cancelou: protege só mais um instante
+            doc.addEventListener('change', e => { if (ehArquivo(e)) protegerVoltar(1500); }, true);
+            doc.addEventListener('cancel', e => { if (ehArquivo(e)) protegerVoltar(1500); }, true);
+            // Listas dentro de quadros (ex.: Check List): vigia também os quadros de dentro
+            doc.addEventListener('load', e => { if (e.target && e.target.tagName === 'IFRAME') vigiarSeletorDeArquivo(e.target.contentWindow); }, true);
+            doc.querySelectorAll('iframe').forEach(q => vigiarSeletorDeArquivo(q.contentWindow));
+        }
+        vigiarSeletorDeArquivo(window);
+        // A câmera tira o app da tela: quando ele volta a aparecer, protege mais um instante
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && protegerVoltarAte > Date.now()) protegerVoltar(2000);
+        });
+
+        window.addEventListener('hashchange', () => {
+            if (el('telaMenu').classList.contains('hidden')) return;
+            const destino = location.hash.replace(/^#\/?/, '');
+            if (projetoAberto && destino !== projetoAberto && Date.now() < protegerVoltarAte) {
+                // "Voltar" que veio da câmera: fica no projeto (sem recarregar nada)
+                history.pushState(null, '', '#/' + projetoAberto);
+                return;
+            }
+            rotear();
+        });
         document.addEventListener('keydown', e => {
             const digitando = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
             if (e.key === 'Escape') alternarGaveta(false);
