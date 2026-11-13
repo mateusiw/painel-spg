@@ -1274,8 +1274,12 @@
         const sepDoBanco = r => ({
             id: r.id, programacaoId: r.programacao_id, data: r.data_aplicacao || '', turno: r.turno || '', locais: r.locais || '',
             itens: Array.isArray(r.itens) ? r.itens : [], observacao: r.observacao || '', status: r.status,
-            solicitante: r.solicitante || '', separador: r.separador || '', separadoEm: r.separado_em || '', obsSeparacao: r.obs_separacao || '', criadoEm: r.criado_em || ''
+            solicitante: r.solicitante || '', separador: r.separador || '', separadoEm: r.separado_em || '', obsSeparacao: r.obs_separacao || '', criadoEm: r.criado_em || '',
+            fotos: listaFotos(r.fotos)
         });
+        // Fotos dos produtos separados: obrigatórias para concluir; vão para o Drive na hora em que são tiradas
+        const EXIGIR_FOTO_SEPARACAO = true;
+        const MAX_FOTOS_SEPARACAO = 10;
         const dataHora = iso => { if (!iso) return ''; const d = new Date(iso); return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; };
         // "1,5" / "0.5" / "500" -> número (vazio ou texto -> NaN)
         function numeroDe(v) {
@@ -1357,6 +1361,17 @@
                             : `<div class="flex items-center gap-3 px-3 py-2 ${k % 2 ? 'bg-slate-50/70' : ''}">${s.status === 'SEPARADA' || it.separado ? `<i data-lucide="${it.separado ? 'check' : 'minus'}" class="w-4 h-4 shrink-0 ${it.separado ? 'text-emerald-600' : 'text-slate-300'}"></i>` : ''}${linha}</div>`;
                     }).join('')}
                 </div>
+                ${marcar || s.fotos.length ? `<div class="mt-3">
+                    <p class="rotulo !mb-2"><i data-lucide="camera" class="w-3.5 h-3.5 text-emerald-500"></i> Fotos dos produtos separados${s.fotos.length ? ` · ${s.fotos.length}` : ''}</p>
+                    <div class="flex flex-wrap gap-2">
+                        ${s.fotos.map((f, n) => `<div class="relative">${imgFoto(f, `Foto ${n + 1} da separação`)}${marcar ? `<button type="button" onclick="removerFotoSeparacao('${esc(s.id)}', ${n})" class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white shadow ring-1 ring-slate-200 text-rose-600 flex items-center justify-center" aria-label="Tirar a foto ${n + 1}"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}</div>`).join('')}
+                        ${marcar && s.fotos.length < MAX_FOTOS_SEPARACAO ? `<label class="thumb !border-dashed !border-2 flex flex-col items-center justify-center gap-1 text-emerald-700 cursor-pointer hover:bg-emerald-50">
+                            <i data-lucide="camera" class="w-5 h-5"></i><span class="text-[10px] font-bold">Adicionar</span>
+                            <input type="file" accept="image/*" multiple class="hidden" onchange="anexarFotosSeparacao('${esc(s.id)}', this)">
+                        </label>` : ''}
+                    </div>
+                    ${marcar && !s.fotos.length && EXIGIR_FOTO_SEPARACAO ? '<p class="mt-1.5 text-[11px] font-medium text-amber-700">Tire pelo menos uma foto dos produtos separados para concluir.</p>' : ''}
+                </div>` : ''}
                 ${s.observacao ? `<p class="mt-2 text-xs text-slate-600 leading-relaxed"><b class="text-slate-500">Obs.:</b> ${esc(s.observacao)}</p>` : ''}
                 ${s.obsSeparacao ? `<p class="mt-1 text-xs text-slate-600 leading-relaxed"><b class="text-slate-500">Separação:</b> ${esc(s.obsSeparacao)}</p>` : ''}
                 <p class="mt-auto pt-3 text-[11px] font-medium text-slate-400">Pedido por ${esc(nomeProprio(s.solicitante) || '—')} em ${esc(dataHora(s.criadoEm))}${s.status === 'SEPARADA' ? ` · separado por ${esc(nomeProprio(s.separador))} em ${esc(dataHora(s.separadoEm))}` : ''}</p>
@@ -1374,8 +1389,43 @@
             try { erroBanco(await sb.from('fito_separacoes').update({ itens: s.itens, atualizado_em: new Date().toISOString() }).eq('id', id).eq('status', 'ABERTA')); gravarCache(CACHE_SEP, separacoes); }
             catch (e) { s.itens = antes; renderSeparacoes(); erroSep(e); }
         }
+        // Envia as fotos para o Drive (subpasta "AAAA-MM Separação de produtos" na pasta da Fito) e grava no pedido
+        async function anexarFotosSeparacao(id, input) {
+            const arquivos = Array.from(input.files || []).filter(f => f.type.startsWith('image/'));
+            input.value = '';
+            const s = separacoes.find(x => x.id === id); if (!s || s.status !== 'ABERTA' || !podeSeparar() || !arquivos.length) return;
+            if (s.fotos.length + arquivos.length > MAX_FOTOS_SEPARACAO) return avisar(`Cada pedido aceita até ${MAX_FOTOS_SEPARACAO} fotos.`, 'Limite de fotos');
+            if (!navigator.onLine) return avisar('As fotos vão direto para o Drive: conecte-se à internet para enviar.', 'Sem internet');
+            const dia = s.data || hojeISO();
+            const pasta = `${dia.slice(0, 7)} Separação de produtos`;
+            const locais = String(s.locais || '').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 40);
+            const d = new Date(), carimbo = `${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
+            const novas = [];
+            try {
+                for (let n = 0; n < arquivos.length; n++) {
+                    carregando(true, `Enviando foto ${n + 1} de ${arquivos.length} para o Drive...`);
+                    const dataUrl = await comprimirImagem(arquivos[n]);
+                    novas.push(await enviarFotoDrive(dataUrl, `${dia} ${s.turno || ''} - Separação - ${locais || 'produtos'} - ${carimbo}-${s.fotos.length + n + 1}.jpg`, pasta));
+                }
+            } catch (e) { if (!novas.length) { erro(e); return; } avisar(`Só ${novas.length} de ${arquivos.length} foto(s) foram enviadas: ${e.message || e}`, 'Envio incompleto'); }
+            const fotos = s.fotos.concat(novas);
+            try {
+                erroBanco(await sb.from('fito_separacoes').update({ fotos, atualizado_em: new Date().toISOString() }).eq('id', id).eq('status', 'ABERTA'));
+                s.fotos = fotos; gravarCache(CACHE_SEP, separacoes);
+                carregando(false); renderSeparacoes();
+            } catch (e) { erro(/fotos/i.test(e.message || '') ? new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (coluna "fotos" dos pedidos de separação).') : e); }
+        }
+        async function removerFotoSeparacao(id, n) {
+            const s = separacoes.find(x => x.id === id); if (!s || s.status !== 'ABERTA' || !podeSeparar()) return;
+            if (!(await Dialogo.confirmar('Tirar esta foto do pedido? (o arquivo continua guardado no Drive)', { titulo: 'Tirar foto', botao: 'Tirar', perigo: true }))) return;
+            const fotos = s.fotos.filter((_, k) => k !== n);
+            carregando(true, 'Salvando...');
+            try { erroBanco(await sb.from('fito_separacoes').update({ fotos, atualizado_em: new Date().toISOString() }).eq('id', id).eq('status', 'ABERTA')); s.fotos = fotos; gravarCache(CACHE_SEP, separacoes); carregando(false); renderSeparacoes(); }
+            catch (e) { erroSep(e); }
+        }
         async function concluirSeparacao(id) {
             const s = separacoes.find(x => x.id === id); if (!s || s.status !== 'ABERTA' || !podeSeparar()) return;
+            if (EXIGIR_FOTO_SEPARACAO && !s.fotos.length) return avisar('Tire pelo menos uma foto dos produtos separados antes de concluir.', 'Falta a foto');
             const faltam = s.itens.filter(i => !i.separado).length;
             if (faltam && !(await Dialogo.confirmar(`${faltam} ${faltam === 1 ? 'produto ainda não foi marcado' : 'produtos ainda não foram marcados'} como separado. Concluir assim mesmo?`, { titulo: 'Concluir separação', botao: 'Concluir' }))) return;
             const obs = await pedirTexto('Concluir separação', 'Alguma observação para quem pediu? (opcional, ex.: faltou produto, entregue na casa de química)', '');

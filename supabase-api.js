@@ -24,8 +24,24 @@
             .finally(() => clearTimeout(timer));
     }
 
+    // Onde o login fica guardado. Com o armazenamento do aparelho cheio, o login renovado (a cada hora)
+    // não era gravado e a sessão se perdia ("Sua sessão expirou" em qualquer projeto). Agora, sem
+    // espaço, libera as cópias de consultas (que podem ser baixadas de novo) e grava o login.
+    const armazenamentoLogin = {
+        getItem: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+        setItem: (k, v) => {
+            try { localStorage.setItem(k, v); return; } catch (e) { /* sem espaço: libera e tenta de novo */ }
+            for (const incluirEssenciais of [false, true]) {
+                try { limparCaches(incluirEssenciais); } catch (e) {}
+                try { localStorage.setItem(k, v); return; } catch (e) {}
+            }
+            console.error('Sem espaço no aparelho para guardar o login.');
+        },
+        removeItem: k => { try { localStorage.removeItem(k); } catch (e) {} }
+    };
+
     const sb = window.supabase.createClient(cfg.url, cfg.anonKey, {
-        auth: { persistSession: true, autoRefreshToken: true, storageKey: 'irrigacao-auth' },
+        auth: { persistSession: true, autoRefreshToken: true, storageKey: 'irrigacao-auth', storage: armazenamentoLogin },
         global: { fetch: fetchComLimite }
     });
 
@@ -173,10 +189,33 @@
 
     // Devolve false se não conseguiu guardar. Com o aparelho sem espaço, libera as
     // cópias de consultas e tenta de novo, para nunca perder um dado da fila.
+    // Limite de espaço só para as cópias de consultas (em caracteres; o aparelho guarda uns 5 milhões
+    // no total, divididos com o login, a fila de envio e as cópias de cada projeto). Passou do limite:
+    // apaga as cópias mais antigas (as essenciais por último).
+    const LIMITE_CACHES = 2e6;
+    function apararCaches(limite = LIMITE_CACHES) {
+        const itens = chavesDeCache().map(k => {
+            const v = localStorage.getItem(k) || '';
+            const m = /^\{"em":(\d+)/.exec(v);
+            return { k, tam: k.length + v.length, em: m ? Number(m[1]) : 0, essencial: CACHES_ESSENCIAIS.includes(k.slice('irrigacao_cache_'.length).split('@')[0]) };
+        });
+        let total = itens.reduce((s, i) => s + i.tam, 0);
+        if (total <= limite) return;
+        itens.sort((a, b) => (a.essencial - b.essencial) || (a.em - b.em));
+        for (const i of itens) {
+            if (total <= limite * 0.8) break;   // folga, para não aparar a cada consulta
+            localStorage.removeItem(i.k);
+            total -= i.tam;
+        }
+    }
+
     function gravar(chave, valor) {
         const texto = JSON.stringify(valor);
-        try { localStorage.setItem(chave, texto); return true; } catch (e) {}
-        if (chave.startsWith('irrigacao_cache_')) return false;
+        const ehCache = chave.startsWith('irrigacao_cache_');
+        try { localStorage.setItem(chave, texto); if (ehCache) apararCaches(); return true; } catch (e) {}
+        if (ehCache) {
+            try { apararCaches(LIMITE_CACHES / 2); localStorage.setItem(chave, texto); return true; } catch (e) { return false; }
+        }
         for (const incluirEssenciais of [false, true]) {
             try { limparCaches(incluirEssenciais); } catch (e) {}
             try { localStorage.setItem(chave, texto); return true; } catch (e) {}
@@ -188,6 +227,7 @@
     // As consultas por dia/período criam uma cópia nova a cada dia e nunca eram apagadas,
     // até encher o armazenamento do aparelho (e a fila deixava de ser gravada).
     try { limparCaches(false, Date.now() - 7 * 24 * 60 * 60 * 1000); } catch (e) {}
+    try { apararCaches(); } catch (e) {}
 
     function novoId() {
         if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
