@@ -93,8 +93,12 @@
             <img src="../../icone-app.png" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
             <div class="min-w-0">
                 <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 truncate">Programação Fitossanitária</h1>
-                <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">SPG Sede · Aplicações por bloco e checklist</p>
+                <p id="fitoSubtitulo" class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">SPG Sede · Aplicações por bloco e checklist</p>
             </div>
+        </div>
+        <!-- Local (SPG Sede / Estufa): aparece para quem tem acesso aos dois -->
+        <div id="fitoLocalCaixa" class="hidden shrink-0 w-36 sm:w-44">
+            <select id="fitoLocal" class="campo !min-h-[40px] !py-1.5 !text-xs !font-bold" aria-label="Local da programação" onchange="trocarLocalFito(this.value)"></select>
         </div>
     </div>
 
@@ -126,12 +130,13 @@
                     <div class="w-9 h-9 rounded-xl bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center"><i data-lucide="calendar-plus" class="w-5 h-5 text-emerald-600"></i></div>
                     <div class="min-w-0">
                         <h2 id="editorTitulo" class="text-sm font-extrabold text-slate-800">Nova programação diária</h2>
-                        <p class="text-[11px] font-semibold text-slate-400">Data, turno e as operações por bloco</p>
+                        <p id="editorSubtitulo" class="text-[11px] font-semibold text-slate-400">Data, turno e as operações por bloco</p>
                     </div>
                 </div>
+                <div id="edModo" role="tablist" aria-label="Período da programação" class="hidden flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1 mb-3"></div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="rotulo" for="edData"><i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-500"></i> Data</label><input id="edData" type="date" class="campo" onchange="atualizarDiaSemana()"></div>
-                    <div><label class="rotulo" for="edDia"><i data-lucide="calendar-days" class="w-3.5 h-3.5 text-emerald-500"></i> Dia da semana</label><input id="edDia" type="text" class="campo" readonly></div>
+                    <div><label class="rotulo" for="edData"><i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-500"></i> <span id="edDataRotulo">Data</span></label><input id="edData" type="date" class="campo" onchange="atualizarDiaSemana()"></div>
+                    <div><label class="rotulo" for="edDia"><i data-lucide="calendar-days" class="w-3.5 h-3.5 text-emerald-500"></i> <span id="edDiaRotulo">Dia da semana</span></label><input id="edDia" type="text" class="campo" readonly></div>
                     <div><label class="rotulo" for="edTurno"><i data-lucide="sun-moon" class="w-3.5 h-3.5 text-emerald-500"></i> Turno</label>
                         <select id="edTurno" class="campo"><option>NOITE</option><option>MANHÃ</option><option>TARDE</option><option>DIA TODO</option></select></div>
                     <div><label class="rotulo" for="edResp"><i data-lucide="user" class="w-3.5 h-3.5 text-emerald-500"></i> Programado por</label><input id="edResp" type="text" class="campo" placeholder="Seu nome"></div>
@@ -265,6 +270,41 @@
         const podeSeparar = () => API.temModulo('programacao_fito_separar');
         const veSeparacao = () => podeProgramar() || podeSeparar();
 
+        // ---------- Local: SPG Sede e Estufa (cada um com as suas programações e pedidos de separação) ----------
+        // A Sede vale para todos (era o único local); a Estufa, para quem tem o local Estufa no cadastro (ou é administrador).
+        // Os modelos de aplicação valem para os dois locais.
+        const NOMES_LOCAIS_FITO = { sede: 'SPG Sede', estufa: 'SPG Estufa' };
+        function locaisFito() {
+            const u = API.usuarioAtual() || {};
+            const meus = API.isAdmin() ? Object.keys(NOMES_LOCAIS_FITO) : (Array.isArray(u.locais) ? u.locais : []);
+            const ids = ['sede'].concat(meus.includes('estufa') ? ['estufa'] : []);
+            return ids.map(id => ({ id, nome: NOMES_LOCAIS_FITO[id] }));
+        }
+        const FITO_LOCAL = (() => {
+            const ids = locaisFito().map(l => l.id);
+            const salvo = lerGuardadoInicio('local');
+            if (ids.includes(salvo)) return salvo;
+            const u = API.usuarioAtual() || {};
+            // Quem é só da Estufa já abre nela
+            return ids.includes('estufa') && Array.isArray(u.locais) && u.locais.includes('estufa') && !u.locais.includes('sede') ? 'estufa' : 'sede';
+        })();
+        function lerGuardadoInicio(k) { try { return localStorage.getItem('fito_' + k) || ''; } catch (e) { return ''; } }
+        const nomeLocalFito = () => NOMES_LOCAIS_FITO[FITO_LOCAL] || FITO_LOCAL;
+        // Cópias no aparelho separadas por local (a Sede mantém os nomes antigos)
+        const sufixoFito = FITO_LOCAL === 'sede' ? '' : '@' + FITO_LOCAL;
+        function trocarLocalFito(id) {
+            if (id === FITO_LOCAL || !locaisFito().some(l => l.id === id)) return;
+            try { localStorage.setItem('fito_local', id); } catch (e) { }
+            carregando(true, `Abrindo ${NOMES_LOCAIS_FITO[id] || id}...`);
+            location.reload();
+        }
+        function montarLocalNaTela() {
+            el('fitoSubtitulo').textContent = `${nomeLocalFito()} · Aplicações por bloco e checklist`;
+            const lista = locaisFito();
+            el('fitoLocalCaixa').classList.toggle('hidden', lista.length < 2);
+            el('fitoLocal').innerHTML = lista.map(l => `<option value="${l.id}" ${l.id === FITO_LOCAL ? 'selected' : ''}>${esc(l.nome)}</option>`).join('');
+        }
+
         // Exige foto do pH e do volume para marcar uma operação como FEITA
         const EXIGIR_FOTOS = true;
         const TIPOS = ['PULVERIZAÇÃO FOLIAR', 'APLICAÇÃO EM DRENCH', 'DEFENSIVO INSETICIDA', 'DEFENSIVO FUNGICIDA', 'HERBICIDA', 'FERTIRRIGAÇÃO', 'OUTRO'];
@@ -392,7 +432,7 @@
             id: r.id, data: r.data, diaSemana: r.dia_semana, turno: r.turno, responsavel: r.responsavel, observacao: r.observacao,
             totalOperacoes: r.total_operacoes, feitas: r.feitas, naoFeitas: r.nao_feitas, status: r.status,
             equipeInicio: r.equipe_inicio, descansoInicio: r.descanso_inicio, descansoFim: r.descanso_fim, equipeFim: r.equipe_fim,
-            jornadaPor: r.jornada_por, jornadaEm: r.jornada_em
+            jornadaPor: r.jornada_por, jornadaEm: r.jornada_em, local: r.local || 'sede'
         });
         const opDoBanco = (r, p) => ({
             id: r.id, programacaoId: r.programacao_id, ordem: r.ordem, data: p ? p.data : '', turno: p ? p.turno : '',
@@ -408,7 +448,7 @@
             criadoPor: r.criado_por, atualizadoEm: r.atualizado_em ? new Date(r.atualizado_em).toLocaleDateString('pt-BR') : ''
         });
         // Cópia no aparelho, para abrir sem internet
-        const CACHE_LISTA = 'fito_cache_lista', cacheProg = id => 'fito_cache_prog_' + id;
+        const CACHE_LISTA = 'fito_cache_lista' + sufixoFito, cacheProg = id => 'fito_cache_prog_' + id;
         const lerCache = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
         const gravarCache = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
 
@@ -470,10 +510,11 @@
         async function carregarLista(silencioso) {
             if (!silencioso) carregando(true, 'Buscando programações...');
             try {
-                const r = erroBanco(await sb.from('fito_programacoes').select('*').order('data', { ascending: false }).order('criado_em', { ascending: false }).limit(300));
+                const r = erroBanco(await sb.from('fito_programacoes').select('*').eq('local', FITO_LOCAL).order('data', { ascending: false }).order('criado_em', { ascending: false }).limit(300));
                 programacoes = r.data.map(progDoBanco);
                 gravarCache(CACHE_LISTA, programacoes);
             } catch (e) {
+                if (/local/i.test(e.message || '')) e = new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (coluna "local" da Sede e da Estufa).');
                 const c = lerCache(CACHE_LISTA);
                 if (c) programacoes = c; else if (!silencioso) erro(e);
             } finally { carregando(false); }
@@ -594,11 +635,11 @@
         //  EDITOR (quem programa)
         // ------------------------------------------------------------
         const produtoVazio = () => ({ nome: '', dose: '', unidade: 'L' });
-        const opVazia = () => ({ id: '', bloco: '', semana: '', nomeAplicacao: '', tratamento: '', alvo: '', cor: 'cinza', tipoAplicacao: TIPOS[0], horario: 'após 17h', volumeCalda: '', instrucoes: '', produtos: [produtoVazio()], status: 'PENDENTE' });
+        const opVazia = () => ({ id: '', dia: '', bloco: '', semana: '', nomeAplicacao: '', tratamento: '', alvo: '', cor: 'cinza', tipoAplicacao: TIPOS[0], horario: 'após 17h', volumeCalda: '', instrucoes: '', produtos: [produtoVazio()], status: 'PENDENTE' });
         function novaProgramacao() {
             if (!podeProgramar()) return;
-            editor = { id: '', originais: [], operacoes: [opVazia()] };
-            el('editorTitulo').textContent = 'Nova programação diária';
+            editor = { id: '', originais: [], operacoes: [opVazia()], semana: false, local: FITO_LOCAL };
+            el('editorTitulo').textContent = `Nova programação · ${nomeLocalFito()}`;
             el('edData').value = hojeISO(); el('edTurno').value = 'NOITE';
             el('edResp').value = lerGuardado('programador') || API.nomeUsuario(); el('edObs').value = '';
             atualizarDiaSemana(); irPara('editor'); renderEditor();
@@ -609,14 +650,45 @@
             try {
                 const p = await obterProgramacao(id);
                 carregando(false);
-                editor = { id: p.id, originais: p.operacoes.map(o => o.id), operacoes: p.operacoes.map(o => ({ ...o, produtos: o.produtos.length ? o.produtos.map(x => ({ ...x })) : [produtoVazio()] })) };
+                editor = { id: p.id, local: p.local || FITO_LOCAL, semana: false, originais: p.operacoes.map(o => o.id), operacoes: p.operacoes.map(o => ({ ...o, produtos: o.produtos.length ? o.produtos.map(x => ({ ...x })) : [produtoVazio()] })) };
                 el('editorTitulo').textContent = 'Editar programação';
                 el('edData').value = p.data; el('edTurno').value = p.turno || 'NOITE'; el('edResp').value = p.responsavel; el('edObs').value = p.observacao;
                 el('edTurno').dispatchEvent(new Event('change', { bubbles: true }));
                 atualizarDiaSemana(); irPara('editor'); renderEditor();
             } catch (e) { erro(e); }
         }
-        function atualizarDiaSemana() { el('edDia').value = diaDaSemana(el('edData').value); }
+        // Os 7 dias a partir da data escolhida (modo "Semana inteira")
+        function diasDoEditor() { const d0 = el('edData').value; return d0 ? [0, 1, 2, 3, 4, 5, 6].map(n => somarDias(d0, n)) : []; }
+        const rotuloDia = iso => `${diaDaSemana(iso).slice(0, 3)} ${fmtData(iso).slice(0, 5)}`;
+        function atualizarDiaSemana() {
+            const semana = editor && editor.semana;
+            el('edDataRotulo').textContent = semana ? 'Começa em' : 'Data';
+            el('edDiaRotulo').textContent = semana ? 'Semana' : 'Dia da semana';
+            el('editorSubtitulo').textContent = semana ? 'Turno e as operações de cada dia da semana' : 'Data, turno e as operações por bloco';
+            if (!semana) { el('edDia').value = diaDaSemana(el('edData').value); renderModo(); return; }
+            const dias = diasDoEditor();
+            el('edDia').value = dias.length ? `${fmtData(dias[0]).slice(0, 5)} a ${fmtData(dias[6]).slice(0, 5)}` : '';
+            // Dia fora da semana nova volta para o primeiro dia
+            editor.operacoes.forEach(o => { if (!dias.includes(o.dia)) o.dia = dias[0] || ''; });
+            renderModo(); renderEditor();
+        }
+        function renderModo() {
+            const caixa = el('edModo');
+            const mostrar = editor && !editor.id;   // só ao criar (editar mexe em um dia)
+            caixa.classList.toggle('hidden', !mostrar);
+            if (!mostrar) return;
+            caixa.innerHTML = [[false, 'Um dia', 'calendar'], [true, 'Semana inteira', 'calendar-range']].map(([v, nome, icone]) => {
+                const ativo = editor.semana === v;
+                return `<button type="button" role="tab" aria-selected="${ativo}" onclick="setModoSemana(${v})" class="flex-1 flex items-center justify-center gap-1.5 min-h-[40px] rounded-xl text-xs font-bold transition-all ${ativo ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500'}"><i data-lucide="${icone}" class="w-3.5 h-3.5"></i> ${nome}</button>`;
+            }).join('');
+            icones();
+        }
+        function setModoSemana(v) {
+            if (!editor || editor.id) return;
+            editor.semana = !!v;
+            atualizarDiaSemana();
+            renderEditor();
+        }
         function setOp(i, campo, valor) { editor.operacoes[i][campo] = valor; }
         function setProd(i, j, campo, valor) { editor.operacoes[i].produtos[j][campo] = valor; }
         function aplicarModelo(i, id) {
@@ -629,7 +701,7 @@
             });
             renderEditor();
         }
-        function adicionarOperacao() { editor.operacoes.push(opVazia()); renderEditor(); setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50); }
+        function adicionarOperacao() { const nova = opVazia(); if (editor.semana) { const ult = editor.operacoes[editor.operacoes.length - 1]; nova.dia = (ult && ult.dia) || diasDoEditor()[0] || ''; } editor.operacoes.push(nova); renderEditor(); setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50); }
         function duplicarOperacao(i) { const o = editor.operacoes[i]; editor.operacoes.splice(i + 1, 0, JSON.parse(JSON.stringify({ ...o, id: '', bloco: '', semana: '', status: 'PENDENTE' }))); renderEditor(); }
         function moverOperacao(i, dir) { const j = i + dir; if (j < 0 || j >= editor.operacoes.length) return; [editor.operacoes[i], editor.operacoes[j]] = [editor.operacoes[j], editor.operacoes[i]]; renderEditor(); }
         async function removerOperacao(i) {
@@ -644,12 +716,16 @@
                 const travada = o.status && o.status !== 'PENDENTE';
                 return `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden entra">
                     <div class="px-4 py-2.5 flex items-center gap-1.5 bg-slate-50 border-b border-slate-100 text-slate-800">
-                        <span class="font-extrabold text-sm flex-1 truncate">${i + 1}. ${o.bloco ? 'BLOCO ' + esc(o.bloco) : 'Nova operação'} ${o.tratamento ? '· ' + esc(o.tratamento) : ''}</span>
+                        <span class="font-extrabold text-sm flex-1 truncate">${i + 1}. ${editor.semana && o.dia ? `<span class="text-emerald-700">${esc(rotuloDia(o.dia))}</span> · ` : ''}${o.bloco ? 'BLOCO ' + esc(o.bloco) : 'Nova operação'} ${o.tratamento ? '· ' + esc(o.tratamento) : ''}</span>
                         ${travada ? `<span class="chip st-${o.status}">${STATUS_LABEL[o.status]}</span>` : ''}
                         ${botaoTopo(`moverOperacao(${i},-1)`, 'chevron-up', 'Subir')}${botaoTopo(`moverOperacao(${i},1)`, 'chevron-down', 'Descer')}${botaoTopo(`duplicarOperacao(${i})`, 'copy', 'Duplicar para outro bloco')}
                         ${travada ? '' : botaoTopo(`removerOperacao(${i})`, 'trash-2', 'Remover')}
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-3">
+                        ${editor.semana ? `<div class="col-span-2">
+                            <label class="rotulo"><i data-lucide="calendar-days" class="w-3.5 h-3.5 text-emerald-500"></i> Dia da aplicação</label>
+                            <select class="campo" onchange="setOp(${i},'dia',this.value); renderEditor()">${diasDoEditor().map(d => `<option value="${d}" ${o.dia === d ? 'selected' : ''}>${rotuloDia(d)}</option>`).join('')}</select>
+                        </div>` : ''}
                         ${podeModelos() ? `<div class="col-span-2">
                             <label class="rotulo"><i data-lucide="library" class="w-3.5 h-3.5 text-emerald-500"></i> Usar modelo pronto</label>
                             <select class="campo" onchange="aplicarModelo(${i}, this.value)">
@@ -681,6 +757,32 @@
             }).join('');
             icones();
         }
+        const linhaOperacao = (o, i, programacaoId) => ({
+            id: o.id || API.novoId(), programacao_id: programacaoId, ordem: i + 1,
+            bloco: String(o.bloco).trim(), semana: String(o.semana || '').trim(), nome_aplicacao: String(o.nomeAplicacao || '').trim(), alvo: String(o.alvo || '').trim(), tratamento: String(o.tratamento).trim(),
+            cor: o.cor || 'cinza', tipo_aplicacao: o.tipoAplicacao || '', horario: o.horario || '', volume_calda: String(o.volumeCalda || ''), instrucoes: o.instrucoes || '',
+            produtos: o.produtos.filter(p => String(p.nome).trim()).map(p => ({ nome: String(p.nome).trim(), dose: String(p.dose || '').trim(), unidade: p.unidade || '' }))
+        });
+        // Semana inteira: cria uma programação para cada dia que tem operação (cada dia com o seu checklist)
+        async function salvarSemana(turno, responsavel, observacao) {
+            const dias = diasDoEditor();
+            const porDia = new Map();
+            editor.operacoes.forEach(o => { const d = dias.includes(o.dia) ? o.dia : dias[0]; (porDia.get(d) || porDia.set(d, []).get(d)).push(o); });
+            const ordem = [...porDia.keys()].sort();
+            carregando(true, `Salvando ${ordem.length} dia(s) da semana...`);
+            try {
+                for (const data of ordem) {
+                    const id = API.novoId();
+                    erroBanco(await sb.from('fito_programacoes').insert({ id, local: FITO_LOCAL, data, dia_semana: diaDaSemana(data), turno, responsavel, observacao, atualizado_em: new Date().toISOString() }));
+                    erroBanco(await sb.from('fito_operacoes').insert(porDia.get(data).map((o, i) => linhaOperacao(o, i, id))));
+                }
+                await registrarModelosNovos(editor.operacoes, responsavel);
+                await carregarLista(true);
+                carregando(false);
+                filtro = 'pendentes'; irPara('lista');
+                Dialogo.avisar(`Programação da semana salva: ${ordem.length} ${ordem.length === 1 ? 'dia' : 'dias'} (${ordem.map(rotuloDia).join(', ')}), ${editor.operacoes.length} operação(ões).\n\nCada dia aparece na lista com o seu checklist. Se alguma aplicação não for feita, quem aplica marca NÃO FEITO e informa o motivo.`, { titulo: 'Semana programada', tipo: 'sucesso' });
+            } catch (e) { erro(/local/i.test(e.message || '') ? new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (coluna "local" da Sede e da Estufa).') : e); }
+        }
         async function salvarProgramacao() {
             if (!podeProgramar()) return;
             const data = el('edData').value, turno = el('edTurno').value, responsavel = el('edResp').value.trim(), observacao = el('edObs').value.trim();
@@ -694,10 +796,11 @@
             }
             if (!navigator.onLine) return avisar('Sem internet. A programação fica nesta tela: salve assim que a conexão voltar.');
             guardar('programador', responsavel);
+            if (editor.semana) return salvarSemana(turno, responsavel, observacao);
             carregando(true, 'Salvando programação...');
             try {
                 const id = editor.id || API.novoId();
-                erroBanco(await sb.from('fito_programacoes').upsert({ id, data, dia_semana: diaDaSemana(data), turno, responsavel, observacao, atualizado_em: new Date().toISOString() }, { onConflict: 'id' }));
+                erroBanco(await sb.from('fito_programacoes').upsert({ id, local: editor.local || FITO_LOCAL, data, dia_semana: diaDaSemana(data), turno, responsavel, observacao, atualizado_em: new Date().toISOString() }, { onConflict: 'id' }));
                 const linhas = editor.operacoes.map((o, i) => ({
                     id: o.id || API.novoId(), programacao_id: id, ordem: i + 1,
                     bloco: String(o.bloco).trim(), semana: String(o.semana || '').trim(), nome_aplicacao: String(o.nomeAplicacao || '').trim(), alvo: String(o.alvo || '').trim(), tratamento: String(o.tratamento).trim(),
@@ -1178,7 +1281,7 @@
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">${p.operacoes.map(cartao).join('')}</div>
                     <div style="margin-top:12px;font-size:12px;color:#64748b;font-weight:600;">Programado por ${esc(p.responsavel || '—')}</div>
                 </div>
-                ${rodapeImagem('SPG Sede · Programação Fitossanitária')}
+                ${rodapeImagem(`${esc(nomeLocalFito())} · Programação Fitossanitária`)}
             </div>`;
             const texto = `*PROGRAMAÇÃO DIÁRIA - ${p.turno}*\n📅 ${fmtData(p.data)} (${p.diaSemana})\n🧪 ${p.operacoes.length} operação(ões)\n👤 Programado por ${p.responsavel || '—'}`;
             return gerarImagem(html, `Programacao_${p.data}_${p.turno}.png`, texto, 'Imagem da programação');
@@ -1224,7 +1327,7 @@
                         </table>
                     </div>
                 </div>
-                ${rodapeImagem(`SPG Sede · Fotos do pH e do volume no Google Drive · gerado em ${new Date().toLocaleString('pt-BR')}`)}
+                ${rodapeImagem(`${esc(nomeLocalFito())} · Fotos do pH e do volume no Google Drive · gerado em ${new Date().toLocaleString('pt-BR')}`)}
             </div>`;
             const texto = `*RESUMO DO CHECKLIST - ${p.turno}*\n📅 ${fmtData(p.data)} (${p.diaSemana})\n✅ ${feitas} de ${total} feitas` + (nao ? `\n❌ ${nao} não feita(s)` : '') + (pendentes ? `\n⏳ ${pendentes} pendente(s)` : '') + (jornada ? `\n⏱ ${jornada}` : '');
             return gerarImagem(html, `Resumo_checklist_${p.data}_${p.turno}.png`, texto, 'Resumo do checklist');
@@ -1270,7 +1373,7 @@
         //  Function "notificacoes" (acao "fito_separacao") avisa no celular quem separa / quem pediu.
         //  Não mexe no Estoque de Produtos.
         // ------------------------------------------------------------
-        const CACHE_SEP = 'fito_cache_separacoes';
+        const CACHE_SEP = 'fito_cache_separacoes' + sufixoFito;
         const sepDoBanco = r => ({
             id: r.id, programacaoId: r.programacao_id, data: r.data_aplicacao || '', turno: r.turno || '', locais: r.locais || '',
             itens: Array.isArray(r.itens) ? r.itens : [], observacao: r.observacao || '', status: r.status,
@@ -1299,7 +1402,7 @@
             if (!veSeparacao()) { separacoes = []; return; }
             if (!navigator.onLine) return;
             try {
-                const r = erroBanco(await sb.from('fito_separacoes').select('*').order('criado_em', { ascending: false }).limit(200));
+                const r = erroBanco(await sb.from('fito_separacoes').select('*').eq('local', FITO_LOCAL).order('criado_em', { ascending: false }).limit(200));
                 separacoes = r.data.map(sepDoBanco);
                 gravarCache(CACHE_SEP, separacoes);
             } catch (e) { return; }   // sem internet ou tabela ainda não criada: fica a última cópia
@@ -1352,6 +1455,7 @@
                             ${aberta ? `<span class="text-xs font-bold text-slate-500">${feitos} de ${s.itens.length} separados</span>` : ''}
                         </div>
                     </div>
+                    ${podeProgramar() ? `<button type="button" onclick="apagarPedido('${esc(s.id)}')" class="btn-sec btn-perigo !px-0 w-11 shrink-0" title="Apagar pedido" aria-label="Apagar este pedido de separação"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                 </div>
                 <div class="mt-3 rounded-2xl ring-1 ring-slate-100 overflow-hidden divide-y divide-slate-100">
                     ${s.itens.map((it, k) => {
@@ -1446,6 +1550,22 @@
             try { erroBanco(await sb.from('fito_separacoes').update({ status: 'CANCELADA', atualizado_em: new Date().toISOString() }).eq('id', id)); await carregarSeparacoes(); carregando(false); }
             catch (e) { erroSep(e); }
         }
+        // Apaga o pedido de vez (qualquer situação). As fotos já enviadas continuam no Drive.
+        async function apagarPedido(id) {
+            const s = separacoes.find(x => x.id === id); if (!s || !podeProgramar()) return;
+            const quando = s.data ? ` de ${fmtData(s.data)}` : '';
+            if (!(await Dialogo.confirmar(`Apagar o pedido de separação${quando}${s.locais ? ` (${s.locais})` : ''}? Ele some da lista e não dá para desfazer.${s.fotos.length ? ' As fotos continuam guardadas no Drive.' : ''}`, { titulo: 'Apagar pedido', botao: 'Apagar', perigo: true }))) return;
+            carregando(true, 'Apagando...');
+            try {
+                const r = erroBanco(await sb.from('fito_separacoes').delete().eq('id', id).select('id'));
+                // Sem a regra de exclusão no banco, o Supabase não apaga nada e também não dá erro
+                if (!r.data || !r.data.length) throw new Error('O banco não deixou apagar. Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (regra para apagar pedidos).');
+                separacoes = separacoes.filter(x => x.id !== id); gravarCache(CACHE_SEP, separacoes);
+                carregando(false);
+                desenharAbas(); if (barra) barra.atualizar();
+                renderSeparacoes();
+            } catch (e) { erroSep(e); }
+        }
 
         // ---------- Novo pedido (a partir de uma programação) ----------
         async function pedirSeparacao(progId) {
@@ -1455,22 +1575,39 @@
             carregando(true, 'Montando o pedido...');
             let p;
             try { p = await obterProgramacao(progId); } catch (e) { erro(e); return; }
+            // Modelos (aba Modelos): a quantidade de cada produto vem da dose cadastrada no modelo da aplicação
+            if (podeModelos() && !modelos.length) await carregarModelos();
             carregando(false);
-            // Soma das doses de cada produto (mesmo nome e unidade) em todos os blocos: fica de sugestão
+            const chaveNome = s => String(s || '').trim().toLowerCase();
+            const modeloDaOperacao = o => modelos.find(m => chaveNome(m.nome) && (chaveNome(m.nome) === chaveNome(o.nomeAplicacao) || chaveNome(m.nome) === chaveNome(o.tratamento)));
+            // Cada bloco conta uma vez: o mesmo modelo em 2 blocos = 2 x a dose do modelo.
+            // Bloco sem modelo cadastrado usa as doses digitadas na própria programação.
             const porProduto = new Map();
-            p.operacoes.forEach(o => o.produtos.forEach(x => {
-                const nome = String(x.nome || '').trim(); if (!nome) return;
-                const chave = nome.toUpperCase() + '|' + (x.unidade || '');
-                const item = porProduto.get(chave) || { nome, unidade: x.unidade || 'L', soma: 0, valido: true };
-                const n = numeroDe(x.dose);
-                if (isNaN(n)) item.valido = false; else item.soma += n;
-                porProduto.set(chave, item);
-            }));
+            const modelosUsados = new Set();
+            let semModelo = 0;
+            p.operacoes.forEach(o => {
+                const m = modeloDaOperacao(o);
+                const produtos = m && m.produtos.some(x => String(x.nome || '').trim()) ? m.produtos : o.produtos;
+                if (produtos === o.produtos) { if (o.produtos.some(x => String(x.nome || '').trim())) semModelo++; } else modelosUsados.add(m.nome);
+                produtos.forEach(x => {
+                    const nome = String(x.nome || '').trim(); if (!nome) return;
+                    const chave = nome.toUpperCase() + '|' + (x.unidade || '');
+                    const item = porProduto.get(chave) || { nome, unidade: x.unidade || 'L', soma: 0, valido: true };
+                    const n = numeroDe(x.dose);
+                    if (isNaN(n)) item.valido = false; else item.soma += n;
+                    porProduto.set(chave, item);
+                });
+            });
             const blocos = [...new Set(p.operacoes.map(o => String(o.bloco || '').trim()).filter(Boolean))];
             pedido = {
                 programacaoId: p.id, data: p.data, turno: p.turno,
                 locais: blocos.length ? `${blocos.length === 1 ? 'Bloco' : 'Blocos'} ${juntarNomes(blocos)}` : '',
-                itens: [...porProduto.values()].map(i => ({ nome: i.nome, unidade: i.unidade, quantidade: '', sugerido: i.valido && i.soma ? fmtNumero(i.soma) : '' })),
+                // Já vem preenchida (dá para mudar); produto sem dose numérica fica para digitar
+                itens: [...porProduto.values()].map(i => {
+                    const total = i.valido && i.soma ? fmtNumero(i.soma) : '';
+                    return { nome: i.nome, unidade: i.unidade, quantidade: total, sugerido: total };
+                }),
+                origem: { modelos: [...modelosUsados], semModelo },
                 observacao: ''
             };
             if (!pedido.itens.length) pedido.itens.push({ nome: '', unidade: 'L', quantidade: '', sugerido: '' });
@@ -1479,14 +1616,18 @@
             el('pedidoModal').classList.remove('hidden');
         }
         function renderPedido() {
-            const temSugestao = pedido.itens.some(i => i.sugerido);
+            const temSugestao = pedido.itens.some(i => i.sugerido && String(i.quantidade).trim() !== i.sugerido);
+            const origem = pedido.origem || { modelos: [], semModelo: 0 };
+            const textoOrigem = origem.modelos.length
+                ? `Quantidades preenchidas com as doses ${origem.modelos.length === 1 ? 'do modelo' : 'dos modelos'} ${esc(juntarNomes(origem.modelos.map(n => '"' + n + '"')))}${origem.semModelo ? ` e, nos blocos sem modelo, com as doses da programação` : ''}. Confira e ajuste se precisar.`
+                : (pedido.itens.some(i => i.sugerido) ? 'Quantidades preenchidas com a soma das doses da programação (nenhum modelo com o mesmo nome da aplicação). Confira e ajuste se precisar.' : '');
             el('pedidoCorpo').innerHTML = `
                 <div><label class="rotulo" for="pedLocais"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i> Locais da aplicação</label>
                     <input id="pedLocais" class="campo" value="${esc(pedido.locais)}" placeholder="Ex.: Blocos 11 e 12" oninput="pedido.locais = this.value"></div>
                 <div>
                     <div class="flex items-end justify-between gap-2 mb-2">
                         <span class="rotulo !mb-0"><i data-lucide="package" class="w-3.5 h-3.5 text-amber-500"></i> Produtos e quantidade a separar</span>
-                        ${temSugestao ? `<button type="button" onclick="usarSomaDoses()" class="min-h-[36px] text-xs font-bold text-emerald-700 flex items-center gap-1"><i data-lucide="sigma" class="w-3.5 h-3.5"></i> Usar a soma das doses</button>` : ''}
+                        ${temSugestao ? `<button type="button" onclick="usarSomaDoses()" class="min-h-[36px] text-xs font-bold text-emerald-700 flex items-center gap-1"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Voltar às quantidades sugeridas</button>` : ''}
                     </div>
                     <div class="space-y-2">${pedido.itens.map((i, k) => `<div class="flex gap-2">
                         <input class="campo flex-1 min-w-0" value="${esc(i.nome)}" placeholder="Produto" aria-label="Produto" oninput="pedido.itens[${k}].nome = this.value">
@@ -1494,14 +1635,14 @@
                         <select class="campo !w-20" aria-label="Unidade" onchange="pedido.itens[${k}].unidade = this.value">${UNIDADES.map(u => `<option ${i.unidade === u ? 'selected' : ''}>${u}</option>`).join('')}</select>
                         <button type="button" onclick="removerItemPedido(${k})" class="btn-sec !px-2.5" title="Remover produto" aria-label="Remover produto"><i data-lucide="x" class="w-4 h-4"></i></button>
                     </div>`).join('')}</div>
-                    ${temSugestao ? '<p class="mt-1.5 text-[11px] font-medium text-slate-400">O número cinza no campo é a soma das doses dos blocos. Digite a quantidade que deve ser separada.</p>' : ''}
+                    ${textoOrigem ? `<p class="mt-1.5 text-[11px] font-medium text-slate-500 leading-relaxed">${textoOrigem}</p>` : ''}
                     <button type="button" onclick="adicionarItemPedido()" class="mt-2 min-h-[36px] text-xs font-bold text-emerald-700 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar produto</button>
                 </div>
                 <div><label class="rotulo" for="pedObs"><i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-500"></i> Observação (opcional)</label>
                     <textarea id="pedObs" class="campo" rows="2" placeholder="Ex.: deixar na casa de química até as 16h" oninput="pedido.observacao = this.value">${esc(pedido.observacao)}</textarea></div>`;
             icones();
         }
-        function usarSomaDoses() { pedido.itens.forEach(i => { if (i.sugerido && !String(i.quantidade).trim()) i.quantidade = i.sugerido; }); renderPedido(); }
+        function usarSomaDoses() { pedido.itens.forEach(i => { if (i.sugerido) i.quantidade = i.sugerido; }); renderPedido(); }
         function adicionarItemPedido() { pedido.itens.push({ nome: '', unidade: 'L', quantidade: '', sugerido: '' }); renderPedido(); }
         function removerItemPedido(k) { pedido.itens.splice(k, 1); if (!pedido.itens.length) adicionarItemPedido(); else renderPedido(); }
         function fecharPedido() { el('pedidoModal').classList.add('hidden'); }
@@ -1517,7 +1658,7 @@
             carregando(true, 'Enviando pedido...');
             try {
                 erroBanco(await sb.from('fito_separacoes').insert({
-                    id, programacao_id: pedido.programacaoId, data_aplicacao: pedido.data || null, turno: pedido.turno || '',
+                    id, local: FITO_LOCAL, programacao_id: pedido.programacaoId, data_aplicacao: pedido.data || null, turno: pedido.turno || '',
                     locais: String(pedido.locais || '').trim(), observacao: String(pedido.observacao || '').trim(), solicitante: API.nomeUsuario(),
                     itens: itens.map(i => ({ nome: String(i.nome).trim(), unidade: i.unidade || '', quantidade: String(i.quantidade).trim(), separado: false }))
                 }));
@@ -1544,6 +1685,7 @@
             abas: () => abasVisiveis().map(a => ({ ...a, ativa: a.id === aba })),
             abrir: id => trocarAba(id)
         });
+        montarLocalNaTela();
         document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharFoto(); fecharImagem(); fecharPedido(); } });
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') carregarSeparacoes(); });
         separacoes = veSeparacao() ? (lerCache(CACHE_SEP) || []) : [];
