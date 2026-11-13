@@ -95,7 +95,7 @@
                 <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 space-y-4">
                     <div class="grid grid-cols-2 gap-3">
                         <div><label class="rotulo" for="fData"><i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-500"></i> Data da leitura</label><input id="fData" type="date" class="campo font-bold" onchange="atualizarResumo()"></div>
-                        <div><label class="rotulo" for="fResp"><i data-lucide="user" class="w-3.5 h-3.5 text-emerald-500"></i> Responsável</label><select id="fResp" class="campo font-bold" onchange="aoMudarResp()"></select><input id="fRespOutro" type="text" class="campo mt-2 hidden" placeholder="Nome de quem leu" aria-label="Nome de quem leu" oninput="atualizarResumo()"></div>
+                        <div><label class="rotulo" for="fResp"><i data-lucide="user" class="w-3.5 h-3.5 text-emerald-500"></i> Responsável</label><select id="fResp" class="campo font-bold" onchange="aoMudarResp()"></select><input id="fRespOutro" type="text" class="campo mt-2 hidden" placeholder="Digite o nome..." aria-label="Nome do responsável" oninput="atualizarResumo()"></div>
                     </div>
                     <div>
                         <label class="rotulo" for="fLocal"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-500"></i> <span id="rotuloLocal">Local</span></label>
@@ -400,7 +400,7 @@
             const sel = el('fResp'), atual = sel.value;
             const pessoas = API.pessoasDoUsuario();
             const nomes = pessoas.length ? pessoas : [API.nomeUsuario()].filter(Boolean);
-            sel.innerHTML = '<option value="">Quem leu?</option>' + nomes.map(n => `<option>${esc(n)}</option>`).join('') + '<option value="__outro__">Outra pessoa (digitar)</option>';
+            sel.innerHTML = '<option value="">Selecione...</option>' + nomes.map(n => `<option>${esc(n)}</option>`).join('') + '<option value="__outro__">Outra pessoa (digitar)</option>';
             sel.value = nomes.includes(atual) || atual === '__outro__' ? atual : '';
             sel.dispatchEvent(new Event('change', { bubbles: true }));
         }
@@ -592,7 +592,7 @@
         async function registrar() {
             const c = calcular();
             if (!c.data) return avisar('Informe a data da leitura.');
-            if (!c.resp) return avisar('Escolha no Responsável o nome de quem fez a leitura.', 'Quem leu?');
+            if (!c.resp) return avisar('Selecione o responsável pela leitura.', 'Responsável');
             if (!c.local) return avisar(tipo === 'chuva' ? 'Escolha o local do pluviômetro.' : 'Escolha a unidade (relógio).');
             if (tipo === 'chuva' && (isNaN(c.mm) || c.mm < 0)) return avisar('Informe o volume medido em mm.');
             if (tipo === 'energia' && (isNaN(c.leitura) || c.leitura < 0)) return avisar('Informe a leitura do relógio.');
