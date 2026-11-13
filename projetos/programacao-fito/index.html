@@ -113,7 +113,8 @@
             </div>
             <div id="barraFiltros" class="flex flex-wrap items-center gap-2">
                 <div id="filtrosLista" role="tablist" aria-label="Filtrar programações" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1"></div>
-                <button id="btnNova" type="button" onclick="novaProgramacao()" class="hidden btn-principal ml-auto"><i data-lucide="plus" class="w-4 h-4"></i> Nova programação</button>
+                <button id="btnEquipes" type="button" onclick="abrirEquipes()" class="hidden btn-sec ml-auto" title="Cadastrar as equipes que aplicam"><i data-lucide="users" class="w-4 h-4 text-sky-600"></i> Equipes</button>
+                <button id="btnNova" type="button" onclick="novaProgramacao()" class="hidden btn-principal"><i data-lucide="plus" class="w-4 h-4"></i> Nova programação</button>
             </div>
         </div>
     </div>
@@ -245,6 +246,31 @@
                 <button type="button" onclick="fecharPedido()" class="btn-sec">Cancelar</button>
                 <button type="button" onclick="enviarPedido()" class="btn-principal flex-1 !text-sm"><i data-lucide="send" class="w-4 h-4"></i> Enviar pedido</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Equipes de aplicação (quem programa cadastra; o líder escolhe no checklist) -->
+    <div id="equipesModal" class="hidden fixed inset-0 bg-slate-900/60 z-[65] flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="equipesTitulo">
+        <div class="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] flex flex-col entra">
+            <div class="p-4 border-b border-slate-100 flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-sky-50 ring-1 ring-sky-100 flex items-center justify-center shrink-0"><i data-lucide="users" class="w-5 h-5 text-sky-600"></i></div>
+                <div class="flex-1 min-w-0">
+                    <h3 id="equipesTitulo" class="font-extrabold text-sm text-slate-800">Equipes de aplicação</h3>
+                    <p id="equipesSub" class="text-[11px] font-semibold text-slate-400 truncate">Aparecem na lista do checklist para o líder escolher quem aplicou</p>
+                </div>
+                <button type="button" onclick="fecharEquipes()" aria-label="Fechar" class="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-4 border-b border-slate-100 space-y-3 bg-slate-50/60">
+                <div><label class="rotulo" for="eqNome"><i data-lucide="users" class="w-3.5 h-3.5 text-sky-500"></i> <span id="eqFormTitulo">Nova equipe</span></label>
+                    <input id="eqNome" class="campo" maxlength="60" placeholder="Ex.: Equipe 1, Equipe do Antônio" autocomplete="off"></div>
+                <div><label class="rotulo" for="eqIntegrantes"><i data-lucide="user-round" class="w-3.5 h-3.5 text-sky-500"></i> Integrantes <span class="normal-case font-semibold">(opcional)</span></label>
+                    <input id="eqIntegrantes" class="campo" maxlength="200" placeholder="Ex.: Antônio, José e Carlos" autocomplete="off"></div>
+                <div class="flex gap-2">
+                    <button type="button" id="eqCancelar" onclick="limparFormEquipe()" class="hidden btn-sec">Cancelar</button>
+                    <button type="button" id="eqSalvar" onclick="salvarEquipe()" class="btn-principal flex-1"><i data-lucide="plus" class="w-4 h-4"></i> Adicionar equipe</button>
+                </div>
+            </div>
+            <div id="equipesLista" class="p-4 overflow-auto flex-1 space-y-2"></div>
         </div>
     </div>
 
@@ -465,7 +491,7 @@
             horario: r.horario, volumeCalda: r.volume_calda, instrucoes: r.instrucoes, produtos: Array.isArray(r.produtos) ? r.produtos : [],
             status: r.status, executor: r.executor, executadoEm: r.executado_em, phMedido: r.ph_medido, volumeAplicado: r.volume_aplicado,
             observacaoExec: r.observacao_exec, fotosPh: listaFotos(r.fotos_ph), fotosVolume: listaFotos(r.fotos_volume), fotosOutras: listaFotos(r.fotos_outras),
-            horaInicio: r.hora_inicio, horaFim: r.hora_fim, mesmoDia: r.mesmo_dia, dataConclusao: r.data_conclusao
+            horaInicio: r.hora_inicio, horaFim: r.hora_fim, mesmoDia: r.mesmo_dia, dataConclusao: r.data_conclusao, equipe: r.equipe || ''
         });
         const modeloDoBanco = r => ({
             id: r.id, nome: r.nome, tratamento: r.tratamento, alvo: r.alvo || '', cor: r.cor, tipoAplicacao: r.tipo_aplicacao, horario: r.horario,
@@ -517,6 +543,8 @@
         }
         function atualizarPermissoes() {
             el('btnNova').classList.toggle('hidden', !podeProgramar());
+            el('btnEquipes').classList.toggle('hidden', !podeProgramar());
+            carregarEquipes();
             if ((viewAtual === 'modelos' && !podeModelos()) || (viewAtual === 'separacao' && !veSeparacao())) { irPara('lista'); return; }
             desenharAbas(); if (barra) barra.atualizar();
             carregarModelos(); carregarSeparacoes();
@@ -526,7 +554,7 @@
         async function atualizarTudo() {
             if (viewAtual === 'exec' && atual) { await abrirExecucao(atual.id, true); return; }
             if (viewAtual === 'registros') carregarRegistros();
-            await Promise.all([carregarLista(), carregarModelos(), carregarSeparacoes()]);
+            await Promise.all([carregarLista(), carregarModelos(), carregarSeparacoes(), carregarEquipes()]);
         }
 
         // ------------------------------------------------------------
@@ -550,6 +578,7 @@
         function renderLista() {
             el('filtrosLista').innerHTML = FILTROS.map(([id, nome]) => `<button type="button" role="tab" aria-selected="${filtro === id}" onclick="setFiltro('${id}')" class="px-3.5 min-h-[40px] rounded-xl text-xs font-bold transition-all ${filtro === id ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500'}">${nome}</button>`).join('');
             el('btnNova').classList.toggle('hidden', !podeProgramar());
+            el('btnEquipes').classList.toggle('hidden', !podeProgramar());
             const lista = programacoes.filter(p => filtro === 'pendentes' ? p.status !== 'CONCLUIDA' : filtro === 'concluidas' ? p.status === 'CONCLUIDA' : true);
             const alvo = el('listaProgramacoes');
             if (!lista.length) {
@@ -965,6 +994,7 @@
         function novoRascunho(o) {
             return {
                 status: o.status === 'PENDENTE' ? '' : o.status, ph: o.phMedido || '', volume: o.volumeAplicado || '', obs: o.observacaoExec || '',
+                equipe: o.equipe || (o.status === 'PENDENTE' && equipesAtivas().some(e => e.nome === lerGuardado('equipe' + sufixoFito)) ? lerGuardado('equipe' + sufixoFito) : ''),
                 horaInicio: o.horaInicio || '', horaFim: o.horaFim || '', mesmoDia: o.mesmoDia || '', dataConclusao: o.mesmoDia === 'NAO' ? o.dataConclusao : '',
                 fotos: { ph: [], volume: [], outras: [] }
             };
@@ -1107,6 +1137,7 @@
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         ${o.horaInicio ? dado('Aplicação', `${esc(o.horaInicio)} → ${esc(o.horaFim)}${dur !== null ? `<span class="font-semibold text-slate-500"> · ${fmtDuracao(dur)}</span>` : ''}`) : ''}
+                        ${o.equipe ? dado('Equipe', esc(o.equipe)) : ''}
                         ${dado('pH da calda', esc(o.phMedido || '—'))}
                         ${dado('Volume', o.volumeAplicado ? esc(o.volumeAplicado) + ' L' : '—')}
                     </div>
@@ -1137,6 +1168,7 @@
                             ${opcao('NAO_FEITO', 'Não feito', 'x', r.status === 'NAO_FEITO', 'on-nok', `setExec('${o.id}','status','NAO_FEITO')`)}
                         </div>
                     </div>
+                    ${campoEquipe(o, r)}
                     <div class="grid grid-cols-2 gap-3">
                         ${campoHora('hi-' + o.id, 'Começou a aplicação', r.horaInicio, `setExec('${o.id}','horaInicio',this.value)`)}
                         ${campoHora('hf-' + o.id, 'Terminou a aplicação', r.horaFim, `setExec('${o.id}','horaFim',this.value)`)}
@@ -1197,6 +1229,7 @@
             if (!executor) { el('execNome').focus(); return avisar('Informe seu nome no campo "Quem está executando".'); }
             if (!r.status) return avisar(`Marque se o bloco ${o.bloco} foi FEITO ou NÃO FEITO.`);
             if (r.status === 'NAO_FEITO' && !r.obs.trim()) return avisar('Explique na observação por que a operação não foi feita.');
+            if (r.status === 'FEITO' && equipesAtivas().length && !r.equipe) return avisar(`Escolha a equipe que fez a aplicação no bloco ${o.bloco}.`, 'Equipe');
             if (r.status === 'FEITO') {
                 if (!r.horaInicio || !r.horaFim) return avisar('Informe o horário em que a aplicação começou e terminou.');
                 if (!r.mesmoDia) return avisar('Informe se a aplicação foi concluída no mesmo dia.');
@@ -1230,10 +1263,13 @@
                 API.enfileirar('fito_operacoes', 'update', { id: opId, valores: {
                     status: r.status, executor, executado_em: executadoEm, ph_medido: r.ph.trim(), volume_aplicado: r.volume.trim(), observacao_exec: r.obs.trim(),
                     hora_inicio: r.horaInicio, hora_fim: r.horaFim, mesmo_dia: r.mesmoDia, data_conclusao: dataConclusao,
-                    fotos_ph: fotosPh, fotos_volume: fotosVolume, fotos_outras: fotosOutras
+                    fotos_ph: fotosPh, fotos_volume: fotosVolume, fotos_outras: fotosOutras,
+                    // Só vai quando escolhida (ou ao tirar): não quebra antes de rodar o SQL das equipes
+                    ...(r.equipe || o.equipe ? { equipe: r.equipe || '' } : {})
                 } });
+                if (r.equipe) guardar('equipe' + sufixoFito, r.equipe);
                 Object.assign(o, { status: r.status, executor, executadoEm, phMedido: r.ph.trim(), volumeAplicado: r.volume.trim(), observacaoExec: r.obs.trim(),
-                    horaInicio: r.horaInicio, horaFim: r.horaFim, mesmoDia: r.mesmoDia, dataConclusao, fotosPh, fotosVolume, fotosOutras });
+                    horaInicio: r.horaInicio, horaFim: r.horaFim, mesmoDia: r.mesmoDia, dataConclusao, fotosPh, fotosVolume, fotosOutras, equipe: r.equipe || '' });
                 recalcularLocal(atual);
                 rascunhos[opId] = novoRascunho(o); delete editandoExec[opId];
                 atualizarNaLista(atual); gravarCache(cacheProg(atual.id), atual);
@@ -1334,7 +1370,7 @@
                     <td style="${TD}white-space:nowrap;">${horario}</td>
                     <td style="${TD}font-weight:800;text-align:center;">${esc(o.phMedido || '—')}</td>
                     <td style="${TD}white-space:nowrap;"><b>${o.volumeAplicado ? esc(o.volumeAplicado) + ' L' : '—'}</b>${o.volumeCalda ? `<div style="color:#64748b;">prog. ${esc(litros(o.volumeCalda))} L</div>` : ''}</td>
-                    <td style="${TD}color:#334155;">${esc(o.executor || '')}</td>
+                    <td style="${TD}color:#334155;">${o.equipe ? `<b>${esc(o.equipe)}</b><div style="color:#64748b;">${esc(o.executor || '')}</div>` : esc(o.executor || '')}</td>
                     <td style="${TD}color:#475569;">${esc(o.observacaoExec || '')}</td>
                 </tr>`;
             }).join('');
@@ -1349,7 +1385,7 @@
                     ${jornada ? `<div style="margin-top:10px;padding:10px 14px;border-radius:14px;background:#fff;border:1px solid #e2e8f0;font-size:13px;font-weight:700;color:#334155;">${esc(jornada)}</div>` : ''}
                     <div style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden;">
                         <table style="border-collapse:collapse;width:100%;">
-                            <tr style="background:#f8fafc;">${['Bloco', 'Aplicação', 'Status', 'Horário', 'pH', 'Volume', 'Executor', 'Observação'].map(h => `<td style="padding:10px 12px;font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">${h}</td>`).join('')}</tr>
+                            <tr style="background:#f8fafc;">${['Bloco', 'Aplicação', 'Status', 'Horário', 'pH', 'Volume', 'Equipe / registro', 'Observação'].map(h => `<td style="padding:10px 12px;font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">${h}</td>`).join('')}</tr>
                             ${linhas}
                         </table>
                     </div>
@@ -1847,6 +1883,116 @@
         }
 
         // ------------------------------------------------------------
+        //  EQUIPES DE APLICAÇÃO (tabela fito_equipes, supabase/programacao_fito.sql)
+        //  Quem programa cadastra; no checklist o líder escolhe na lista qual equipe aplicou.
+        // ------------------------------------------------------------
+        const CACHE_EQUIPES = 'fito_cache_equipes' + sufixoFito;
+        let equipes = [];
+        let equipeEditando = null;
+        const equipesAtivas = () => equipes.filter(e => e.ativo !== false);
+        async function carregarEquipes() {
+            try {
+                const r = erroBanco(await sb.from('fito_equipes').select('*').eq('local', FITO_LOCAL).order('nome'));
+                equipes = r.data;
+                gravarCache(CACHE_EQUIPES, equipes);
+            } catch (e) { /* sem a tabela ainda (SQL não rodado) ou sem internet: fica a cópia do aparelho */ }
+            if (!el('equipesModal').classList.contains('hidden')) renderEquipes();
+            if (viewAtual === 'exec' && atual) atual.operacoes.forEach(o => { const c = el('card-' + o.id); if (c && c.querySelector('[data-campo-equipe]')) renderCardExec(o.id); });
+        }
+
+        // Campo "Equipe que aplicou" no checklist de cada bloco
+        function campoEquipe(o, r) {
+            const ativas = equipesAtivas();
+            const opcoes = ativas.map(e => e.nome);
+            if (r.equipe && !opcoes.includes(r.equipe)) opcoes.unshift(r.equipe);   // equipe desativada/renomeada que já estava gravada
+            const gerenciar = podeProgramar() ? `<button type="button" onclick="abrirEquipes()" class="min-h-[36px] text-xs font-bold text-sky-700 flex items-center gap-1"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i> ${ativas.length ? 'Gerenciar equipes' : 'Cadastrar equipes'}</button>` : '';
+            if (!opcoes.length) return `<div data-campo-equipe class="rounded-2xl bg-slate-50 ring-1 ring-slate-200/70 px-3 py-2.5">
+                <p class="rotulo !mb-1"><i data-lucide="users" class="w-3.5 h-3.5 text-sky-500"></i> Equipe que aplicou</p>
+                <p class="text-xs font-medium text-slate-500">Nenhuma equipe cadastrada${podeProgramar() ? '.' : '. Peça a quem programa para cadastrar.'}</p>${gerenciar}</div>`;
+            const integrantes = (ativas.find(e => e.nome === r.equipe) || {}).integrantes;
+            return `<div data-campo-equipe>
+                <div class="flex items-end justify-between gap-2"><label class="rotulo" for="eq-${o.id}"><i data-lucide="users" class="w-3.5 h-3.5 text-sky-500"></i> Equipe que aplicou ${r.status === 'NAO_FEITO' ? '<span class="normal-case font-semibold">(opcional)</span>' : '<span class="text-rose-500">*</span>'}</label>${gerenciar}</div>
+                <select id="eq-${o.id}" class="campo" onchange="setExec('${o.id}','equipe',this.value)">
+                    <option value="">Escolha a equipe...</option>
+                    ${opcoes.map(n => `<option value="${esc(n)}" ${n === r.equipe ? 'selected' : ''}>${esc(n)}</option>`).join('')}
+                </select>
+                ${integrantes ? `<p class="mt-1 text-[11px] font-medium text-slate-500 flex items-center gap-1"><i data-lucide="user-round" class="w-3 h-3"></i>${esc(integrantes)}</p>` : ''}
+            </div>`;
+        }
+
+        // ----- Janela de cadastro -----
+        function abrirEquipes() {
+            if (!podeProgramar()) return;
+            el('equipesSub').textContent = `${nomeLocalFito()} · aparecem na lista do checklist para o líder escolher quem aplicou`;
+            limparFormEquipe();
+            el('equipesModal').classList.remove('hidden');
+            renderEquipes(); carregarEquipes();
+        }
+        function fecharEquipes() { el('equipesModal').classList.add('hidden'); }
+        function limparFormEquipe() {
+            equipeEditando = null;
+            el('eqNome').value = ''; el('eqIntegrantes').value = '';
+            el('eqFormTitulo').textContent = 'Nova equipe';
+            el('eqCancelar').classList.add('hidden');
+            el('eqSalvar').innerHTML = '<i data-lucide="plus" class="w-4 h-4"></i> Adicionar equipe';
+            icones();
+        }
+        function renderEquipes() {
+            const lista = equipes.slice().sort((a, b) => (a.ativo === false) - (b.ativo === false) || porNome(a.nome, b.nome));
+            el('equipesLista').innerHTML = lista.length ? lista.map(e => `<div class="flex items-center gap-3 p-3 rounded-2xl ring-1 ${e.ativo === false ? 'ring-slate-200 bg-slate-50 opacity-70' : 'ring-slate-200/80 bg-white'}">
+                <div class="w-10 h-10 rounded-xl ${e.ativo === false ? 'bg-slate-100 text-slate-400' : 'bg-sky-50 text-sky-600'} flex items-center justify-center shrink-0"><i data-lucide="users" class="w-5 h-5"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-extrabold text-slate-800 truncate ${e.ativo === false ? 'line-through' : ''}">${esc(e.nome)}</p>
+                    <p class="text-[11px] font-medium text-slate-500 truncate">${e.integrantes ? esc(e.integrantes) : 'Sem integrantes informados'}${e.ativo === false ? ' · desativada' : ''}</p>
+                </div>
+                <button type="button" onclick="editarEquipe('${esc(e.id)}')" class="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-amber-600 hover:bg-amber-50" title="Editar" aria-label="Editar ${esc(e.nome)}"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                <button type="button" onclick="alternarEquipe('${esc(e.id)}')" class="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100" title="${e.ativo === false ? 'Reativar' : 'Desativar (sai da lista do checklist)'}" aria-label="${e.ativo === false ? 'Reativar' : 'Desativar'} ${esc(e.nome)}"><i data-lucide="${e.ativo === false ? 'eye' : 'eye-off'}" class="w-4 h-4"></i></button>
+                <button type="button" onclick="excluirEquipe('${esc(e.id)}')" class="w-11 h-11 flex items-center justify-center rounded-xl text-slate-300 hover:text-rose-600 hover:bg-rose-50" title="Excluir" aria-label="Excluir ${esc(e.nome)}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>`).join('') : `<div class="text-center py-8"><i data-lucide="users" class="w-10 h-10 mx-auto text-slate-300"></i><p class="mt-2 text-sm font-semibold text-slate-400">Nenhuma equipe cadastrada ainda.</p></div>`;
+            icones();
+        }
+        function editarEquipe(id) {
+            const e = equipes.find(x => x.id === id); if (!e) return;
+            equipeEditando = id;
+            el('eqNome').value = e.nome; el('eqIntegrantes').value = e.integrantes || '';
+            el('eqFormTitulo').textContent = 'Editando equipe';
+            el('eqCancelar').classList.remove('hidden');
+            el('eqSalvar').innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Salvar alteração';
+            icones(); el('eqNome').focus();
+        }
+        const erroEquipes = e => erro(/fito_equipes|schema cache|relation|equipe/i.test(e && e.message || '') ? new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (tabela das equipes).') : e);
+        async function salvarEquipe() {
+            if (!podeProgramar()) return;
+            const nome = el('eqNome').value.replace(/\s+/g, ' ').trim(), integrantes = el('eqIntegrantes').value.replace(/\s+/g, ' ').trim();
+            if (!nome) { el('eqNome').focus(); return avisar('Digite o nome da equipe.'); }
+            if (equipes.some(e => e.id !== equipeEditando && e.nome.toLowerCase() === nome.toLowerCase())) return avisar(`Já existe uma equipe chamada "${nome}".`);
+            carregando(true, 'Salvando equipe...');
+            try {
+                if (equipeEditando) erroBanco(await sb.from('fito_equipes').update({ nome, integrantes, atualizado_em: new Date().toISOString() }).eq('id', equipeEditando));
+                else erroBanco(await sb.from('fito_equipes').insert({ id: API.novoId(), local: FITO_LOCAL, nome, integrantes }));
+                await carregarEquipes();
+                carregando(false);
+                limparFormEquipe(); renderEquipes();
+            } catch (e) { erroEquipes(e); }
+        }
+        async function alternarEquipe(id) {
+            const e = equipes.find(x => x.id === id); if (!e || !podeProgramar()) return;
+            carregando(true, 'Salvando...');
+            try { erroBanco(await sb.from('fito_equipes').update({ ativo: e.ativo === false, atualizado_em: new Date().toISOString() }).eq('id', id)); await carregarEquipes(); carregando(false); renderEquipes(); }
+            catch (err) { erroEquipes(err); }
+        }
+        async function excluirEquipe(id) {
+            const e = equipes.find(x => x.id === id); if (!e || !podeProgramar()) return;
+            if (!(await Dialogo.confirmar(`Excluir a equipe "${e.nome}"? As aplicações já registradas continuam com o nome dela. Se ela só não trabalha mais, prefira desativar.`, { titulo: 'Excluir equipe', botao: 'Excluir', perigo: true }))) return;
+            carregando(true, 'Excluindo...');
+            try {
+                erroBanco(await sb.from('fito_equipes').delete().eq('id', id));
+                if (equipeEditando === id) limparFormEquipe();
+                await carregarEquipes(); carregando(false); renderEquipes();
+            } catch (err) { erroEquipes(err); }
+        }
+
+        // ------------------------------------------------------------
         //  REGISTROS: aplicações feitas e produtos separados, no mesmo formato do histórico
         //  da Energia (Leituras): período, resumo, Cartões | Tabela e álbum das fotos.
         // ------------------------------------------------------------
@@ -2020,6 +2166,7 @@
                     <div class="min-w-0">
                         ${o.nomeAplicacao && o.nomeAplicacao !== o.tratamento ? `<p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate">${esc(o.nomeAplicacao)}</p>` : ''}
                         <p class="text-sm font-extrabold text-slate-800 leading-snug">${esc(o.tratamento || '—')}</p>
+                        ${o.equipe ? `<p class="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-sky-700 bg-sky-50 ring-1 ring-sky-100 rounded-full px-2 py-0.5"><i data-lucide="users" class="w-3 h-3"></i>${esc(o.equipe)}</p>` : ''}
                     </div>
                     <div class="grid grid-cols-3 gap-2">
                         ${caixaReg('pH', esc(o.phMedido || '—'), 'bg-sky-50', 'text-sky-400', 'text-sky-700')}
@@ -2083,10 +2230,11 @@
                 <tbody>${linhas}</tbody></table></div></div>`;
         function tabelaAplicacoesReg(lista) {
             return tabelaReg(
-                `<th class="px-4 py-2.5 sticky left-0 bg-slate-50 z-10">Data</th>${thReg('Bloco')}${thReg('Tratamento')}${thReg('Produtos')}${thReg('pH', 'text-right')}${thReg('Volume', 'text-right')}${thReg('Horário')}${thReg('Situação')}${thReg('Fotos')}${thReg('Aplicado por')}${thReg('Obs.')}`,
+                `<th class="px-4 py-2.5 sticky left-0 bg-slate-50 z-10">Data</th>${thReg('Bloco')}${thReg('Equipe')}${thReg('Tratamento')}${thReg('Produtos')}${thReg('pH', 'text-right')}${thReg('Volume', 'text-right')}${thReg('Horário')}${thReg('Situação')}${thReg('Fotos')}${thReg('Aplicado por')}${thReg('Obs.')}`,
                 lista.map((o, i) => `<tr class="border-t border-slate-100 align-top">
                     <td class="px-4 py-2.5 font-bold text-slate-800 whitespace-nowrap sticky left-0 bg-white">${fmtData(o.data)}<span class="block text-[10px] font-semibold text-slate-400">${esc(nomeProprio(o.turno))}</span></td>
                     <td class="px-3 py-2.5 font-bold text-slate-700 whitespace-nowrap">${esc(o.bloco || '—')}</td>
+                    <td class="px-3 py-2.5 text-sky-700 font-bold whitespace-nowrap">${esc(o.equipe || '—')}</td>
                     <td class="px-3 py-2.5 text-slate-700 min-w-[160px]">${esc(o.tratamento || '—')}</td>
                     <td class="px-3 py-2.5 text-xs text-slate-600 min-w-[200px]">${o.produtos.map(p => `${esc(p.nome)}${p.dose ? ` <b class="text-slate-800 whitespace-nowrap">${esc(p.dose)} ${esc(p.unidade)}</b>` : ''}`).join('<br>') || '—'}</td>
                     <td class="px-3 py-2.5 text-right text-slate-600 whitespace-nowrap">${esc(o.phMedido || '—')}</td>
@@ -2147,7 +2295,7 @@
             abrir: id => trocarAba(id)
         });
         montarLocalNaTela();
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharFoto(); fecharImagem(); fecharPedido(); } });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharFoto(); fecharImagem(); fecharPedido(); fecharEquipes(); } });
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') carregarSeparacoes(); });
         separacoes = veSeparacao() ? (lerCache(CACHE_SEP) || []) : [];
         // Quem só separa produtos (não programa) já abre na aba Separação
@@ -2158,6 +2306,8 @@
         carregarLista(programacoes.length > 0);
         carregarModelos();
         carregarSeparacoes();
+        equipes = lerCache(CACHE_EQUIPES) || [];
+        carregarEquipes();
     </script>
 </body>
 </html>
