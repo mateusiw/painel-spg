@@ -1524,6 +1524,15 @@
         localStorage.removeItem(K.cache('culturas_bloco'));
     }
 
+    // Tanque de onde o bloco recebe a água (cor do bloco no Balanço). Somente gestor, precisa de internet
+    async function salvarTanqueBloco(bloco, reservatorioId) {
+        if (!navigator.onLine) throw new Error("Sem conexão. Alterar o tanque do bloco precisa de internet.");
+        const resp = await sb.from('culturas_bloco').upsert({ id: idComLocal(bloco), reservatorio_id: reservatorioId || null, local: localAtual() }, { onConflict: 'id' }).select().maybeSingle();
+        if (resp.error) throw erroSupabase(resp);
+        if (!resp.data) throw new Error("Sem permissão para alterar o tanque do bloco.");
+        localStorage.removeItem(K.cache('culturas_bloco'));
+    }
+
     function salvarHorasPoco(pocoId, data, horas) {
         enfileirar('horas_poco_dia', 'upsert', { id: pocoId + '_' + data, poco_id: pocoId, data, horas });
     }
@@ -2284,7 +2293,7 @@
         excluirCadastro, listarManutencoes, salvarManutencao, excluirManutencao,
         // balanço de água
         lerConfiguracao, salvarConfiguracao, listarHorasPocoPeriodo, salvarHorasPoco, listarRegistrosPeriodo, listarLeiturasPocoPeriodo,
-        listarCulturas, salvarCultura, salvarApelidoBloco,
+        listarCulturas, salvarCultura, salvarApelidoBloco, salvarTanqueBloco,
         // tempo real (registros dos outros irrigadores)
         listarRegistrosEquipe, listarMeusRegistros, listarRegistrosDia, assinarRegistros, cancelarAssinaturaRegistros, assinarAgua,
         // atualizar o app de todos

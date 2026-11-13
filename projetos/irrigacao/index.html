@@ -1011,6 +1011,16 @@
                                 <span class="text-xs font-bold text-teal-700">h</span>
                             </div>
                         </div>
+
+                        <!-- TANQUE QUE ESTÁ RECEBENDO A ÁGUA (vem do cadastro do poço; dá para trocar) -->
+                        <div id="pocoTanqueArea" class="hidden mt-3 bg-indigo-50/60 border border-indigo-100 rounded-xl px-3 py-2.5">
+                            <label for="pocoTanque" class="text-xs font-bold text-indigo-800 leading-tight block mb-1.5">
+                                <span class="flex items-center gap-1.5"><i data-lucide="container" class="w-3.5 h-3.5 text-indigo-600"></i> Enviando água para</span>
+                                <span class="block text-[10px] font-medium text-indigo-700/70 mt-0.5">Vem do cadastro do poço. Troque se hoje estiver indo para outro tanque.</span>
+                            </label>
+                            <select id="pocoTanque" onchange="this.dataset.editado = '1'"
+                                class="w-full bg-white border-2 border-indigo-200 text-indigo-900 text-sm font-bold rounded-lg py-2.5 px-3 outline-none"></select>
+                        </div>
                     </div>
                     <div class="px-5 py-4">
                         <label class="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
@@ -1132,32 +1142,28 @@
 
     </div>
 
-    <!-- ABA 5: CADASTROS (SOMENTE GESTOR) — poços, reservatórios, blocos e usuários, um de cada vez -->
+    <!-- ABA 5: CADASTROS (SOMENTE GESTOR) — poços, reservatórios e blocos, um de cada vez -->
     <div id="tabCadastros" class="hidden container mx-auto p-4 space-y-4 max-w-md">
 
         <div class="px-1">
             <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Cadastros</h2>
-            <p class="text-[10px] text-slate-400 font-medium">Gerencie poços, reservatórios, dados dos blocos e usuários</p>
+            <p class="text-[10px] text-slate-400 font-medium">Gerencie poços, reservatórios e dados dos blocos</p>
         </div>
 
         <!-- SUB-ABAS DOS CADASTROS -->
         <div id="cadSubNav" class="flex flex-wrap bg-white rounded-xl shadow-sm border border-slate-200 p-1 gap-1">
             <button type="button" data-cad-sec="pocos" onclick="window.switchCadastro('pocos')"
-                class="flex-1 min-w-[40%] sm:min-w-0 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-400">
+                class="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-400">
                 <i data-lucide="droplet" class="w-3.5 h-3.5"></i> Poços
             </button>
             <button type="button" data-cad-sec="reserv" onclick="window.switchCadastro('reserv')"
-                class="flex-1 min-w-[40%] sm:min-w-0 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-400">
+                class="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-400">
                 <i data-lucide="container" class="w-3.5 h-3.5"></i> Reservatórios
             </button>
             <button type="button" data-cad-sec="blocos" onclick="window.switchCadastro('blocos')"
-                class="flex-1 min-w-[40%] sm:min-w-0 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-400">
+                class="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-400">
                 <i data-lucide="layers" class="w-3.5 h-3.5"></i> Blocos
             </button>
-            <a data-so-admin href="../usuarios/index.html"
-                class="hidden flex-1 min-w-[40%] sm:min-w-0 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-400">
-                <i data-lucide="users" class="w-3.5 h-3.5"></i> Usuários
-            </a>
         </div>
 
         <!-- ===== CADASTRO DE POÇOS ===== -->
@@ -1463,10 +1469,15 @@
                         class="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-30"><i data-lucide="zoom-in" class="w-4 h-4"></i></button>
                 </div>
                 <div>
-                    <h3 class="text-xs font-black text-slate-600 uppercase tracking-wider">Volume (L) por Poço</h3>
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 class="text-xs font-black text-slate-600 uppercase tracking-wider">Volume (L) por Poço</h3>
+                        <div id="legendaTanques" class="flex flex-wrap gap-x-3 gap-y-1"></div>
+                    </div>
                     <p class="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 rounded-full px-2 py-0.5">
                         <i data-lucide="pointer" class="w-3 h-3"></i> Toque numa coluna para ver quem aferiu e a que horas</p>
                     <div class="overflow-x-auto"><div id="graficoVolumePoco" class="min-w-[560px]"></div></div>
+                    <!-- Total de água por tanque (cor da barra = tanque) -->
+                    <div id="tabelaTanques" class="mt-3 overflow-x-auto"></div>
                 </div>
                 <div>
                     <h3 class="text-xs font-black text-slate-600 uppercase tracking-wider">Vazão Média por Poço (L/h)</h3>
@@ -5779,6 +5790,25 @@
 
         function rotuloPoco(p) { return `Poço ${p.numero}${p.nome ? ' — ' + p.nome : ''}`; }
 
+        // ----- Tanque que recebe a água de cada poço -----
+        function nomeTanque(id) {
+            const r = id && reservCache.find(x => x.id === id);
+            return r ? r.nome : '';
+        }
+
+        // Lista de tanques com a opção "não informado" (o banco aceita leitura sem tanque)
+        function opcoesTanqueHtml(selecionado, textoVazio) {
+            const ativos = reservCache.filter(r => r.ativo !== false || r.id === selecionado);
+            return `<option value="">${escapeHtml(textoVazio || 'Não informado')}</option>` +
+                ativos.map(r => `<option value="${escapeHtml(r.id)}"${r.id === selecionado ? ' selected' : ''}>${escapeHtml(r.nome)}</option>`).join('');
+        }
+
+        // Etiqueta "→ Tanque X" para leituras e cartões
+        function seloTanque(id, classe) {
+            const nome = nomeTanque(id);
+            return nome ? `<span class="inline-flex items-center gap-0.5 ${classe || 'text-indigo-600'}"><i data-lucide="arrow-right" class="w-3 h-3"></i>${escapeHtml(nome)}</span>` : '';
+        }
+
         // ----- Aferição pelo balde de 15 L (mesma conta do Painel de Vazão) -----
         const STATUS_POCO = {
             ligado:    { rotulo: 'Ligado',    badge: 'bg-emerald-100 text-emerald-700', botao: 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow',  campo: 'bg-emerald-50/60 border-emerald-300 text-emerald-900' },
@@ -5847,6 +5877,11 @@
             const reservAtivos = reservCache.filter(r => r.ativo !== false);
             preencherSelect('pocoSelect', pocosAtivos, rotuloPoco, 'Nenhum poço cadastrado');
             preencherSelect('reservSelect', reservAtivos, r => r.nome, 'Nenhum reservatório cadastrado');
+            // Tanque da leitura do poço: só aparece quando há tanques cadastrados
+            const tanqueSel = document.getElementById('pocoTanque');
+            tanqueSel.innerHTML = opcoesTanqueHtml(tanqueSel.value);
+            document.getElementById('pocoTanqueArea').classList.toggle('hidden', reservAtivos.length === 0);
+            if (!tanqueSel.dataset.editado) sugerirTanquePoco();
 
             // Resumo pela última leitura de cada poço (como no Painel de Vazão)
             // Situação mostra só as leituras do dia escolhido no seletor de data
@@ -5893,6 +5928,7 @@
                             <div class="min-w-0">
                                 <span class="font-bold text-slate-600">${fmtHora(l.data_hora)}</span>
                                 <span class="text-slate-400 truncate"> · ${escapeHtml(l.responsavel || '')}</span>
+                                ${l.status !== 'desligado' && nomeTanque(l.reservatorio_id) ? `<div class="font-bold truncate">${seloTanque(l.reservatorio_id)}</div>` : ''}
                                 ${motivoParada(l) ? `<div class="text-rose-500 font-bold truncate">${escapeHtml(motivoParada(l))}</div>` : ''}
                                 ${l.observacao ? `<div class="text-slate-400 italic truncate">${escapeHtml(l.observacao)}</div>` : ''}
                             </div>
@@ -5950,6 +5986,7 @@
                                     <div class="flex items-center gap-1.5">${seloStatusPoco(ultima)}</div>
                                     <div class="text-2xl font-black leading-none mt-1.5 ${desligado ? 'text-slate-300' : 'text-blue-700'}">${fmtLh(vazaoLeitura(ultima))} <span class="text-xs">L/h</span></div>
                                     ${desligado && motivoParada(ultima) ? `<div class="text-[10px] font-bold text-rose-500 mt-1">${escapeHtml(motivoParada(ultima))}</div>` : ''}
+                                    ${!desligado && nomeTanque(ultima.reservatorio_id || p.reservatorio_id) ? `<div class="text-[11px] font-black mt-1">${seloTanque(ultima.reservatorio_id || p.reservatorio_id)}</div>` : ''}
                                 </div>
                                 ${Number(ultima.segundos_15l) > 0 ? `
                                 <div class="text-right">
@@ -6084,6 +6121,15 @@
                     return;
                 }
                 leitura.horas_ligado = horas;
+
+                // Tanque que está recebendo a água. Só vai no envio quando escolhido
+                // (ou ao tirar o tanque de uma leitura que tinha), para não quebrar
+                // locais sem tanques cadastrados.
+                const tanque = document.getElementById('pocoTanque').value;
+                const original = editandoLeituraPocoId
+                    ? leiturasPocoDia.concat(leiturasPocoCache).find(x => String(x.id) === String(editandoLeituraPocoId)) : null;
+                if (tanque) leitura.reservatorio_id = tanque;
+                else if (original && original.reservatorio_id) leitura.reservatorio_id = null;
             }
 
             avisarDataLeituraPoco(leitura).then(aviso => {
@@ -6139,6 +6185,8 @@
 
         function limparFormLeituraPoco() {
             delete document.getElementById('pocoHorasLigado').dataset.editado;
+            delete document.getElementById('pocoTanque').dataset.editado;
+            sugerirTanquePoco();
             document.getElementById('pocoSegundos').value = '0,00';
             document.getElementById('pocoVazaoPreview').innerText = '—';
             document.getElementById('pocoObs').value = '';
@@ -6186,6 +6234,10 @@
             window.mascaraSegundos(segundos);
             const horas = document.getElementById('pocoHorasLigado');
             if (l.horas_ligado != null) { horas.value = l.horas_ligado; horas.dataset.editado = '1'; }
+            const tanque = document.getElementById('pocoTanque');
+            tanque.innerHTML = opcoesTanqueHtml(l.reservatorio_id || '');
+            tanque.value = l.reservatorio_id || '';
+            tanque.dataset.editado = '1';
             document.getElementById('pocoObs').value = l.observacao || '';
             modoEdicaoPoco(true);
             renderAgua();
@@ -6320,7 +6372,21 @@
 
         // Preenche "Horas ligado por dia" do formulário de leitura com o valor atual do poço
         // escolhido (sem apagar o que a pessoa já digitou, a não ser que troque de poço)
+        // Tanque do formulário de leitura = tanque do cadastro do poço escolhido
+        function sugerirTanquePoco() {
+            const sel = document.getElementById('pocoTanque');
+            if (!sel || sel.dataset.editado) return;
+            const p = pocosCache.find(x => x.id === document.getElementById('pocoSelect').value);
+            const id = p && p.reservatorio_id && [...sel.options].some(o => o.value === p.reservatorio_id) ? p.reservatorio_id : '';
+            sel.value = id;
+        }
+
         window.sugerirHorasLigado = function(trocouPoco) {
+            const tanque = document.getElementById('pocoTanque');
+            if (tanque) {
+                if (trocouPoco) delete tanque.dataset.editado;
+                sugerirTanquePoco();
+            }
             const input = document.getElementById('pocoHorasLigado');
             if (!input) return;
             if (trocouPoco) delete input.dataset.editado;
@@ -6704,7 +6770,7 @@
             const item = !tipo || id === NOVO_CADASTRO ? null : (tipo === 'poco' ? pocosCache : reservCache).find(x => x.id === id);
             rascunhoCadastro = tipo === 'poco'
                 ? { numero: item ? item.numero : proximoNumeroPoco(), nome: item ? item.nome || '' : '',
-                    horas: item ? horasPadraoDoPoco(item) : 24 }
+                    horas: item ? horasPadraoDoPoco(item) : 24, tanque: item ? item.reservatorio_id || '' : '' }
                 : { nome: item ? item.nome : '', altura: item ? item.altura_maxima_m ?? '' : '', capacidade: item ? item.capacidade_m3 ?? '' : '' };
             renderCadastrosAgua();
         }
@@ -6755,6 +6821,10 @@
                         </div>
                         <p class="text-[10px] text-slate-400 mt-1">Usado no balanço de água. As leituras do dia atualizam esse valor.</p>
                     </div>
+                    <label class="block mt-3">${rotulo('Envia água para o tanque')}
+                        <select onchange="window.alterarRascunhoCadastro('tanque', this.value)" class="${campo} font-bold mt-1">
+                            ${opcoesTanqueHtml(r.tanque, reservCache.length ? 'Não informado' : 'Nenhum tanque cadastrado')}</select>
+                        <span class="block text-[10px] text-slate-400 mt-1">Vem marcado nas leituras do poço (dá para trocar na leitura) e soma o volume no relatório por tanque do Balanço.</span></label>
                     <p class="text-[10px] text-slate-500 mt-3 flex items-center gap-1"><i data-lucide="file-text" class="w-3.5 h-3.5 text-teal-600"></i>
                         Profundidade, motor, outorga e manutenções ficam na <b>ficha do poço</b>${novo ? ' (abre depois de salvar)' : ''}.</p>`;
             } else {
@@ -6804,7 +6874,7 @@
                 : leiturasReservCache.find(l => l.reservatorio_id === item.id);
             const horas = ehPoco ? horasPadraoDoPoco(item) : 0;
             const detalhes = (ehPoco
-                ? [item.nome, item.motor, `Bombeia ${fmtNum(horas, horas % 1 ? 1 : 0)} h/dia`]
+                ? [item.nome, nomeTanque(item.reservatorio_id) ? '→ ' + nomeTanque(item.reservatorio_id) : '', item.motor, `Bombeia ${fmtNum(horas, horas % 1 ? 1 : 0)} h/dia`]
                 : [item.altura_maxima_m ? 'máx. ' + fmtNum(item.altura_maxima_m, 2) + ' m' : '', item.capacidade_m3 ? fmtNum(item.capacidade_m3, 0) + ' m³' : '']
             ).filter(Boolean).map(escapeHtml).join(' · ') || 'Sem detalhes cadastrados';
             const corStatus = !ativo || !ultima ? 'bg-slate-300' : ehPoco && ultima.status === 'desligado' ? 'bg-rose-500' : 'bg-emerald-500';
@@ -6915,9 +6985,13 @@
                 if (!numero) return mostrarErro("Informe o número do poço.");
                 if (pocosCache.some(x => x.id !== id && String(x.numero).toUpperCase() === numero)) return mostrarErro(`Já existe um poço com o número ${numero}.`);
                 if (!(horas > 0 && horas <= 24)) return mostrarErro("As horas ligado por dia precisam ficar entre 0,5 e 24.");
-                API.salvarPoco(p
+                const dadosPoco = p
                     ? { id: p.id, numero, nome: nome || null, observacao: p.observacao, ativo: p.ativo !== false, horas_padrao: horas }
-                    : { numero, nome: nome || null, horas_padrao: horas });
+                    : { numero, nome: nome || null, horas_padrao: horas };
+                // Tanque só vai no envio quando escolhido (ou removido), para não quebrar antes do SQL novo
+                if (r.tanque) dadosPoco.reservatorio_id = r.tanque;
+                else if (p && p.reservatorio_id) dadosPoco.reservatorio_id = null;
+                API.salvarPoco(dadosPoco);
             } else {
                 const res = novo ? null : reservCache.find(x => x.id === id);
                 if (!nome) return mostrarErro("Informe o nome do reservatório.");
@@ -6941,7 +7015,7 @@
             // Já sabemos que tem histórico: nem tenta excluir
             const temLeituras = ehPoco
                 ? leiturasPocoCache.some(l => l.poco_id === id) || manutencoesCache.some(m => m.poco_id === id)
-                : leiturasReservCache.some(l => l.reservatorio_id === id);
+                : leiturasReservCache.some(l => l.reservatorio_id === id) || leiturasPocoCache.some(l => l.reservatorio_id === id);
             if (temLeituras) { window.showAlert("Não é possível excluir", avisoHistorico); return; }
 
             pendingConfirmCallback = async () => {
@@ -7018,29 +7092,131 @@
                 const doPoco = leituras.filter(l => l.poco_id === p.id);
                 const porDia = {};
                 const horasLeituraDia = {};
+                const tanqueDia = {};   // tanque da última leitura do dia que informou tanque
                 doPoco.filter(l => l.status !== 'desligado')
                     .sort((a, b) => String(a.data_hora).localeCompare(String(b.data_hora)))
                     .forEach(l => {
                         const d = dataLocalIso(new Date(l.data_hora));
                         (porDia[d] = porDia[d] || []).push(vazaoLeitura(l));
                         if (l.horas_ligado != null) horasLeituraDia[d] = Number(l.horas_ligado);
+                        if (l.reservatorio_id) tanqueDia[d] = l.reservatorio_id;
                     });
                 const dias = Object.keys(porDia).sort();
                 if (dias.length === 0) return { poco: p, semDados: true, desligado: doPoco.some(l => l.status === 'desligado') };
 
                 let volume = 0, somaMedias = 0, somaHoras = 0, afericoes = 0, horasAlteradas = false;
+                const porTanque = {};   // { id do tanque ('' = não informado): litros }
                 dias.forEach(d => {
                     const media = porDia[d].reduce((s, v) => s + v, 0) / porDia[d].length;
                     const reg = horasRegs.find(h => h.poco_id === p.id && h.data === d);
                     const horas = reg ? Number(reg.horas) : (horasLeituraDia[d] ?? horasPadraoDoPoco(p));
                     if (reg) horasAlteradas = true;
                     volume += media * horas;
+                    const tanque = tanqueDia[d] || p.reservatorio_id || '';
+                    porTanque[tanque] = (porTanque[tanque] || 0) + media * horas;
                     somaMedias += media;
                     somaHoras += horas;
                     afericoes += porDia[d].length;
                 });
-                return { poco: p, media: somaMedias / dias.length, dias: dias.length, afericoes, horas: somaHoras / dias.length, horasAlteradas, volume };
+                return { poco: p, media: somaMedias / dias.length, dias: dias.length, afericoes, horas: somaHoras / dias.length, horasAlteradas, volume, porTanque };
             });
+        }
+
+        // Entrada somada por tanque: [{ id, nome, volume, pocos: [{ poco, volume }] }], maior primeiro;
+        // o volume sem tanque informado fica por último
+        function entradaPorTanque(comDados) {
+            const tanques = {};
+            comDados.forEach(l => Object.entries(l.porTanque || {}).forEach(([id, litros]) => {
+                if (!(litros > 0)) return;
+                const t = tanques[id] = tanques[id] || { id, nome: id ? (nomeTanque(id) || 'Tanque excluído') : 'Tanque não informado', volume: 0, pocos: [] };
+                t.volume += litros;
+                t.pocos.push({ poco: l.poco, volume: litros });
+            }));
+            return Object.values(tanques)
+                .map(t => Object.assign(t, { pocos: t.pocos.sort((a, b) => String(a.poco.numero).localeCompare(String(b.poco.numero), undefined, { numeric: true })) }))
+                .sort((a, b) => (!a.id) - (!b.id) || b.volume - a.volume);
+        }
+
+        // Cor de cada tanque: fixa pela ordem do cadastro (o mesmo tanque tem sempre a mesma cor,
+        // em qualquer período); "não informado" fica cinza
+        const CORES_TANQUE = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#4a3aa7', '#008300', '#e34948'];
+        function corDoTanque(id) {
+            if (!id) return COR_SEM_CULTURA;
+            const i = reservCache.findIndex(r => r.id === id);
+            return CORES_TANQUE[(i < 0 ? reservCache.length : i) % CORES_TANQUE.length];
+        }
+
+        // Pinta cada poço com a cor do tanque que mais recebeu a água dele no período
+        // e monta a legenda (cor = tanque). Sem tanques informados, tudo fica como antes.
+        function aplicarCoresTanque(b) {
+            b.porTanqueAtivo = reservCache.length > 0 && b.tanques.some(t => t.id);
+            b.legendaTanques = b.porTanqueAtivo ? b.tanques.map(t => ({ nome: t.nome, cor: corDoTanque(t.id) })) : [];
+            b.comDados.forEach(l => {
+                const partes = Object.entries(l.porTanque || {}).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]);
+                l.tanquePrincipal = partes.length ? partes[0][0] : '';
+                l.cor = b.porTanqueAtivo ? corDoTanque(l.tanquePrincipal) : COR_ENTRADA;
+                l.textoTanques = partes.map(([id, v]) => `${id ? (nomeTanque(id) || 'Tanque excluído') : 'tanque não informado'} ${fmtLh(v)} L`).join(' + ');
+            });
+
+            // Blocos: com algum bloco ligado a um tanque, a barra do bloco fica com a cor do tanque
+            // (a mesma dos poços que mandam água para ele) e a legenda da saída vira a dos tanques.
+            // Sem nenhum bloco ligado a tanque, continua a cor da cultura.
+            b.blocosPorTanque = reservCache.length > 0 && b.blocos.some(x => x.tanque);
+            b.saidaTanques = [];
+            if (b.blocosPorTanque) {
+                const porTanque = {};
+                b.blocos.forEach(x => {
+                    x.cor = corDoTanque(x.tanque);
+                    const t = porTanque[x.tanque] = porTanque[x.tanque] || { id: x.tanque, blocos: [], litros: 0 };
+                    t.blocos.push(x.bloco);
+                    t.litros += x.litros || 0;
+                });
+                b.saidaTanques = Object.values(porTanque);
+                const legendaSaida = b.saidaTanques
+                    .sort((x, y) => (!x.id) - (!y.id) || reservCache.findIndex(r => r.id === x.id) - reservCache.findIndex(r => r.id === y.id))
+                    .map(t => ({ nome: t.id ? (nomeTanque(t.id) || 'Tanque excluído') : 'Tanque não informado', cor: corDoTanque(t.id) }));
+                // Troca no mesmo array: a legenda da tela, da imagem e do PDF usam essa lista
+                b.legenda.splice(0, b.legenda.length, ...legendaSaida);
+            }
+        }
+
+        // Tabela simples: total de água por tanque (mesmo HTML na tela e na imagem)
+        // Linhas da tabela por tanque: entrada (poços) e saída (blocos) de cada tanque
+        function linhasTanques(b) {
+            const linhas = {};
+            const linha = id => linhas[id] = linhas[id] || { id, nome: id ? (nomeTanque(id) || 'Tanque excluído') : 'Tanque não informado', volume: 0, pocos: [], saida: 0, blocos: [] };
+            b.tanques.forEach(t => Object.assign(linha(t.id), { volume: t.volume, pocos: t.pocos }));
+            (b.saidaTanques || []).forEach(t => Object.assign(linha(t.id), { saida: t.litros, blocos: t.blocos }));
+            return Object.values(linhas).sort((x, y) => (!x.id) - (!y.id) || y.volume - x.volume || y.saida - x.saida);
+        }
+
+        function tabelaTanquesHtml(b, fs) {
+            if (!b.porTanqueAtivo && !b.blocosPorTanque) return '';
+            fs = fs || 11;
+            const comSaida = !!b.blocosPorTanque;
+            const tanques = linhasTanques(b);
+            const total = b.tanques.reduce((s, t) => s + t.volume, 0) || 1;
+            const th = (t, dir) => `<th style="text-align:${dir || 'left'};padding:${fs * 0.5}px ${fs * 0.7}px;font-size:${fs * 0.85}px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #e2e8f0;white-space:nowrap">${t}</th>`;
+            const td = (t, dir, extra) => `<td style="text-align:${dir || 'left'};padding:${fs * 0.5}px ${fs * 0.7}px;font-size:${fs}px;color:#1e293b;border-bottom:1px solid #f1f5f9;${extra || ''}">${t}</td>`;
+            const traco = '<span style="color:#cbd5e1">—</span>';
+            const linhas = tanques.map(t => `<tr>
+                ${td(`<span style="display:inline-flex;align-items:center;gap:6px;font-weight:800;white-space:nowrap"><span style="width:10px;height:10px;border-radius:3px;background:${corDoTanque(t.id)};display:inline-block"></span>${escapeHtml(t.nome)}</span>`)}
+                ${td(t.pocos.length ? escapeHtml(t.pocos.map(x => x.poco.numero).join(', ')) : traco, 'left', 'color:#64748b')}
+                ${td(t.volume ? fmtLh(t.volume) : traco, 'right', 'font-weight:800;white-space:nowrap')}
+                ${td(t.volume ? fmtNum(t.volume / 1000, 1) : traco, 'right', 'white-space:nowrap')}
+                ${td(t.volume ? fmtNum(t.volume / total * 100, 1) + '%' : traco, 'right', 'white-space:nowrap')}
+                ${comSaida ? td(t.blocos.length ? escapeHtml(t.blocos.join(', ')) : traco, 'left', 'color:#64748b') : ''}
+                ${comSaida ? td(t.saida ? fmtLh(t.saida) : traco, 'right', 'font-weight:800;white-space:nowrap') : ''}</tr>`).join('');
+            return `<table style="width:100%;border-collapse:collapse;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+                <thead><tr>${th('Tanque')}${th('Poços')}${th('Entrada (L)', 'right')}${th('m³', 'right')}${th('%', 'right')}${comSaida ? th('Blocos') + th('Saída (L)', 'right') : ''}</tr></thead>
+                <tbody>${linhas}</tbody>
+                <tfoot><tr style="background:#f8fafc">${td('<b>Total</b>')}${td('')}${td(fmtLh(b.entrada), 'right', 'font-weight:900;white-space:nowrap')}${td(fmtNum(b.entrada / 1000, 1), 'right', 'font-weight:800;white-space:nowrap')}${td('100%', 'right', 'font-weight:800')}${comSaida ? td('') + td(fmtLh(b.saida), 'right', 'font-weight:900;white-space:nowrap') : ''}</tr></tfoot>
+            </table>`;
+        }
+
+        function renderTanquesBalanco(b) {
+            document.getElementById('legendaTanques').innerHTML = legendaCulturasHtml(b.legendaTanques, 11);
+            document.getElementById('tabelaTanques').innerHTML = tabelaTanquesHtml(b, 11);
         }
 
         // Minutos médios por dia irrigado de cada bloco: { bloco: minutos }
@@ -7259,15 +7435,16 @@
         }
 
         function dadosGraficos(b, fs, largura) {
-            const pocos = b.comDados.map(l => ({ rotulo: `Poço ${l.poco.numero}`, valor: l.volume, cor: COR_ENTRADA,
+            // Cor da coluna = tanque que recebeu a água do poço (ver aplicarCoresTanque)
+            const pocos = b.comDados.map(l => ({ rotulo: `Poço ${l.poco.numero}`, valor: l.volume, cor: l.cor || COR_ENTRADA,
                 var1: l.varVolume1, var7: l.varVolume7, ontem: l.volOntem,
-                dica: `Poço ${l.poco.numero}: ${fmtLh(l.volume)} L (${fmtLh(l.media)} L/h) · toque para ver as aferições`,
+                dica: `Poço ${l.poco.numero}: ${fmtLh(l.volume)} L (${fmtLh(l.media)} L/h)${b.porTanqueAtivo && l.textoTanques ? ' → ' + l.textoTanques : ''} · toque para ver as aferições`,
                 acao: `window.abrirDetalhePoco(${JSON.stringify(String(l.poco.id))})` }));
             // Sem variação aqui: repetiria a do volume (mesmas horas ligado)
             const vazoes = b.comDados.map(l => ({ rotulo: `Poço ${l.poco.numero}`, valor: l.media }));
             const blocos = b.blocos.filter(x => x.litros != null).map(x => ({ rotulo: apelidosBloco[x.bloco] || `Bloco ${x.bloco}`, valor: x.litros, cor: x.cor,
                 var1: x.var1, var7: x.var7, ontem: x.litrosOntem,
-                dica: `${rotuloBloco(x.bloco)}${x.cultura ? ' · ' + x.cultura : ''}: ${fmtLh(x.litros)} L · toque para ver os registros`,
+                dica: `${rotuloBloco(x.bloco)}${x.cultura ? ' · ' + x.cultura : ''}${b.blocosPorTanque && nomeTanque(x.tanque) ? ' · água do ' + nomeTanque(x.tanque) : ''}: ${fmtLh(x.litros)} L · toque para ver os registros`,
                 acao: `window.abrirIrrigacaoBloco(${JSON.stringify(x.bloco)})` }));
             return {
                 volumePoco: svgColunas(pocos, { fonte: fs, largura, titulo: 'Volume (L) por Poço', vazio: 'Nenhuma aferição de poço no período.' }),
@@ -7303,6 +7480,7 @@
             // Ignora respostas atrasadas se o período foi trocado enquanto carregava
             if (deInput.value !== de || ateInput.value !== ate) return;
             atualizarApelidos(culturas);
+            if (reservs && reservs.length) reservCache = reservs;   // nomes dos tanques no relatório por tanque
 
             // ----- Entrada (poços) -----
             const linhas = calcularEntradaPocos(pocos, leituras, horasRegs);
@@ -7351,7 +7529,7 @@
             const blocos = Object.keys(minutosPorBloco).map(bloco => {
                 const c = (culturas || []).find(x => String(x.id) === bloco);
                 const cultura = c && c.cultura ? c.cultura.trim() : '';
-                return { bloco, cultura, cor: corDaCultura(cultura), minutos: minutosPorBloco[bloco],
+                return { bloco, cultura, cor: corDaCultura(cultura), tanque: (c && c.reservatorio_id) || '', minutos: minutosPorBloco[bloco],
                          litros: litrosBloco[bloco] ?? null };
             }).sort((a, b) => a.bloco.localeCompare(b.bloco, undefined, { numeric: true }));
             const saida = Object.values(litrosBloco).reduce((s, l) => s + l, 0);
@@ -7449,10 +7627,13 @@
             const sistemas = Object.values(porSistema).sort((x, y) =>
                 (x.tipo === SEM_DIVISAO) - (y.tipo === SEM_DIVISAO) || y.litros - x.litros || y.minutos - x.minutos);
 
-            ultimoBalanco = { de, ate, umDia, entrada, saida, somaVazao, comDados, semDados, blocos, legenda, nivel, pctNivel, varTotais, registros, taxas, leituras, horasRegs, sistemas };
+            const tanques = entradaPorTanque(comDados);
+            ultimoBalanco = { de, ate, umDia, entrada, saida, somaVazao, comDados, semDados, blocos, legenda, nivel, pctNivel, varTotais, registros, taxas, leituras, horasRegs, sistemas, tanques };
+            aplicarCoresTanque(ultimoBalanco);
 
             // ----- Resumo -----
             document.getElementById('balancoResumo').innerHTML = cartoesResumoBalanco(ultimoBalanco, 1).join('');
+            renderTanquesBalanco(ultimoBalanco);
 
             // ----- Gráficos -----
             const g = dadosGraficos(ultimoBalanco, 10, 720);
@@ -7494,7 +7675,7 @@
                         <div class="min-w-0">
                             <p class="text-xs font-black text-slate-700">${escapeHtml(rotuloBloco(b.bloco))}</p>
                             <p class="text-[10px] text-slate-400 flex items-center gap-1">
-                                <span class="w-2 h-2 rounded-sm inline-block" style="background:${b.cor}"></span>${escapeHtml(b.cultura || 'Sem cultura')} · ${formatDuration(b.minutos)} de irrigação
+                                <span class="w-2 h-2 rounded-sm inline-block" style="background:${b.cor}"></span>${escapeHtml(b.cultura || 'Sem cultura')}${nomeTanque(b.tanque) ? ' · ← ' + escapeHtml(nomeTanque(b.tanque)) : ''} · ${formatDuration(b.minutos)} de irrigação
                             </p>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
@@ -7762,7 +7943,12 @@
             document.getElementById('imgBalancoCorpo').innerHTML = `
                 ${cartoes}
                 ${titulo('Volume de Entrada', '#1c5cab')}
-                ${subtitulo('Volume (L) por Poço')}${g.volumePoco}
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    ${subtitulo('Volume (L) por Poço')}
+                    <div>${legendaCulturasHtml(b.legendaTanques || [], 12)}</div>
+                </div>
+                ${g.volumePoco}
+                ${b.porTanqueAtivo || b.blocosPorTanque ? `${subtitulo('Total de água por tanque')}${tabelaTanquesHtml(b, 13)}` : ''}
                 ${subtitulo('Vazão Média por Poço (L/h)')}${g.vazaoPoco}
                 <div style="height:14px"></div>
                 ${titulo('Volume de Saída', '#c2410c')}
@@ -7871,7 +8057,7 @@
                 // Gráficos (os mesmos da imagem) viram PNG
                 const g = dadosGraficos(b, 12, 1160);
                 const graficos = [
-                    { svg: g.volumePoco, titulo: 'Volume (L) por poço', vazio: 'Nenhuma aferição de poço no período.' },
+                    { svg: g.volumePoco, titulo: 'Volume (L) por poço', vazio: 'Nenhuma aferição de poço no período.', legenda: (b.legendaTanques || []).map(c => [c.nome, c.cor]) },
                     { svg: g.vazaoPoco, titulo: 'Vazão média por poço (L/h)', vazio: 'Nenhuma aferição de poço no período.' },
                     { svg: g.volumeBloco, titulo: 'Volume (L) por bloco', vazio: 'Nenhum registro de irrigação no período.', legenda: b.legenda.map(c => [c.nome, c.cor]) }
                 ];
@@ -7980,6 +8166,29 @@
                     + (b.semDados.length ? ` Sem aferição: ${b.semDados.map(l => 'Poço ' + l.poco.numero + (l.desligado ? ' (desligado)' : '')).join(', ')}.` : '')), W - M * 2);
                 doc.text(notaPocos, M, y + 4);
                 y += 2 + notaPocos.length * 3;
+
+                // ----- Entrada por tanque (quanto cada poço mandou para cada tanque) -----
+                if (b.tanques && b.tanques.some(t => t.id)) {
+                    const COR_TANQUE_PDF = [67, 56, 202];
+                    secao('Entrada · água por tanque', 30, COR_TANQUE_PDF);
+                    const totalTanques = b.tanques.reduce((s, t) => s + t.volume, 0) || 1;
+                    const corpo = [];
+                    b.tanques.forEach(t => {
+                        corpo.push([{ content: t.nome, styles: { fontStyle: 'bold' } }, '', { content: fmtLh(t.volume), styles: { fontStyle: 'bold' } },
+                            { content: fmtNum(t.volume / 1000, 1), styles: { fontStyle: 'bold' } }, { content: fmtNum(t.volume / totalTanques * 100, 1) + '%', styles: { fontStyle: 'bold' } }]);
+                        t.pocos.forEach(x => corpo.push(['', `Poço ${x.poco.numero}`, fmtLh(x.volume), fmtNum(x.volume / 1000, 1), fmtNum(x.volume / t.volume * 100, 1) + '%']));
+                    });
+                    tabela({
+                        head: [['Tanque', 'Poço', 'Volume (L)', 'Volume (m³)', '% do total / do tanque']],
+                        body: corpo.map(l => l.map(c => typeof c === 'string' ? pdfTxt(c) : Object.assign(c, { content: pdfTxt(c.content) }))),
+                        foot: [['Total', '', fmtLh(b.entrada), fmtNum(b.entrada / 1000, 1), '100%']],
+                        columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } }
+                    }, COR_TANQUE_PDF);
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(148, 163, 184);
+                    const notaTanques = doc.splitTextToSize(pdfTxt('Cada dia do poço conta para o tanque da última leitura do dia; se a leitura não informou, vale o tanque do cadastro do poço.'), W - M * 2);
+                    doc.text(notaTanques, M, y + 4);
+                    y += 2 + notaTanques.length * 3;
+                }
 
                 // ----- Saída -----
                 const COR_SAIDA_PDF = [194, 65, 12];
@@ -10044,7 +10253,9 @@
             card.classList.toggle('hidden', !API.isGestor());
             if (!API.isGestor()) return;
             try {
-                const [dados, culturas] = await Promise.all([API.listarDadosBlocos(forcar), API.listarCulturas()]);
+                const [dados, culturas, reservs] = await Promise.all([API.listarDadosBlocos(forcar), API.listarCulturas(),
+                    API.listarReservatorios().catch(() => null)]);
+                if (reservs && reservs.length) reservCache = reservs;   // lista "Recebe água do tanque"
                 dadosBlocosCache = dados.map(lerDadoBloco);
                 culturasCache = culturas || [];
                 atualizarApelidos(culturasCache);
@@ -10063,6 +10274,8 @@
         let rascunhoApelido = '';  // sub nome do bloco (ex.: Tâmaras)
         let rascunhoCodigo = '';   // só no bloco novo: código digitado (ex.: 8 ou E)
         let rascunhoCultura = '';  // cultura plantada (obrigatória ao salvar)
+        let rascunhoTanqueBloco = '';  // tanque de onde o bloco recebe a água (opcional)
+        const tanqueDoBloco = bloco => (culturasCache.find(c => String(c.id) === String(bloco)) || {}).reservatorio_id || '';
         let culturaOutraAtiva = false; // tocou em "Outra" na cultura (campo de digitar aberto)
         const NOVO_BLOCO = '__novo__';
 
@@ -10084,6 +10297,7 @@
             rascunhoCodigo = '';
             culturaOutraAtiva = false;
             rascunhoCultura =bloco == null ? '' : ((culturasCache.find(c => String(c.id) === bloco) || {}).cultura || '');
+            rascunhoTanqueBloco = bloco == null ? '' : tanqueDoBloco(bloco);
             rascunhoBloco = bloco == null ? [] : dadosBlocosCache.filter(d => d.bloco === bloco).map(d => ({
                 original: d, removido: false,
                 tipo: TIPOS_ASPERSOR.includes(d.tipo) ? d.tipo : 'Outro',
@@ -10310,6 +10524,16 @@
                             oninput="rascunhoCultura = this.value" class="${campo} mt-1.5 max-w-xs">` : ''}
                     </div>
 
+                    <label class="block mt-3">
+                        ${rotulo('Recebe água do tanque')}
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="w-3.5 h-3.5 rounded shrink-0" style="background:${corDoTanque(rascunhoTanqueBloco)}"></span>
+                            <select onchange="rascunhoTanqueBloco = this.value; this.previousElementSibling.style.background = corDoTanque(this.value)"
+                                class="${campo} font-bold max-w-xs">${opcoesTanqueHtml(rascunhoTanqueBloco, reservCache.length ? 'Não informado' : 'Nenhum tanque cadastrado')}</select>
+                        </div>
+                        <span class="block text-[10px] text-slate-400 mt-1">No Balanço de Água, o bloco fica com a cor do tanque, a mesma dos poços que mandam água para ele.</span>
+                    </label>
+
                     <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-3">Sistemas de aspersão</p>
                     <div class="divide-y divide-slate-100">${sistemas || '<p class="text-xs text-slate-400 py-3">Nenhum sistema. Ao salvar assim, o bloco sai da lista.</p>'}</div>
                     <button type="button" onclick="window.adicionarSistemaBloco()"
@@ -10374,6 +10598,7 @@
             const igual = culturasCache.map(c => (c.cultura || '').trim()).find(c => c && c.toLowerCase() === cultura.toLowerCase());
             cultura = igual || (cultura ? cultura.charAt(0).toUpperCase() + cultura.slice(1) : '');
             const mudouCultura = !!cultura && cultura !== ((culturasCache.find(c => String(c.id) === bloco) || {}).cultura || '');
+            const mudouTanque = (rascunhoTanqueBloco || '') !== tanqueDoBloco(bloco);
 
             // Confere cada sistema e monta o que muda no banco
             const salvar = [], excluir = [];
@@ -10399,6 +10624,7 @@
                     for (const id of excluir) await API.excluirDadoBloco(id);
                     if (mudouApelido) await API.salvarApelidoBloco(bloco, apelido);
                     if (mudouCultura) await API.salvarCultura(bloco, cultura);
+                    if (mudouTanque) await API.salvarTanqueBloco(bloco, rascunhoTanqueBloco);
                     blocoEditando = null;
                     await carregarDadosBlocos(true);
                     window.calcularConsumoProgramacao();
@@ -10414,7 +10640,7 @@
                 }
             };
 
-            if (!salvar.length && !excluir.length && !mudouApelido && !mudouCultura) {
+            if (!salvar.length && !excluir.length && !mudouApelido && !mudouCultura && !mudouTanque) {
                 // Nada mudou no sistema, mas a data é anterior: só corrige o volume dos dias anteriores
                 window.editarBloco(null);
                 if (corrigirDesde) perguntarCorrecaoVolume(bloco, corrigirDesde);
@@ -10495,6 +10721,8 @@
                                 : `<button type="button" onclick="window.editarBloco('${escapeHtml(bloco)}')"
                                     class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-300 text-[11px] font-bold text-amber-700 hover:bg-amber-100">
                                     <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>Sem cultura · definir</button>`}
+                            ${nomeTanque(tanqueDoBloco(bloco)) ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-slate-200 text-[11px] font-bold text-slate-700">
+                                    <span class="w-2.5 h-2.5 rounded-sm" style="background:${corDoTanque(tanqueDoBloco(bloco))}"></span>${escapeHtml(nomeTanque(tanqueDoBloco(bloco)))}</span>` : ''}
                         </div>
                     </div>
                     <div class="px-3 divide-y divide-slate-100">${linhasHtml}</div>
