@@ -4275,6 +4275,8 @@
       removerUsuario:{fn:'remover_usuario',params:(data,extra)=>({p_alvo:data.alvo,p_sessao_usuario:extra.usuario||null,p_sessao_token:extra.token||null})},
       listarUsuarios:{fn:'listar_usuarios',params:(data,extra)=>({p_sessao_usuario:extra.usuario||null,p_sessao_token:extra.token||null})},
       carregarEstoque:{fn:'estoque_diario_carregar',params:()=>({})},
+      // Conferência leve: o banco só devolve o painel se o token for diferente do que o aparelho tem
+      carregarEstoqueSeMudou:{fn:'estoque_diario_carregar',params:(data)=>({p_token:data.token})},
       salvarEstoque:{fn:'estoque_diario_salvar',params:(data,extra)=>({p_state:data,p_base_token:extra.baseToken||null,p_force:extra.force===true})}
     };
     async function backendCall(action,data={},extra={}){
@@ -4513,6 +4515,7 @@
     }
     let lastCloudCheck=0;
     let lastCloudError='';
+    let carregarLeveDisponivel=true;
     async function loadCloud(quiet=false){
       if(!hasBackend())return false;
       lastCloudCheck=Date.now();
@@ -4521,7 +4524,13 @@
         // carregarEstoque já valida a sessão no mesmo passo (o servidor
         // confere usuário/token antes de responder) — não precisa de uma
         // chamada separada só para checar se a sessão está ok.
-        const r=await backendCall('carregarEstoque',{},sessionCreds());
+        let r=null;
+        if(quiet&&cloudToken&&carregarLeveDisponivel){
+          try{r=await backendCall('carregarEstoqueSeMudou',{token:cloudToken},sessionCreds())}
+          catch(e){if(e.authError||!/estoque_diario_carregar|function|schema cache/i.test(e.message||''))throw e;carregarLeveDisponivel=false}  // banco sem o SQL novo: lê do jeito antigo
+        }
+        if(r&&r.semMudanca){setCloudToken(r.token||cloudToken);snapshotBaseline();cloudLoaded=true;setCloudStatus('online','Conectado ao banco de dados');return true}
+        if(!r)r=await backendCall('carregarEstoque',{},sessionCreds());
         if(r?.sessao)updateSessionDetails(r.sessao);
         if(Array.isArray(r?.usuarios))usersCache=r.usuarios;
         const remote=(r&&typeof r==='object'&&'estado' in r)?r.estado:r;
@@ -4566,7 +4575,7 @@
     // painéis abertos na hora em que alguém salva — refreshFromCloud() já tem
     // todos os guards certos (não mexe com diálogo aberto, sync em andamento
     // etc.), então é só reaproveitá-la como handler do broadcast.
-    setInterval(refreshFromCloud,20000);
+    setInterval(refreshFromCloud,60000);   // reserva: o aviso ao vivo (broadcast) já chama na hora em que alguém salva
     let syncChannel=null,presenceChannel=null;
     function teardownRealtime(){
       if(syncChannel){try{supaClient.removeChannel(syncChannel)}catch(e){} syncChannel=null}

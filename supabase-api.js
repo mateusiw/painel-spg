@@ -399,7 +399,9 @@
           cor: 'bg-lime-50 text-lime-700', caminho: 'projetos/programacao-fito/index.html',
           areas: [{ modulo: 'programacao_fito', nome: 'Programações e checklist', recursos: [] },
               // Permissão extra (no lugar da senha do programador): criar, editar e excluir programações e modelos
-              { modulo: 'programacao_fito_programar', nome: 'Programar (criar, editar e excluir)', extra: true, requer: 'programacao_fito', recursos: [] }] },
+              { modulo: 'programacao_fito_programar', nome: 'Programar (criar, editar e excluir)', extra: true, requer: 'programacao_fito', recursos: [] },
+              // Aba Modelos: ver, usar, salvar, renomear, informar o alvo e excluir modelos
+              { modulo: 'programacao_fito_modelos', nome: 'Modelos (ver, usar e gerenciar)', extra: true, requer: 'programacao_fito', recursos: [] }] },
         // Antigo app "coleta-leituras" (Apps Script + duas planilhas): pluviômetro e relógio de energia
         { id: 'leituras', nome: 'Leituras', descricao: 'Pluviômetro (chuva) e relógio de energia, com boletim para o WhatsApp', icone: 'gauge', grupo: 'Operação', gradiente: 'from-sky-500 to-cyan-700',
           cor: 'bg-sky-50 text-sky-700', caminho: 'projetos/leituras/index.html',
@@ -1643,7 +1645,21 @@
             }
             throw e;
         }
-        return Number(resp.data);
+        const versao = Number(resp.data);
+        await avisarVersaoNova(versao, nomeUsuario(usuarioAtual()));
+        return versao;
+    }
+
+    // Avisa os aparelhos abertos por "broadcast" do Realtime: a mensagem vai direto de um aparelho
+    // aos outros, sem o banco ter que ler o log de alterações (WAL) o tempo todo, como acontecia
+    // com o tempo real da tabela app_versao. Se o aviso falhar, os aparelhos conferem a versão
+    // ao voltar para o app e a cada 5 minutos.
+    async function avisarVersaoNova(versao, nome) {
+        try {
+            const canal = canalVersao || sb.channel('app-versao');
+            await comLimite(canal.send({ type: 'broadcast', event: 'versao', payload: { versao, nome: nome || '' } }), 5000);
+            if (canal !== canalVersao) sb.removeChannel(canal);
+        } catch (e) { /* segue: a conferência periódica cobre */ }
     }
 
     // cb(versao, nome de quem publicou) quando o gestor publica uma nova versão
@@ -1651,8 +1667,8 @@
     function assinarVersaoApp(cb) {
         if (canalVersao) sb.removeChannel(canalVersao);
         canalVersao = sb.channel('app-versao')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'app_versao' }, payload => {
-                if (payload.new && payload.new.versao != null) cb(Number(payload.new.versao), payload.new.publicado_por_nome || '');
+            .on('broadcast', { event: 'versao' }, ({ payload }) => {
+                if (payload && payload.versao != null) cb(Number(payload.versao), payload.nome || '');
             })
             .subscribe();
     }
@@ -2134,6 +2150,9 @@
         if (resp.error) throw erroSupabase(resp);
         return resp.data;
     }
+    // Última cópia do JSON de cada "local:chave" lida nesta página (ver colheita.syncLer)
+    const cacheSyncColheita = {};
+    const copiaJson = v => v == null ? v : JSON.parse(JSON.stringify(v));
     const colheita = {
         historico: local => rpcColheita('colheita_historico', { p_local: local }),
         blocosPlantas: local => rpcColheita('colheita_blocos_plantas', { p_local: local }),
@@ -2142,12 +2161,28 @@
         painel: local => buscarComCache('painel_' + local, () => sb.rpc('colheita_painel', { p_local: local }), 0),
         syncSalvar: (local, chave, atualizadoEm, dados) => rpcColheita('colheita_sync_salvar',
             { p_local: local, p_chave: chave, p_atualizado_em: atualizadoEm, p_dados: dados }),
+        // Lê em duas etapas para poupar o banco: primeiro só a data de cada chave (linha pequena) e,
+        // depois, o JSON "dados" (grande) apenas das chaves que mudaram desde a última leitura nesta página.
         async syncLer(local, chaves) {
-            const resp = await sb.from('colheita_sync').select('chave,atualizado_em,atualizado_por,dados').eq('local', local).in('chave', chaves);
-            if (resp.error) throw erroSupabase(resp);
+            const cab = await sb.from('colheita_sync').select('chave,atualizado_em,atualizado_por').eq('local', local).in('chave', chaves);
+            if (cab.error) throw erroSupabase(cab);
             const saida = {};
             chaves.forEach(k => { saida[k] = null; });
-            resp.data.forEach(l => { saida[l.chave] = { updatedAt: Number(l.atualizado_em), updatedBy: l.atualizado_por || '', data: l.dados }; });
+            const baixar = [];
+            cab.data.forEach(l => {
+                const guardado = cacheSyncColheita[local + ':' + l.chave];
+                if (guardado && guardado.updatedAt === Number(l.atualizado_em)) saida[l.chave] = { ...guardado, data: copiaJson(guardado.data) };
+                else baixar.push(l.chave);
+            });
+            if (baixar.length) {
+                const resp = await sb.from('colheita_sync').select('chave,atualizado_em,atualizado_por,dados').eq('local', local).in('chave', baixar);
+                if (resp.error) throw erroSupabase(resp);
+                resp.data.forEach(l => {
+                    const item = { updatedAt: Number(l.atualizado_em), updatedBy: l.atualizado_por || '', data: l.dados };
+                    cacheSyncColheita[local + ':' + l.chave] = item;
+                    saida[l.chave] = { ...item, data: copiaJson(l.dados) };
+                });
+            }
             return saida;
         }
     };

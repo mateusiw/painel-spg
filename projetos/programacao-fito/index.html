@@ -224,6 +224,8 @@
             atualizarPermissoes();
         })();
         const podeProgramar = () => API.temModulo('programacao_fito_programar');
+        // Permissão extra "Modelos" (Cadastro de Usuários): ver a aba Modelos, usar e gerenciar os modelos
+        const podeModelos = () => API.temModulo('programacao_fito_modelos');
 
         // Exige foto do pH e do volume para marcar uma operação como FEITA
         const EXIGIR_FOTOS = true;
@@ -372,8 +374,10 @@
         //  Abas e navegação
         // ------------------------------------------------------------
         const ABAS = [{ id: 'programacoes', nome: 'Programações', icone: 'clipboard-list', cor: '5, 150, 105' }, { id: 'modelos', nome: 'Modelos', icone: 'library', cor: '79, 70, 229' }];
+        const abasVisiveis = () => ABAS.filter(a => a.id !== 'modelos' || podeModelos());
         function desenharAbas() {
-            el('abasFito').innerHTML = ABAS.map(a => {
+            el('abasFito').parentElement.classList.toggle('lg:block', abasVisiveis().length > 1);   // uma aba só: sem pílula
+            el('abasFito').innerHTML = abasVisiveis().map(a => {
                 const ativa = a.id === aba;
                 return `<button type="button" role="tab" aria-selected="${ativa}" onclick="trocarAba('${a.id}')" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all ${ativa ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500'}"><i data-lucide="${a.icone}" class="w-3.5 h-3.5"></i> ${a.nome}</button>`;
             }).join('');
@@ -381,10 +385,12 @@
         }
         let barra = null;
         function trocarAba(id) {
+            if (id === 'modelos' && !podeModelos()) id = 'programacoes';
             aba = id;
             irPara(id === 'modelos' ? 'modelos' : 'lista');
         }
         function irPara(view) {
+            if (view === 'modelos' && !podeModelos()) view = 'lista';
             viewAtual = view;
             ['lista', 'editor', 'exec', 'modelos'].forEach(v => el('view-' + v).classList.toggle('hidden', v !== view));
             el('barraFiltros').classList.toggle('hidden', view !== 'lista');
@@ -397,6 +403,9 @@
         }
         function atualizarPermissoes() {
             el('btnNova').classList.toggle('hidden', !podeProgramar());
+            if (viewAtual === 'modelos' && !podeModelos()) { irPara('lista'); return; }
+            desenharAbas(); if (barra) barra.atualizar();
+            carregarModelos();
             if (viewAtual === 'lista') renderLista();
             if (viewAtual === 'modelos') renderModelos();
         }
@@ -591,13 +600,13 @@
                         ${travada ? '' : botaoTopo(`removerOperacao(${i})`, 'trash-2', 'Remover')}
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-3">
-                        <div class="col-span-2">
+                        ${podeModelos() ? `<div class="col-span-2">
                             <label class="rotulo"><i data-lucide="library" class="w-3.5 h-3.5 text-emerald-500"></i> Usar modelo pronto</label>
                             <select class="campo" onchange="aplicarModelo(${i}, this.value)">
                                 <option value="">— Escolher modelo (preenche produtos e doses) —</option>
                                 ${modelos.map(m => `<option value="${esc(m.id)}">${esc(m.nome)}${m.tratamento && m.tratamento !== m.nome ? ' — ' + esc(m.tratamento) : ''}</option>`).join('')}
                             </select>
-                        </div>
+                        </div>` : ''}
                         <div class="col-span-2"><label class="rotulo">Nome da aplicação</label><input class="campo" value="${esc(o.nomeAplicacao)}" placeholder="Ex.: APLICAÇÃO FASE 1" oninput="setOp(${i},'nomeAplicacao',this.value)"></div>
                         <div><label class="rotulo">Bloco</label><input class="campo" inputmode="numeric" value="${esc(o.bloco)}" placeholder="Ex.: 11" oninput="setOp(${i},'bloco',this.value)"></div>
                         <div><label class="rotulo">Semana / fase</label><input class="campo" value="${esc(o.semana)}" placeholder="Ex.: 03 ou finalizado" oninput="setOp(${i},'semana',this.value)"></div>
@@ -616,7 +625,7 @@
                         </div>
                         <div><label class="rotulo">Volume de calda (L)</label><input class="campo" inputmode="decimal" value="${esc(o.volumeCalda)}" placeholder="Ex.: 600" oninput="setOp(${i},'volumeCalda',this.value)"></div>
                         <div class="col-span-2"><label class="rotulo">Instruções de preparo</label><textarea class="campo" rows="3" placeholder="Ordem de mistura, cuidados, pH..." oninput="setOp(${i},'instrucoes',this.value)">${esc(o.instrucoes)}</textarea></div>
-                        <button type="button" onclick="salvarComoModelo(${i})" class="col-span-2 btn-sec"><i data-lucide="bookmark-plus" class="w-4 h-4"></i> Salvar como modelo (fica disponível para todos)</button>
+                        ${podeModelos() ? `<button type="button" onclick="salvarComoModelo(${i})" class="col-span-2 btn-sec"><i data-lucide="bookmark-plus" class="w-4 h-4"></i> Salvar como modelo (fica disponível para todos)</button>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -659,6 +668,7 @@
 
         // ---------- Modelos compartilhados ----------
         async function carregarModelos() {
+            if (!podeModelos()) { modelos = []; return; }
             try {
                 const r = erroBanco(await sb.from('fito_modelos').select('*').order('nome'));
                 modelos = r.data.map(modeloDoBanco);
@@ -674,6 +684,7 @@
         });
         // Cada aplicação nova (nome que ainda não existe) vira modelo automaticamente
         async function registrarModelosNovos(operacoes, por) {
+            if (!podeModelos()) return;
             const nomes = new Set(modelos.map(m => m.nome.trim().toLowerCase()));
             for (const o of operacoes) {
                 const nome = String(o.nomeAplicacao || o.tratamento || '').trim();
@@ -685,7 +696,7 @@
             carregarModelos();
         }
         async function salvarComoModelo(i) {
-            if (!podeProgramar()) return;
+            if (!podeProgramar() || !podeModelos()) return;
             const o = editor.operacoes[i];
             if (!o.produtos.some(p => String(p.nome).trim())) return avisar('Adicione pelo menos um produto antes de salvar o modelo.');
             const nome = await pedirTexto('Salvar como modelo', 'Dê um nome para este grupo de produtos (ex.: APLICAÇÃO FASE 1, APLICAÇÃO FASE 2):', o.nomeAplicacao || o.tratamento);
@@ -715,7 +726,7 @@
                             <p class="mt-1.5 flex items-center gap-1.5 text-xs font-bold ${m.alvo ? 'text-rose-700' : 'text-slate-400'}"><i data-lucide="crosshair" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${m.alvo ? 'Alvo: ' + esc(m.alvo) : 'Alvo não informado'}</span></p>
                             ${detalhes.length ? `<div class="flex flex-wrap gap-1.5 mt-2">${detalhes.map(d => `<span class="text-[10px] font-bold text-slate-600 bg-slate-100 rounded-full px-2 py-0.5">${esc(d)}</span>`).join('')}</div>` : ''}
                         </div>
-                        ${podeProgramar() ? `<div class="flex gap-1 shrink-0">
+                        ${podeModelos() ? `<div class="flex gap-1 shrink-0">
                             <button type="button" onclick="alvoDoModelo('${esc(m.id)}')" class="btn-sec !px-0 w-11" title="Informar o alvo" aria-label="Informar o alvo de ${esc(m.nome)}"><i data-lucide="crosshair" class="w-4 h-4"></i></button>
                             <button type="button" onclick="renomearModelo('${esc(m.id)}')" class="btn-sec !px-0 w-11" title="Renomear" aria-label="Renomear ${esc(m.nome)}"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                             <button type="button" onclick="excluirModelo('${esc(m.id)}')" class="btn-sec btn-perigo !px-0 w-11" title="Excluir" aria-label="Excluir ${esc(m.nome)}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
@@ -731,6 +742,7 @@
             icones();
         }
         async function alvoDoModelo(id) {
+            if (!podeModelos()) return;
             const m = modelos.find(x => x.id === id); if (!m) return;
             const alvo = await pedirTexto('Alvo do modelo', `Qual praga, doença ou objetivo os produtos de "${m.nome}" combatem? (ex.: lagarta, traça, oídio)`, m.alvo);
             if (alvo === null || alvo === (m.alvo || '')) return;   // cancelou ou não mudou
@@ -739,6 +751,7 @@
             catch (e) { erro(/alvo/i.test(e.message) ? new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (coluna "alvo").') : e); }
         }
         async function renomearModelo(id) {
+            if (!podeModelos()) return;
             const m = modelos.find(x => x.id === id); if (!m) return;
             const nome = await pedirTexto('Renomear modelo', 'Novo nome da aplicação:', m.nome);
             if (!nome || nome === m.nome) return;
@@ -747,6 +760,7 @@
             catch (e) { erro(/duplicate|unique/i.test(e.message) ? new Error(`Já existe um modelo chamado "${nome}".`) : e); }
         }
         async function excluirModelo(id) {
+            if (!podeModelos()) return;
             const m = modelos.find(x => x.id === id); if (!m) return;
             if (!(await Dialogo.confirmar(`Excluir o modelo "${m.nome}"? As programações já feitas não são alteradas.`, { titulo: 'Excluir modelo', botao: 'Excluir', perigo: true }))) return;
             carregando(true, 'Excluindo...');
@@ -1212,13 +1226,13 @@
         medirNavbar(); window.addEventListener('resize', medirNavbar);
         if (window.BarraAbas) barra = BarraAbas.criar({
             rotulo: 'Seções da Programação Fitossanitária',
-            abas: () => ABAS.map(a => ({ ...a, ativa: a.id === aba })),
+            abas: () => abasVisiveis().map(a => ({ ...a, ativa: a.id === aba })),
             abrir: id => trocarAba(id)
         });
         document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharFoto(); fecharImagem(); } });
         irPara('lista');
         programacoes = lerCache(CACHE_LISTA) || [];
-        modelos = lerCache('fito_cache_modelos') || [];
+        modelos = podeModelos() ? (lerCache('fito_cache_modelos') || []) : [];
         renderLista();
         carregarLista(programacoes.length > 0);
         carregarModelos();
