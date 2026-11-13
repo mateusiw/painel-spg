@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Leituras | Painel SPG</title>
+    <link rel="icon" type="image/png" href="../../favicon.png">
+    <link rel="apple-touch-icon" href="../../icone-app.png">
+    <link rel="manifest" href="../../manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Leituras SPG">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../../supabase-config.js"></script>
+    <script src="../../supabase-api.js"></script>                         <!-- window.IrrigacaoAPI: login, módulos, fila offline -->
+    <script src="../../dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
+    <script src="../../seletor-periodo.js"></script>
+    <script src="../../barra-abas.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        input, select, textarea { line-height: 1.5; user-select: text; }
+        #navbar {
+            background: rgba(255,255,255,0.78);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            backdrop-filter: blur(18px) saturate(180%);
+            border-bottom: 1px solid rgba(226,232,240,0.9);
+            box-shadow: 0 6px 24px -18px rgba(15,23,42,0.35);
+            padding-top: max(.625rem, env(safe-area-inset-top));
+        }
+        #navbar::before {
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none;
+            background: linear-gradient(90deg, #0ea5e9, #10b981 50%, #f59e0b);
+        }
+        @media (min-width: 1024px) {
+            #navbar { padding-left: max(1rem, calc((100% - 1400px) / 2 + 1rem)); padding-right: max(1rem, calc((100% - 1400px) / 2 + 1rem)); }
+        }
+        .rotulo { display: flex; align-items: center; gap: .375rem; margin-bottom: .5rem; font-size: .7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+        .campo { width: 100%; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: .75rem; padding: .65rem .9rem; font-size: .875rem; font-weight: 500; color: #1e293b; transition: all .15s; min-height: 2.75rem; }
+        input[type=date].campo { -webkit-appearance: none; appearance: none; min-width: 0; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #4ade80 !important; background-color: #fff !important; box-shadow: 0 0 0 3px rgba(74,222,128,0.15); }
+        .valor-grande { width: 100%; text-align: center; font-size: 2.5rem; font-weight: 900; color: #0f172a; background: #fff; border: 2px solid #e2e8f0; border-radius: 1rem; min-height: 4.25rem; }
+        .btn-principal { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem; padding: 0 1rem; border-radius: .75rem; font-weight: 700; font-size: .75rem; color: #fff; background-image: linear-gradient(to bottom, #10b981, #059669); box-shadow: 0 4px 6px -1px rgba(5,150,105,.25); outline: 1px solid rgba(4,120,87,.2); transition: transform .1s; }
+        .btn-principal:active, .btn-sec:active { transform: scale(.95); }
+        .btn-principal:disabled { opacity: .55; }
+        .btn-sec { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem; padding: 0 .9rem; border-radius: .75rem; font-weight: 700; font-size: .75rem; color: #475569; background: #fff; box-shadow: inset 0 0 0 1px #e2e8f0; transition: transform .1s, background-color .15s; }
+        .btn-sec:hover { background: #f8fafc; }
+        .btn-sec.hidden { display: none; }
+        .pilula-tipo { flex: 1; display: flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem; border-radius: .75rem; font-size: .8rem; font-weight: 700; color: #64748b; transition: all .15s; }
+        .pilula-tipo[aria-pressed="true"] { background: #fff; color: #0f172a; box-shadow: 0 1px 2px rgba(15,23,42,.08), inset 0 0 0 1px rgba(226,232,240,.9); }
+        /* Aba fechada: some de verdade (o lg:grid do Registrar não pode passar por cima) */
+        .aba-oculta { display: none !important; }
+        .entra { animation: entra .25s ease-out; }
+        @keyframes entra { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen pb-24 select-none">
+
+    <!-- Barra do topo -->
+    <div id="navbar" class="text-slate-900 px-4 py-2.5 flex justify-between items-center gap-3 sticky top-0 z-40">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <a id="btnMenuProjetos" href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="hidden w-8 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>
+            <img src="../../icone-app.png" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
+            <div class="min-w-0">
+                <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 truncate">Leituras</h1>
+                <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">Pluviômetro e relógio de energia</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Abas (computador). No celular: barra flutuante do rodapé -->
+    <div id="barraFixa" class="hidden lg:block sticky z-30 bg-slate-50/90 backdrop-blur-md" style="top: var(--altura-navbar, 60px);">
+        <div class="max-w-[1400px] mx-auto px-4 py-3">
+            <div id="abasLeituras" role="tablist" aria-label="Seções" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1 max-w-md"></div>
+        </div>
+    </div>
+
+    <main class="max-w-md lg:max-w-[1400px] mx-auto px-4 pt-3 lg:pt-1 pb-4">
+
+        <!-- ================= REGISTRAR ================= -->
+        <section id="view-registrar" class="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-6 lg:items-start space-y-4 lg:space-y-0">
+            <div class="space-y-4">
+                <!-- Tipo -->
+                <div role="group" aria-label="Tipo de leitura" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1">
+                    <button type="button" id="tipoChuva" class="pilula-tipo" aria-pressed="true" onclick="setTipo('chuva')"><i data-lucide="cloud-rain" class="w-4 h-4 text-sky-500"></i> Pluviômetro</button>
+                    <button type="button" id="tipoEnergia" class="pilula-tipo" aria-pressed="false" onclick="setTipo('energia')"><i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Energia</button>
+                </div>
+
+                <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="rotulo" for="fData"><i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-500"></i> Data da leitura</label><input id="fData" type="date" class="campo font-bold" onchange="atualizarResumo()"></div>
+                        <div><label class="rotulo" for="fResp"><i data-lucide="user" class="w-3.5 h-3.5 text-emerald-500"></i> Responsável</label><input id="fResp" type="text" class="campo" placeholder="Seu nome" oninput="atualizarResumo()"></div>
+                    </div>
+                    <div>
+                        <label class="rotulo" for="fLocal"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-500"></i> <span id="rotuloLocal">Local</span></label>
+                        <select id="fLocal" class="campo font-bold" onchange="aoMudarLocal()"></select>
+                        <input id="fLocalOutro" type="text" class="campo mt-2 hidden" placeholder="Digite o local..." oninput="atualizarResumo()">
+                    </div>
+
+                    <!-- Valor da leitura -->
+                    <div id="caixaChuva" class="rounded-2xl bg-sky-50/70 ring-1 ring-sky-100 p-4 text-center">
+                        <label class="rotulo justify-center !text-sky-700" for="fMm">Volume medido</label>
+                        <div class="flex items-center justify-center gap-2 max-w-[240px] mx-auto">
+                            <input id="fMm" type="text" inputmode="decimal" autocomplete="off" placeholder="0" class="valor-grande" oninput="atualizarResumo()">
+                            <span class="text-lg font-bold text-slate-400">mm</span>
+                        </div>
+                        <div id="classeChuva" class="mt-3"></div>
+                    </div>
+                    <div id="caixaEnergia" class="hidden rounded-2xl bg-amber-50/70 ring-1 ring-amber-100 p-4 text-center">
+                        <label class="rotulo justify-center !text-amber-700" for="fKwh">Leitura do relógio</label>
+                        <input id="fKwh" type="text" inputmode="numeric" autocomplete="off" placeholder="0" class="valor-grande max-w-[280px] mx-auto block" oninput="atualizarResumo()">
+                        <div id="infoAnterior" class="mt-3 text-xs font-semibold text-slate-500"></div>
+                        <div id="caixaAnterior" class="hidden mt-3 text-left">
+                            <label class="rotulo" for="fAnterior">Leitura anterior (primeira leitura desta unidade no sistema)</label>
+                            <input id="fAnterior" type="text" inputmode="numeric" class="campo" placeholder="Opcional: para já calcular o consumo" oninput="atualizarResumo()">
+                        </div>
+                    </div>
+
+                    <div><label class="rotulo" for="fObs"><i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-500"></i> Observações (opcional)</label><input id="fObs" type="text" class="campo" placeholder="Ex.: chuva com vento / relógio trocado..." oninput="atualizarResumo()"></div>
+
+                    <!-- Fotos do visor -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2"><span class="rotulo !mb-0"><i data-lucide="camera" class="w-3.5 h-3.5 text-emerald-500"></i> Foto do visor</span><span id="contFotos" class="text-[11px] font-bold text-slate-400">0 de 2</span></div>
+                        <input type="file" id="fCamera" accept="image/*" capture="environment" class="hidden" onchange="anexarFotos(this)">
+                        <input type="file" id="fGaleria" accept="image/*" multiple class="hidden" onchange="anexarFotos(this)">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" class="btn-sec" onclick="el('fCamera').click()"><i data-lucide="camera" class="w-4 h-4"></i> Câmera</button>
+                            <button type="button" class="btn-sec" onclick="el('fGaleria').click()"><i data-lucide="image" class="w-4 h-4"></i> Galeria</button>
+                        </div>
+                        <div id="miniFotos" class="flex flex-wrap gap-2 mt-3"></div>
+                    </div>
+
+                    <div class="flex gap-2 pt-1">
+                        <button type="button" class="btn-sec" onclick="limparFormulario(true)"><i data-lucide="eraser" class="w-4 h-4"></i> Limpar</button>
+                        <button type="button" id="btnRegistrar" class="btn-principal flex-1 !text-sm" onclick="registrar()"><i data-lucide="send" class="w-4 h-4"></i> Registrar e compartilhar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumo do boletim -->
+            <div id="resumoBoletim" class="lg:sticky" style="top: calc(var(--altura-navbar, 60px) + 72px);"></div>
+        </section>
+
+        <!-- ================= HISTÓRICO ================= -->
+        <section id="view-historico" class="aba-oculta space-y-4">
+            <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <div role="group" aria-label="Tipo" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1 min-w-[260px]">
+                        <button type="button" id="hChuva" class="pilula-tipo !min-h-[40px] px-3" aria-pressed="true" onclick="setTipoHist('chuva')"><i data-lucide="cloud-rain" class="w-4 h-4 text-sky-500"></i> Chuva</button>
+                        <button type="button" id="hEnergia" class="pilula-tipo !min-h-[40px] px-3" aria-pressed="false" onclick="setTipoHist('energia')"><i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Energia</button>
+                    </div>
+                    <select id="hLocal" class="campo !w-auto min-w-[180px]" onchange="renderHistorico()" aria-label="Local"></select>
+                </div>
+                <div id="hPeriodo"></div>
+            </div>
+            <div id="hResumo" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+            <div id="hGrafico"></div>
+            <div id="hLista"></div>
+        </section>
+    </main>
+
+    <!-- Pronto para compartilhar -->
+    <div id="prontoModal" class="hidden fixed inset-0 bg-slate-900/60 z-[60] flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="prontoTitulo">
+        <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] flex flex-col entra">
+            <div class="p-5 pb-3 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center"><i data-lucide="check" class="w-5 h-5 text-emerald-600"></i></div>
+                <div class="flex-1"><h3 id="prontoTitulo" class="text-base font-extrabold text-slate-800">Leitura registrada</h3><p class="text-xs font-medium text-slate-500">Confira o texto e compartilhe no WhatsApp.</p></div>
+                <button type="button" onclick="fecharPronto()" aria-label="Fechar" class="p-2 rounded-xl hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <pre id="prontoTexto" class="mx-5 mb-3 p-3 rounded-2xl bg-slate-50 ring-1 ring-slate-200 text-[12px] text-slate-700 whitespace-pre-wrap font-sans overflow-auto flex-1"></pre>
+            <div class="p-5 pt-2 grid grid-cols-2 gap-2">
+                <button type="button" class="btn-sec" onclick="copiarTexto()"><i data-lucide="copy" class="w-4 h-4"></i> Copiar texto</button>
+                <button type="button" class="btn-principal" onclick="compartilhar()"><i data-lucide="share-2" class="w-4 h-4"></i> Compartilhar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Foto ampliada -->
+    <div id="fotoModal" class="hidden fixed inset-0 bg-black/85 z-[70] flex flex-col items-center justify-center p-4" onclick="if (event.target === this) fecharFoto()">
+        <img id="fotoGrande" class="max-w-full max-h-[78vh] rounded-xl shadow-2xl bg-white" alt="Foto do visor">
+        <div class="flex gap-2 mt-4">
+            <a id="fotoDrive" href="#" target="_blank" rel="noopener" class="btn-sec"><i data-lucide="external-link" class="w-4 h-4"></i> Abrir no Drive</a>
+            <button type="button" class="btn-sec" onclick="fecharFoto()">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Carregando -->
+    <div id="carregandoModal" class="hidden fixed inset-0 bg-slate-900/50 z-[80] flex items-center justify-center p-6" role="status">
+        <div class="bg-white rounded-3xl p-6 flex flex-col items-center gap-3 shadow-2xl max-w-xs w-full">
+            <i data-lucide="loader-circle" class="w-9 h-9 text-emerald-600 animate-spin"></i>
+            <p id="carregandoTexto" class="font-bold text-sm text-slate-700 text-center">Carregando...</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  LEITURAS (antigo app "coleta-leituras": pluviômetro e energia)
+        //  Dados no Supabase (supabase/leituras.sql). O consumo e os acumulados são
+        //  calculados aqui, com as leituras já registradas. Gravação pela fila do aparelho
+        //  (funciona sem internet).
+        // ============================================================
+        const API = window.IrrigacaoAPI;
+        const sb = API.cliente;
+        if (!API.usuarioAtual() || !API.temModulo('leituras')) location.replace('../../index.html');
+        (async () => {
+            if (!navigator.onLine) return;
+            if (!await API.sessaoValida()) { location.replace('../../index.html'); return; }
+            try { await API.atualizarPerfil(); } catch (e) { return; }
+            if (!API.temModulo('leituras')) location.replace('../../index.html');
+        })();
+
+        const LOCAIS = {
+            chuva: ['SPG Sede', 'SPG Oásis'],
+            energia: ['SPG Oásis R1', 'SPG Oásis R2', 'SPG Oásis R3', 'SPG Sede R1']
+        };
+        // Titular e UC de cada unidade de energia (aparece no boletim)
+        const TITULARES = {
+            'SPG Oásis R2': { nome: 'Paula Selbach', uc: '66547456' },
+            'SPG Oásis R3': { nome: 'Gabriela Selbach', uc: '66204003 / 66367781' }
+        };
+        // Previsão do tempo no boletim de chuva (Open-Meteo): Morrinhos Novos, Guaraciaba do Norte
+        const CLIMA = { lat: -4.1725085524108625, lon: -40.87679951982965, nome: 'Morrinhos Novos, Guaraciaba do Norte' };
+
+        let tipo = 'chuva', tipoHist = 'chuva', aba = 'registrar';
+        let chuva = [], energia = [];
+        let fotos = { chuva: [], energia: [] };
+        let boletim = null;   // { texto, arquivo, nome }
+        let periodoHist = null;
+
+        // ------------------------------------------------------------
+        //  Utilidades
+        // ------------------------------------------------------------
+        const el = id => document.getElementById(id);
+        const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const icones = () => { if (window.lucide) lucide.createIcons(); };
+        const numero = v => { const s = String(v ?? '').trim().replace(/\s/g, ''); if (!s) return NaN; return Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s); };
+        const fmt = (n, casas = 0) => (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: casas });
+        const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const hojeISO = () => iso(new Date());
+        const somarDias = (s, n) => { const [y, m, d] = s.split('-').map(Number); return iso(new Date(y, m - 1, d + n)); };
+        const dataBR = s => s ? s.split('-').reverse().join('/') : '';
+        const nomeMes = s => { const [y, m] = s.split('-').map(Number); const t = new Date(y, m - 1, 1).toLocaleString('pt-BR', { month: 'long' }); return t.charAt(0).toUpperCase() + t.slice(1); };
+        function carregando(on, texto) { el('carregandoTexto').textContent = texto || 'Carregando...'; el('carregandoModal').classList.toggle('hidden', !on); }
+        const avisar = (texto, titulo = 'Atenção', t = 'aviso') => { carregando(false); return Dialogo.avisar(texto, { titulo, tipo: t }); };
+        const meuId = () => (API.usuarioAtual() || {}).id;
+        const podeMexer = r => API.isAdmin() || (r.criado_por && r.criado_por === meuId()) || r._pendente;
+
+        // Classificação da chuva (a mesma do app antigo)
+        function classeChuva(mm) {
+            if (isNaN(mm)) return { texto: 'Aguardando leitura', cls: 'bg-slate-100 text-slate-500' };
+            if (mm === 0) return { texto: 'Sem chuva', cls: 'bg-slate-100 text-slate-600' };
+            if (mm <= 2.5) return { texto: 'Chuva fraca', cls: 'bg-emerald-50 text-emerald-700' };
+            if (mm <= 10) return { texto: 'Chuva moderada', cls: 'bg-sky-50 text-sky-700' };
+            if (mm <= 50) return { texto: 'Chuva forte', cls: 'bg-orange-50 text-orange-700' };
+            return { texto: 'Chuva torrencial', cls: 'bg-rose-50 text-rose-700' };
+        }
+
+        // ------------------------------------------------------------
+        //  Dados (Supabase + cópia no aparelho + o que ainda está na fila)
+        // ------------------------------------------------------------
+        const K_CACHE = 'leit_cache', K_PEND = 'leit_pendentes';
+        const lerJSON = (k, padrao) => { try { return JSON.parse(localStorage.getItem(k) || 'null') || padrao; } catch (e) { return padrao; } };
+        const gravarJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
+        const ordenar = lista => lista.sort((a, b) => String(b.data).localeCompare(String(a.data)) || String(b.registrado_em || '').localeCompare(String(a.registrado_em || '')));
+        function juntarPendentes() {
+            const pend = lerJSON(K_PEND, { chuva: [], energia: [] });
+            ['chuva', 'energia'].forEach(t => {
+                const lista = t === 'chuva' ? chuva : energia;
+                const ids = new Set(lista.map(r => r.id));
+                pend[t] = (pend[t] || []).filter(r => !ids.has(r.id));   // o que já chegou ao servidor sai da lista de pendentes
+                pend[t].forEach(r => lista.push({ ...r, _pendente: true }));
+                ordenar(lista);
+            });
+            gravarJSON(K_PEND, pend);
+        }
+        async function carregarDados(silencioso) {
+            // Todo o histórico (inclusive o trazido das planilhas), em partes de 1.000 (limite do Supabase por consulta)
+            const tudo = async tabela => {
+                const saida = [];
+                for (let de = 0; ; de += 1000) {
+                    const r = await sb.from(tabela).select('*').order('data', { ascending: false }).order('id').range(de, de + 999);
+                    if (r.error) throw r.error;
+                    saida.push(...r.data);
+                    if (r.data.length < 1000) return saida;
+                }
+            };
+            try {
+                const [rc, re] = await Promise.all([tudo('leituras_chuva'), tudo('leituras_energia')]);
+                chuva = rc; energia = re;
+                gravarJSON(K_CACHE, { chuva, energia });
+            } catch (e) {
+                const c = lerJSON(K_CACHE, null);
+                if (c) { chuva = c.chuva || []; energia = c.energia || []; }
+                else if (!silencioso) avisar('Não foi possível buscar as leituras: ' + (e.message || e), 'Sem conexão', 'erro');
+            }
+            juntarPendentes();
+            atualizarResumo();
+            if (aba === 'historico') renderHistorico();
+        }
+        // ---------- Fotos no Google Drive (Edge Function "fotos-drive", projeto "leituras") ----------
+        // Sem internet, as fotos ficam no aparelho e sobem sozinhas quando a conexão voltar.
+        const K_FOTOS_PEND = 'leit_fotos_pendentes';
+        async function enviarFotoDrive(dataUrl, nome, pasta) {
+            const { data, error } = await sb.functions.invoke('fotos-drive', { body: { projeto: 'leituras', nome, pasta, dataUrl } });
+            if (error) {
+                let msg = error.message;
+                try { const j = await error.context.json(); if (j && j.erro) msg = j.erro; } catch (e) { /* mantém a mensagem */ }
+                throw new Error(msg);
+            }
+            if (!data || !data.ok) throw new Error((data && data.erro) || 'A foto não foi salva no Drive.');
+            return { id: data.id, url: data.url, link: data.link || '' };
+        }
+        // Pasta no Drive com o local e o tipo: "SPG Sede - Chuva", "SPG Oásis R1 - Leitura de Energia"
+        const pastaDrive = c => `${c.local} - ${c.tipo === 'chuva' ? 'Chuva' : 'Leitura de Energia'}`;
+        async function subirFotos(lista, nomeBase, pasta) {
+            const saida = [];
+            for (let i = 0; i < lista.length; i++) saida.push(await enviarFotoDrive(lista[i], `${nomeBase} - ${i + 1}.jpg`, pasta));
+            return saida;
+        }
+        function linhaLocal(t, id) { return (t === 'chuva' ? chuva : energia).find(r => r.id === id); }
+        let enviandoFotos = false;
+        async function processarFotosPendentes() {
+            if (enviandoFotos || !navigator.onLine) return;
+            const fila = lerJSON(K_FOTOS_PEND, []);
+            if (!fila.length) return;
+            enviandoFotos = true;
+            const restantes = [];
+            for (const item of fila) {
+                try {
+                    const enviadas = await subirFotos(item.fotos, item.nome, item.pasta);
+                    API.enfileirar(item.tabela, 'update', { id: item.id, valores: { fotos: enviadas } });
+                    const r = linhaLocal(item.tipo, item.id); if (r) { r.fotos = enviadas; delete r._fotosNoAparelho; }
+                } catch (e) { restantes.push(item); }
+            }
+            gravarJSON(K_FOTOS_PEND, restantes);
+            enviandoFotos = false;
+            if (aba === 'historico') renderHistorico();
+        }
+        const thumbDrive = f => f && f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w200` : (f && f.url) || '';
+        function verFoto(i, id) {
+            const r = linhaLocal(tipoHist, id); const f = r && (r.fotos || [])[i]; if (!f) return;
+            el('fotoGrande').src = f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w1600` : f.url;
+            el('fotoDrive').href = f.link || (f.id ? `https://drive.google.com/file/d/${f.id}/view` : f.url);
+            el('fotoModal').classList.remove('hidden');
+        }
+        function fecharFoto() { el('fotoModal').classList.add('hidden'); el('fotoGrande').src = ''; }
+
+        function guardarPendente(t, linha) {
+            const pend = lerJSON(K_PEND, { chuva: [], energia: [] });
+            (pend[t] = pend[t] || []).push(linha);
+            gravarJSON(K_PEND, pend);
+        }
+
+        // ---------- Energia: leitura anterior, consumo e acumulados ----------
+        // Como na planilha: a leitura de hoje fecha o consumo de ONTEM, e é gravada com a data de ontem.
+        // Ex.: leitura feita no dia 13 -> registro do dia 12 (o consumo do dia 12).
+        const diaDoConsumo = r => r.data;
+        function anteriorDe(unidade, data, ignorarId) {
+            return energia.filter(r => r.unidade === unidade && r.id !== ignorarId && r.data <= data)
+                .sort((a, b) => b.data.localeCompare(a.data) || String(b.registrado_em || '').localeCompare(String(a.registrado_em || '')))[0] || null;
+        }
+        function acumuladoEnergia(unidade, mes, extra) {
+            return energia.concat(extra ? [extra] : []).filter(r => r.unidade === unidade && r.consumo != null && diaDoConsumo(r).startsWith(mes))
+                .reduce((s, r) => s + Number(r.consumo || 0), 0);
+        }
+        const acumuladoChuva = (local, mes, extra) => chuva.concat(extra ? [extra] : []).filter(r => r.local === local && r.data.startsWith(mes)).reduce((s, r) => s + Number(r.volume_mm || 0), 0);
+
+        // ------------------------------------------------------------
+        //  Formulário
+        // ------------------------------------------------------------
+        function nomeLocal() { const v = el('fLocal').value; return v === '__outro__' ? el('fLocalOutro').value.trim() : v; }
+        function setTipo(t) {
+            tipo = t;
+            el('tipoChuva').setAttribute('aria-pressed', t === 'chuva'); el('tipoEnergia').setAttribute('aria-pressed', t === 'energia');
+            el('caixaChuva').classList.toggle('hidden', t !== 'chuva'); el('caixaEnergia').classList.toggle('hidden', t !== 'energia');
+            el('rotuloLocal').textContent = t === 'chuva' ? 'Local do pluviômetro' : 'Unidade (relógio)';
+            const atual = el('fLocal').value, guardado = localStorage.getItem('leit_local_' + t) || '';
+            el('fLocal').innerHTML = '<option value="">Selecione...</option>' + LOCAIS[t].map(l => `<option>${esc(l)}</option>`).join('') + '<option value="__outro__">Outro (digitar)</option>';
+            el('fLocal').value = LOCAIS[t].includes(atual) ? atual : (LOCAIS[t].includes(guardado) ? guardado : '');
+            el('fLocal').dispatchEvent(new Event('change', { bubbles: true }));
+            aoMudarLocal();
+            renderFotos();
+        }
+        function aoMudarLocal() {
+            el('fLocalOutro').classList.toggle('hidden', el('fLocal').value !== '__outro__');
+            if (el('fLocal').value && el('fLocal').value !== '__outro__') localStorage.setItem('leit_local_' + tipo, el('fLocal').value);
+            atualizarResumo();
+        }
+        // Calcula tudo o que vai no boletim a partir do formulário
+        function calcular() {
+            const data = el('fData').value, local = nomeLocal(), resp = el('fResp').value.trim(), obs = el('fObs').value.trim();
+            if (tipo === 'chuva') {
+                const mm = numero(el('fMm').value);
+                const classe = classeChuva(mm);
+                const linha = !isNaN(mm) && data && local ? { data, local, volume_mm: mm } : null;
+                const acumulado = data && local ? acumuladoChuva(local, data.slice(0, 7), linha) : null;
+                return { tipo, data, local, resp, obs, mm, classe, acumulado };
+            }
+            const leitura = numero(el('fKwh').value);
+            const dia = data ? somarDias(data, -1) : '';   // dia do consumo (o registro fica com esta data)
+            const ant = local && dia ? anteriorDe(local, dia) : null;
+            const anteriorManual = numero(el('fAnterior').value);
+            const leituraAnterior = ant ? Number(ant.leitura) : (!isNaN(anteriorManual) ? anteriorManual : null);
+            const consumo = !isNaN(leitura) && leituraAnterior != null && leitura >= leituraAnterior ? leitura - leituraAnterior : null;
+            const mesRef = dia ? dia.slice(0, 7) : '';
+            const extra = consumo != null ? { unidade: local, data: dia, consumo } : null;
+            const acumulado = local && mesRef ? acumuladoEnergia(local, mesRef, extra) : null;
+            const ultimos = energia.filter(r => r.unidade === local && r.consumo != null && (!dia || r.data <= dia)).slice(0, 5);
+            const percentual = consumo != null && ultimos[0] && Number(ultimos[0].consumo) > 0 ? (consumo - Number(ultimos[0].consumo)) / Number(ultimos[0].consumo) * 100 : null;
+            return { tipo, data, dia, local, resp, obs, leitura, ant, leituraAnterior, consumo, mesRef, acumulado, ultimos, percentual, menorQueAnterior: !isNaN(leitura) && leituraAnterior != null && leitura < leituraAnterior };
+        }
+        function atualizarResumo() {
+            const c = calcular();
+            if (tipo === 'chuva') {
+                el('classeChuva').innerHTML = `<span class="inline-block px-3 py-1 rounded-full text-xs font-bold ${c.classe.cls}">${c.classe.texto}</span>`;
+            } else {
+                const local = c.local;
+                el('caixaAnterior').classList.toggle('hidden', !local || !!c.ant);
+                el('infoAnterior').innerHTML = !local ? 'Escolha a unidade para ver a leitura anterior.'
+                    : c.ant ? `Leitura anterior: <b class="text-slate-700">${fmt(c.ant.leitura)}</b> (dia ${dataBR(c.ant.data)})${c.consumo != null ? ` · consumo <b class="text-amber-700">${fmt(c.consumo)} kWh</b>` : ''}${c.menorQueAnterior ? ' · <b class="text-rose-600">menor que a anterior</b>' : ''}`
+                    : 'Primeira leitura desta unidade no sistema.';
+            }
+            renderResumo(c);
+        }
+        // Cartão de resumo (o que vai no boletim)
+        function renderResumo(c) {
+            const ehChuva = c.tipo === 'chuva';
+            const valor = ehChuva ? (isNaN(c.mm) ? '—' : `${fmt(c.mm, 1)} mm`) : (isNaN(c.leitura) ? '—' : fmt(c.leitura));
+            const titular = !ehChuva && TITULARES[c.local];
+            const item = (rotulo, v, extra = '') => `<div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">${rotulo}</p><p class="text-sm font-bold text-slate-800 ${extra}">${v}</p></div>`;
+            const lista = fotos[tipo];
+            el('resumoBoletim').innerHTML = `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden">
+                <div class="px-5 py-4 flex items-center gap-3 ${ehChuva ? 'bg-sky-50/70' : 'bg-amber-50/70'} border-b ${ehChuva ? 'border-sky-100' : 'border-amber-100'}">
+                    <div class="w-11 h-11 rounded-2xl ${ehChuva ? 'bg-sky-500' : 'bg-amber-500'} text-white flex items-center justify-center shrink-0"><i data-lucide="${ehChuva ? 'cloud-rain' : 'zap'}" class="w-5 h-5"></i></div>
+                    <div class="flex-1 min-w-0"><p class="text-sm font-extrabold text-slate-800">${ehChuva ? 'Boletim pluviométrico' : 'Leitura de energia'}</p><p class="text-xs font-medium text-slate-500 truncate">${esc(c.local || 'Local não escolhido')}</p></div>
+                    <div class="text-right"><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">${ehChuva ? 'Volume' : 'Leitura'}</p><p class="text-2xl font-black text-slate-900 leading-tight">${valor}</p></div>
+                </div>
+                <div class="p-5 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        ${item(ehChuva ? 'Data' : 'Leitura feita em', c.data ? dataBR(c.data) + (!ehChuva ? `<span class="block text-[11px] font-semibold text-amber-700">consumo do dia ${dataBR(c.dia)}</span>` : '') : '—')}
+                        ${item('Responsável', esc(c.resp || '—'))}
+                        ${ehChuva
+                            ? `${item('Classificação', `<span class="inline-block px-2 py-0.5 rounded-full text-xs ${c.classe.cls}">${c.classe.texto}</span>`)}${item(`Acumulado de ${c.data ? nomeMes(c.data) : 'mês'}`, c.acumulado != null ? fmt(c.acumulado, 1) + ' mm' : '—')}`
+                            : `${item('Consumo (24h)', c.consumo != null ? fmt(c.consumo) + ' kWh' : '—', 'text-amber-700')}${item(`Acumulado de ${c.mesRef ? nomeMes(c.mesRef + '-01') : 'mês'}`, c.acumulado != null && c.local ? fmt(c.acumulado) + ' kWh' : '—')}`}
+                    </div>
+                    ${!ehChuva && c.percentual != null ? `<p class="text-xs font-bold ${c.percentual > 0 ? 'text-rose-600' : c.percentual < 0 ? 'text-emerald-700' : 'text-slate-500'}">${c.percentual > 0 ? `Subiu ${fmt(c.percentual, 1)}%` : c.percentual < 0 ? `Caiu ${fmt(Math.abs(c.percentual), 1)}%` : 'Igual'} em relação à leitura anterior</p>` : ''}
+                    ${titular ? `<div class="rounded-2xl bg-slate-50 ring-1 ring-slate-200/70 px-3 py-2.5"><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Titular da unidade consumidora</p><p class="text-sm font-bold text-slate-800">${esc(titular.nome)}</p><p class="text-xs font-semibold text-slate-500">UC ${esc(titular.uc)}</p></div>` : ''}
+                    ${!ehChuva && c.ultimos.length ? `<div><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">Últimos consumos</p><div class="rounded-2xl ring-1 ring-slate-100 divide-y divide-slate-100 overflow-hidden">${c.ultimos.map(r => `<div class="flex justify-between px-3 py-1.5 text-[13px]"><span class="text-slate-500">${dataBR(diaDoConsumo(r)).slice(0, 5)}</span><b class="text-slate-800">${fmt(r.consumo)} kWh</b></div>`).join('')}</div></div>` : ''}
+                    ${c.obs ? `<p class="text-sm text-slate-600 bg-slate-50 rounded-2xl px-3 py-2"><b class="text-slate-800">Obs.:</b> ${esc(c.obs)}</p>` : ''}
+                    ${lista.length ? `<div class="grid grid-cols-2 gap-2">${lista.map(f => `<img src="${f}" alt="Foto do visor" class="w-full h-40 object-cover rounded-2xl ring-1 ring-slate-200">`).join('')}</div>` : ''}
+                </div>
+            </div>`;
+            icones();
+        }
+
+        // ---------- Fotos ----------
+        function comprimir(file, maxLado = 1600, qualidade = 0.85) {
+            return new Promise((ok, erro) => {
+                const img = new Image(), url = URL.createObjectURL(file);
+                img.onload = () => {
+                    const e = Math.min(1, maxLado / Math.max(img.width, img.height));
+                    const c = document.createElement('canvas'); c.width = Math.round(img.width * e); c.height = Math.round(img.height * e);
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', qualidade));
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); erro(new Error('Não foi possível ler a imagem.')); };
+                img.src = url;
+            });
+        }
+        async function anexarFotos(input) {
+            const arquivos = Array.from(input.files || []).filter(f => f.type.startsWith('image/')); input.value = '';
+            if (!arquivos.length) return;
+            if (fotos[tipo].length + arquivos.length > 2) return avisar('Envie no máximo 2 fotos.', 'Limite de fotos');
+            carregando(true, 'Preparando fotos...');
+            try { for (const f of arquivos) fotos[tipo].push(await comprimir(f)); } catch (e) { return avisar(e.message, 'Foto', 'erro'); }
+            carregando(false); renderFotos(); atualizarResumo();
+        }
+        function tirarFoto(i) { fotos[tipo].splice(i, 1); renderFotos(); atualizarResumo(); }
+        function renderFotos() {
+            const lista = fotos[tipo];
+            el('contFotos').textContent = `${lista.length} de 2`;
+            el('miniFotos').innerHTML = lista.map((f, i) => `<div class="relative"><img src="${f}" alt="Foto ${i + 1}" class="w-20 h-20 object-cover rounded-xl ring-1 ring-slate-200">
+                <button type="button" onclick="tirarFoto(${i})" aria-label="Tirar foto" class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-rose-600 text-white flex items-center justify-center shadow"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></div>`).join('');
+            icones();
+        }
+        // Junta as fotos uma embaixo da outra num arquivo só (para o WhatsApp)
+        function juntarFotos(lista) {
+            return new Promise(ok => {
+                const imgs = lista.map(src => { const i = new Image(); i.src = src; return i; });
+                Promise.all(imgs.map(i => i.complete ? null : new Promise(r => { i.onload = r; i.onerror = r; }))).then(() => {
+                    const larg = Math.max(...imgs.map(i => i.width)), alt = imgs.reduce((s, i) => s + i.height, 0);
+                    const c = document.createElement('canvas'); c.width = larg; c.height = alt;
+                    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, larg, alt);
+                    let y = 0; imgs.forEach(i => { ctx.drawImage(i, (larg - i.width) / 2, y); y += i.height; });
+                    ok(c.toDataURL('image/jpeg', 0.9));
+                });
+            });
+        }
+
+        // ------------------------------------------------------------
+        //  Registrar
+        // ------------------------------------------------------------
+        function limparFormulario(perguntar) {
+            const fazer = () => {
+                ['fMm', 'fKwh', 'fAnterior', 'fObs', 'fLocalOutro'].forEach(id => { el(id).value = ''; });
+                el('fData').value = hojeISO();
+                fotos[tipo] = []; renderFotos(); atualizarResumo();
+            };
+            if (!perguntar) return fazer();
+            Dialogo.confirmar('Apagar o valor, as observações e as fotos deste formulário?', { titulo: 'Limpar?', botao: 'Limpar', perigo: true }).then(ok => { if (ok) fazer(); });
+        }
+        async function previsaoTempo() {
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${CLIMA.lat}&longitude=${CLIMA.lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,precipitation&hourly=temperature_2m,precipitation_probability,precipitation&timezone=America%2FFortaleza&forecast_hours=4`;
+                const controle = new AbortController(); const t = setTimeout(() => controle.abort(), 8000);
+                const d = await (await fetch(url, { signal: controle.signal })).json(); clearTimeout(t);
+                if (!d || !d.current) return '';
+                const COD = { 0: 'Céu limpo ☀️', 1: 'Quase limpo 🌤️', 2: 'Parcialmente nublado ⛅', 3: 'Nublado ☁️', 45: 'Neblina 🌫️', 48: 'Nevoeiro 🌫️', 51: 'Chuvisco leve 🌦️', 53: 'Chuvisco moderado 🌦️', 55: 'Chuvisco denso 🌧️', 61: 'Chuva leve 🌦️', 63: 'Chuva moderada 🌧️', 65: 'Chuva forte 🌧️', 80: 'Pancadas de chuva leve 🌦️', 81: 'Pancadas de chuva moderada 🌧️', 82: 'Pancadas violentas ⛈️', 95: 'Tempestade ⛈️', 96: 'Tempestade com granizo ⛈️', 99: 'Tempestade severa ⛈️' };
+                const dir = g => ['N (Norte)', 'NE (Nordeste)', 'L (Leste)', 'SE (Sudeste)', 'S (Sul)', 'SO (Sudoeste)', 'O (Oeste)', 'NO (Noroeste)'][Math.round(((g % 360) + 360) % 360 / 45) % 8];
+                const cur = d.current, chovendo = cur.precipitation > 0 || [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(cur.weather_code);
+                let t2 = `\n🌡️ *CLIMA ATUAL (AGORA)*\n*Condição:* ${COD[cur.weather_code] || 'Indefinido ☁️'} (${Math.round(cur.temperature_2m)}°C)\n*Chovendo agora:* ${chovendo ? 'Sim 🌧️' : 'Não 🚫'}\n*Umidade:* ${Math.round(cur.relative_humidity_2m)}%\n*Vento:* ${Math.round(cur.wind_speed_10m)} km/h sentido ${dir(cur.wind_direction_10m)}\n`;
+                t2 += `\n🌦️ *PREVISÃO PARA AS PRÓXIMAS HORAS*\n📍 _${CLIMA.nome}_\n`;
+                for (let i = 0; i < 4; i++) {
+                    const h = String(new Date(d.hourly.time[i]).getHours()).padStart(2, '0') + 'h00', prob = d.hourly.precipitation_probability[i], mm = d.hourly.precipitation[i];
+                    const ic = mm === 0 && prob < 20 ? '☀️' : mm < 0.5 && prob < 40 ? '🌤️' : mm > 0 && mm <= 2.5 ? '🌦️' : mm > 2.5 && mm <= 10 ? '🌧️' : mm > 10 ? '⛈️' : '☁️';
+                    t2 += `> ${ic} *${Math.round(d.hourly.temperature_2m[i])}°C ${h}* - Prob: ${prob}% (${mm}mm)\n`;
+                }
+                return t2;
+            } catch (e) { return ''; }
+        }
+        async function registrar() {
+            const c = calcular();
+            if (!c.data) return avisar('Informe a data da leitura.');
+            if (!c.resp) return avisar('Informe o responsável.');
+            if (!c.local) return avisar(tipo === 'chuva' ? 'Escolha o local do pluviômetro.' : 'Escolha a unidade (relógio).');
+            if (tipo === 'chuva' && (isNaN(c.mm) || c.mm < 0)) return avisar('Informe o volume medido em mm.');
+            if (tipo === 'energia' && (isNaN(c.leitura) || c.leitura < 0)) return avisar('Informe a leitura do relógio.');
+            if (!fotos[tipo].length) return avisar('Anexe a foto do visor antes de registrar.', 'Foto obrigatória');
+            if (c.menorQueAnterior && !(await Dialogo.confirmar(`A leitura (${fmt(c.leitura)}) é menor que a anterior (${fmt(c.leituraAnterior)}). Se o relógio foi trocado, registre assim mesmo: o consumo desta leitura fica em branco.`, { titulo: 'Leitura menor que a anterior', botao: 'Registrar assim mesmo' }))) return;
+            if (!(await Dialogo.confirmar('Confira o valor medido e as fotos antes de registrar.', { titulo: 'Registrar a leitura?', botao: 'Registrar' }))) return;
+
+            const agora = new Date(), hora = agora.toLocaleTimeString('pt-BR');
+            const nome = `${tipo === 'chuva' ? 'Pluviometro' : 'Energia'} - ${c.local} - ${dataBR(c.data).replace(/\//g, '-')}`;
+            // Fotos para o Drive; sem internet (ou se o envio falhar) ficam no aparelho e sobem depois
+            let fotosDrive = null;
+            if (navigator.onLine) {
+                carregando(true, `Enviando ${fotos[tipo].length === 1 ? 'a foto' : 'as fotos'} para o Drive...`);
+                try { fotosDrive = await subirFotos(fotos[tipo], `${nome} ${hora.replace(/:/g, '')}`, pastaDrive(c)); } catch (e) { fotosDrive = null; }
+            }
+            carregando(true, tipo === 'chuva' ? 'Registrando e buscando a previsão do tempo...' : 'Registrando...');
+            const idNovo = API.novoId();
+            let texto = '';
+            if (tipo === 'chuva') {
+                const linha = { id: idNovo, data: c.data, local: c.local, volume_mm: c.mm, classificacao: c.classe.texto, responsavel: c.resp, observacao: c.obs, fotos: fotosDrive || [], registrado_em: agora.toISOString() };
+                API.enfileirar('leituras_chuva', 'upsert', linha);
+                guardarPendente('chuva', linha); chuva.unshift({ ...linha, _pendente: true, criado_por: meuId() }); ordenar(chuva);
+                const clima = await previsaoTempo();
+                texto = `🌧️ *BOLETIM PLUVIOMÉTRICO SPG* 🌧️\n\n*Data da Leitura:* ${dataBR(c.data)} às ${hora}\n*Local:* ${c.local}\n*Responsável:* ${c.resp}\n\n📊 *RESULTADO DA MEDIÇÃO*\n*Volume Medido:* ${fmt(c.mm, 1)} mm\n*Total Acumulado (${nomeMes(c.data)}):* ${fmt(c.acumulado, 1)} mm\n*Classificação:* ${c.classe.texto}\n`
+                    + (c.obs ? `\n*Observações:* ${c.obs}\n` : '') + clima;
+            } else {
+                const linha = { id: idNovo, data: c.dia, unidade: c.local, leitura: c.leitura, leitura_anterior: c.leituraAnterior, consumo: c.consumo, responsavel: c.resp, observacao: c.obs, fotos: fotosDrive || [], registrado_em: agora.toISOString() };
+                API.enfileirar('leituras_energia', 'upsert', linha);
+                guardarPendente('energia', linha); energia.unshift({ ...linha, _pendente: true, criado_por: meuId() }); ordenar(energia);
+                const titular = TITULARES[c.local];
+                texto = `⚡ *LEITURA DE ENERGIA SPG* ⚡\n\n*Data da Leitura:* ${dataBR(c.data)} às ${hora}\n*Consumo do dia:* ${dataBR(c.dia)}\n*Local:* ${c.local}\n` + (titular ? `*Titular:* ${titular.nome}\n*UC:* ${titular.uc}\n` : '') + `*Responsável:* ${c.resp}\n\n📋 *DADOS DA LEITURA*\n*Leitura Registrada:* ${fmt(c.leitura)}\n\n`;
+                if (c.consumo != null) {
+                    texto += `*Consumo (24h):* ${fmt(c.consumo)} kWh\n*Total Acumulado (${nomeMes(c.mesRef + '-01')}):* ${fmt(c.acumulado)} kWh\n`;
+                    if (c.percentual != null) texto += c.percentual > 0 ? `📈 *O consumo subiu ${fmt(c.percentual, 1)}%* em relação à leitura anterior.\n` : c.percentual < 0 ? `📉 *O consumo caiu ${fmt(Math.abs(c.percentual), 1)}%* em relação à leitura anterior.\n` : `⚖️ *O consumo manteve-se igual* à leitura anterior.\n`;
+                    if (c.ultimos.length) texto += `\n*Últimos ${c.ultimos.length} consumos:*\n${c.ultimos.slice().reverse().map(r => `| ${dataBR(diaDoConsumo(r)).slice(0, 5)} - ${fmt(r.consumo)} kWh`).join('\n')}\n`;
+                } else texto += c.menorQueAnterior ? '⚠️ *Leitura menor que a anterior (relógio trocado?):* consumo não calculado.\n' : '⚠️ *Primeira leitura desta unidade no sistema:* consumo não calculado.\n';
+                if (c.obs) texto += `\n*Observações:* ${c.obs}\n`;
+            }
+            if (!fotosDrive) {
+                const fila = lerJSON(K_FOTOS_PEND, []);
+                fila.push({ tipo, tabela: tipo === 'chuva' ? 'leituras_chuva' : 'leituras_energia', id: idNovo, fotos: fotos[tipo].slice(), nome: `${nome} ${hora.replace(/:/g, '')}`, pasta: pastaDrive(c) });
+                try { localStorage.setItem(K_FOTOS_PEND, JSON.stringify(fila)); const r = linhaLocal(tipo, idNovo); if (r) r._fotosNoAparelho = true; }
+                catch (e) { Dialogo.avisar('A leitura foi registrada, mas o aparelho está sem espaço para guardar as fotos até a internet voltar.', { titulo: 'Fotos não guardadas', tipo: 'aviso' }); }
+            }
+            const imagem = fotos[tipo].length > 1 ? await juntarFotos(fotos[tipo]) : fotos[tipo][0];
+            const blob = await (await fetch(imagem)).blob();
+            boletim = { texto, nome, imagem, arquivo: new File([blob], nome + '.jpg', { type: 'image/jpeg' }) };
+            gravarJSON(K_CACHE, { chuva: chuva.filter(r => !r._pendente), energia: energia.filter(r => !r._pendente) });
+            carregando(false);
+            limparFormulario(false);
+            el('prontoTexto').textContent = texto;
+            el('prontoModal').classList.remove('hidden'); icones();
+        }
+        function fecharPronto() { el('prontoModal').classList.add('hidden'); }
+        async function copiarTexto() {
+            try { await navigator.clipboard.writeText(boletim.texto); Dialogo.avisar('Texto copiado. É só colar no grupo do WhatsApp.', { titulo: 'Copiado', tipo: 'sucesso' }); }
+            catch (e) { avisar('Não foi possível copiar o texto.'); }
+        }
+        // O compartilhamento precisa partir de um toque, por isso fica no botão da janela
+        async function compartilhar() {
+            if (!boletim) return;
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [boletim.arquivo] })) {
+                try { await navigator.share({ files: [boletim.arquivo], title: boletim.nome, text: boletim.texto }); fecharPronto(); return; }
+                catch (e) { if (e && e.name === 'AbortError') return; }
+            }
+            const a = document.createElement('a'); a.href = boletim.imagem; a.download = boletim.nome + '.jpg'; document.body.appendChild(a); a.click(); a.remove();
+            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(boletim.texto), '_blank');
+            fecharPronto();
+        }
+
+        // ------------------------------------------------------------
+        //  HISTÓRICO
+        // ------------------------------------------------------------
+        function setTipoHist(t) {
+            tipoHist = t;
+            el('hChuva').setAttribute('aria-pressed', t === 'chuva'); el('hEnergia').setAttribute('aria-pressed', t === 'energia');
+            renderHistorico();
+        }
+        function renderHistorico() {
+            if (!periodoHist) return;
+            const ehChuva = tipoHist === 'chuva', lista = ehChuva ? chuva : energia, campoLocal = ehChuva ? 'local' : 'unidade';
+            // Locais existentes
+            const locais = [...new Set(LOCAIS[tipoHist].concat(lista.map(r => r[campoLocal])))].filter(Boolean);
+            const sel = el('hLocal'), atual = sel.value;
+            sel.innerHTML = `<option value="">${ehChuva ? 'Todos os locais' : 'Todas as unidades'}</option>` + locais.map(l => `<option ${l === atual ? 'selected' : ''}>${esc(l)}</option>`).join('');
+            if (!locais.includes(atual)) sel.value = '';
+            const filtroLocal = sel.value;
+            const [de, ate] = periodoHist;
+            // Chuva: dia da leitura. Energia: o consumo vale para o dia anterior à leitura
+            const diaRef = r => ehChuva ? r.data : diaDoConsumo(r);
+            const doPeriodo = lista.filter(r => (!filtroLocal || r[campoLocal] === filtroLocal) && (!de || diaRef(r) >= de) && (!ate || diaRef(r) <= ate));
+            const valor = r => ehChuva ? Number(r.volume_mm || 0) : Number(r.consumo || 0);
+            const total = doPeriodo.reduce((s, r) => s + valor(r), 0);
+            const unid = ehChuva ? 'mm' : 'kWh', casas = ehChuva ? 1 : 0;
+            const porDia = {}; doPeriodo.forEach(r => { const d = diaRef(r); porDia[d] = (porDia[d] || 0) + valor(r); });
+            const dias = Object.keys(porDia).sort();
+            const maior = dias.reduce((m, d) => porDia[d] > (m ? porDia[m] : -1) ? d : m, null);
+            const porLocal = {}; doPeriodo.forEach(r => { porLocal[r[campoLocal]] = (porLocal[r[campoLocal]] || 0) + valor(r); });
+            const cartao = (rotulo, v, sub, cor) => `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4"><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">${rotulo}</p><p class="text-2xl font-black ${cor || 'text-slate-900'} leading-tight mt-1">${v}</p>${sub ? `<p class="text-[11px] font-medium text-slate-400 mt-0.5">${sub}</p>` : ''}</div>`;
+            el('hResumo').innerHTML = ehChuva
+                ? cartao('Chuva no período', `${fmt(total, 1)} mm`, `${doPeriodo.length} leituras`, 'text-sky-700')
+                  + cartao('Dias com chuva', fmt(dias.filter(d => porDia[d] > 0).length), `de ${dias.length} dias com leitura`)
+                  + cartao('Maior chuva', maior ? `${fmt(porDia[maior], 1)} mm` : '—', maior ? dataBR(maior) : '')
+                  + cartao('Por local', Object.keys(porLocal).length ? '' : '—', Object.entries(porLocal).map(([l, v]) => `${esc(l)}: <b class="text-slate-600">${fmt(v, 1)} mm</b>`).join('<br>'))
+                : cartao('Consumo no período', `${fmt(total)} kWh`, `${doPeriodo.filter(r => r.consumo != null).length} leituras com consumo`, 'text-amber-700')
+                  + cartao('Média por dia', dias.length ? `${fmt(total / dias.length)} kWh` : '—', `${dias.length} dias`)
+                  + cartao('Maior consumo', maior ? `${fmt(porDia[maior])} kWh` : '—', maior ? dataBR(maior) : '')
+                  + cartao('Por unidade', Object.keys(porLocal).length ? '' : '—', Object.entries(porLocal).map(([l, v]) => `${esc(l)}: <b class="text-slate-600">${fmt(v)} kWh</b>`).join('<br>'));
+            // Gráfico de barras por dia (cabe na largura do cartão)
+            const maxDia = Math.max(1, ...dias.map(d => porDia[d]));
+            el('hGrafico').innerHTML = dias.length ? `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4">
+                <p class="text-sm font-extrabold text-slate-800 mb-3">${ehChuva ? 'Chuva por dia' : 'Consumo por dia'} <span class="font-semibold text-slate-400 text-xs">(${unid})</span></p>
+                <div class="flex items-end gap-[3px] h-40">${dias.map(d => `<div class="flex-1 min-w-0 h-full flex flex-col justify-end group relative" title="${dataBR(d)}: ${fmt(porDia[d], casas)} ${unid}">
+                    <div class="w-full rounded-t-full ${ehChuva ? 'bg-sky-400 group-hover:bg-sky-600' : 'bg-amber-400 group-hover:bg-amber-600'} transition-colors" style="height:${Math.max(porDia[d] > 0 ? 3 : 0, porDia[d] / maxDia * 100)}%"></div></div>`).join('')}</div>
+                <div class="flex justify-between mt-1.5 text-[10px] font-bold text-slate-400"><span>${dataBR(dias[0]).slice(0, 5)}</span><span>${dataBR(dias[dias.length - 1]).slice(0, 5)}</span></div>
+            </div>` : '';
+            // Lista
+            const ultimaPorUnidade = {}; energia.forEach(r => { if (!ultimaPorUnidade[r.unidade]) ultimaPorUnidade[r.unidade] = r.id; });
+            const podeExcluir = r => podeMexer(r) && (ehChuva || ultimaPorUnidade[r.unidade] === r.id);
+            el('hLista').innerHTML = `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden">
+                <div class="overflow-auto max-h-[70vh]">
+                    <table class="w-full text-sm">
+                        <thead class="sticky top-0 bg-slate-50 z-10"><tr class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 text-left">
+                            <th class="px-4 py-2.5 sticky left-0 bg-slate-50">${ehChuva ? 'Data' : 'Dia do consumo'}</th><th class="px-3 py-2.5">${ehChuva ? 'Local' : 'Unidade'}</th>
+                            ${ehChuva ? '<th class="px-3 py-2.5 text-right">Volume</th><th class="px-3 py-2.5">Classificação</th>' : '<th class="px-3 py-2.5 text-right">Leitura</th><th class="px-3 py-2.5 text-right">Consumo</th>'}
+                            <th class="px-3 py-2.5">Fotos</th><th class="px-3 py-2.5">Responsável</th><th class="px-3 py-2.5">Obs.</th><th class="px-2 py-2.5"></th></tr></thead>
+                        <tbody>${doPeriodo.length ? doPeriodo.map(r => `<tr class="border-t border-slate-100">
+                            <td class="px-4 py-2.5 font-bold text-slate-800 whitespace-nowrap sticky left-0 bg-white">${dataBR(r.data)}${r._pendente ? ' <span class="text-[10px] font-bold text-amber-600" title="Esperando internet para enviar">· no aparelho</span>' : ''}</td>
+                            <td class="px-3 py-2.5 text-slate-600 whitespace-nowrap">${esc(r[campoLocal])}</td>
+                            ${ehChuva ? `<td class="px-3 py-2.5 text-right font-extrabold text-sky-700 whitespace-nowrap">${fmt(r.volume_mm, 1)} mm</td><td class="px-3 py-2.5"><span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${classeChuva(Number(r.volume_mm)).cls}">${esc(r.classificacao || classeChuva(Number(r.volume_mm)).texto)}</span></td>`
+                                : `<td class="px-3 py-2.5 text-right text-slate-600 whitespace-nowrap">${fmt(r.leitura)}</td><td class="px-3 py-2.5 text-right font-extrabold text-amber-700 whitespace-nowrap">${r.consumo != null ? fmt(r.consumo) + ' kWh' : '—'}</td>`}
+                            <td class="px-3 py-1.5 whitespace-nowrap">${(r.fotos || []).length ? `<div class="flex gap-1">${r.fotos.map((f, i) => `<button type="button" onclick="verFoto(${i}, '${esc(r.id)}')" aria-label="Ver foto ${i + 1}" class="p-0"><img src="${esc(thumbDrive(f))}" alt="" loading="lazy" class="w-10 h-10 rounded-lg object-cover ring-1 ring-slate-200 bg-slate-100"></button>`).join('')}</div>` : (r._fotosNoAparelho || fotosNaFila(r.id)) ? '<span class="text-[10px] font-bold text-amber-600">no aparelho</span>' : '<span class="text-slate-300">—</span>'}</td>
+                            <td class="px-3 py-2.5 text-slate-600 whitespace-nowrap">${esc(r.responsavel)}</td>
+                            <td class="px-3 py-2.5 text-slate-500 text-xs min-w-[160px]">${esc(r.observacao)}</td>
+                            <td class="px-2 py-1.5 text-right">${podeExcluir(r) ? `<button type="button" onclick="excluir('${esc(r.id)}')" class="w-10 h-10 inline-flex items-center justify-center rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50" title="Excluir" aria-label="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}</td>
+                        </tr>`).join('') : `<tr><td colspan="8" class="px-4 py-10 text-center text-sm font-bold text-slate-400">Nenhuma leitura no período.</td></tr>`}</tbody>
+                    </table>
+                </div>
+            </div>`;
+            icones();
+        }
+        async function excluir(id) {
+            const ehChuva = tipoHist === 'chuva', lista = ehChuva ? chuva : energia, r = lista.find(x => x.id === id);
+            if (!r) return;
+            const texto = ehChuva ? `Excluir a leitura de ${fmt(r.volume_mm, 1)} mm de ${dataBR(r.data)} (${r.local})?` : `Excluir a leitura ${fmt(r.leitura)} de ${dataBR(r.data)} (${r.unidade})? Só a última leitura de cada unidade pode ser excluída.`;
+            if (!(await Dialogo.confirmar(texto, { titulo: 'Excluir leitura', botao: 'Excluir', perigo: true }))) return;
+            API.enfileirar(ehChuva ? 'leituras_chuva' : 'leituras_energia', 'delete', { id });
+            const pend = lerJSON(K_PEND, { chuva: [], energia: [] }); pend[tipoHist] = (pend[tipoHist] || []).filter(x => x.id !== id); gravarJSON(K_PEND, pend);
+            if (ehChuva) chuva = chuva.filter(x => x.id !== id); else energia = energia.filter(x => x.id !== id);
+            gravarJSON(K_CACHE, { chuva: chuva.filter(x => !x._pendente), energia: energia.filter(x => !x._pendente) });
+            renderHistorico(); atualizarResumo();
+        }
+
+        const fotosNaFila = id => lerJSON(K_FOTOS_PEND, []).some(x => x.id === id);
+
+        // ------------------------------------------------------------
+        //  Abas e início
+        // ------------------------------------------------------------
+        const ABAS = [{ id: 'registrar', nome: 'Registrar', icone: 'clipboard-pen', cor: '5, 150, 105' }, { id: 'historico', nome: 'Histórico', icone: 'chart-column', cor: '2, 132, 199' }];
+        let barra = null;
+        function trocarAba(id) {
+            aba = id;
+            el('view-registrar').classList.toggle('aba-oculta', id !== 'registrar');
+            el('view-historico').classList.toggle('aba-oculta', id !== 'historico');
+            el('abasLeituras').innerHTML = ABAS.map(a => `<button type="button" role="tab" aria-selected="${a.id === aba}" onclick="trocarAba('${a.id}')" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all ${a.id === aba ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500'}"><i data-lucide="${a.icone}" class="w-3.5 h-3.5"></i> ${a.nome}</button>`).join('');
+            if (barra) barra.atualizar();
+            if (id === 'historico') renderHistorico();
+            icones(); window.scrollTo(0, 0);
+        }
+        (function iniciar() {
+            const menu = el('btnMenuProjetos');
+            if (API.projetosDoUsuario().length > 1 && window.top === window.self) { menu.classList.remove('hidden'); menu.classList.add('flex'); }
+            const medir = () => document.documentElement.style.setProperty('--altura-navbar', el('navbar').offsetHeight + 'px');
+            medir(); window.addEventListener('resize', medir);
+            if (window.BarraAbas) barra = BarraAbas.criar({ rotulo: 'Seções das leituras', abas: () => ABAS.map(a => ({ ...a, ativa: a.id === aba })), abrir: id => trocarAba(id) });
+            el('fData').value = hojeISO();
+            el('fResp').value = localStorage.getItem('leit_responsavel') || API.nomeUsuario();
+            el('fResp').addEventListener('change', () => localStorage.setItem('leit_responsavel', el('fResp').value.trim()));
+            // Período do histórico: começa no mês atual
+            const d = new Date();
+            const seletor = SeletorPeriodo.montar(el('hPeriodo'), {
+                periodo: { modo: 'mes', dia: hojeISO(), mes: d.getMonth(), ano: d.getFullYear(), de: somarDias(hojeISO(), -29), ate: hojeISO() },
+                // Anos com leitura (o histórico das planilhas começa em 2022)
+                anos: () => [...new Set(chuva.concat(energia).map(r => Number(String(r.data).slice(0, 4))).filter(Boolean))],
+                aoMudar: (de, ate) => { periodoHist = [de, ate]; renderHistorico(); }
+            });
+            periodoHist = SeletorPeriodo.intervalo(seletor.periodo());
+            const c = lerJSON(K_CACHE, null); if (c) { chuva = c.chuva || []; energia = c.energia || []; juntarPendentes(); }
+            setTipo('chuva');
+            trocarAba('registrar');
+            carregarDados(!!c).then(processarFotosPendentes);
+            window.addEventListener('online', () => { carregarDados(true).then(processarFotosPendentes); });
+        })();
+    </script>
+</body>
+</html>

@@ -334,6 +334,8 @@
                     <h4 class="text-[11px] font-black text-slate-500 uppercase tracking-wider">${tipoAtual === 'previsao' ? (data ? 'Transplantio ' + emPt(data) : 'Sem data de transplantio') : emPt(data)}</h4>
                     <div class="flex items-center gap-2">
                         <span class="text-[11px] font-bold text-slate-400">${esc(t.total(doDia(data)))}</span>
+                        ${tipoAtual === 'colheita' && data && typeof window.c_imagemDoDia === 'function' ? `<button type="button" data-acao="imagemColheita" data-valor="${esc(data)}" data-tipo="tecnico" title="Imagem do Resumo Técnico da Colheita deste dia" class="inline-flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg"><i data-lucide="share-2" class="w-3.5 h-3.5"></i>Técnico</button>
+                        <button type="button" data-acao="imagemColheita" data-valor="${esc(data)}" data-tipo="grupo" title="Imagem do Resumo Grupo da Colheita deste dia" class="inline-flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg"><i data-lucide="share-2" class="w-3.5 h-3.5"></i>Grupo</button>` : ''}
                         ${t.imagem && data && doDia(data).some(t.imagem) ? `<button type="button" data-acao="selData" data-valor="${esc(data)}" aria-pressed="${datasSel.has(data)}" title="Marcar para juntar várias datas na mesma imagem" class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1.5 rounded-lg border ${datasSel.has(data) ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}"><i data-lucide="${datasSel.has(data) ? 'square-check' : 'square'}" class="w-3.5 h-3.5"></i>Selecionar</button>
                         <button type="button" data-acao="imagem" data-valor="${esc(data)}" title="Gerar imagem com todas as variedades transplantadas neste dia" class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg"><i data-lucide="image" class="w-3.5 h-3.5"></i>Imagem</button>` : ''}
                     </div>
@@ -803,6 +805,9 @@
             renderLista();
         } else if (acao === 'imagem') {
             gerarImagem(valor);
+        } else if (acao === 'imagemColheita') {
+            // A mesma imagem da aba Colheita (Resumo Técnico / Grupo), com os dados deste dia
+            if (typeof window.c_imagemDoDia === 'function') window.c_imagemDoDia(valor, b.dataset.tipo, lista.filter(r => r.data_entrega === valor));
         } else if (acao === 'selData') {
             if (datasSel.has(valor)) datasSel.delete(valor); else datasSel.add(valor);
             renderLista();

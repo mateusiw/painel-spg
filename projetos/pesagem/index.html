@@ -134,6 +134,7 @@
     </style>
     <script src="../../lista-moderna.js"></script>
     <script src="../../trava-fundo.js"></script>
+    <style>#pgDia .sp-modos { display: none !important; } #pgDia .sp-nome { display: none; }</style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-20 select-none relative">
 
@@ -156,6 +157,7 @@
 
         <div id="nav-actions-pesagem" class="hidden flex gap-2 w-full sm:w-auto">
             <button id="p_btnZap" onclick="p_copyToWhatsApp()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 ring-1 ring-emerald-700/20 transition-all active:scale-95"><i data-lucide="message-circle" class="w-4 h-4"></i><span>Texto Zap</span></button>
+            <button id="p_btnImagemParceiro" onclick="p_imagemParceiro()" style="display:none;" title="Imagem simples para o parceiro: data, caixas, peso e média de unidades por caixa" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 ring-1 ring-emerald-700/20 transition-all active:scale-95"><i data-lucide="image" class="w-4 h-4"></i><span>Imagem Parceiro</span></button>
             <button id="p_btnImageDefault" onclick="p_downloadImage('default')" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 ring-1 ring-blue-700/20 transition-all active:scale-95"><i data-lucide="share-2" class="w-4 h-4"></i><span>Compart. Imagem</span></button>
             <button id="p_btnImageTecnico" onclick="p_downloadImage('tecnico')" style="display:none;" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 ring-1 ring-blue-700/20 transition-all active:scale-95"><i data-lucide="share-2" class="w-4 h-4"></i><span>Resumo Técnico</span></button>
             <button id="p_btnImageGrupo" onclick="p_downloadImage('grupo')" style="display:none;" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-b from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/20 ring-1 ring-indigo-700/20 transition-all active:scale-95"><i data-lucide="share-2" class="w-4 h-4"></i><span>Resumo Grupo</span></button>
@@ -279,7 +281,7 @@
                 <!-- Lista Colheita -->
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                        <div class="flex items-center gap-3"><h3 class="text-sm font-bold text-slate-700 uppercase">REGISTROS</h3>
+                        <div class="flex items-center gap-3"><h3 class="text-sm font-bold text-slate-700 uppercase">REGISTROS <span id="c_registrosDia" class="normal-case font-semibold text-slate-400"></span></h3>
                             <label class="cursor-pointer flex items-center gap-1 text-[10px] bg-slate-100 px-2 py-1 rounded font-bold uppercase border border-slate-200"><input type="file" accept=".csv" class="hidden" onchange="c_importCSV(event)"><i data-lucide="upload" class="w-3 h-3"></i> CSV</label>
                         </div>
                         <button onclick="showConfirm('Atenção!', 'Deseja limpar todos os blocos?', 'danger', 'Limpar', c_confirmClearAll)" class="text-[10px] font-bold text-red-500 underline uppercase">LIMPAR LISTA</button>
@@ -572,7 +574,8 @@
             }
         };
         // Locais que esta pessoa pode pesar
-        const PESAGEM_PERMITIDOS = Object.values(PESAGEM_LOCAIS).filter(l =>
+        // A SPG Estufa não passa mais pela Pesagem: o próprio colaborador lança o peso (kg) na Colheita do Resumo Estufa
+        const PESAGEM_PERMITIDOS = Object.values(PESAGEM_LOCAIS).filter(l => l.id !== 'estufa' &&
             SPG_API.locaisPermitidos().some(x => x.id === l.id) && SPG_API.temModulo(l.mod.pesagem));
         const PL = (() => {
             let pedido = new URLSearchParams(location.search).get('local');
@@ -590,9 +593,28 @@
             // O local (SPG Oásis / SPG Estufa) é escolhido na própria lista de Parceiro; aqui fica só a volta ao Resumo da Colheita
             const box = document.getElementById('pgLocais');
             if (box) {
-                box.innerHTML = `<a href="${PL.resumo}" class="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl bg-white ring-1 ring-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold whitespace-nowrap"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>Resumo da Colheita ${PL.curto}</a>`;
+                box.innerHTML = `<a href="${PL.resumo}" class="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl bg-white ring-1 ring-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold whitespace-nowrap"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>Resumo da Colheita ${PL.curto}</a>
+                    <div id="pgDia" class="min-w-0"></div>`;
             }
         })();
+
+        // ---------- Dia da pesagem: mostra só os registros da Colheita daquele dia ----------
+        document.addEventListener('DOMContentLoaded', () => {
+            const alvo = document.getElementById('pgDia');
+            if (!alvo || !window.SeletorPeriodo) return;
+            const hoje = f_todayISO(); const d = new Date();
+            const seletor = SeletorPeriodo.montar(alvo, {
+                periodo: { modo: 'dia', dia: hoje, mes: d.getMonth(), ano: d.getFullYear(), de: hoje, ate: hoje },
+                tudo: false,
+                aoMudar: (de, ate, periodo) => {
+                    // Só o modo Dia vale aqui
+                    if (periodo.modo !== 'dia') { periodo.modo = 'dia'; periodo.dia = de || f_todayISO(); seletor.redesenhar(); }
+                    const dia = periodo.dia || f_todayISO();
+                    pg_diaSel = dia === f_todayISO() ? '' : dia;
+                    c_seguirSeletor(); p_applyWeightLock();
+                }
+            });
+        });
 
         // ---------- Cadastros usados na Pesagem (feitos em Culturas e variedades) ----------
         // Parceiros: o mesmo cadastro da Produtividade Packing (packing_cadastros, tipo 'produtores'),
@@ -693,7 +715,9 @@
         });
         async function pg_carregarParceiros() {
             try {
-                const { data, error } = await SPG_API.cliente.from('packing_cadastros').select('valor').eq('tipo', 'produtores').order('valor');
+                // Só os parceiros marcados para a Pesagem (os do Packing, como P,Q Oásis, ficam de fora)
+                let { data, error } = await SPG_API.cliente.from('packing_cadastros').select('valor').eq('tipo', 'produtores').eq('na_pesagem', true).order('valor');
+                if (error && /na_pesagem/.test(error.message || '')) ({ data, error } = await SPG_API.cliente.from('packing_cadastros').select('valor').eq('tipo', 'produtores').order('valor'));
                 if (error || !data) return;
                 const lista = data.map(x => x.valor);
                 try { localStorage.setItem(PG_K_PARCEIROS, JSON.stringify(lista)); } catch (e) { }
@@ -807,6 +831,58 @@
 
         // Estruturas de Dados
         let c_harvestData = JSON.parse(localStorage.getItem((PL.pfx + 'harvestData'))) || [];
+        // REGISTROS DA COLHEITA POR DIA
+        // c_harvestData tem só os registros do dia escolhido no seletor de data (Automática = hoje, ou Manual) (aqui na Pesagem: sempre o dia de hoje, o mesmo do peso).
+        // Os outros dias ficam guardados em c_arquivo e voltam quando o seletor marcar aquele dia.
+        // Assim um registro não fica aparecendo (nem indo para a Pesagem/Packing) todo dia.
+        const C_K_DIA = PL.pfx + 'harvestDia', C_K_ARQ = PL.pfx + 'harvestArquivo';
+        const C_DIAS_GUARDADOS = 30;
+        let c_dia = ''; try { c_dia = localStorage.getItem(C_K_DIA) || ''; } catch (e) { }
+        let c_arquivo = {}; try { c_arquivo = JSON.parse(localStorage.getItem(C_K_ARQ) || '{}') || {}; } catch (e) { c_arquivo = {}; }
+        let pg_diaSel = '';
+        function c_diaEscolhido() { return pg_diaSel || f_todayISO(); }
+        // Vendo outro dia: só consulta (o peso é sempre o de hoje)
+        function pg_outroDia() { return !!c_dia && c_dia !== f_todayISO(); }
+        // Parâmetros do turno (efetivo, horários, estimativas, próximos blocos) também são de cada dia
+        const C_K_INPUTS = (PL.pfx + 'inputs'), C_K_ARQ_PARAM = C_K_ARQ + 'Param';
+        let c_arquivoParam = {}; try { c_arquivoParam = JSON.parse(localStorage.getItem(C_K_ARQ_PARAM) || '{}') || {}; } catch (e) { c_arquivoParam = {}; }
+        const c_temParam = o => !!o && (['crewCount', 'estimateDay', 'startTime', 'endTime', 'intervalDuration', 'manualTotalEstimate'].some(k => o[k]) || (Array.isArray(o.forecastBlocks) && o.forecastBlocks.length > 0));
+        function c_salvarArquivo() {
+            const dias = Object.keys(c_arquivo).sort(); while (dias.length > C_DIAS_GUARDADOS) delete c_arquivo[dias.shift()];
+            const diasP = Object.keys(c_arquivoParam).sort(); while (diasP.length > C_DIAS_GUARDADOS) delete c_arquivoParam[diasP.shift()];
+            try { localStorage.setItem(C_K_DIA, c_dia); localStorage.setItem(C_K_ARQ, JSON.stringify(c_arquivo)); localStorage.setItem(C_K_ARQ_PARAM, JSON.stringify(c_arquivoParam)); } catch (e) { }
+        }
+        // Mostra na tela os parâmetros do turno guardados para o dia atual
+        function c_recarregarParametros() {
+            ['crewCount', 'estimateDay', 'startTime', 'endTime', 'intervalDuration', 'manualTotalEstimate'].forEach(id => { const el = document.getElementById('c_' + id); if (el) el.value = ''; });
+            const fc = document.getElementById('c_forecastBlocksContainer'); if (fc) fc.innerHTML = '';
+            c_loadInputs();
+        }
+        // Guarda os registros do dia atual e traz os do dia novo. Retorna true se trocou.
+        function c_trocarDiaColheita(dia) {
+            if (!dia || dia === c_dia) return false;
+            // Registros antigos (de antes da separação por dia) ficam no primeiro dia marcado
+            if (!c_dia) { c_dia = dia; c_salvarArquivo(); return false; }
+            if (c_dia && c_harvestData.length) c_arquivo[c_dia] = c_harvestData; else if (c_dia) delete c_arquivo[c_dia];
+            c_harvestData = Array.isArray(c_arquivo[dia]) ? c_arquivo[dia] : []; delete c_arquivo[dia];
+            // Parâmetros do turno: guarda os do dia que sai e traz os do dia que entra (dia novo começa em branco)
+            let atual = {}; try { atual = JSON.parse(localStorage.getItem(C_K_INPUTS) || '{}') || {}; } catch (e) { }
+            if (c_temParam(atual)) c_arquivoParam[c_dia] = atual; else delete c_arquivoParam[c_dia];
+            const novos = c_arquivoParam[dia] || {}; delete c_arquivoParam[dia];
+            try { localStorage.setItem(C_K_INPUTS, JSON.stringify(novos)); } catch (e) { }
+            c_dia = dia; c_salvarArquivo();
+            return true;
+        }
+        // Depois de mudar o seletor (ou virar o dia): mostra os registros do dia marcado
+        function c_seguirSeletor() {
+            if (typeof c_editingIndex !== 'undefined' && c_editingIndex >= 0) c_clearBlockForm();
+            if (!c_trocarDiaColheita(c_diaEscolhido())) return;
+            c_recarregarParametros(); spg_markChanged('colheita');
+            p_harvestData = p_harvestData.filter(it => !(it.partner === PL.proprio && it.fromColheita));
+            c_saveData(); c_renderList(); c_renderReport();
+            p_syncFromColheita(); p_renderList(); p_renderReport(); p_applyWeightLock();
+            if (typeof p_scheduleSyncFromColheita === 'function') p_scheduleSyncFromColheita();
+        }
         // Liberação da pesagem: só vale para os dados exatamente como estavam na conferência
         let c_release = null; try { c_release = JSON.parse(localStorage.getItem((PL.pfx + 'release'))) || null; } catch(e) { c_release = null; }
         let c_editingIndex = -1;
@@ -923,7 +999,7 @@
             if (key === 'campo') return f_data;
             if (key === 'pesagem') return p_getWeightsState();
             let inputs = {}; try { inputs = JSON.parse(localStorage.getItem((PL.pfx + 'inputs')) || '{}'); } catch(e) {}
-            return { harvestData: c_harvestData, inputs, release: c_release };
+            return { harvestData: c_harvestData, inputs, release: c_release, dia: c_dia, arquivo: c_arquivo, arquivoParam: c_arquivoParam };
         }
 
         function spg_isEditing() { return c_editingIndex >= 0 || f_editingEntryIdx >= 0 || f_editingLoadIdx >= 0 || p_editingIndex >= 0; }
@@ -935,11 +1011,20 @@
                 if (key === 'campo') {
                     f_data = data; if (!Array.isArray(f_data.loads)) f_data.loads = [];
                     f_editingLoadIdx = -1; f_editingEntryIdx = -1;
-                    localStorage.setItem(f_STORAGE_KEY, JSON.stringify(f_data)); f_render(); setTimeout(f_checkNewDay, 0);
+                    localStorage.setItem(f_STORAGE_KEY, JSON.stringify(f_data)); f_render(); setTimeout(() => { f_checkNewDay(); c_seguirSeletor(); }, 0);
                 } else if (key === 'colheita') {
-                    c_harvestData = Array.isArray(data.harvestData) ? data.harvestData : [];
+                    // Os dados chegam com o dia deles; aqui fica o dia marcado neste aparelho e o resto vai para o arquivo
+                    const juntos = Object.assign({}, data.arquivo && typeof data.arquivo === 'object' ? data.arquivo : {});
+                    const diaRemoto = data.dia || c_dia || c_diaEscolhido();
+                    if (Array.isArray(data.harvestData) && data.harvestData.length) juntos[diaRemoto] = data.harvestData; else delete juntos[diaRemoto];
+                    if (!c_dia) c_dia = c_diaEscolhido();
+                    c_harvestData = Array.isArray(juntos[c_dia]) ? juntos[c_dia] : []; delete juntos[c_dia];
+                    const juntosP = Object.assign({}, data.arquivoParam && typeof data.arquivoParam === 'object' ? data.arquivoParam : {});
+                    if (c_temParam(data.inputs)) juntosP[diaRemoto] = data.inputs; else delete juntosP[diaRemoto];
+                    const meusParam = juntosP[c_dia] || {}; delete juntosP[c_dia];
+                    c_arquivo = juntos; c_arquivoParam = juntosP; c_salvarArquivo();
                     localStorage.setItem((PL.pfx + 'harvestData'), JSON.stringify(c_harvestData));
-                    localStorage.setItem((PL.pfx + 'inputs'), JSON.stringify(data.inputs || {}));
+                    localStorage.setItem((PL.pfx + 'inputs'), JSON.stringify(meusParam));
                     c_release = data.release || null; localStorage.setItem((PL.pfx + 'release'), JSON.stringify(c_release));
                     if (c_editingIndex >= 0) c_clearBlockForm();
                     ['crewCount', 'estimateDay', 'startTime', 'endTime', 'intervalDuration', 'manualTotalEstimate'].forEach(id => { const el = document.getElementById('c_' + id); if (el) el.value = ''; });
@@ -1343,6 +1428,8 @@
             spg_suppressMark = true;
             // Prepara a aba Campo antes de abrir qualquer tela (ela funciona sem internet)
             f_init();
+            if (!c_dia) { c_dia = (f_data && f_data.date) || f_todayISO(); c_salvarArquivo(); }
+            c_trocarDiaColheita(c_diaEscolhido()); c_saveData();
             let lastTab = ''; try { lastTab = localStorage.getItem((PL.pfx + 'last_tab')) || ''; } catch(e) {}
             const variosProjetos = SPG_API.projetosDoUsuario().length > 1;
             const btnMenu = document.getElementById('btnMenuProjetos');
@@ -1368,7 +1455,7 @@
             p_syncFromColheita();
 
             // Atualiza os títulos a cada minuto para manter o horário sincronizado (e limpa o peso ao virar o dia)
-            setInterval(() => { c_updateDynamicTitle(); p_updateDynamicTitle(); p_checkNewDayWeights(); }, 60000);
+            setInterval(() => { c_updateDynamicTitle(); p_updateDynamicTitle(); p_checkNewDayWeights(); c_seguirSeletor(); }, 60000);
 
             spg_suppressMark = false;
             spg_updateSyncBadge();
@@ -1735,7 +1822,8 @@
 
         function c_renderList() {
             const list = document.getElementById('c_itemsList'); list.innerHTML = '';
-            if (c_harvestData.length === 0) { list.innerHTML = '<li class="text-center text-slate-400 italic py-2">Nenhum bloco adicionado.</li>'; return; }
+            const diaEl = document.getElementById('c_registrosDia'); if (diaEl) diaEl.textContent = c_dia ? '· ' + c_dia.split('-').reverse().join('/') : '';
+            if (c_harvestData.length === 0) { list.innerHTML = '<li class="text-center text-slate-400 italic py-2">Nenhum bloco neste dia.</li>'; return; }
             c_harvestData.forEach((item, index) => {
                 const activeClass = index === c_editingIndex ? 'border-blue-400 bg-blue-50 ring-1' : 'border-slate-100 bg-slate-50'; const inactiveStyle = item.active === false ? 'opacity-60 bg-slate-100 border-slate-200 grayscale-[0.5]' : ''; const textStyle = item.active === false ? 'line-through text-slate-400' : ''; const activeTag = item.active === false ? '<span class="text-[10px] text-red-400 font-bold ml-2">(Oculto)</span>' : '';
                 list.innerHTML += `<li class="flex justify-between items-center p-2 rounded border ${activeClass} ${inactiveStyle} transition-all"><span class="${textStyle}"><b>#${item.talhao}</b>${item.cycle ? ` (C${item.cycle})` : ''} - ${item.variety} <span class="text-slate-500 text-xs">(${item.date.substring(0,5)})</span> ${index === c_editingIndex ? '<span class="text-[10px] text-blue-600 font-bold ml-2">(Editando)</span>' : ''} ${activeTag}</span><div class="flex items-center"><button onclick="c_toggleItemActive(${index})" class="${item.active === false ? 'text-slate-400 hover:bg-slate-200' : 'text-emerald-500 hover:bg-emerald-100'} p-1.5 rounded-md mr-1 transition-colors"><i data-lucide="${item.active === false ? 'eye-off' : 'eye'}" width="14"></i></button><button onclick="c_editItem(${index})" class="text-blue-500 hover:bg-blue-100 p-1.5 rounded-md mr-1"><i data-lucide="pencil" width="14"></i></button><button onclick="c_removeItem(${index})" class="text-red-500 hover:bg-red-100 p-1.5 rounded-md"><i data-lucide="trash-2" width="14"></i></button></div></li>`;
@@ -1893,7 +1981,7 @@
             const rows = c_harvestData.map(it => [it.talhao, it.cycle, it.variety, it.commercialVariety, it.boxes, it.dailyUnits, it.active !== false].map(v => String(v ?? '').trim().toLowerCase()).join('|')).sort();
             return f_todayISO() + '#' + rows.join(';');
         }
-        function c_isReleased() { return !!(c_release && c_harvestData.length && c_release.hash === c_releaseHash()); }
+        function c_isReleased() { return !pg_outroDia() && !!(c_release && c_harvestData.length && c_release.hash === c_releaseHash()); }
         function c_releaseChanged() { return !!(c_release && c_release.date === f_todayISO() && !c_isReleased()); }
 
         function c_updateReleaseBtn() {
@@ -1937,7 +2025,10 @@
             input.disabled = locked; input.placeholder = locked ? 'Aguardando liberação' : '';
             input.classList.toggle('bg-slate-100', locked); input.classList.toggle('cursor-not-allowed', locked);
             if (!isSpg) { banner.className = 'hidden'; banner.innerHTML = ''; return; }
-            if (locked) {
+            if (pg_outroDia()) {
+                banner.className = 'bg-slate-50 border border-slate-300 p-4 rounded-2xl flex items-start gap-3';
+                banner.innerHTML = `<i data-lucide="calendar-clock" class="w-5 h-5 text-slate-500 shrink-0 mt-0.5"></i><div><p class="text-sm font-bold text-slate-800">Vendo ${c_dia.split('-').reverse().join('/')}</p><p class="text-xs text-slate-600 mt-0.5 leading-relaxed">Aqui só aparecem os registros da Colheita desse dia. O peso (kg) é lançado só no dia de hoje: toque em <b>Hoje</b> no seletor para pesar.</p></div>`;
+            } else if (locked) {
                 banner.className = 'bg-amber-50 border border-amber-300 p-4 rounded-2xl flex items-start gap-3';
                 banner.innerHTML = `<i data-lucide="lock" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i><div><p class="text-sm font-bold text-amber-800">Peso (kg) bloqueado</p><p class="text-xs text-amber-700 mt-0.5 leading-relaxed">${c_releaseChanged() ? 'Os dados da Colheita mudaram depois da última conferência. ' : ''}Aguardando o colaborador da Colheita conferir os dados e tocar em <b>Liberar Pesagem</b>. Toque em <b>Atualizar</b> para verificar.</p></div>`;
             } else {
@@ -2045,13 +2136,13 @@
         // Troca o dia sem apagar nada: os carregamentos do dia atual ficam guardados e os do novo dia (se houver) voltam
         function f_switchDay(date) {
             if (!date || date === f_data.date) return;
-            c_harvestData.forEach(item => { delete item.fromCampo; delete item.campoCreated; }); c_saveData();
             const archive = f_data.archive || {};
             if (f_data.date && f_data.loads.some(l => l.entries.length)) archive[f_data.date] = f_data.loads; else delete archive[f_data.date];
             const loads = archive[date] || []; delete archive[date];
             const days = Object.keys(archive).sort(); while (days.length > 60) delete archive[days.shift()]; // guarda os últimos 60 dias
             f_data = { date, dateMode: f_data.dateMode || 'auto', loads, archive }; f_editingLoadIdx = -1; f_editingEntryIdx = -1; document.getElementById('f_finalized').checked = false;
             f_save(); f_render();
+            c_seguirSeletor();
         }
 
         // Modo automático: ao virar o dia, passa sozinho para a data de hoje (o dia anterior fica guardado; a aba Colheita continua igual)
@@ -2401,9 +2492,11 @@
         // APP 2: PESAGEM (SPG SEDE)
         // =========================================================================
         function p_saveToStorage() {
-            try { const spgItems = p_harvestData.filter(item => item.partner === PL.proprio); localStorage.setItem(p_STORAGE_KEY, JSON.stringify(spgItems)); } catch (e) { }
+            // Guarda os blocos do SPG e os itens dos parceiros lançados hoje (cada item fica no seu parceiro)
+            try { const hoje = f_todayISO(); const guardar = p_harvestData.filter(item => item.partner === PL.proprio || item.dia === hoje); localStorage.setItem(p_STORAGE_KEY, JSON.stringify(guardar)); } catch (e) { }
             // Só o peso (kg) do dia é compartilhado com os outros aparelhos
             try {
+                if (pg_outroDia()) throw 0;   // vendo outro dia: não mexe no peso de hoje
                 const state = p_getWeightsState(); const json = JSON.stringify(state); const old = localStorage.getItem((PL.pfx + 'p_weights'));
                 if (old !== json) {
                     localStorage.setItem((PL.pfx + 'p_weights'), json);
@@ -2512,6 +2605,7 @@
         }
 
         function p_applyRemoteWeights(weights) {
+            if (pg_outroDia()) return;
             let changed = false;
             p_harvestData.forEach(item => {
                 if (item.partner !== PL.proprio) return;
@@ -2524,7 +2618,7 @@
         function p_loadFromStorage() {
             try {
                 const storedData = localStorage.getItem(p_STORAGE_KEY);
-                if (storedData) { p_harvestData = JSON.parse(storedData); if (p_harvestData.length > 0) { const lastItem = p_harvestData[p_harvestData.length - 1]; if(lastItem.partner) { const partnerSelect = document.getElementById('p_partner'); if(partnerSelect) { partnerSelect.value = lastItem.partner; p_toggleInputMode(); p_updateDynamicTitle(); } } } const storedForecasts = localStorage.getItem((PL.pfx + 'sede_forecasts')); if (storedForecasts) { p_forecastBlocksData = JSON.parse(storedForecasts); } p_renderList(); p_renderReport(); }
+                if (storedData) { p_harvestData = (JSON.parse(storedData) || []).filter(it => it.partner === PL.proprio || it.dia === f_todayISO()); if (p_harvestData.length > 0) { const lastItem = p_harvestData[p_harvestData.length - 1]; if(lastItem.partner) { const partnerSelect = document.getElementById('p_partner'); if(partnerSelect) { partnerSelect.value = lastItem.partner; p_toggleInputMode(); p_updateDynamicTitle(); } } } const storedForecasts = localStorage.getItem((PL.pfx + 'sede_forecasts')); if (storedForecasts) { p_forecastBlocksData = JSON.parse(storedForecasts); } p_renderList(); p_renderReport(); }
             } catch (e) { }
             try { const sp = localStorage.getItem((PL.pfx + 'sede_shiftParams')); if (sp) { const p = JSON.parse(sp); const el = document.getElementById('p_manualTotalEstimate'); if (el && p.manualTotalEstimate) el.value = p.manualTotalEstimate; } } catch(e) {}
             p_loadShiftPanel();
@@ -2555,7 +2649,7 @@
                 if (item && item._colheitaHash === hash) return;
                 if (!item) {
                     // Se outro aparelho já lançou o peso deste bloco hoje, ele já entra aqui
-                    const sharedKg = p_savedWeights()[k] || '';
+                    const sharedKg = pg_outroDia() ? '' : (p_savedWeights()[k] || '');
                     item = { partner: PL.proprio, grossWeight: sharedKg, harvestWeight: sharedKg ? parseNumber(sharedKg).toLocaleString('pt-BR', { maximumFractionDigits: 3 }) : '', averageWeight: '', accumulatedKg: '', transplantDate: '', harvestStartDate: '' }; p_harvestData.push(item);
                 }
                 Object.assign(item, fields); item.fromColheita = true; item._colheitaHash = hash;
@@ -2655,7 +2749,7 @@
             } catch(e) {}
         }
 
-        function p_getFilteredData() { const partnerSelect = document.getElementById('p_partner'); const selectedPartner = partnerSelect ? partnerSelect.value : ''; if (!selectedPartner) return []; let filtered = p_harvestData.filter(item => item.partner === selectedPartner); filtered.sort((a, b) => { if (selectedPartner === PL.proprio) { return String(a.talhao || '').localeCompare(String(b.talhao || ''), 'pt-BR', { numeric: true, sensitivity: 'base' }); } else { return String(a.variety || '').localeCompare(String(b.variety || ''), 'pt-BR', { numeric: true, sensitivity: 'base' }); } }); return filtered; }
+        function p_getFilteredData() { const partnerSelect = document.getElementById('p_partner'); const selectedPartner = partnerSelect ? partnerSelect.value : ''; if (!selectedPartner) return []; let filtered = p_harvestData.filter(item => item.partner === selectedPartner && (selectedPartner === PL.proprio || !item.dia || item.dia === f_todayISO())); filtered.sort((a, b) => { if (selectedPartner === PL.proprio) { return String(a.talhao || '').localeCompare(String(b.talhao || ''), 'pt-BR', { numeric: true, sensitivity: 'base' }); } else { return String(a.variety || '').localeCompare(String(b.variety || ''), 'pt-BR', { numeric: true, sensitivity: 'base' }); } }); return filtered; }
 
         function p_getGroupedData(itemsToGroup, allPartnerItems = []) {
             const grouped = {}; const trueAggregates = {}; const sourceForAggregates = allPartnerItems.length > 0 ? allPartnerItems : itemsToGroup;
@@ -2688,17 +2782,17 @@
         
         function p_toggleInputMode() {
             const partner = document.getElementById('p_partner').value; const totalUnitsInput = document.getElementById('p_totalUnits'); const unitsPerBoxInput = document.getElementById('p_unitsPerBox'); const spgFields = document.getElementById('p_spgOasisFields'); const netWeightWrapper = document.getElementById('p_netWeightWrapper'); const btnZap = document.getElementById('p_btnZap'); const btnImageDefault = document.getElementById('p_btnImageDefault'); const btnImageTecnico = document.getElementById('p_btnImageTecnico'); const btnImageGrupo = document.getElementById('p_btnImageGrupo'); const btnImportCsv = document.getElementById('p_btnImportCsv'); const blocoWrapper = document.getElementById('p_blocoWrapper'); const commVarWrapper = document.getElementById('p_commercialVarietyWrapper'); const parceiroWrapper = document.getElementById('p_parceiroWrapper'); const culturaWrapper = document.getElementById('p_culturaWrapper'); const talhaoInput = document.getElementById('p_talhao'); const unitsPerBoxWrapper = document.getElementById('p_unitsPerBoxWrapper'); const totalUnitsWrapper = document.getElementById('p_totalUnitsWrapper'); const averageWeightWrapper = document.getElementById('p_averageWeightWrapper'); const prodDaysInput = document.getElementById('p_productionDays'); const plantedInput = document.getElementById('p_plantedUnits'); const accumInput = document.getElementById('p_accumulatedUnits'); const labelTotalUnits = document.getElementById('p_labelTotalUnits'); const labelUnitsPerBox = document.getElementById('p_labelUnitsPerBox'); const infoLabel = document.getElementById('p_infoLabel'); const additionalInfoWrapper = document.getElementById('p_additionalInfoWrapper'); const submitBtn = document.getElementById('p_submitBtn');            if (partner === '') {
-                blocoWrapper.classList.add('hidden'); commVarWrapper.classList.add('hidden'); parceiroWrapper.classList.add('col-span-2'); culturaWrapper.classList.add('col-span-2'); additionalInfoWrapper.classList.add('hidden'); submitBtn.classList.add('hidden'); netWeightWrapper.classList.add('hidden'); unitsPerBoxWrapper.classList.add('hidden'); totalUnitsWrapper.classList.add('hidden'); averageWeightWrapper.classList.add('hidden'); spgFields.classList.add('hidden');                if (btnZap) btnZap.style.display = 'flex'; if (btnImageDefault) btnImageDefault.style.display = 'flex'; if (btnImageTecnico) btnImageTecnico.style.display = 'none'; if (btnImageGrupo) btnImageGrupo.style.display = 'none'; if (btnImportCsv) btnImportCsv.classList.add('hidden');
+                blocoWrapper.classList.add('hidden'); commVarWrapper.classList.add('hidden'); parceiroWrapper.classList.add('col-span-2'); culturaWrapper.classList.add('col-span-2'); additionalInfoWrapper.classList.add('hidden'); submitBtn.classList.add('hidden'); netWeightWrapper.classList.add('hidden'); unitsPerBoxWrapper.classList.add('hidden'); totalUnitsWrapper.classList.add('hidden'); averageWeightWrapper.classList.add('hidden'); spgFields.classList.add('hidden');                if (btnZap) btnZap.style.display = 'none'; { const bp = document.getElementById('p_btnImagemParceiro'); if (bp) bp.style.display = 'flex'; } if (btnImageDefault) btnImageDefault.style.display = 'none'; if (btnImageTecnico) btnImageTecnico.style.display = 'none'; if (btnImageGrupo) btnImageGrupo.style.display = 'none'; if (btnImportCsv) btnImportCsv.classList.add('hidden');
                 talhaoInput.required = false; const cvInput = document.getElementById('p_commercialVariety'); if (cvInput) cvInput.required = false; totalUnitsInput.required = false; unitsPerBoxInput.required = false; prodDaysInput.required = false; plantedInput.required = false; accumInput.required = false; infoLabel.innerText = "Informações Adicionais";
             } else if (partner === PL.proprio) {
                 blocoWrapper.classList.remove('hidden'); commVarWrapper.classList.remove('hidden'); parceiroWrapper.classList.remove('col-span-2'); culturaWrapper.classList.remove('col-span-2'); additionalInfoWrapper.classList.remove('hidden'); submitBtn.classList.remove('hidden'); talhaoInput.required = true;                const cvInput = document.getElementById('p_commercialVariety'); if (cvInput && !cvInput.disabled) cvInput.required = true; spgFields.classList.remove('hidden'); netWeightWrapper.classList.add('hidden');
-                if (btnZap) btnZap.style.display = 'flex'; if (btnImageDefault) btnImageDefault.style.display = 'none'; if (btnImageTecnico) btnImageTecnico.style.display = 'flex'; if (btnImageGrupo) btnImageGrupo.style.display = 'flex'; if (btnImportCsv) btnImportCsv.classList.remove('hidden');
+                if (btnZap) btnZap.style.display = 'flex'; { const bp = document.getElementById('p_btnImagemParceiro'); if (bp) bp.style.display = 'none'; } if (btnImageDefault) btnImageDefault.style.display = 'none'; if (btnImageTecnico) btnImageTecnico.style.display = 'flex'; if (btnImageGrupo) btnImageGrupo.style.display = 'flex'; if (btnImportCsv) btnImportCsv.classList.remove('hidden');
                 totalUnitsInput.removeAttribute('readonly'); totalUnitsInput.classList.remove('bg-emerald-50', 'border-emerald-200', 'text-emerald-800'); totalUnitsInput.classList.add('bg-white', 'border-slate-300', 'text-slate-800'); totalUnitsInput.setAttribute('oninput', 'formatNumberInput(this); p_calculateValues()'); totalUnitsInput.placeholder = "Ex: 5000"; labelTotalUnits.classList.remove('text-emerald-600'); labelTotalUnits.classList.add('text-slate-500'); labelTotalUnits.innerText = "Total de Unidades (Hoje)";
                 unitsPerBoxInput.setAttribute('readonly', true); unitsPerBoxInput.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800'); unitsPerBoxInput.classList.remove('bg-white', 'border-slate-300'); unitsPerBoxInput.removeAttribute('oninput'); unitsPerBoxInput.placeholder = "Calc. Auto"; labelUnitsPerBox.classList.add('text-emerald-600'); labelUnitsPerBox.classList.remove('text-slate-500'); labelUnitsPerBox.innerText = "Média Unid. p/ Caixa (Auto)";
                 totalUnitsInput.required = true; unitsPerBoxInput.required = false; prodDaysInput.required = true; plantedInput.required = true; accumInput.required = true; infoLabel.innerText = "Informações da Colheita de Hoje"; unitsPerBoxWrapper.classList.add('hidden'); unitsPerBoxWrapper.classList.remove('col-span-2'); averageWeightWrapper.classList.add('hidden'); totalUnitsWrapper.classList.remove('hidden'); totalUnitsWrapper.classList.add('col-span-2');
             } else {
                 blocoWrapper.classList.add('hidden'); commVarWrapper.classList.add('hidden'); parceiroWrapper.classList.add('col-span-2'); culturaWrapper.classList.add('col-span-2'); additionalInfoWrapper.classList.remove('hidden'); submitBtn.classList.remove('hidden'); talhaoInput.required = false;                const cvInput = document.getElementById('p_commercialVariety'); if (cvInput) cvInput.required = false; spgFields.classList.add('hidden'); netWeightWrapper.classList.add('hidden');
-                if (btnZap) btnZap.style.display = 'flex'; if (btnImageDefault) btnImageDefault.style.display = 'flex'; if (btnImageTecnico) btnImageTecnico.style.display = 'none'; if (btnImageGrupo) btnImageGrupo.style.display = 'none'; if (btnImportCsv) btnImportCsv.classList.add('hidden');
+                if (btnZap) btnZap.style.display = 'none'; { const bp = document.getElementById('p_btnImagemParceiro'); if (bp) bp.style.display = 'flex'; } if (btnImageDefault) btnImageDefault.style.display = 'none'; if (btnImageTecnico) btnImageTecnico.style.display = 'none'; if (btnImageGrupo) btnImageGrupo.style.display = 'none'; if (btnImportCsv) btnImportCsv.classList.add('hidden');
                 totalUnitsInput.setAttribute('readonly', true); totalUnitsInput.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800'); totalUnitsInput.classList.remove('bg-white', 'border-slate-300', 'text-slate-800'); totalUnitsInput.removeAttribute('oninput'); totalUnitsInput.placeholder = "Calc. Auto"; labelTotalUnits.classList.add('text-emerald-600'); labelTotalUnits.classList.remove('text-slate-500'); labelTotalUnits.innerText = "Total Unidades - Auto";
                 unitsPerBoxInput.removeAttribute('readonly'); unitsPerBoxInput.classList.remove('bg-emerald-50', 'border-emerald-200', 'text-emerald-800'); unitsPerBoxInput.classList.add('bg-white', 'border-slate-300'); unitsPerBoxInput.setAttribute('oninput', 'formatNumberInput(this); p_calculateValues()'); unitsPerBoxInput.placeholder = "Ex: 18"; labelUnitsPerBox.classList.remove('text-emerald-600'); labelUnitsPerBox.classList.add('text-slate-500'); labelUnitsPerBox.innerText = "Média Unid. p/ Caixa";
                 totalUnitsInput.required = false; unitsPerBoxInput.required = true; prodDaysInput.required = false; plantedInput.required = false; accumInput.required = false; infoLabel.innerText = "Informações Adicionais"; unitsPerBoxWrapper.classList.remove('hidden'); unitsPerBoxWrapper.classList.add('col-span-2'); averageWeightWrapper.classList.add('hidden'); totalUnitsWrapper.classList.add('hidden');
@@ -2936,7 +3030,7 @@
             return porCultura;
         }
         window.pk_localAgendar = function () {
-            if (!isAuthPesagem) return;
+            if (!isAuthPesagem || pg_outroDia()) return;
             clearTimeout(pk_localTimer);
             pk_localTimer = setTimeout(() => {
                 const data = f_todayISO(), agora = pk_localTotais();
@@ -2972,7 +3066,8 @@
             const plantedRawVal = document.getElementById('p_plantedUnits').value; const accumRawVal = document.getElementById('p_accumulatedUnits').value; const totalBlockRaw = document.getElementById('p_totalBlockPlants').value;
             const calcPercentage = parseNumber(plantedRawVal) > 0 ? Math.round((parseNumber(accumRawVal) / parseNumber(plantedRawVal)) * 100) : 0; const calcBlockPercentage = parseNumber(totalBlockRaw) > 0 ? Math.round((parseNumber(accumRawVal) / parseNumber(totalBlockRaw)) * 100) : 0;
             const newItem = { partner: document.getElementById('p_partner').value, talhao: document.getElementById('p_talhao').value, variety: document.getElementById('p_variety').value, commercialVariety: document.getElementById('p_commercialVariety').value, boxes: document.getElementById('p_boxes').value, grossWeight: document.getElementById('p_grossWeight').value, unitsPerBox: document.getElementById('p_unitsPerBox').value, harvestWeight: document.getElementById('p_harvestWeight').value, totalUnits: document.getElementById('p_totalUnits').value, averageWeight: document.getElementById('p_averageWeight').value, productionDays: document.getElementById('p_productionDays').value, totalBlockPlants: totalBlockRaw, plantedUnits: plantedRawVal, cycle: document.getElementById('p_cycle').value, accumulatedUnits: accumRawVal, accumulatedKg: document.getElementById('p_accumulatedKg').value, totalBlockKg: document.getElementById('p_totalBlockKg').value, percentage: calcPercentage, blockPercentage: calcBlockPercentage, status: document.getElementById('p_harvestStatus').value, estimatedCompletion: document.getElementById('p_estimatedCompletion').value, blockEstimatedBoxes: document.getElementById('p_blockEstimatedBoxes').value };
-            if (p_editingIndex >= 0) { const old = p_harvestData[p_editingIndex]; newItem.active = old.active !== false; if (old.packingId && old.partner === newItem.partner) newItem.packingId = old.packingId; else if (old.packingId) pk_itemRemovido(old); if (old.fromColheita) { newItem.fromColheita = true; newItem._colheitaHash = old._colheitaHash; newItem.transplantDate = old.transplantDate; newItem.harvestStartDate = old.harvestStartDate; } p_harvestData[p_editingIndex] = newItem; p_editingIndex = -1; } else { newItem.active = true; p_harvestData.push(newItem); }
+            if (newItem.partner !== PL.proprio) newItem.dia = f_todayISO();
+            if (p_editingIndex >= 0) { const old = p_harvestData[p_editingIndex]; newItem.active = old.active !== false; if (newItem.partner !== PL.proprio && old.dia) newItem.dia = old.dia; if (old.packingId && old.partner === newItem.partner) newItem.packingId = old.packingId; else if (old.packingId) pk_itemRemovido(old); if (old.fromColheita) { newItem.fromColheita = true; newItem._colheitaHash = old._colheitaHash; newItem.transplantDate = old.transplantDate; newItem.harvestStartDate = old.harvestStartDate; } p_harvestData[p_editingIndex] = newItem; p_editingIndex = -1; } else { newItem.active = true; p_harvestData.push(newItem); }
             p_saveToStorage(); p_clearBlockForm(); p_renderReport(); p_renderList();
             pk_itemSalvo(newItem);
             p_scheduleSyncFromColheita();
@@ -3248,6 +3343,74 @@
                 return await htmlToImage.toPng(clone, { pixelRatio: 5, cacheBust: true, backgroundColor: '#ffffff' });
             } finally {
                 document.body.removeChild(cloneHost);
+            }
+        }
+
+        // -------------------------------------------------------------
+        // IMAGEM SIMPLES PARA O PARCEIRO (no lugar do Texto Zap)
+        // Só o que o parceiro precisa: data da colheita, caixas, peso (kg) e média de unidades por caixa
+        // -------------------------------------------------------------
+        async function p_imagemParceiro() {
+            const parceiro = (document.getElementById('p_partner') || {}).value || '';
+            const itens = p_getFilteredData().filter(it => it.active !== false);
+            if (!parceiro || parceiro === PL.proprio) return;
+            if (!itens.length) { showAlert('Sem dados', ['Adicione ao menos um item deste parceiro.'], 'error'); return; }
+            const btn = document.getElementById('p_btnImagemParceiro'); const span = btn ? btn.querySelector('span') : null; const texto = span ? span.innerText : '';
+            if (btn) btn.disabled = true; if (span) span.innerText = 'Gerando...';
+            const host = document.createElement('div');
+            host.style.cssText = 'position:fixed;left:-100000px;top:0;z-index:-1;background:#fff';
+            try {
+                const dia = itens[0].dia || f_todayISO();
+                const d = new Date(dia + 'T12:00:00');
+                let semana = d.toLocaleDateString('pt-BR', { weekday: 'long' }); semana = semana.charAt(0).toUpperCase() + semana.slice(1);
+                const dataBR = dia.split('-').reverse().join('/');
+                const fmt = (n, c = 0) => (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: c });
+                const linhas = itens.map(it => {
+                    const cx = parseNumber(it.boxes), kg = parseNumber(it.harvestWeight || it.grossWeight), un = parseNumber(it.totalUnits);
+                    const media = parseNumber(it.unitsPerBox) || (cx > 0 && un > 0 ? un / cx : 0);
+                    return { nome: [it.variety, it.commercialVariety].filter(Boolean).join(' · ') || 'Colheita', cx, kg, un, media };
+                });
+                const tot = linhas.reduce((t, l) => ({ cx: t.cx + l.cx, kg: t.kg + l.kg, un: t.un + l.un }), { cx: 0, kg: 0, un: 0 });
+                const valor = (rotulo, v) => `<div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px 8px;text-align:center"><div style="font-size:24px;font-weight:900;color:#0f172a;line-height:1.1">${v}</div><div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-top:4px">${rotulo}</div></div>`;
+                const bloco = l => `<div style="margin-top:14px">
+                        ${linhas.length > 1 ? `<div style="font-size:14px;font-weight:800;color:#334155;margin-bottom:6px">${pg_esc(l.nome)}</div>` : ''}
+                        ${numeros(l.cx, l.un > 0 ? l.un : l.media * l.cx, l.media, l.kg)}
+                    </div>`;
+                const mediaTotal = tot.cx > 0 && tot.un > 0 ? tot.un / tot.cx : 0;
+                const gramas = (kg, un) => kg > 0 && un > 0 ? fmt(kg * 1000 / un, 1) + ' g' : '-';
+                // Ordem: Peso (kg) → Unidades → Peso médio → Caixas
+                const numeros = (cx, un, media, kg) => `<div style="display:flex;gap:8px">${valor('Peso (kg)', kg > 0 ? fmt(kg, 2) : '-')}${valor('Unidades', un > 0 ? fmt(un) : '-')}</div>
+                        <div style="display:flex;gap:8px;margin-top:8px">${valor('Peso médio', gramas(kg, un))}${valor('Caixas', fmt(cx))}</div>`;
+                host.innerHTML = `<div id="pgImgParceiro" style="width:480px;background:#ffffff;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;border-radius:0">
+                    <div style="background:linear-gradient(135deg,#047857,#065f46);color:#fff;padding:18px 20px;display:flex;align-items:center;gap:14px">
+                        <img src="${document.getElementById('nav-logo') ? document.getElementById('nav-logo').src : '../resumo-colheita-oasis/logo-spg-sede.png'}" alt="" style="width:58px;height:58px;border-radius:14px;background:#fff;object-fit:contain;padding:3px;flex-shrink:0">
+                        <div style="min-width:0">
+                            <div style="font-size:22px;font-weight:900;line-height:1.15">${pg_esc(parceiro)}</div>
+                            <div style="font-size:14px;font-weight:700;opacity:.9;margin-top:4px">Colheita de ${semana}, ${dataBR}</div>
+                        </div>
+                    </div>
+                    <div style="padding:6px 18px 18px">
+                        ${linhas.length === 1 ? `<div style="font-size:13px;font-weight:700;color:#64748b;margin-top:12px">${pg_esc(linhas[0].nome)}</div>` : ''}
+                        ${linhas.map(bloco).join('')}
+                        ${linhas.length > 1 ? `<div style="margin-top:16px;padding-top:12px;border-top:2px dashed #e2e8f0"><div style="font-size:14px;font-weight:900;color:#047857;margin-bottom:6px">TOTAL</div>${numeros(tot.cx, tot.un, mediaTotal, tot.kg)}</div>` : ''}
+                    </div>
+                    <div style="background:#f1f5f9;color:#94a3b8;font-size:10px;font-weight:700;text-align:center;padding:8px;text-transform:uppercase;letter-spacing:.06em">${pg_esc(PL.rodape)} · Pesagem</div>
+                </div>`;
+                document.body.appendChild(host);
+                const el = host.firstElementChild;
+                // Espera a logo carregar antes de gerar
+                await Promise.all([...el.querySelectorAll('img')].map(img => img.complete ? null : new Promise(r => { img.onload = r; img.onerror = r; })));
+                const largura = el.offsetWidth, altura = el.offsetHeight;
+                const pixelRatio = Math.max(1, Math.min(3, Math.sqrt(15e6 / (largura * altura))));
+                const url = await htmlToImage.toPng(el, { pixelRatio, cacheBust: true, backgroundColor: '#ffffff' });
+                const nome = `Colheita ${parceiro} - ${dataBR.replace(/\//g, '-')}.png`;
+                // Baixa o arquivo
+                const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+            } catch (err) {
+                showAlert('Erro', ['Não foi possível gerar a imagem: ' + (err && err.message ? err.message : 'erro')], 'error');
+            } finally {
+                host.remove();
+                if (btn) btn.disabled = false; if (span) span.innerText = texto;
             }
         }
 

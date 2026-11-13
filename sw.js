@@ -1,4 +1,4 @@
-const CACHE = 'sistema-v247';
+const CACHE = 'sistema-v293';
 
 // Arquivos do próprio app. Este service worker fica na raiz e atende todos os projetos.
 const ARQUIVOS_APP = [
@@ -43,6 +43,8 @@ const ARQUIVOS_APP = [
   './projetos/aplicacoes-fitossanitarias/backend.js',
   './projetos/aplicacoes-fitossanitarias/logo.png',
   './projetos/descarte-parceiros/index.html',
+  './projetos/programacao-fito/index.html',
+  './projetos/leituras/index.html',
   './projetos/produtividade-packing/',
   './projetos/produtividade-packing/index.html',
   './projetos/estoque-diario/',

@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Programação Fitossanitária | Painel SPG</title>
+    <link rel="icon" type="image/png" href="../../favicon.png">
+    <link rel="apple-touch-icon" href="../../icone-app.png">
+    <link rel="manifest" href="../../manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Programação Fito">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="../../supabase-config.js"></script>
+    <script src="../../supabase-api.js"></script>                         <!-- window.IrrigacaoAPI: login, módulos, fila offline -->
+    <script src="../../dialogo.js"></script>                              <!-- pop-ups modernos (no lugar de alert/confirm) -->
+    <script src="../../lista-moderna.js"></script>
+    <script src="../../trava-fundo.js"></script>
+    <script src="../../barra-abas.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        input, select, textarea { line-height: 1.5; user-select: text; }
+        /* Mesmo visual da Irrigação: barra de vidro claro com um fio de cor no topo */
+        #navbar {
+            background: rgba(255,255,255,0.78);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            backdrop-filter: blur(18px) saturate(180%);
+            border-bottom: 1px solid rgba(226,232,240,0.9);
+            box-shadow: 0 6px 24px -18px rgba(15,23,42,0.35);
+            padding-top: max(.625rem, env(safe-area-inset-top));
+        }
+        #navbar::before {
+            content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; pointer-events: none;
+            background: linear-gradient(90deg, #84cc16, #22c55e 35%, #10b981 70%, #0ea5e9);
+        }
+        @media (min-width: 1024px) {
+            #navbar { padding-left: max(1rem, calc((100% - 1400px) / 2 + 1rem)); padding-right: max(1rem, calc((100% - 1400px) / 2 + 1rem)); }
+        }
+        .rotulo { display: flex; align-items: center; gap: .375rem; margin-bottom: .5rem; font-size: .7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+        .campo { width: 100%; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: .75rem; padding: .65rem .9rem; font-size: .875rem; font-weight: 500; color: #1e293b; transition: all .15s; min-height: 2.75rem; }
+        .campo[readonly] { background: #f1f5f9; color: #64748b; }
+        input[type=date].campo, input[type=time].campo { -webkit-appearance: none; appearance: none; min-width: 0; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #4ade80 !important; background-color: #fff !important; box-shadow: 0 0 0 3px rgba(74,222,128,0.15); }
+        .btn-principal { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem; padding: 0 1rem; border-radius: .75rem; font-weight: 700; font-size: .75rem; color: #fff; background-image: linear-gradient(to bottom, #10b981, #059669); box-shadow: 0 4px 6px -1px rgba(5,150,105,.25); outline: 1px solid rgba(4,120,87,.2); transition: transform .1s; }
+        .btn-principal:active, .btn-sec:active { transform: scale(.95); }
+        .btn-principal:disabled { opacity: .55; }
+        .btn-sec { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 2.75rem; padding: 0 .9rem; border-radius: .75rem; font-weight: 700; font-size: .75rem; color: #475569; background: #fff; box-shadow: inset 0 0 0 1px #e2e8f0; transition: transform .1s, background-color .15s; }
+        .btn-sec:hover { background: #f8fafc; }
+        .btn-sec.hidden, .btn-principal.hidden { display: none; }
+        .btn-perigo { color: #dc2626; box-shadow: inset 0 0 0 1px #fecaca; }
+        .btn-perigo:hover { background: #fef2f2; }
+        .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
+        .st-PENDENTE  { background: #fef3c7; color: #92400e; }
+        .st-PARCIAL   { background: #dbeafe; color: #1e40af; }
+        .st-CONCLUIDA { background: #dcfce7; color: #166534; }
+        .st-ATRASADA  { background: #fee2e2; color: #991b1b; }
+        .st-FEITO     { background: #dcfce7; color: #166534; }
+        .st-NAO_FEITO { background: #fee2e2; color: #991b1b; }
+        /* Escolha Feito / Não feito e Sim / Não do checklist */
+        .opcao-exec { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; border-radius: 1rem; background: #fff; box-shadow: inset 0 0 0 2px #e2e8f0; font-weight: 800; font-size: 14px; color: #64748b; transition: all .15s; }
+        .opcao-exec:hover { background: #f8fafc; }
+        .opcao-exec:active { transform: scale(.97); }
+        .opcao-exec.on-ok    { background: #059669; color: #fff; box-shadow: 0 4px 10px -3px rgba(5,150,105,.45); }
+        .opcao-exec.on-nok   { background: #e11d48; color: #fff; box-shadow: 0 4px 10px -3px rgba(225,29,72,.45); }
+        .opcao-exec.on-aviso { background: #f59e0b; color: #fff; box-shadow: 0 4px 10px -3px rgba(245,158,11,.45); }
+        details > summary::-webkit-details-marker { display: none; }
+        .thumb { width: 72px; height: 72px; border-radius: 12px; object-fit: cover; border: 1.5px solid #e2e8f0; background: #f1f5f9; }
+        .foto-slot { border: 2px dashed #e2e8f0; border-radius: 1rem; padding: .65rem .75rem; background: #f8fafc; }
+        .prod-tabela td { padding: 7px 10px; border-bottom: 1px solid #eef2f7; font-size: 13px; }
+        .prod-tabela tr:last-child td { border-bottom: none; }
+        .entra { animation: entra .25s ease-out; }
+        @keyframes entra { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen pb-24 select-none">
+
+    <!-- Barra do topo -->
+    <div id="navbar" class="text-slate-900 px-4 py-2.5 flex justify-between items-center gap-3 sticky top-0 z-40">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <a id="btnMenuProjetos" href="../../index.html" title="Menu de projetos" aria-label="Menu de projetos" class="hidden w-8 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 ring-1 ring-slate-200/80 shrink-0"><i data-lucide="layout-grid" class="w-4 h-4"></i></a>
+            <img src="../../icone-app.png" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm ring-1 ring-black/5 shrink-0">
+            <div class="min-w-0">
+                <h1 class="text-sm sm:text-[15px] font-extrabold leading-tight tracking-tight text-slate-900 truncate">Programação Fitossanitária</h1>
+                <p class="text-[10px] font-semibold text-slate-400 tracking-wide truncate">SPG Sede · Aplicações por bloco e checklist</p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Abas e filtros: ficam presos abaixo da barra do topo ao rolar (abas no celular: barra flutuante do rodapé) -->
+    <div id="barraFixa" class="sticky z-30 bg-slate-50/90 backdrop-blur-md" style="top: var(--altura-navbar, 60px);">
+        <div class="max-w-md lg:max-w-[1400px] mx-auto px-4 pt-3 pb-3 space-y-2.5">
+            <div class="hidden lg:block">
+                <div id="abasFito" role="tablist" aria-label="Seções" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1 lg:max-w-md"></div>
+            </div>
+            <div id="barraFiltros" class="flex flex-wrap items-center gap-2">
+                <div id="filtrosLista" role="tablist" aria-label="Filtrar programações" class="flex bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1"></div>
+                <button id="btnNova" type="button" onclick="novaProgramacao()" class="hidden btn-principal ml-auto"><i data-lucide="plus" class="w-4 h-4"></i> Nova programação</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-md lg:max-w-[1400px] mx-auto px-4 pt-1 pb-4">
+
+        <!-- ================= LISTA ================= -->
+        <section id="view-lista" class="space-y-4">
+            <div id="listaProgramacoes" class="space-y-6"></div>
+        </section>
+
+        <!-- ================= EDITOR (quem programa) ================= -->
+        <section id="view-editor" class="hidden space-y-4 max-w-3xl mx-auto">
+            <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center"><i data-lucide="calendar-plus" class="w-5 h-5 text-emerald-600"></i></div>
+                    <div class="min-w-0">
+                        <h2 id="editorTitulo" class="text-sm font-extrabold text-slate-800">Nova programação diária</h2>
+                        <p class="text-[11px] font-semibold text-slate-400">Data, turno e as operações por bloco</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="rotulo" for="edData"><i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-500"></i> Data</label><input id="edData" type="date" class="campo" onchange="atualizarDiaSemana()"></div>
+                    <div><label class="rotulo" for="edDia"><i data-lucide="calendar-days" class="w-3.5 h-3.5 text-emerald-500"></i> Dia da semana</label><input id="edDia" type="text" class="campo" readonly></div>
+                    <div><label class="rotulo" for="edTurno"><i data-lucide="sun-moon" class="w-3.5 h-3.5 text-emerald-500"></i> Turno</label>
+                        <select id="edTurno" class="campo"><option>NOITE</option><option>MANHÃ</option><option>TARDE</option><option>DIA TODO</option></select></div>
+                    <div><label class="rotulo" for="edResp"><i data-lucide="user" class="w-3.5 h-3.5 text-emerald-500"></i> Programado por</label><input id="edResp" type="text" class="campo" placeholder="Seu nome"></div>
+                    <div class="col-span-2"><label class="rotulo" for="edObs"><i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-500"></i> Observação geral (opcional)</label><input id="edObs" type="text" class="campo" placeholder="Ex.: conferir estoque de Speed Oil"></div>
+                </div>
+            </div>
+            <div id="editorOperacoes" class="space-y-4"></div>
+            <button type="button" onclick="adicionarOperacao()" class="w-full min-h-[52px] flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-emerald-300 text-emerald-700 font-bold text-sm bg-emerald-50/40 hover:bg-emerald-50"><i data-lucide="plus-circle" class="w-5 h-5"></i> Adicionar operação (bloco)</button>
+            <div class="flex gap-2">
+                <button type="button" onclick="irPara('lista')" class="btn-sec">Cancelar</button>
+                <button type="button" id="btnSalvarProg" onclick="salvarProgramacao()" class="btn-principal flex-1 !text-sm"><i data-lucide="save" class="w-4 h-4"></i> Salvar programação</button>
+            </div>
+        </section>
+
+        <!-- ================= EXECUÇÃO (checklist de quem aplica) ================= -->
+        <section id="view-exec" class="hidden space-y-4 max-w-3xl mx-auto">
+            <div id="execCabecalho"></div>
+            <div id="execJornada"></div>
+            <div id="execOperacoes" class="space-y-4"></div>
+        </section>
+
+        <!-- ================= MODELOS ================= -->
+        <section id="view-modelos" class="hidden space-y-4">
+            <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 flex items-start gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center shrink-0"><i data-lucide="library" class="w-5 h-5 text-emerald-600"></i></div>
+                <p class="text-xs font-medium text-slate-500 leading-relaxed">Todo grupo de produtos usado numa programação vira um modelo com o nome da aplicação. Para criar ou atualizar um modelo, use <b>Salvar como modelo</b> dentro da programação. Os modelos valem para todos.</p>
+            </div>
+            <div id="listaModelos" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+        </section>
+    </main>
+
+    <!-- Área oculta onde as imagens são montadas -->
+    <div id="areaExport" style="position:fixed;left:-10000px;top:0;"></div>
+
+    <!-- Imagem para enviar -->
+    <div id="imagemModal" class="hidden fixed inset-0 bg-slate-900/70 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="imagemTitulo">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[92vh] flex flex-col entra">
+            <div class="p-4 border-b border-slate-100 flex items-center gap-2">
+                <i data-lucide="image" class="w-5 h-5 text-emerald-600"></i>
+                <h3 id="imagemTitulo" class="font-extrabold text-slate-800 flex-1">Imagem</h3>
+                <button type="button" onclick="fecharImagem()" aria-label="Fechar" class="p-2 rounded-xl hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-3 overflow-auto bg-slate-100 flex-1"><img id="imagemPreview" class="w-full rounded-xl shadow" alt="Pré-visualização"></div>
+            <div class="p-4 flex gap-2">
+                <button type="button" onclick="baixarImagem()" class="btn-sec"><i data-lucide="download" class="w-4 h-4"></i> Baixar</button>
+                <button type="button" onclick="compartilharImagem()" class="btn-principal flex-1"><i data-lucide="send" class="w-4 h-4"></i> Enviar para o WhatsApp</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Foto ampliada -->
+    <div id="fotoModal" class="hidden fixed inset-0 bg-black/85 z-[60] flex flex-col items-center justify-center p-4" onclick="if (event.target === this) fecharFoto()">
+        <img id="fotoGrande" class="max-w-full max-h-[78vh] rounded-xl shadow-2xl bg-white" alt="Foto">
+        <div class="flex gap-2 mt-4">
+            <a id="fotoDrive" href="#" target="_blank" rel="noopener" class="btn-sec"><i data-lucide="external-link" class="w-4 h-4"></i> Abrir no Drive</a>
+            <button type="button" class="btn-sec" onclick="fecharFoto()">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Pedir um texto (nome do modelo) -->
+    <div id="textoModal" class="hidden fixed inset-0 bg-slate-900/60 z-[70] flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="textoTitulo">
+        <div class="bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 entra">
+            <h3 id="textoTitulo" class="text-base font-extrabold text-slate-800"></h3>
+            <p id="textoTexto" class="text-xs font-medium text-slate-500 mt-1 mb-3 leading-relaxed"></p>
+            <input id="textoCampo" type="text" class="campo" maxlength="80" autocomplete="off">
+            <div class="flex gap-2 mt-4">
+                <button type="button" id="textoCancelar" class="btn-sec flex-1">Cancelar</button>
+                <button type="button" id="textoOk" class="btn-principal flex-1">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carregando -->
+    <div id="carregandoModal" class="hidden fixed inset-0 bg-slate-900/50 z-[80] flex items-center justify-center p-6" role="status">
+        <div class="bg-white rounded-3xl p-6 flex flex-col items-center gap-3 shadow-2xl max-w-xs w-full">
+            <i data-lucide="loader-circle" class="w-9 h-9 text-emerald-600 animate-spin"></i>
+            <p id="carregandoTexto" class="font-bold text-sm text-slate-700 text-center">Carregando...</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  PROGRAMAÇÃO FITOSSANITÁRIA (antigo app "programacao-fito-check")
+        //  Dados no Supabase (supabase/programacao_fito.sql); fotos no Google Drive pela
+        //  Edge Function "fotos-drive" (projeto "fito"). A senha do programador virou a
+        //  permissão "Programar" no Cadastro de Usuários.
+        // ============================================================
+        const API = window.IrrigacaoAPI;
+        const sb = API.cliente;
+        if (!API.usuarioAtual() || !API.temModulo('programacao_fito')) location.replace('../../index.html');
+        (async () => {
+            if (!navigator.onLine) return;
+            if (!await API.sessaoValida()) { location.replace('../../index.html'); return; }
+            try { await API.atualizarPerfil(); } catch (e) { return; }
+            if (!API.temModulo('programacao_fito')) location.replace('../../index.html');
+            atualizarPermissoes();
+        })();
+        const podeProgramar = () => API.temModulo('programacao_fito_programar');
+
+        // Exige foto do pH e do volume para marcar uma operação como FEITA
+        const EXIGIR_FOTOS = true;
+        const TIPOS = ['PULVERIZAÇÃO FOLIAR', 'APLICAÇÃO EM DRENCH', 'DEFENSIVO INSETICIDA', 'DEFENSIVO FUNGICIDA', 'HERBICIDA', 'FERTIRRIGAÇÃO', 'OUTRO'];
+        const UNIDADES = ['L', 'mL', 'kg', 'g'];
+        const DIAS = ['DOMINGO', 'SEGUNDA-FEIRA', 'TERÇA-FEIRA', 'QUARTA-FEIRA', 'QUINTA-FEIRA', 'SEXTA-FEIRA', 'SÁBADO'];
+        const STATUS_LABEL = { PENDENTE: 'Pendente', PARCIAL: 'Em andamento', CONCLUIDA: 'Concluída', ATRASADA: 'Atrasada', FEITO: 'Feito', NAO_FEITO: 'Não feito' };
+
+        let programacoes = [];
+        let modelos = [];
+        let filtro = 'pendentes';
+        let aba = 'programacoes';
+        let viewAtual = 'lista';
+        let editor = null;       // { id, originais: [ids], operacoes: [...] }
+        let atual = null;        // programação aberta no checklist
+        let rascunhos = {};      // rascunho do registro de cada operação
+        let editandoExec = {};   // operações já registradas reabertas para alteração
+
+        // ------------------------------------------------------------
+        //  Utilidades
+        // ------------------------------------------------------------
+        const el = id => document.getElementById(id);
+        const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        // Volume da calda sem o "L" repetido (alguns vieram como "800 L")
+        const litros = v => String(v || '').trim().replace(/\s*(l|litros?)\s*$/i, '');
+        const icones = () => { if (window.lucide) lucide.createIcons(); };
+        function fmtData(iso) { if (!iso) return ''; const [y, m, d] = String(iso).slice(0, 10).split('-'); return `${d}/${m}/${y}`; }
+        function diaDaSemana(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-').map(Number); return DIAS[new Date(y, m - 1, d).getDay()]; }
+        function hojeISO() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+        function agoraTexto() { const d = new Date(); return `${hojeISO()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+        function agoraHHMM() { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
+        function lerGuardado(k) { try { return localStorage.getItem('fito_' + k) || ''; } catch (e) { return ''; } }
+        function guardar(k, v) { try { localStorage.setItem('fito_' + k, v); } catch (e) { } }
+        function minutos(h) { if (!/^\d{2}:\d{2}$/.test(h || '')) return null; const [hh, mm] = h.split(':').map(Number); return hh * 60 + mm; }
+        function fmtDuracao(min) { if (min === null || isNaN(min) || min < 0) return ''; const h = Math.floor(min / 60), m = min % 60; return h ? `${h}h${m ? String(m).padStart(2, '0') : ''}` : `${m} min`; }
+        function diasEntre(a, b) { const [x, y] = [a, b].map(s => { const [ano, m, d] = s.split('-').map(Number); return Date.UTC(ano, m - 1, d); }); return Math.round((y - x) / 86400000); }
+        function duracaoAplicacao(dataProg, inicio, fim, mesmoDia, dataConclusao) {
+            const a = minutos(inicio), b = minutos(fim);
+            if (a === null || b === null) return null;
+            if (mesmoDia === 'NAO' && dataConclusao) return diasEntre(dataProg, dataConclusao) * 1440 + b - a;
+            return b - a;
+        }
+        function intervalo(inicio, fim) { const a = minutos(inicio), b = minutos(fim); if (a === null || b === null) return null; return b >= a ? b - a : b + 1440 - a; }
+        function somarDias(iso, n) { const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d + n); return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`; }
+        function resumoJornada(p) {
+            if (!p.equipeInicio) return '';
+            const total = p.equipeFim ? intervalo(p.equipeInicio, p.equipeFim) : null;
+            const descanso = p.descansoInicio ? intervalo(p.descansoInicio, p.descansoFim) : 0;
+            const trabalhado = total === null ? null : total - (descanso || 0);
+            return `Equipe: ${p.equipeInicio} → ${p.equipeFim || '…'}${p.descansoInicio ? ` · descanso ${p.descansoInicio}–${p.descansoFim}` : ''}${trabalhado !== null ? ` · ${fmtDuracao(trabalhado)} trabalhadas` : ''}`;
+        }
+        function statusProg(p) { if (p.status !== 'CONCLUIDA' && p.data && p.data < hojeISO()) return 'ATRASADA'; return p.status || 'PENDENTE'; }
+
+        function carregando(on, texto) {
+            el('carregandoTexto').textContent = texto || 'Carregando...';
+            el('carregandoModal').classList.toggle('hidden', !on);
+        }
+        const avisar = (texto, titulo = 'Atenção', tipo = 'aviso') => { carregando(false); return Dialogo.avisar(texto, { titulo, tipo }); };
+        const erro = e => avisar(e && e.message ? e.message : String(e), 'Não deu certo', 'erro');
+        function erroBanco(r) { if (r && r.error) throw new Error(r.error.message || 'O servidor recusou a gravação.'); return r; }
+
+        // Pedir um texto (janela própria, no padrão do sistema)
+        function pedirTexto(titulo, texto, valor) {
+            return new Promise(resolve => {
+                const m = el('textoModal'), campo = el('textoCampo');
+                el('textoTitulo').textContent = titulo; el('textoTexto').textContent = texto; campo.value = valor || '';
+                const fechar = v => { m.classList.add('hidden'); resolve(v); };
+                el('textoOk').onclick = () => fechar(campo.value.trim());
+                el('textoCancelar').onclick = () => fechar(null);
+                campo.onkeydown = e => { if (e.key === 'Enter') el('textoOk').onclick(); if (e.key === 'Escape') fechar(null); };
+                m.classList.remove('hidden');
+                setTimeout(() => { campo.focus(); campo.select(); }, 50);
+            });
+        }
+
+        // ---------- Fotos (Google Drive) ----------
+        // Cada foto: { id, url, link }. As da planilha vinham só com o endereço do Drive.
+        const idDrive = u => { const m = String(u || '').match(/[-\w]{25,}/); return m ? m[0] : ''; };
+        function normalizarFoto(f) {
+            if (!f) return null;
+            if (typeof f === 'string') { const id = idDrive(f); return { id, url: id ? `https://drive.google.com/thumbnail?id=${id}&sz=w1600` : f, link: f }; }
+            return { id: f.id || idDrive(f.url || f.link), url: f.url || '', link: f.link || '' };
+        }
+        const listaFotos = v => (Array.isArray(v) ? v : String(v || '').split('\n').filter(Boolean)).map(normalizarFoto).filter(Boolean);
+        const miniatura = f => f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w400` : f.url;
+        const fotoGrande = f => f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w1600` : f.url;
+        const linkFoto = f => f.link || (f.id ? `https://drive.google.com/file/d/${f.id}/view` : f.url);
+        function imgFoto(f, rotulo) {
+            return `<button type="button" onclick='verFoto(${JSON.stringify(f).replace(/'/g, '&#39;')})' class="p-0" aria-label="Ver ${esc(rotulo || 'foto')}"><img class="thumb" src="${esc(miniatura(f))}" alt="${esc(rotulo || 'foto')}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'thumb flex items-center justify-center text-[10px] font-bold text-slate-400 text-center',textContent:'Abrir no Drive'}))"></button>`;
+        }
+        function verFoto(f) { el('fotoGrande').src = fotoGrande(f); el('fotoDrive').href = linkFoto(f); el('fotoModal').classList.remove('hidden'); }
+        function fecharFoto() { el('fotoModal').classList.add('hidden'); el('fotoGrande').src = ''; }
+
+        // Reduz a foto para envio rápido pela rede do campo
+        function comprimirImagem(file, maxLado = 1600, qualidade = 0.75) {
+            return new Promise((resolve, reject) => {
+                const img = new Image(); const url = URL.createObjectURL(file);
+                img.onload = () => {
+                    const escala = Math.min(1, maxLado / Math.max(img.width, img.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.round(img.width * escala); canvas.height = Math.round(img.height * escala);
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    URL.revokeObjectURL(url); resolve(canvas.toDataURL('image/jpeg', qualidade));
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Não foi possível ler a imagem.')); };
+                img.src = url;
+            });
+        }
+        async function enviarFotoDrive(dataUrl, nome, pasta) {
+            const { data, error } = await sb.functions.invoke('fotos-drive', { body: { projeto: 'fito', nome, pasta, dataUrl } });
+            if (error) {
+                let msg = error.message;
+                try { const j = await error.context.json(); if (j && j.erro) msg = j.erro; } catch (e) { /* mantém a mensagem */ }
+                throw new Error(msg);
+            }
+            if (!data || !data.ok) throw new Error((data && data.erro) || 'A foto não foi salva no Drive.');
+            return { id: data.id, url: data.url, link: data.link || '' };
+        }
+
+        // ---------- Banco <-> tela ----------
+        const progDoBanco = r => ({
+            id: r.id, data: r.data, diaSemana: r.dia_semana, turno: r.turno, responsavel: r.responsavel, observacao: r.observacao,
+            totalOperacoes: r.total_operacoes, feitas: r.feitas, naoFeitas: r.nao_feitas, status: r.status,
+            equipeInicio: r.equipe_inicio, descansoInicio: r.descanso_inicio, descansoFim: r.descanso_fim, equipeFim: r.equipe_fim,
+            jornadaPor: r.jornada_por, jornadaEm: r.jornada_em
+        });
+        const opDoBanco = (r, p) => ({
+            id: r.id, programacaoId: r.programacao_id, ordem: r.ordem, data: p ? p.data : '', turno: p ? p.turno : '',
+            bloco: r.bloco, semana: r.semana, nomeAplicacao: r.nome_aplicacao, tratamento: r.tratamento, alvo: r.alvo || '', cor: r.cor, tipoAplicacao: r.tipo_aplicacao,
+            horario: r.horario, volumeCalda: r.volume_calda, instrucoes: r.instrucoes, produtos: Array.isArray(r.produtos) ? r.produtos : [],
+            status: r.status, executor: r.executor, executadoEm: r.executado_em, phMedido: r.ph_medido, volumeAplicado: r.volume_aplicado,
+            observacaoExec: r.observacao_exec, fotosPh: listaFotos(r.fotos_ph), fotosVolume: listaFotos(r.fotos_volume), fotosOutras: listaFotos(r.fotos_outras),
+            horaInicio: r.hora_inicio, horaFim: r.hora_fim, mesmoDia: r.mesmo_dia, dataConclusao: r.data_conclusao
+        });
+        const modeloDoBanco = r => ({
+            id: r.id, nome: r.nome, tratamento: r.tratamento, alvo: r.alvo || '', cor: r.cor, tipoAplicacao: r.tipo_aplicacao, horario: r.horario,
+            volumeCalda: r.volume_calda, instrucoes: r.instrucoes, produtos: Array.isArray(r.produtos) ? r.produtos : [],
+            criadoPor: r.criado_por, atualizadoEm: r.atualizado_em ? new Date(r.atualizado_em).toLocaleDateString('pt-BR') : ''
+        });
+        // Cópia no aparelho, para abrir sem internet
+        const CACHE_LISTA = 'fito_cache_lista', cacheProg = id => 'fito_cache_prog_' + id;
+        const lerCache = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+        const gravarCache = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
+
+        // ------------------------------------------------------------
+        //  Abas e navegação
+        // ------------------------------------------------------------
+        const ABAS = [{ id: 'programacoes', nome: 'Programações', icone: 'clipboard-list', cor: '5, 150, 105' }, { id: 'modelos', nome: 'Modelos', icone: 'library', cor: '79, 70, 229' }];
+        function desenharAbas() {
+            el('abasFito').innerHTML = ABAS.map(a => {
+                const ativa = a.id === aba;
+                return `<button type="button" role="tab" aria-selected="${ativa}" onclick="trocarAba('${a.id}')" class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all ${ativa ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500'}"><i data-lucide="${a.icone}" class="w-3.5 h-3.5"></i> ${a.nome}</button>`;
+            }).join('');
+            icones();
+        }
+        let barra = null;
+        function trocarAba(id) {
+            aba = id;
+            irPara(id === 'modelos' ? 'modelos' : 'lista');
+        }
+        function irPara(view) {
+            viewAtual = view;
+            ['lista', 'editor', 'exec', 'modelos'].forEach(v => el('view-' + v).classList.toggle('hidden', v !== view));
+            el('barraFiltros').classList.toggle('hidden', view !== 'lista');
+            el('barraFixa').classList.toggle('max-lg:hidden', view !== 'lista');   // no celular, fora da lista, não há o que mostrar
+            aba = view === 'modelos' ? 'modelos' : 'programacoes';
+            desenharAbas(); if (barra) barra.atualizar();
+            window.scrollTo(0, 0);
+            if (view === 'lista') renderLista();
+            if (view === 'modelos') renderModelos();
+        }
+        function atualizarPermissoes() {
+            el('btnNova').classList.toggle('hidden', !podeProgramar());
+            if (viewAtual === 'lista') renderLista();
+            if (viewAtual === 'modelos') renderModelos();
+        }
+        async function atualizarTudo() {
+            if (viewAtual === 'exec' && atual) { await abrirExecucao(atual.id, true); return; }
+            await Promise.all([carregarLista(), carregarModelos()]);
+        }
+
+        // ------------------------------------------------------------
+        //  LISTA
+        // ------------------------------------------------------------
+        const FILTROS = [['pendentes', 'Pendentes'], ['concluidas', 'Concluídas'], ['todas', 'Todas']];
+        function setFiltro(f) { filtro = f; renderLista(); }
+        async function carregarLista(silencioso) {
+            if (!silencioso) carregando(true, 'Buscando programações...');
+            try {
+                const r = erroBanco(await sb.from('fito_programacoes').select('*').order('data', { ascending: false }).order('criado_em', { ascending: false }).limit(300));
+                programacoes = r.data.map(progDoBanco);
+                gravarCache(CACHE_LISTA, programacoes);
+            } catch (e) {
+                const c = lerCache(CACHE_LISTA);
+                if (c) programacoes = c; else if (!silencioso) erro(e);
+            } finally { carregando(false); }
+            if (viewAtual === 'lista') renderLista();
+        }
+        function renderLista() {
+            el('filtrosLista').innerHTML = FILTROS.map(([id, nome]) => `<button type="button" role="tab" aria-selected="${filtro === id}" onclick="setFiltro('${id}')" class="px-3.5 min-h-[40px] rounded-xl text-xs font-bold transition-all ${filtro === id ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500'}">${nome}</button>`).join('');
+            el('btnNova').classList.toggle('hidden', !podeProgramar());
+            const lista = programacoes.filter(p => filtro === 'pendentes' ? p.status !== 'CONCLUIDA' : filtro === 'concluidas' ? p.status === 'CONCLUIDA' : true);
+            const alvo = el('listaProgramacoes');
+            if (!lista.length) {
+                alvo.innerHTML = `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-8 text-center text-slate-500">
+                    <i data-lucide="clipboard-list" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
+                    <p class="font-bold text-sm">Nenhuma programação ${filtro === 'pendentes' ? 'pendente' : filtro === 'concluidas' ? 'concluída' : 'cadastrada'}.</p></div>`;
+                icones(); return;
+            }
+            // Separadas em Hoje / Próximas / Atrasadas / Concluídas, em cartões limpos (o cartão inteiro abre o checklist)
+            const hoje = hojeISO();
+            const grupoDe = p => p.status === 'CONCLUIDA' ? 'concluidas' : p.data === hoje ? 'hoje' : p.data > hoje ? 'proximas' : 'atrasadas';
+            const GRUPOS = [['hoje', 'Hoje', 'calendar-check', 'text-emerald-600'], ['proximas', 'Próximas', 'calendar-clock', 'text-sky-600'],
+                ['atrasadas', 'Atrasadas', 'alarm-clock', 'text-rose-600'], ['concluidas', 'Concluídas', 'circle-check-big', 'text-slate-400']];
+            alvo.innerHTML = GRUPOS.map(([g, nome, icone, corIcone]) => {
+                const doGrupo = lista.filter(p => grupoDe(p) === g);
+                if (g === 'proximas') doGrupo.reverse();   // a mais perto primeiro
+                if (!doGrupo.length) return '';
+                return `<section>
+                    <h3 class="flex items-center gap-2 mb-2.5 px-1 text-[11px] font-extrabold uppercase tracking-widest text-slate-400"><i data-lucide="${icone}" class="w-4 h-4 ${corIcone}"></i>${nome}<span class="text-slate-300">· ${doGrupo.length}</span></h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">${doGrupo.map(cartaoProgramacao).join('')}</div>
+                </section>`;
+            }).join('');
+            icones();
+        }
+        const MESES_CURTOS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+        const ICONE_TURNO = { 'NOITE': 'moon', 'MANHÃ': 'sunrise', 'TARDE': 'sun', 'DIA TODO': 'sun-medium' };
+        const nomeProprio = s => String(s || '').toLowerCase().replace(/(^|\s)\S/g, l => l.toUpperCase());
+        // Anel de progresso: verde = feitas, rosa = não feitas
+        function anelProgresso(feitas, total, nao) {
+            const r = 20, c = 2 * Math.PI * r, pct = total ? feitas / total : 0, pctNao = total ? nao / total : 0;
+            return `<div class="relative w-14 h-14 shrink-0" title="${feitas} de ${total} feitas">
+                <svg viewBox="0 0 48 48" class="w-14 h-14 -rotate-90">
+                    <circle cx="24" cy="24" r="${r}" fill="none" stroke="#f1f5f9" stroke-width="5"/>
+                    ${pctNao ? `<circle cx="24" cy="24" r="${r}" fill="none" stroke="#fda4af" stroke-width="5" stroke-linecap="round" stroke-dasharray="${c * pctNao} ${c}" stroke-dashoffset="${-c * pct}"/>` : ''}
+                    ${pct ? `<circle cx="24" cy="24" r="${r}" fill="none" stroke="#10b981" stroke-width="5" stroke-linecap="round" stroke-dasharray="${c * pct} ${c}"/>` : ''}
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center leading-none"><span class="text-[13px] font-black text-slate-800">${feitas}</span><span class="text-[9px] font-bold text-slate-400">de ${total}</span></div>
+            </div>`;
+        }
+        function cartaoProgramacao(p) {
+            const st = statusProg(p), total = Number(p.totalOperacoes) || 0, feitas = Number(p.feitas) || 0, nao = Number(p.naoFeitas) || 0;
+            const [, mes, dia] = String(p.data).split('-');
+            const ehHoje = p.data === hojeISO();
+            const turno = String(p.turno || '').toUpperCase();
+            const acao = (fn, icone, titulo, extra = '') => `<button type="button" onclick="event.stopPropagation(); ${fn}('${esc(p.id)}')" class="w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 ${extra}" title="${titulo}" aria-label="${titulo}"><i data-lucide="${icone}" class="w-4 h-4"></i></button>`;
+            return `<div role="button" tabindex="0" onclick="abrirExecucao('${esc(p.id)}')" onkeydown="if (event.key === 'Enter') abrirExecucao('${esc(p.id)}')"
+                class="group bg-white rounded-3xl shadow-sm ring-1 ${ehHoje ? 'ring-emerald-200' : 'ring-slate-200/80'} hover:ring-emerald-300 hover:shadow-md transition-all p-4 cursor-pointer entra outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                <div class="flex items-center gap-3.5">
+                    <div class="shrink-0 w-14 h-14 rounded-2xl ${ehHoje ? 'bg-emerald-500 text-white' : 'bg-slate-50 ring-1 ring-slate-200 text-slate-800'} flex flex-col items-center justify-center leading-none">
+                        <span class="text-xl font-black">${esc(dia || '')}</span>
+                        <span class="text-[9px] font-extrabold mt-0.5 ${ehHoje ? 'text-emerald-50' : 'text-slate-400'}">${MESES_CURTOS[Number(mes) - 1] || ''}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <i data-lucide="${ICONE_TURNO[turno] || 'clock'}" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                            <span class="font-extrabold text-sm text-slate-800 truncate">${esc(nomeProprio(p.turno))} · ${esc(nomeProprio(p.diaSemana || diaDaSemana(p.data)))}</span>
+                        </div>
+                        <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span class="chip st-${st}">${STATUS_LABEL[st]}</span>
+                            <span class="text-xs font-medium text-slate-500">${total} ${total === 1 ? 'operação' : 'operações'}</span>
+                            ${nao ? `<span class="text-xs font-bold text-rose-600">${nao} não ${nao === 1 ? 'feita' : 'feitas'}</span>` : ''}
+                        </div>
+                    </div>
+                    ${anelProgresso(feitas, total, nao)}
+                </div>
+                ${p.equipeInicio ? `<p class="mt-3 text-[11px] font-medium text-slate-500 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5 text-slate-400"></i>${esc(resumoJornada(p).replace(/^Equipe: /, ''))}</p>` : ''}
+                <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1">
+                    <span class="flex-1 min-w-0 text-[11px] font-medium text-slate-400 truncate">por ${esc(nomeProprio(p.responsavel) || '—')}</span>
+                    ${acao('enviarImagemProgramacao', 'image', 'Imagem da programação')}
+                    ${podeProgramar() ? acao('editarProgramacao', 'pencil', 'Editar') : ''}
+                    ${podeProgramar() && feitas + nao === 0 ? acao('excluirProgramacao', 'trash-2', 'Excluir', 'hover:!text-red-600 hover:!bg-red-50') : ''}
+                    <span class="ml-1 inline-flex items-center gap-1 text-xs font-bold text-emerald-700 group-hover:gap-1.5 transition-all">Checklist <i data-lucide="chevron-right" class="w-4 h-4"></i></span>
+                </div>
+            </div>`;
+        }
+        async function excluirProgramacao(id) {
+            const p = programacoes.find(x => x.id === id); if (!p) return;
+            if (!(await Dialogo.confirmar(`Excluir a programação de ${fmtData(p.data)} (${p.turno})?`, { titulo: 'Excluir programação', botao: 'Excluir', perigo: true }))) return;
+            carregando(true, 'Excluindo...');
+            try {
+                erroBanco(await sb.from('fito_programacoes').delete().eq('id', id));
+                programacoes = programacoes.filter(x => x.id !== id); gravarCache(CACHE_LISTA, programacoes);
+                carregando(false); renderLista();
+            } catch (e) { erro(e); }
+        }
+
+        // Programação completa (com as operações)
+        async function obterProgramacao(id) {
+            try {
+                const [rp, ro] = await Promise.all([
+                    sb.from('fito_programacoes').select('*').eq('id', id).maybeSingle(),
+                    sb.from('fito_operacoes').select('*').eq('programacao_id', id).order('ordem')
+                ]);
+                erroBanco(rp); erroBanco(ro);
+                if (!rp.data) throw new Error('Programação não encontrada.');
+                const p = progDoBanco(rp.data);
+                p.operacoes = ro.data.map(o => opDoBanco(o, p));
+                gravarCache(cacheProg(id), p);
+                return p;
+            } catch (e) {
+                const c = lerCache(cacheProg(id));
+                if (c) return c;
+                throw e;
+            }
+        }
+
+        // ------------------------------------------------------------
+        //  EDITOR (quem programa)
+        // ------------------------------------------------------------
+        const produtoVazio = () => ({ nome: '', dose: '', unidade: 'L' });
+        const opVazia = () => ({ id: '', bloco: '', semana: '', nomeAplicacao: '', tratamento: '', alvo: '', cor: 'cinza', tipoAplicacao: TIPOS[0], horario: 'após 17h', volumeCalda: '', instrucoes: '', produtos: [produtoVazio()], status: 'PENDENTE' });
+        function novaProgramacao() {
+            if (!podeProgramar()) return;
+            editor = { id: '', originais: [], operacoes: [opVazia()] };
+            el('editorTitulo').textContent = 'Nova programação diária';
+            el('edData').value = hojeISO(); el('edTurno').value = 'NOITE';
+            el('edResp').value = lerGuardado('programador') || API.nomeUsuario(); el('edObs').value = '';
+            atualizarDiaSemana(); irPara('editor'); renderEditor();
+        }
+        async function editarProgramacao(id) {
+            if (!podeProgramar()) return;
+            carregando(true, 'Abrindo programação...');
+            try {
+                const p = await obterProgramacao(id);
+                carregando(false);
+                editor = { id: p.id, originais: p.operacoes.map(o => o.id), operacoes: p.operacoes.map(o => ({ ...o, produtos: o.produtos.length ? o.produtos.map(x => ({ ...x })) : [produtoVazio()] })) };
+                el('editorTitulo').textContent = 'Editar programação';
+                el('edData').value = p.data; el('edTurno').value = p.turno || 'NOITE'; el('edResp').value = p.responsavel; el('edObs').value = p.observacao;
+                el('edTurno').dispatchEvent(new Event('change', { bubbles: true }));
+                atualizarDiaSemana(); irPara('editor'); renderEditor();
+            } catch (e) { erro(e); }
+        }
+        function atualizarDiaSemana() { el('edDia').value = diaDaSemana(el('edData').value); }
+        function setOp(i, campo, valor) { editor.operacoes[i][campo] = valor; }
+        function setProd(i, j, campo, valor) { editor.operacoes[i].produtos[j][campo] = valor; }
+        function aplicarModelo(i, id) {
+            const m = modelos.find(x => x.id === id); if (!m) return;
+            const op = editor.operacoes[i];
+            Object.assign(op, {
+                nomeAplicacao: m.nome, tratamento: m.tratamento || m.nome, alvo: m.alvo || op.alvo || '', cor: m.cor || 'cinza', tipoAplicacao: m.tipoAplicacao || TIPOS[0],
+                volumeCalda: m.volumeCalda, instrucoes: m.instrucoes, horario: m.horario || op.horario,
+                produtos: m.produtos.length ? m.produtos.map(p => ({ ...p })) : [produtoVazio()]
+            });
+            renderEditor();
+        }
+        function adicionarOperacao() { editor.operacoes.push(opVazia()); renderEditor(); setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50); }
+        function duplicarOperacao(i) { const o = editor.operacoes[i]; editor.operacoes.splice(i + 1, 0, JSON.parse(JSON.stringify({ ...o, id: '', bloco: '', semana: '', status: 'PENDENTE' }))); renderEditor(); }
+        function moverOperacao(i, dir) { const j = i + dir; if (j < 0 || j >= editor.operacoes.length) return; [editor.operacoes[i], editor.operacoes[j]] = [editor.operacoes[j], editor.operacoes[i]]; renderEditor(); }
+        async function removerOperacao(i) {
+            if (!(await Dialogo.confirmar('Remover esta operação da programação?', { titulo: 'Remover operação', botao: 'Remover', perigo: true }))) return;
+            editor.operacoes.splice(i, 1); renderEditor();
+        }
+        function addProduto(i) { editor.operacoes[i].produtos.push(produtoVazio()); renderEditor(); }
+        function remProduto(i, j) { editor.operacoes[i].produtos.splice(j, 1); if (!editor.operacoes[i].produtos.length) editor.operacoes[i].produtos.push(produtoVazio()); renderEditor(); }
+        function renderEditor() {
+            const botaoTopo = (acao, icone, titulo) => `<button type="button" onclick="${acao}" class="w-9 h-9 flex items-center justify-center rounded-xl bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-slate-100" title="${titulo}" aria-label="${titulo}"><i data-lucide="${icone}" class="w-4 h-4"></i></button>`;
+            el('editorOperacoes').innerHTML = editor.operacoes.map((o, i) => {
+                const travada = o.status && o.status !== 'PENDENTE';
+                return `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden entra">
+                    <div class="px-4 py-2.5 flex items-center gap-1.5 bg-slate-50 border-b border-slate-100 text-slate-800">
+                        <span class="font-extrabold text-sm flex-1 truncate">${i + 1}. ${o.bloco ? 'BLOCO ' + esc(o.bloco) : 'Nova operação'} ${o.tratamento ? '· ' + esc(o.tratamento) : ''}</span>
+                        ${travada ? `<span class="chip st-${o.status}">${STATUS_LABEL[o.status]}</span>` : ''}
+                        ${botaoTopo(`moverOperacao(${i},-1)`, 'chevron-up', 'Subir')}${botaoTopo(`moverOperacao(${i},1)`, 'chevron-down', 'Descer')}${botaoTopo(`duplicarOperacao(${i})`, 'copy', 'Duplicar para outro bloco')}
+                        ${travada ? '' : botaoTopo(`removerOperacao(${i})`, 'trash-2', 'Remover')}
+                    </div>
+                    <div class="p-4 grid grid-cols-2 gap-3">
+                        <div class="col-span-2">
+                            <label class="rotulo"><i data-lucide="library" class="w-3.5 h-3.5 text-emerald-500"></i> Usar modelo pronto</label>
+                            <select class="campo" onchange="aplicarModelo(${i}, this.value)">
+                                <option value="">— Escolher modelo (preenche produtos e doses) —</option>
+                                ${modelos.map(m => `<option value="${esc(m.id)}">${esc(m.nome)}${m.tratamento && m.tratamento !== m.nome ? ' — ' + esc(m.tratamento) : ''}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col-span-2"><label class="rotulo">Nome da aplicação</label><input class="campo" value="${esc(o.nomeAplicacao)}" placeholder="Ex.: APLICAÇÃO FASE 1" oninput="setOp(${i},'nomeAplicacao',this.value)"></div>
+                        <div><label class="rotulo">Bloco</label><input class="campo" inputmode="numeric" value="${esc(o.bloco)}" placeholder="Ex.: 11" oninput="setOp(${i},'bloco',this.value)"></div>
+                        <div><label class="rotulo">Semana / fase</label><input class="campo" value="${esc(o.semana)}" placeholder="Ex.: 03 ou finalizado" oninput="setOp(${i},'semana',this.value)"></div>
+                        <div class="col-span-2"><label class="rotulo">Tratamento (produtos)</label><input class="campo" value="${esc(o.tratamento)}" placeholder="Ex.: ZINTRAC + BORTRAC" oninput="setOp(${i},'tratamento',this.value)"></div>
+                        <div class="col-span-2"><label class="rotulo"><i data-lucide="crosshair" class="w-3.5 h-3.5 text-rose-500"></i> Alvo (praga, doença ou objetivo)</label><input class="campo" value="${esc(o.alvo)}" placeholder="Ex.: lagarta, traça, oídio, nutrição" oninput="setOp(${i},'alvo',this.value)"></div>
+                        <div><label class="rotulo">Tipo de aplicação</label><select class="campo" onchange="setOp(${i},'tipoAplicacao',this.value)">${TIPOS.map(t => `<option ${o.tipoAplicacao === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+                        <div><label class="rotulo">Horário</label><input class="campo" value="${esc(o.horario)}" placeholder="Ex.: após 17h" oninput="setOp(${i},'horario',this.value)"></div>
+                        <div class="col-span-2"><label class="rotulo">Produtos e doses</label>
+                            <div class="space-y-2">${o.produtos.map((p, j) => `<div class="flex gap-2">
+                                <input class="campo flex-1 min-w-0" value="${esc(p.nome)}" placeholder="Produto" aria-label="Produto" oninput="setProd(${i},${j},'nome',this.value)">
+                                <input class="campo !w-20" inputmode="decimal" value="${esc(p.dose)}" placeholder="Dose" aria-label="Dose" oninput="setProd(${i},${j},'dose',this.value)">
+                                <select class="campo !w-20" aria-label="Unidade" onchange="setProd(${i},${j},'unidade',this.value)">${UNIDADES.map(u => `<option ${p.unidade === u ? 'selected' : ''}>${u}</option>`).join('')}</select>
+                                <button type="button" onclick="remProduto(${i},${j})" class="btn-sec !px-2.5" title="Remover produto" aria-label="Remover produto"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            </div>`).join('')}</div>
+                            <button type="button" onclick="addProduto(${i})" class="mt-2 min-h-[36px] text-xs font-bold text-emerald-700 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar produto</button>
+                        </div>
+                        <div><label class="rotulo">Volume de calda (L)</label><input class="campo" inputmode="decimal" value="${esc(o.volumeCalda)}" placeholder="Ex.: 600" oninput="setOp(${i},'volumeCalda',this.value)"></div>
+                        <div class="col-span-2"><label class="rotulo">Instruções de preparo</label><textarea class="campo" rows="3" placeholder="Ordem de mistura, cuidados, pH..." oninput="setOp(${i},'instrucoes',this.value)">${esc(o.instrucoes)}</textarea></div>
+                        <button type="button" onclick="salvarComoModelo(${i})" class="col-span-2 btn-sec"><i data-lucide="bookmark-plus" class="w-4 h-4"></i> Salvar como modelo (fica disponível para todos)</button>
+                    </div>
+                </div>`;
+            }).join('');
+            icones();
+        }
+        async function salvarProgramacao() {
+            if (!podeProgramar()) return;
+            const data = el('edData').value, turno = el('edTurno').value, responsavel = el('edResp').value.trim(), observacao = el('edObs').value.trim();
+            if (!data) return avisar('Informe a data da programação.');
+            if (!responsavel) return avisar('Informe quem está programando.');
+            if (!editor.operacoes.length) return avisar('Adicione pelo menos uma operação.');
+            for (let i = 0; i < editor.operacoes.length; i++) {
+                const o = editor.operacoes[i];
+                if (!String(o.bloco || '').trim()) return avisar(`Operação ${i + 1}: informe o bloco.`);
+                if (!String(o.tratamento || '').trim()) return avisar(`Operação ${i + 1}: informe o tratamento.`);
+            }
+            if (!navigator.onLine) return avisar('Sem internet. A programação fica nesta tela: salve assim que a conexão voltar.');
+            guardar('programador', responsavel);
+            carregando(true, 'Salvando programação...');
+            try {
+                const id = editor.id || API.novoId();
+                erroBanco(await sb.from('fito_programacoes').upsert({ id, data, dia_semana: diaDaSemana(data), turno, responsavel, observacao, atualizado_em: new Date().toISOString() }, { onConflict: 'id' }));
+                const linhas = editor.operacoes.map((o, i) => ({
+                    id: o.id || API.novoId(), programacao_id: id, ordem: i + 1,
+                    bloco: String(o.bloco).trim(), semana: String(o.semana || '').trim(), nome_aplicacao: String(o.nomeAplicacao || '').trim(), alvo: String(o.alvo || '').trim(), tratamento: String(o.tratamento).trim(),
+                    cor: o.cor || 'cinza', tipo_aplicacao: o.tipoAplicacao || '', horario: o.horario || '', volume_calda: String(o.volumeCalda || ''), instrucoes: o.instrucoes || '',
+                    produtos: o.produtos.filter(p => String(p.nome).trim()).map(p => ({ nome: String(p.nome).trim(), dose: String(p.dose || '').trim(), unidade: p.unidade || '' }))
+                }));
+                erroBanco(await sb.from('fito_operacoes').upsert(linhas, { onConflict: 'id' }));
+                const remover = editor.originais.filter(oid => !linhas.some(l => l.id === oid));
+                if (remover.length) erroBanco(await sb.from('fito_operacoes').delete().in('id', remover));
+                await registrarModelosNovos(editor.operacoes, responsavel);
+                const salva = await obterProgramacao(id);
+                await carregarLista(true);
+                carregando(false);
+                filtro = 'pendentes'; irPara('lista');
+                if (await Dialogo.confirmar(`Programação de ${fmtData(data)} (${turno}) salva com ${linhas.length} operação(ões).\n\nDeseja enviar a imagem da programação para o grupo?`, { titulo: 'Programação salva', botao: 'Enviar imagem' })) gerarImagemProgramacao(salva);
+            } catch (e) { erro(e); }
+        }
+
+        // ---------- Modelos compartilhados ----------
+        async function carregarModelos() {
+            try {
+                const r = erroBanco(await sb.from('fito_modelos').select('*').order('nome'));
+                modelos = r.data.map(modeloDoBanco);
+                gravarCache('fito_cache_modelos', modelos);
+            } catch (e) { modelos = lerCache('fito_cache_modelos') || modelos; }
+            if (viewAtual === 'editor' && editor) renderEditor();
+            if (viewAtual === 'modelos') renderModelos();
+        }
+        const linhaModelo = (o, nome, por) => ({
+            nome, tratamento: o.tratamento || '', alvo: String(o.alvo || '').trim(), cor: o.cor || 'cinza', tipo_aplicacao: o.tipoAplicacao || '', horario: o.horario || '',
+            volume_calda: String(o.volumeCalda || ''), instrucoes: o.instrucoes || '',
+            produtos: (o.produtos || []).filter(p => String(p.nome).trim()), criado_por: por || '', atualizado_em: new Date().toISOString()
+        });
+        // Cada aplicação nova (nome que ainda não existe) vira modelo automaticamente
+        async function registrarModelosNovos(operacoes, por) {
+            const nomes = new Set(modelos.map(m => m.nome.trim().toLowerCase()));
+            for (const o of operacoes) {
+                const nome = String(o.nomeAplicacao || o.tratamento || '').trim();
+                const produtos = (o.produtos || []).filter(x => String(x.nome || '').trim());
+                if (!nome || !produtos.length || nomes.has(nome.toLowerCase())) continue;
+                const r = await sb.from('fito_modelos').insert({ id: API.novoId(), ...linhaModelo(o, nome, por) });
+                if (!r.error) nomes.add(nome.toLowerCase());
+            }
+            carregarModelos();
+        }
+        async function salvarComoModelo(i) {
+            if (!podeProgramar()) return;
+            const o = editor.operacoes[i];
+            if (!o.produtos.some(p => String(p.nome).trim())) return avisar('Adicione pelo menos um produto antes de salvar o modelo.');
+            const nome = await pedirTexto('Salvar como modelo', 'Dê um nome para este grupo de produtos (ex.: APLICAÇÃO FASE 1, APLICAÇÃO FASE 2):', o.nomeAplicacao || o.tratamento);
+            if (!nome) return;
+            const existente = modelos.find(m => m.nome.trim().toLowerCase() === nome.toLowerCase());
+            if (existente && !(await Dialogo.confirmar(`Já existe o modelo "${existente.nome}". Deseja substituí-lo pelos produtos e doses desta operação?`, { titulo: 'Modelo já existe', botao: 'Substituir' }))) return;
+            carregando(true, 'Salvando modelo...');
+            try {
+                erroBanco(await sb.from('fito_modelos').upsert({ id: existente ? existente.id : API.novoId(), ...linhaModelo(o, nome, el('edResp').value.trim()) }, { onConflict: 'id' }));
+                o.nomeAplicacao = nome;
+                await carregarModelos();
+                carregando(false); renderEditor();
+                Dialogo.avisar(`O modelo "${nome}" agora aparece para todos em "Usar modelo pronto".`, { titulo: 'Modelo salvo', tipo: 'sucesso' });
+            } catch (e) { erro(e); }
+        }
+        function renderModelos() {
+            const alvo = el('listaModelos');
+            if (!modelos.length) { alvo.innerHTML = '<div class="lg:col-span-2 bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-8 text-center text-sm font-bold text-slate-500">Nenhum modelo cadastrado ainda.</div>'; return; }
+            // Cartão branco no padrão do sistema
+            alvo.innerHTML = modelos.map(m => {
+                const detalhes = [m.tipoAplicacao, m.horario, m.volumeCalda ? `Calda ${litros(m.volumeCalda)} L` : ''].filter(Boolean);
+                return `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 entra flex flex-col">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-extrabold text-slate-800 truncate">${esc(m.nome)}</p>
+                            ${m.tratamento && m.tratamento !== m.nome ? `<p class="text-xs font-semibold text-slate-500 truncate">${esc(m.tratamento)}</p>` : ''}
+                            <p class="mt-1.5 flex items-center gap-1.5 text-xs font-bold ${m.alvo ? 'text-rose-700' : 'text-slate-400'}"><i data-lucide="crosshair" class="w-3.5 h-3.5 shrink-0"></i><span class="truncate">${m.alvo ? 'Alvo: ' + esc(m.alvo) : 'Alvo não informado'}</span></p>
+                            ${detalhes.length ? `<div class="flex flex-wrap gap-1.5 mt-2">${detalhes.map(d => `<span class="text-[10px] font-bold text-slate-600 bg-slate-100 rounded-full px-2 py-0.5">${esc(d)}</span>`).join('')}</div>` : ''}
+                        </div>
+                        ${podeProgramar() ? `<div class="flex gap-1 shrink-0">
+                            <button type="button" onclick="alvoDoModelo('${esc(m.id)}')" class="btn-sec !px-0 w-11" title="Informar o alvo" aria-label="Informar o alvo de ${esc(m.nome)}"><i data-lucide="crosshair" class="w-4 h-4"></i></button>
+                            <button type="button" onclick="renomearModelo('${esc(m.id)}')" class="btn-sec !px-0 w-11" title="Renomear" aria-label="Renomear ${esc(m.nome)}"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                            <button type="button" onclick="excluirModelo('${esc(m.id)}')" class="btn-sec btn-perigo !px-0 w-11" title="Excluir" aria-label="Excluir ${esc(m.nome)}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>` : ''}
+                    </div>
+                    ${m.produtos.length ? `<div class="mt-3 rounded-2xl ring-1 ring-slate-100 overflow-hidden divide-y divide-slate-100">
+                        ${m.produtos.map((p, k) => `<div class="flex items-center justify-between gap-3 px-3 py-2 text-[13px] ${k % 2 ? 'bg-slate-50/70' : ''}"><span class="font-semibold text-slate-700 truncate">${esc(p.nome)}</span><span class="font-extrabold text-slate-900 whitespace-nowrap">${esc(p.dose)} ${esc(p.unidade)}</span></div>`).join('')}
+                    </div>` : '<p class="mt-3 text-xs text-slate-400">Sem produtos cadastrados.</p>'}
+                    ${m.instrucoes ? `<p class="mt-2 text-xs text-slate-500 leading-relaxed line-clamp-2">${esc(m.instrucoes)}</p>` : ''}
+                    <p class="mt-auto pt-2 text-[11px] font-medium text-slate-400">${m.criadoPor ? 'Criado por ' + esc(m.criadoPor) + (m.atualizadoEm ? ' · ' : '') : ''}${m.atualizadoEm ? 'atualizado em ' + esc(m.atualizadoEm) : ''}</p>
+                </div>`;
+            }).join('');
+            icones();
+        }
+        async function alvoDoModelo(id) {
+            const m = modelos.find(x => x.id === id); if (!m) return;
+            const alvo = await pedirTexto('Alvo do modelo', `Qual praga, doença ou objetivo os produtos de "${m.nome}" combatem? (ex.: lagarta, traça, oídio)`, m.alvo);
+            if (alvo === null || alvo === (m.alvo || '')) return;   // cancelou ou não mudou
+            carregando(true, 'Salvando...');
+            try { erroBanco(await sb.from('fito_modelos').update({ alvo, atualizado_em: new Date().toISOString() }).eq('id', id)); await carregarModelos(); carregando(false); }
+            catch (e) { erro(/alvo/i.test(e.message) ? new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (coluna "alvo").') : e); }
+        }
+        async function renomearModelo(id) {
+            const m = modelos.find(x => x.id === id); if (!m) return;
+            const nome = await pedirTexto('Renomear modelo', 'Novo nome da aplicação:', m.nome);
+            if (!nome || nome === m.nome) return;
+            carregando(true, 'Renomeando...');
+            try { erroBanco(await sb.from('fito_modelos').update({ nome, atualizado_em: new Date().toISOString() }).eq('id', id)); await carregarModelos(); carregando(false); }
+            catch (e) { erro(/duplicate|unique/i.test(e.message) ? new Error(`Já existe um modelo chamado "${nome}".`) : e); }
+        }
+        async function excluirModelo(id) {
+            const m = modelos.find(x => x.id === id); if (!m) return;
+            if (!(await Dialogo.confirmar(`Excluir o modelo "${m.nome}"? As programações já feitas não são alteradas.`, { titulo: 'Excluir modelo', botao: 'Excluir', perigo: true }))) return;
+            carregando(true, 'Excluindo...');
+            try { erroBanco(await sb.from('fito_modelos').delete().eq('id', id)); modelos = modelos.filter(x => x.id !== id); carregando(false); renderModelos(); }
+            catch (e) { erro(e); }
+        }
+
+        // ------------------------------------------------------------
+        //  EXECUÇÃO (checklist de quem aplica)
+        // ------------------------------------------------------------
+        async function abrirExecucao(id, manterRascunhos) {
+            carregando(true, 'Abrindo checklist...');
+            try {
+                const antes = manterRascunhos ? rascunhos : {};
+                atual = await obterProgramacao(id);
+                rascunhos = {}; if (!manterRascunhos) editandoExec = {};
+                atual.operacoes.forEach(o => { rascunhos[o.id] = antes[o.id] && editandoExec[o.id] ? antes[o.id] : novoRascunho(o); });
+                carregando(false);
+                irPara('exec'); renderExecucao();
+            } catch (e) { erro(e); }
+        }
+        function novoRascunho(o) {
+            return {
+                status: o.status === 'PENDENTE' ? '' : o.status, ph: o.phMedido || '', volume: o.volumeAplicado || '', obs: o.observacaoExec || '',
+                horaInicio: o.horaInicio || '', horaFim: o.horaFim || '', mesmoDia: o.mesmoDia || '', dataConclusao: o.mesmoDia === 'NAO' ? o.dataConclusao : '',
+                fotos: { ph: [], volume: [], outras: [] }
+            };
+        }
+        // Campo de horário com o botão "Agora"
+        const campoHora = (id, rotulo, valor, aoMudar = '') => `<div><label class="rotulo" for="${id}">${rotulo}</label>
+            <div class="flex gap-1.5"><input id="${id}" type="time" class="campo min-w-0" value="${esc(valor)}"${aoMudar ? ` onchange="${aoMudar}"` : ''}>
+            <button type="button" class="btn-sec !px-3 !text-[11px] shrink-0" onclick="${aoMudar ? aoMudar.replace('this.value', 'agoraHHMM()') : `el('${id}').value=agoraHHMM()`}" title="Usar o horário de agora">Agora</button></div></div>`;
+        function renderJornada() {
+            const p = atual, resumo = resumoJornada(p);
+            el('execJornada').innerHTML = `<details class="group bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80" ${p.equipeInicio ? '' : 'open'}>
+                <summary class="list-none cursor-pointer p-4 flex items-center gap-3 select-none">
+                    <div class="w-10 h-10 rounded-2xl bg-sky-50 ring-1 ring-sky-100 flex items-center justify-center shrink-0"><i data-lucide="users" class="w-5 h-5 text-sky-600"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-sm font-extrabold text-slate-800">Jornada da equipe</h3>
+                        <p class="text-[11px] font-semibold ${resumo ? 'text-slate-500' : 'text-slate-400'} truncate">${resumo ? esc(resumo.replace(/^Equipe: /, '')) : 'Horário geral de trabalho desta programação'}</p>
+                    </div>
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform group-open:rotate-180"></i>
+                </summary>
+                <div class="px-4 pb-4 grid grid-cols-2 gap-3">
+                    ${campoHora('jInicio', 'Começou a trabalhar', p.equipeInicio)}${campoHora('jFim', 'Terminou o trabalho', p.equipeFim)}
+                    ${campoHora('jDescIni', 'Início do descanso', p.descansoInicio)}${campoHora('jDescFim', 'Fim do descanso', p.descansoFim)}
+                    ${p.jornadaPor ? `<p class="col-span-2 text-[11px] font-medium text-slate-400">Registrada por ${esc(nomeProprio(p.jornadaPor))} em ${esc(p.jornadaEm)}</p>` : ''}
+                    <button type="button" class="btn-principal col-span-2" onclick="salvarJornada()"><i data-lucide="save" class="w-4 h-4"></i> Salvar jornada</button>
+                </div>
+            </details>`;
+        }
+        async function salvarJornada() {
+            const v = id => el(id).value;
+            const d = { equipeInicio: v('jInicio'), equipeFim: v('jFim'), descansoInicio: v('jDescIni'), descansoFim: v('jDescFim'), por: el('execNome').value.trim() };
+            if (!d.por) { el('execNome').focus(); return avisar('Informe seu nome no campo "Quem está executando".'); }
+            if (!d.equipeInicio) return avisar('Informe pelo menos o horário em que a equipe começou a trabalhar.');
+            if (!!d.descansoInicio !== !!d.descansoFim) return avisar('Informe o início e o fim do descanso.');
+            const valores = { equipe_inicio: d.equipeInicio, equipe_fim: d.equipeFim, descanso_inicio: d.descansoInicio, descanso_fim: d.descansoFim, jornada_por: d.por, jornada_em: agoraTexto() };
+            // Vai pela fila do aparelho: funciona sem internet
+            API.enfileirar('fito_programacoes', 'update', { id: atual.id, valores });
+            Object.assign(atual, { equipeInicio: d.equipeInicio, equipeFim: d.equipeFim, descansoInicio: d.descansoInicio, descansoFim: d.descansoFim, jornadaPor: d.por, jornadaEm: valores.jornada_em });
+            atualizarNaLista(atual); gravarCache(cacheProg(atual.id), atual);
+            renderJornada(); icones();
+            Dialogo.avisar(resumoJornada(atual), { titulo: 'Jornada salva', tipo: 'sucesso' });
+        }
+        function atualizarNaLista(p) {
+            const i = programacoes.findIndex(x => x.id === p.id);
+            const { operacoes, ...semOps } = p;
+            if (i >= 0) programacoes[i] = { ...programacoes[i], ...semOps };
+            gravarCache(CACHE_LISTA, programacoes);
+        }
+        // Cabeçalho do checklist: o mesmo cartão da lista, com o progresso e as ações
+        function renderCabecalhoExec() {
+            const p = atual, st = statusProg(p), total = Number(p.totalOperacoes) || 0, feitas = Number(p.feitas) || 0, nao = Number(p.naoFeitas) || 0;
+            const pendentes = Math.max(0, total - feitas - nao);
+            const [, mes, dia] = String(p.data).split('-');
+            const turno = String(p.turno || '').toUpperCase();
+            el('execCabecalho').innerHTML = `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4">
+                <button type="button" onclick="irPara('lista')" class="-ml-1 mb-3 inline-flex items-center gap-1 min-h-[36px] px-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100"><i data-lucide="arrow-left" class="w-4 h-4"></i> Programações</button>
+                <div class="flex items-center gap-3.5">
+                    <div class="shrink-0 w-14 h-14 rounded-2xl bg-emerald-500 text-white flex flex-col items-center justify-center leading-none">
+                        <span class="text-xl font-black">${esc(dia || '')}</span><span class="text-[9px] font-extrabold mt-0.5 text-emerald-50">${MESES_CURTOS[Number(mes) - 1] || ''}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 min-w-0"><i data-lucide="${ICONE_TURNO[turno] || 'clock'}" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                            <h2 class="font-extrabold text-base text-slate-800 truncate">${esc(nomeProprio(p.turno))} · ${esc(nomeProprio(p.diaSemana || diaDaSemana(p.data)))}</h2></div>
+                        <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span class="chip st-${st}">${STATUS_LABEL[st]}</span>
+                            <span class="text-xs font-medium text-slate-500">por ${esc(nomeProprio(p.responsavel) || '—')}</span>
+                        </div>
+                    </div>
+                    ${anelProgresso(feitas, total, nao)}
+                </div>
+                <div class="grid grid-cols-3 gap-2 mt-4">
+                    <div class="rounded-2xl bg-emerald-50 px-3 py-2"><p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700/70">Feitas</p><p class="text-lg font-black text-emerald-700 leading-tight">${feitas}</p></div>
+                    <div class="rounded-2xl ${nao ? 'bg-rose-50' : 'bg-slate-50'} px-3 py-2"><p class="text-[10px] font-extrabold uppercase tracking-wider ${nao ? 'text-rose-700/70' : 'text-slate-400'}">Não feitas</p><p class="text-lg font-black ${nao ? 'text-rose-700' : 'text-slate-300'} leading-tight">${nao}</p></div>
+                    <div class="rounded-2xl ${pendentes ? 'bg-amber-50' : 'bg-slate-50'} px-3 py-2"><p class="text-[10px] font-extrabold uppercase tracking-wider ${pendentes ? 'text-amber-700/70' : 'text-slate-400'}">Pendentes</p><p class="text-lg font-black ${pendentes ? 'text-amber-700' : 'text-slate-300'} leading-tight">${pendentes}</p></div>
+                </div>
+                ${p.observacao ? `<p class="mt-3 text-sm bg-amber-50 ring-1 ring-amber-200/70 text-amber-900 rounded-2xl px-3 py-2.5 flex gap-2"><i data-lucide="message-square-warning" class="w-4 h-4 shrink-0 mt-0.5"></i><span>${esc(p.observacao)}</span></p>` : ''}
+                <div class="mt-4">
+                    <label class="rotulo" for="execNome"><i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-500"></i> Quem está executando</label>
+                    <input id="execNome" type="text" class="campo" placeholder="Seu nome" value="${esc(lerGuardado('executor') || API.nomeUsuario())}" oninput="guardar('executor', this.value)">
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-3">
+                    <button type="button" class="btn-sec" onclick="gerarImagemProgramacao(atual)"><i data-lucide="image" class="w-4 h-4"></i> Programação</button>
+                    <button type="button" class="btn-principal" onclick="enviarResumoChecklist()"><i data-lucide="send" class="w-4 h-4"></i> Resumo do checklist</button>
+                </div>
+            </div>`;
+        }
+        function renderExecucao() {
+            renderCabecalhoExec(); renderJornada();
+            el('execOperacoes').innerHTML = atual.operacoes.map(cardExecucao).join('');
+            icones();
+        }
+        function renderCardExec(opId) {
+            const o = atual.operacoes.find(x => x.id === opId);
+            el('card-' + opId).outerHTML = cardExecucao(o);
+            icones();
+        }
+        function fotosSalvas(lista, rotulo) {
+            if (!lista.length) return '';
+            return `<div><p class="rotulo !mb-1.5">${rotulo}</p><div class="flex flex-wrap gap-2">${lista.map(f => imgFoto(f, rotulo)).join('')}</div></div>`;
+        }
+        // Um cartão por bloco: o que aplicar em cima, o registro de quem aplicou embaixo
+        function cardExecucao(o) {
+            const r = rascunhos[o.id], registrada = o.status !== 'PENDENTE', abrirForm = !registrada || editandoExec[o.id];
+            const semana = o.semana ? (isNaN(o.semana) ? o.semana : 'semana ' + o.semana) : '';
+            const etiqueta = (icone, texto, cls = 'bg-slate-100 text-slate-600') => `<span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${cls}"><i data-lucide="${icone}" class="w-3.5 h-3.5"></i>${texto}</span>`;
+            const plano = `
+                <div class="p-4">
+                    <div class="flex items-start gap-3">
+                        <div class="shrink-0 w-14 rounded-2xl bg-slate-50 ring-1 ring-slate-200 text-center py-1.5 leading-none">
+                            <span class="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Bloco</span>
+                            <span class="block text-xl font-black text-slate-800 mt-0.5">${esc(o.bloco)}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            ${o.nomeAplicacao && o.nomeAplicacao !== o.tratamento ? `<p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate">${esc(o.nomeAplicacao)}</p>` : ''}
+                            <p class="text-sm font-extrabold text-slate-800">${esc(o.tratamento)}</p>
+                            ${semana ? `<p class="text-[11px] font-semibold text-slate-400">${esc(semana)}</p>` : ''}
+                        </div>
+                        <span class="chip st-${o.status} shrink-0">${STATUS_LABEL[o.status] || o.status}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5 mt-3">
+                        ${o.alvo ? etiqueta('crosshair', 'Alvo: ' + esc(o.alvo), 'bg-rose-50 text-rose-700') : ''}
+                        ${etiqueta('spray-can', esc(o.tipoAplicacao))}
+                        ${o.horario ? etiqueta('clock', esc(o.horario)) : ''}
+                        ${o.volumeCalda ? etiqueta('droplets', 'Calda ' + esc(litros(o.volumeCalda)) + ' L', 'bg-sky-50 text-sky-700') : ''}
+                    </div>
+                    ${o.produtos.length ? `<div class="mt-3 rounded-2xl ring-1 ring-slate-100 overflow-hidden divide-y divide-slate-100">
+                        ${o.produtos.map((p, k) => `<div class="flex items-center justify-between gap-3 px-3 py-2 text-[13px] ${k % 2 ? 'bg-slate-50/70' : ''}"><span class="font-semibold text-slate-700">${esc(p.nome)}</span><span class="font-extrabold text-slate-900 whitespace-nowrap">${esc(p.dose)} ${esc(p.unidade)}</span></div>`).join('')}
+                    </div>` : ''}
+                    ${o.instrucoes ? `<p class="mt-3 text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-2xl px-3 py-2.5"><b class="text-slate-800">Preparo:</b> ${esc(o.instrucoes)}</p>` : ''}
+                </div>`;
+            let execucao;
+            if (!abrirForm) {
+                const dur = duracaoAplicacao(o.data, o.horaInicio, o.horaFim, o.mesmoDia, o.dataConclusao);
+                const feito = o.status === 'FEITO';
+                const dado = (rotulo, valor) => `<div class="bg-white rounded-2xl ring-1 ring-slate-200/80 px-3 py-2"><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">${rotulo}</p><p class="text-sm font-extrabold text-slate-800 mt-0.5">${valor}</p></div>`;
+                execucao = `<div class="mx-4 mb-4 rounded-2xl ${feito ? 'bg-emerald-50/70 ring-1 ring-emerald-100' : 'bg-rose-50/70 ring-1 ring-rose-100'} p-3 space-y-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl ${feito ? 'bg-emerald-500' : 'bg-rose-500'} text-white flex items-center justify-center shrink-0"><i data-lucide="${feito ? 'check' : 'x'}" class="w-5 h-5"></i></div>
+                        <div class="flex-1 min-w-0 text-sm"><b class="${feito ? 'text-emerald-800' : 'text-rose-800'}">${feito ? 'Feito' : 'Não feito'}</b> <span class="text-slate-600">por ${esc(nomeProprio(o.executor))}</span><p class="text-[11px] text-slate-500">${esc(o.executadoEm)}</p></div>
+                        <button type="button" class="btn-sec !min-h-[40px] shrink-0" onclick="editandoExec['${o.id}']=true;renderCardExec('${o.id}')"><i data-lucide="pencil" class="w-3.5 h-3.5"></i> Alterar</button>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        ${o.horaInicio ? dado('Aplicação', `${esc(o.horaInicio)} → ${esc(o.horaFim)}${dur !== null ? `<span class="font-semibold text-slate-500"> · ${fmtDuracao(dur)}</span>` : ''}`) : ''}
+                        ${dado('pH da calda', esc(o.phMedido || '—'))}
+                        ${dado('Volume', o.volumeAplicado ? esc(o.volumeAplicado) + ' L' : '—')}
+                    </div>
+                    ${o.horaInicio && o.mesmoDia === 'NAO' ? `<p class="text-xs font-bold text-amber-700">Concluída em outro dia: ${esc(fmtData(o.dataConclusao))}</p>` : ''}
+                    ${o.observacaoExec ? `<p class="text-sm text-slate-700 bg-white rounded-2xl ring-1 ring-slate-200/80 px-3 py-2"><b>Obs.:</b> ${esc(o.observacaoExec)}</p>` : ''}
+                    ${fotosSalvas(o.fotosPh, 'Fotos do pH')}${fotosSalvas(o.fotosVolume, 'Fotos do volume')}${fotosSalvas(o.fotosOutras, 'Outras fotos')}
+                </div>`;
+            } else {
+                const slot = (k, rotulo, icone, salvas) => `<div class="foto-slot">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-bold text-slate-600 flex items-center gap-1.5"><i data-lucide="${icone}" class="w-4 h-4 text-slate-400"></i>${rotulo}</span>
+                        <label class="btn-sec !min-h-[40px] cursor-pointer shrink-0"><i data-lucide="camera" class="w-4 h-4"></i> Foto
+                            <input type="file" accept="image/*" multiple class="hidden" onchange="anexarFotos('${o.id}','${k}',this)"></label>
+                    </div>
+                    ${salvas.length || r.fotos[k].length ? `<div class="flex flex-wrap gap-2 mt-2.5">
+                        ${salvas.map(f => imgFoto(f, rotulo)).join('')}
+                        ${r.fotos[k].map((f, n) => `<div class="relative"><img class="thumb" src="${f}" alt="nova foto">
+                            <button type="button" onclick="removerFoto('${o.id}','${k}',${n})" aria-label="Tirar foto" class="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></div>`).join('')}
+                    </div>` : ''}
+                </div>`;
+                const d = duracaoAplicacao(o.data, r.horaInicio, r.horaFim, r.mesmoDia, r.dataConclusao);
+                const opcao = (valor, rotulo, icone, ativo, cls, acao) => `<button type="button" class="opcao-exec ${ativo ? cls : ''}" aria-pressed="${ativo}" onclick="${acao}">${icone ? `<i data-lucide="${icone}" class="w-5 h-5"></i>` : ''}${rotulo}</button>`;
+                execucao = `<div class="border-t border-slate-100 p-4 space-y-4">
+                    <div>
+                        <p class="rotulo">Resultado da aplicação</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            ${opcao('FEITO', 'Feito', 'check', r.status === 'FEITO', 'on-ok', `setExec('${o.id}','status','FEITO')`)}
+                            ${opcao('NAO_FEITO', 'Não feito', 'x', r.status === 'NAO_FEITO', 'on-nok', `setExec('${o.id}','status','NAO_FEITO')`)}
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        ${campoHora('hi-' + o.id, 'Começou a aplicação', r.horaInicio, `setExec('${o.id}','horaInicio',this.value)`)}
+                        ${campoHora('hf-' + o.id, 'Terminou a aplicação', r.horaFim, `setExec('${o.id}','horaFim',this.value)`)}
+                    </div>
+                    <div>
+                        <p class="rotulo">Concluída no mesmo dia (${esc(fmtData(o.data))})?</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            ${opcao('SIM', 'Sim', '', r.mesmoDia === 'SIM', 'on-ok', `setExec('${o.id}','mesmoDia','SIM')`)}
+                            ${opcao('NAO', 'Não', '', r.mesmoDia === 'NAO', 'on-aviso', `setMesmoDiaNao('${o.id}')`)}
+                        </div>
+                        ${r.mesmoDia === 'NAO' ? `<div class="mt-2"><label class="rotulo">Data em que foi concluída</label><input type="date" class="campo" value="${esc(r.dataConclusao)}" min="${esc(somarDias(o.data, 1))}" onchange="setExec('${o.id}','dataConclusao',this.value)"></div>` : ''}
+                        ${d === null ? '' : d < 0 ? '<p class="text-xs font-bold text-rose-600 mt-2">O fim ficou antes do início. Se passou da meia-noite, marque Não e informe a data de conclusão.</p>' : `<p class="text-xs font-bold text-slate-500 mt-2 flex items-center gap-1"><i data-lucide="timer" class="w-3.5 h-3.5"></i>Duração: ${fmtDuracao(d)}</p>`}
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="rotulo">pH da calda</label><input class="campo" inputmode="decimal" value="${esc(r.ph)}" placeholder="Ex.: 6,0" oninput="rascunhos['${o.id}'].ph=this.value"></div>
+                        <div><label class="rotulo">Volume preparado (L)</label><input class="campo" inputmode="decimal" value="${esc(r.volume)}" placeholder="${esc(litros(o.volumeCalda) || 'Ex.: 600')}" oninput="rascunhos['${o.id}'].volume=this.value"></div>
+                    </div>
+                    <div class="space-y-2">
+                        ${slot('ph', 'Foto do pH da calda', 'flask-conical', o.fotosPh)}
+                        ${slot('volume', 'Foto do volume da calda', 'droplets', o.fotosVolume)}
+                        ${slot('outras', 'Outras fotos (opcional)', 'image', o.fotosOutras)}
+                    </div>
+                    <div><label class="rotulo">Observação ${r.status === 'NAO_FEITO' ? '<span class="text-rose-600 normal-case">· obrigatória: por que não foi feito?</span>' : '<span class="normal-case font-semibold">(opcional)</span>'}</label>
+                        <textarea class="campo" rows="2" placeholder="Ex.: chuva, falta de produto, problema na bomba..." oninput="rascunhos['${o.id}'].obs=this.value">${esc(r.obs)}</textarea></div>
+                    <div class="flex gap-2">
+                        ${registrada ? `<button type="button" class="btn-sec" onclick="cancelarEdicaoExec('${o.id}')">Cancelar</button>` : ''}
+                        <button type="button" class="btn-principal flex-1 !text-sm" onclick="registrar('${o.id}')"><i data-lucide="cloud-upload" class="w-5 h-5"></i> Salvar bloco ${esc(o.bloco)}</button>
+                    </div>
+                </div>`;
+            }
+            return `<div id="card-${o.id}" class="bg-white rounded-3xl shadow-sm ring-1 ${registrada && !abrirForm ? (o.status === 'FEITO' ? 'ring-emerald-200' : 'ring-rose-200') : 'ring-slate-200/80'} overflow-hidden">${plano}${execucao}</div>`;
+        }
+        function setExec(opId, campo, valor) { rascunhos[opId][campo] = valor; renderCardExec(opId); }
+        function setMesmoDiaNao(opId) {
+            const r = rascunhos[opId], o = atual.operacoes.find(x => x.id === opId);
+            r.mesmoDia = 'NAO'; if (!r.dataConclusao) r.dataConclusao = somarDias(o.data, 1);
+            renderCardExec(opId);
+        }
+        function cancelarEdicaoExec(opId) { delete editandoExec[opId]; rascunhos[opId] = novoRascunho(atual.operacoes.find(x => x.id === opId)); renderCardExec(opId); }
+        async function anexarFotos(opId, tipo, input) {
+            const arquivos = Array.from(input.files).filter(f => f.type.startsWith('image/'));
+            input.value = '';
+            if (!arquivos.length) return;
+            const lista = rascunhos[opId].fotos[tipo];
+            if (lista.length + arquivos.length > 4) return avisar('Envie no máximo 4 fotos de cada tipo por vez.', 'Limite de fotos');
+            carregando(true, 'Preparando fotos...');
+            try { for (const f of arquivos) lista.push(await comprimirImagem(f)); carregando(false); renderCardExec(opId); }
+            catch (e) { erro(e); }
+        }
+        function removerFoto(opId, tipo, n) { rascunhos[opId].fotos[tipo].splice(n, 1); renderCardExec(opId); }
+        function recalcularLocal(p) {
+            const feitas = p.operacoes.filter(o => o.status === 'FEITO').length, nao = p.operacoes.filter(o => o.status === 'NAO_FEITO').length;
+            p.totalOperacoes = p.operacoes.length; p.feitas = feitas; p.naoFeitas = nao;
+            p.status = p.operacoes.length && feitas === p.operacoes.length ? 'CONCLUIDA' : feitas + nao === 0 ? 'PENDENTE' : 'PARCIAL';
+        }
+        async function registrar(opId) {
+            const o = atual.operacoes.find(x => x.id === opId), r = rascunhos[opId], executor = el('execNome').value.trim();
+            if (!executor) { el('execNome').focus(); return avisar('Informe seu nome no campo "Quem está executando".'); }
+            if (!r.status) return avisar(`Marque se o bloco ${o.bloco} foi FEITO ou NÃO FEITO.`);
+            if (r.status === 'NAO_FEITO' && !r.obs.trim()) return avisar('Explique na observação por que a operação não foi feita.');
+            if (r.status === 'FEITO') {
+                if (!r.horaInicio || !r.horaFim) return avisar('Informe o horário em que a aplicação começou e terminou.');
+                if (!r.mesmoDia) return avisar('Informe se a aplicação foi concluída no mesmo dia.');
+                if (r.mesmoDia === 'NAO' && !r.dataConclusao) return avisar('Informe a data em que a aplicação foi concluída.');
+                if (r.mesmoDia === 'NAO' && r.dataConclusao <= o.data) return avisar('A data de conclusão deve ser depois do dia da programação.');
+                if (duracaoAplicacao(o.data, r.horaInicio, r.horaFim, r.mesmoDia, r.dataConclusao) < 0) return avisar('O horário de fim ficou antes do início. Se passou da meia-noite, marque NÃO em "concluída no mesmo dia".');
+                if (!r.ph.trim() || !r.volume.trim()) return avisar('Informe o pH e o volume da calda preparada.');
+                if (EXIGIR_FOTOS) {
+                    if (!r.fotos.ph.length && !o.fotosPh.length) return avisar('Anexe a foto do pH da calda.', 'Foto obrigatória');
+                    if (!r.fotos.volume.length && !o.fotosVolume.length) return avisar('Anexe a foto do volume da calda.', 'Foto obrigatória');
+                }
+            }
+            const nFotos = r.fotos.ph.length + r.fotos.volume.length + r.fotos.outras.length;
+            if (nFotos && !navigator.onLine) return avisar('Sem internet para enviar as fotos. Os dados continuam nesta tela: toque em Salvar assim que a conexão voltar.', 'Sem internet');
+            guardar('executor', executor);
+            carregando(true, nFotos ? `Enviando ${nFotos} foto(s) para o Drive...` : 'Salvando...');
+            try {
+                // Fotos primeiro (Google Drive); depois o registro vai pela fila do aparelho
+                const novas = { ph: [], volume: [], outras: [] };
+                const rotulos = { ph: 'pH', volume: 'Volume', outras: 'Foto' };
+                const carimbo = agoraHHMM().replace(':', '') + String(new Date().getSeconds()).padStart(2, '0');
+                for (const k of Object.keys(novas)) {
+                    for (let n = 0; n < r.fotos[k].length; n++) {
+                        carregando(true, `Enviando foto ${rotulos[k]} do bloco ${o.bloco}...`);
+                        novas[k].push(await enviarFotoDrive(r.fotos[k][n], `${o.data} ${o.turno || ''} - Bloco ${o.bloco} - ${rotulos[k]} - ${carimbo}-${n + 1}.jpg`, o.data.slice(0, 7)));
+                    }
+                }
+                const fotosPh = o.fotosPh.concat(novas.ph), fotosVolume = o.fotosVolume.concat(novas.volume), fotosOutras = o.fotosOutras.concat(novas.outras);
+                const dataConclusao = r.mesmoDia === 'NAO' ? r.dataConclusao : (r.mesmoDia === 'SIM' ? o.data : '');
+                const executadoEm = agoraTexto();
+                API.enfileirar('fito_operacoes', 'update', { id: opId, valores: {
+                    status: r.status, executor, executado_em: executadoEm, ph_medido: r.ph.trim(), volume_aplicado: r.volume.trim(), observacao_exec: r.obs.trim(),
+                    hora_inicio: r.horaInicio, hora_fim: r.horaFim, mesmo_dia: r.mesmoDia, data_conclusao: dataConclusao,
+                    fotos_ph: fotosPh, fotos_volume: fotosVolume, fotos_outras: fotosOutras
+                } });
+                Object.assign(o, { status: r.status, executor, executadoEm, phMedido: r.ph.trim(), volumeAplicado: r.volume.trim(), observacaoExec: r.obs.trim(),
+                    horaInicio: r.horaInicio, horaFim: r.horaFim, mesmoDia: r.mesmoDia, dataConclusao, fotosPh, fotosVolume, fotosOutras });
+                recalcularLocal(atual);
+                rascunhos[opId] = novoRascunho(o); delete editandoExec[opId];
+                atualizarNaLista(atual); gravarCache(cacheProg(atual.id), atual);
+                carregando(false);
+                renderCabecalhoExec(); renderCardExec(opId);
+                if (atual.status === 'CONCLUIDA') Dialogo.avisar('Todas as operações desta programação foram feitas.', { titulo: 'Programação concluída', tipo: 'sucesso' });
+            } catch (e) { erro(new Error('Não foi possível enviar as fotos: ' + (e.message || e) + '. Nada foi perdido: tente salvar de novo.')); }
+        }
+
+        // ------------------------------------------------------------
+        //  IMAGENS PARA O GRUPO (html-to-image)
+        // ------------------------------------------------------------
+        let imagemAtual = null;
+        // ---------- Visual das imagens: o mesmo padrão do sistema (branco, cinza e verde) ----------
+        const FONTE_IMG = "font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;";
+        const LOGO_IMG = new URL('../../icone-app.png', location.href).href;
+        function cabecalhoImagem(titulo, subtitulo, extra) {
+            return `<div style="background:linear-gradient(135deg,#059669,#047857);color:#fff;padding:22px 26px;display:flex;align-items:center;gap:16px;">
+                <img src="${LOGO_IMG}" alt="" style="width:56px;height:56px;border-radius:14px;background:#fff;object-fit:contain;padding:3px;flex-shrink:0;">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:24px;font-weight:900;line-height:1.15;">${titulo}</div>
+                    <div style="font-size:14px;font-weight:600;opacity:.9;margin-top:4px;">${subtitulo}</div>
+                </div>
+                ${extra || ''}
+            </div>`;
+        }
+        const rodapeImagem = texto => `<div style="background:#f1f5f9;color:#94a3b8;font-size:11px;font-weight:700;text-align:center;padding:10px;text-transform:uppercase;letter-spacing:.06em;">${texto}</div>`;
+        const pilula = (texto, fundo, frente) => `<span style="display:inline-block;padding:3px 10px;border-radius:999px;background:${fundo};color:${frente};font-size:11px;font-weight:800;white-space:nowrap;">${texto}</span>`;
+        const ESTILO_STATUS = { FEITO: ['Feito', '#dcfce7', '#166534'], NAO_FEITO: ['Não feito', '#fee2e2', '#991b1b'], PENDENTE: ['Pendente', '#fef3c7', '#92400e'],
+            CONCLUIDA: ['Concluída', '#dcfce7', '#166534'], PARCIAL: ['Em andamento', '#dbeafe', '#1e40af'], ATRASADA: ['Atrasada', '#fee2e2', '#991b1b'] };
+        const pilulaStatus = st => { const [t, f, c] = ESTILO_STATUS[st] || ESTILO_STATUS.PENDENTE; return pilula(t, f, c); };
+        const nomeAplicacao = o => {
+            const nome = o.nomeAplicacao && o.nomeAplicacao !== o.tratamento ? o.nomeAplicacao : '';
+            return `<div style="min-width:0;"><div style="min-width:0;">
+                ${nome ? `<div style="font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">${esc(nome)}</div>` : ''}
+                <div style="font-weight:800;color:#0f172a;">${esc(o.tratamento)}</div></div></div>`;
+        };
+
+        async function enviarImagemProgramacao(id) {
+            carregando(true, 'Abrindo programação...');
+            try { const p = await obterProgramacao(id); carregando(false); gerarImagemProgramacao(p); } catch (e) { erro(e); }
+        }
+        // Programação do dia: um cartão por bloco, em duas colunas
+        function gerarImagemProgramacao(p) {
+            const cartao = o => {
+                const semana = o.semana ? (isNaN(o.semana) ? o.semana : 'semana ' + o.semana) : '';
+                const produtos = o.produtos.length ? o.produtos : [];
+                return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:16px;break-inside:avoid;">
+                    <div style="display:flex;align-items:flex-start;gap:12px;">
+                        <div style="background:#ecfdf5;color:#047857;border-radius:12px;padding:8px 10px;text-align:center;min-width:64px;flex-shrink:0;">
+                            <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;">Bloco</div>
+                            <div style="font-size:22px;font-weight:900;line-height:1;">${esc(o.bloco)}</div>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            ${nomeAplicacao(o)}
+                            <div style="font-size:12px;color:#64748b;font-weight:600;margin-top:4px;">${[esc(o.tipoAplicacao), o.horario ? esc(o.horario) : '', esc(semana)].filter(Boolean).join(' · ')}</div>
+                            ${o.alvo ? `<div style="font-size:12px;color:#be123c;font-weight:800;margin-top:3px;">Alvo: ${esc(o.alvo)}</div>` : ''}
+                        </div>
+                    </div>
+                    ${produtos.length ? `<div style="margin-top:12px;border:1px solid #f1f5f9;border-radius:12px;overflow:hidden;">
+                        ${produtos.map((pr, k) => `<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 12px;font-size:13px;${k ? 'border-top:1px solid #f1f5f9;' : ''}background:${k % 2 ? '#f8fafc' : '#fff'};">
+                            <span style="font-weight:700;color:#334155;">${esc(pr.nome)}</span><span style="font-weight:900;color:#0f172a;white-space:nowrap;">${esc(pr.dose)} ${esc(pr.unidade)}</span></div>`).join('')}
+                    </div>` : ''}
+                    ${o.volumeCalda ? `<div style="margin-top:10px;font-size:12px;font-weight:700;color:#0369a1;">Calda: ${esc(litros(o.volumeCalda))} L</div>` : ''}
+                    ${o.instrucoes ? `<div style="margin-top:6px;font-size:12px;color:#475569;line-height:1.45;">${esc(o.instrucoes)}</div>` : ''}
+                </div>`;
+            };
+            const html = `<div style="width:960px;background:#f8fafc;${FONTE_IMG}color:#0f172a;">
+                ${cabecalhoImagem(`Programação diária · ${esc(p.turno)}`, `${esc(p.diaSemana ? p.diaSemana.charAt(0) + p.diaSemana.slice(1).toLowerCase() : '')}, ${esc(fmtData(p.data))} · ${p.operacoes.length} ${p.operacoes.length === 1 ? 'operação' : 'operações'}`)}
+                <div style="padding:18px;">
+                    ${p.observacao ? `<div style="margin-bottom:14px;padding:12px 14px;border-radius:14px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:13px;"><b>Observação:</b> ${esc(p.observacao)}</div>` : ''}
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">${p.operacoes.map(cartao).join('')}</div>
+                    <div style="margin-top:12px;font-size:12px;color:#64748b;font-weight:600;">Programado por ${esc(p.responsavel || '—')}</div>
+                </div>
+                ${rodapeImagem('SPG Sede · Programação Fitossanitária')}
+            </div>`;
+            const texto = `*PROGRAMAÇÃO DIÁRIA - ${p.turno}*\n📅 ${fmtData(p.data)} (${p.diaSemana})\n🧪 ${p.operacoes.length} operação(ões)\n👤 Programado por ${p.responsavel || '—'}`;
+            return gerarImagem(html, `Programacao_${p.data}_${p.turno}.png`, texto, 'Imagem da programação');
+        }
+
+        // Resumo do checklist, para enviar ao grupo no fim do trabalho
+        function enviarResumoChecklist() {
+            const p = atual, pendentes = p.operacoes.filter(o => o.status === 'PENDENTE').length;
+            const st = statusProg(p), jornada = resumoJornada(p), feitas = Number(p.feitas) || 0, nao = Number(p.naoFeitas) || 0, total = p.operacoes.length;
+            const numero = (rotulo, valor, corValor) => `<div style="flex:1;background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:12px 14px;">
+                <div style="font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">${rotulo}</div>
+                <div style="font-size:24px;font-weight:900;color:${corValor};line-height:1.2;margin-top:2px;">${valor}</div></div>`;
+            const TD = 'padding:10px 12px;border-top:1px solid #f1f5f9;font-size:12px;vertical-align:middle;';
+            const linhas = p.operacoes.map(o => {
+                const dur = duracaoAplicacao(o.data, o.horaInicio, o.horaFim, o.mesmoDia, o.dataConclusao);
+                const horario = o.horaInicio
+                    ? `<b>${esc(o.horaInicio)} → ${esc(o.horaFim)}</b>${dur !== null && dur >= 0 ? `<div style="color:#64748b;">${fmtDuracao(dur)}${o.mesmoDia === 'NAO' ? ` · terminou ${esc(fmtData(o.dataConclusao).slice(0, 5))}` : ''}</div>` : ''}`
+                    : '<span style="color:#cbd5e1;">—</span>';
+                return `<tr>
+                    <td style="${TD}font-weight:900;white-space:nowrap;">Bloco ${esc(o.bloco)}</td>
+                    <td style="${TD}">${nomeAplicacao(o)}</td>
+                    <td style="${TD}">${pilulaStatus(o.status)}</td>
+                    <td style="${TD}white-space:nowrap;">${horario}</td>
+                    <td style="${TD}font-weight:800;text-align:center;">${esc(o.phMedido || '—')}</td>
+                    <td style="${TD}white-space:nowrap;"><b>${o.volumeAplicado ? esc(o.volumeAplicado) + ' L' : '—'}</b>${o.volumeCalda ? `<div style="color:#64748b;">prog. ${esc(litros(o.volumeCalda))} L</div>` : ''}</td>
+                    <td style="${TD}color:#334155;">${esc(o.executor || '')}</td>
+                    <td style="${TD}color:#475569;">${esc(o.observacaoExec || '')}</td>
+                </tr>`;
+            }).join('');
+            const html = `<div style="width:1100px;background:#f8fafc;${FONTE_IMG}color:#0f172a;">
+                ${cabecalhoImagem(`Resumo do checklist · ${esc(p.turno)}`, `${esc(p.diaSemana ? p.diaSemana.charAt(0) + p.diaSemana.slice(1).toLowerCase() : '')}, ${esc(fmtData(p.data))}`, `<div style="background:#fff;border-radius:999px;padding:2px;">${pilulaStatus(st)}</div>`)}
+                <div style="padding:18px;">
+                    <div style="display:flex;gap:10px;">
+                        ${numero('Feitas', `${feitas}<span style="font-size:14px;color:#94a3b8;"> de ${total}</span>`, '#047857')}
+                        ${numero('Não feitas', nao, nao ? '#b91c1c' : '#cbd5e1')}
+                        ${numero('Pendentes', pendentes, pendentes ? '#b45309' : '#cbd5e1')}
+                    </div>
+                    ${jornada ? `<div style="margin-top:10px;padding:10px 14px;border-radius:14px;background:#fff;border:1px solid #e2e8f0;font-size:13px;font-weight:700;color:#334155;">${esc(jornada)}</div>` : ''}
+                    <div style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden;">
+                        <table style="border-collapse:collapse;width:100%;">
+                            <tr style="background:#f8fafc;">${['Bloco', 'Aplicação', 'Status', 'Horário', 'pH', 'Volume', 'Executor', 'Observação'].map(h => `<td style="padding:10px 12px;font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">${h}</td>`).join('')}</tr>
+                            ${linhas}
+                        </table>
+                    </div>
+                </div>
+                ${rodapeImagem(`SPG Sede · Fotos do pH e do volume no Google Drive · gerado em ${new Date().toLocaleString('pt-BR')}`)}
+            </div>`;
+            const texto = `*RESUMO DO CHECKLIST - ${p.turno}*\n📅 ${fmtData(p.data)} (${p.diaSemana})\n✅ ${feitas} de ${total} feitas` + (nao ? `\n❌ ${nao} não feita(s)` : '') + (pendentes ? `\n⏳ ${pendentes} pendente(s)` : '') + (jornada ? `\n⏱ ${jornada}` : '');
+            return gerarImagem(html, `Resumo_checklist_${p.data}_${p.turno}.png`, texto, 'Resumo do checklist');
+        }
+        async function gerarImagem(html, nomeArquivo, texto, titulo) {
+            if (!window.htmlToImage) return avisar('A biblioteca de imagem não carregou. Verifique a internet e recarregue a página.', 'Erro', 'erro');
+            carregando(true, 'Gerando imagem...');
+            const area = el('areaExport');
+            area.innerHTML = html;
+            try {
+                const alvo = area.firstElementChild;
+                // Espera a logo carregar antes de gerar
+                await Promise.all([...alvo.querySelectorAll('img')].map(img => img.complete ? null : new Promise(r => { img.onload = r; img.onerror = r; })));
+                const largura = alvo.offsetWidth, altura = alvo.offsetHeight;
+                // Até 3x, limitado a 15 MP (o iPhone não abre imagem maior)
+                const pixelRatio = Math.max(1, Math.min(3, Math.sqrt(15e6 / (largura * altura))));
+                const dataUrl = await htmlToImage.toPng(alvo, { pixelRatio, backgroundColor: '#ffffff', width: largura, height: altura });
+                const blob = await (await fetch(dataUrl)).blob();
+                imagemAtual = { dataUrl, texto, nomeArquivo, arquivo: new File([blob], nomeArquivo, { type: 'image/png' }) };
+                el('imagemTitulo').textContent = titulo; el('imagemPreview').src = dataUrl;
+                carregando(false); el('imagemModal').classList.remove('hidden'); icones();
+            } catch (e) { erro(new Error('Não foi possível gerar a imagem: ' + (e.message || e))); }
+            finally { area.innerHTML = ''; }
+        }
+        // O compartilhamento precisa partir de um toque, por isso fica no botão da janela
+        async function compartilharImagem() {
+            if (!imagemAtual) return;
+            const { arquivo, texto } = imagemAtual;
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+                try { await navigator.share({ files: [arquivo], text: texto }); fecharImagem(); } catch (e) { /* cancelado */ }
+                return;
+            }
+            baixarImagem();
+            setTimeout(() => window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank'), 800);
+            Dialogo.avisar('A imagem foi salva no aparelho. No WhatsApp, escolha o grupo e anexe a imagem baixada.', { titulo: 'Imagem baixada', tipo: 'info' });
+        }
+        function baixarImagem() { if (!imagemAtual) return; const a = document.createElement('a'); a.href = imagemAtual.dataUrl; a.download = imagemAtual.nomeArquivo; document.body.appendChild(a); a.click(); a.remove(); }
+        function fecharImagem() { el('imagemModal').classList.add('hidden'); }
+
+        // ------------------------------------------------------------
+        //  Início
+        // ------------------------------------------------------------
+        (function iniciarBarraStatus() {
+            const u = API.usuarioAtual(); if (!u) return;
+            const menu = el('btnMenuProjetos');
+            if (API.projetosDoUsuario().length > 1 && window.top === window.self) { menu.classList.remove('hidden'); menu.classList.add('flex'); }
+        })();
+        function medirNavbar() { document.documentElement.style.setProperty('--altura-navbar', el('navbar').offsetHeight + 'px'); }
+        medirNavbar(); window.addEventListener('resize', medirNavbar);
+        if (window.BarraAbas) barra = BarraAbas.criar({
+            rotulo: 'Seções da Programação Fitossanitária',
+            abas: () => ABAS.map(a => ({ ...a, ativa: a.id === aba })),
+            abrir: id => trocarAba(id)
+        });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharFoto(); fecharImagem(); } });
+        irPara('lista');
+        programacoes = lerCache(CACHE_LISTA) || [];
+        modelos = lerCache('fito_cache_modelos') || [];
+        renderLista();
+        carregarLista(programacoes.length > 0);
+        carregarModelos();
+    </script>
+</body>
+</html>

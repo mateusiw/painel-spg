@@ -134,6 +134,7 @@
     </style>
     <script src="../../lista-moderna.js"></script>
     <script src="../../trava-fundo.js"></script>
+    <style>#c_seletorDia .sp-modos { display: none !important; }</style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-20 select-none relative">
 
@@ -150,7 +151,6 @@
 
         <div id="nav-actions-colheita" class="flex gap-2 w-full sm:w-auto">
             <button onclick="c_downloadImage()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 ring-1 ring-blue-700/20 transition-all active:scale-95"><i data-lucide="image" class="w-4 h-4"></i><span class="hidden sm:inline">Enviar Imagem</span></button>
-            <button onclick="c_downloadCSV()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 ring-1 ring-emerald-700/20 transition-all active:scale-95"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i><span class="hidden sm:inline">Enviar CSV</span></button>
             <button id="c_releaseBtn" onclick="c_onReleaseClick()" title="Conferir os dados e liberar a pesagem do SPG" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-lg transition-all active:scale-95"><i data-lucide="lock" class="w-4 h-4"></i><span class="hidden sm:inline">Liberar Pesagem</span></button>
         </div>
 
@@ -197,9 +197,14 @@
     <div id="view-colheita" class="block animate-fade-in-down">
         <div class="container mx-auto p-4 flex flex-col lg:flex-row gap-8 mt-2">
             <div class="w-full lg:w-1/3 space-y-4">
+                <!-- Dia da colheita: o mesmo seletor da aba Campo (Automática = hoje) -->
+                <div class="bg-white p-4 rounded-3xl shadow-sm ring-1 ring-slate-200/80">
+                    <p class="rotulo-dia text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> Dia da colheita</p>
+                    <div id="c_seletorDia"></div>
+                </div>
                 <!-- Parametros -->
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h2 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2 border-b border-slate-100 pb-2"><i data-lucide="settings" class="w-4 h-4 text-slate-500"></i> PARÂMETROS DO TURNO</h2>
+                    <h2 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2 border-b border-slate-100 pb-2"><i data-lucide="settings" class="w-4 h-4 text-slate-500"></i> PARÂMETROS DO TURNO<button type="button" onclick="c_limparParametros()" title="Limpar os parâmetros do turno deste dia" class="ml-auto flex items-center gap-1 min-h-[32px] px-2.5 rounded-lg text-[11px] font-bold text-red-500 hover:bg-red-50 normal-case"><i data-lucide="eraser" class="w-3.5 h-3.5"></i> Limpar</button></h2>
                     <div class="grid grid-cols-2 gap-3 mb-3">
                         <div><label class="text-[10px] font-bold text-slate-500 mb-1 block uppercase">EFETIVO (PESSOAS)</label><input type="text" id="c_crewCount" oninput="formatNumberInput(this); c_renderReport()" class="w-full p-2 border border-slate-300 rounded text-sm outline-none"></div>
                         <div><label class="text-[10px] font-bold text-slate-500 mb-1 block uppercase">REF. ESTIMATIVA</label><select id="c_estimateDay" oninput="c_renderReport()" class="w-full p-2 border border-slate-300 rounded text-sm outline-none"><option value="">(Nenhum)</option><option value="Segunda-feira">Segunda-feira</option><option value="Terça-feira">Terça-feira</option><option value="Quarta-feira">Quarta-feira</option><option value="Quinta-feira">Quinta-feira</option><option value="Sexta-feira">Sexta-feira</option><option value="Sábado">Sábado</option><option value="Domingo">Domingo</option><option value="Amanhã">Amanhã</option></select></div>
@@ -249,7 +254,7 @@
                                 <label class="text-[10px] font-bold text-slate-500 block mb-3 uppercase tracking-wide">Dados Adicionais do Bloco</label>
                                 <input type="checkbox" id="c_hasStages" onchange="c_toggleDetailsField()" class="hidden">
                                 <div class="grid grid-cols-3 gap-2 mb-3">
-                                    <div><label class="text-[10px] font-bold text-slate-500 mb-1 block">Dias Prod.</label><input type="number" id="c_productionDays" class="w-full p-2 border border-slate-300 rounded-lg text-sm outline-none"></div>
+                                    <div><label class="text-[10px] font-bold text-slate-500 mb-1 block">Dias Prod.</label><input type="number" id="c_productionDays" readonly title="Dias com lançamento desta variedade no bloco/ciclo, contando o dia marcado" class="w-full p-2 border border-slate-200 bg-slate-100 rounded-lg text-sm font-bold text-slate-600 outline-none cursor-not-allowed"></div>
                                     <div><label class="text-[10px] font-bold text-slate-500 mb-1 block">Total Plantas</label><input type="text" id="c_totalBlockPlants" readonly class="w-full p-2 border border-slate-200 bg-slate-100 rounded-lg text-sm font-bold text-slate-600 outline-none cursor-not-allowed"></div>
                                     <div><label class="text-[10px] font-bold text-slate-500 mb-1 block">Qtd Variedade</label><input type="text" id="c_plants" readonly class="w-full p-2 border border-slate-200 bg-slate-100 rounded-lg text-sm font-bold text-slate-600 outline-none cursor-not-allowed"></div>
                                 </div>
@@ -277,7 +282,7 @@
                 <!-- Lista Colheita -->
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                        <div class="flex items-center gap-3"><h3 class="text-sm font-bold text-slate-700 uppercase">REGISTROS</h3>
+                        <div class="flex items-center gap-3"><h3 class="text-sm font-bold text-slate-700 uppercase">REGISTROS <span id="c_registrosDia" class="normal-case font-semibold text-slate-400"></span></h3>
                             <label class="cursor-pointer flex items-center gap-1 text-[10px] bg-slate-100 px-2 py-1 rounded font-bold uppercase border border-slate-200"><input type="file" accept=".csv" class="hidden" onchange="c_importCSV(event)"><i data-lucide="upload" class="w-3 h-3"></i> CSV</label>
                         </div>
                         <button onclick="showConfirm('Atenção!', 'Deseja limpar todos os blocos?', 'danger', 'Limpar', c_confirmClearAll)" class="text-[10px] font-bold text-red-500 underline uppercase">LIMPAR LISTA</button>
@@ -560,6 +565,86 @@
 
         // Estruturas de Dados
         let c_harvestData = JSON.parse(localStorage.getItem('spg_harvestData')) || [];
+        // REGISTROS DA COLHEITA POR DIA
+        // c_harvestData tem só os registros do dia escolhido no seletor de data (Automática = hoje, ou Manual).
+        // Os outros dias ficam guardados em c_arquivo e voltam quando o seletor marcar aquele dia.
+        // Assim um registro não fica aparecendo (nem indo para a Pesagem/Packing) todo dia.
+        const C_K_DIA = 'spg_' + 'harvestDia', C_K_ARQ = 'spg_' + 'harvestArquivo';
+        const C_DIAS_GUARDADOS = 30;
+        let c_dia = ''; try { c_dia = localStorage.getItem(C_K_DIA) || ''; } catch (e) { }
+        let c_arquivo = {}; try { c_arquivo = JSON.parse(localStorage.getItem(C_K_ARQ) || '{}') || {}; } catch (e) { c_arquivo = {}; }
+        function c_diaEscolhido() { return f_workDate(); }
+        // Parâmetros do turno (efetivo, horários, estimativas, próximos blocos) também são de cada dia
+        const C_K_INPUTS = 'spg_inputs', C_K_ARQ_PARAM = C_K_ARQ + 'Param';
+        let c_arquivoParam = {}; try { c_arquivoParam = JSON.parse(localStorage.getItem(C_K_ARQ_PARAM) || '{}') || {}; } catch (e) { c_arquivoParam = {}; }
+        const c_temParam = o => !!o && (['crewCount', 'estimateDay', 'startTime', 'endTime', 'intervalDuration', 'manualTotalEstimate'].some(k => o[k]) || (Array.isArray(o.forecastBlocks) && o.forecastBlocks.length > 0));
+        function c_salvarArquivo() {
+            const dias = Object.keys(c_arquivo).sort(); while (dias.length > C_DIAS_GUARDADOS) delete c_arquivo[dias.shift()];
+            const diasP = Object.keys(c_arquivoParam).sort(); while (diasP.length > C_DIAS_GUARDADOS) delete c_arquivoParam[diasP.shift()];
+            try { localStorage.setItem(C_K_DIA, c_dia); localStorage.setItem(C_K_ARQ, JSON.stringify(c_arquivo)); localStorage.setItem(C_K_ARQ_PARAM, JSON.stringify(c_arquivoParam)); } catch (e) { }
+        }
+        // Botão "Limpar" dos Parâmetros do turno: apaga os do dia marcado (efetivo, horários, estimativas e próximos)
+        function c_limparParametros() {
+            showConfirm('Limpar parâmetros?', 'Apagar os <b>parâmetros do turno</b> deste dia (efetivo, estimativas, horários e previsão dos próximos)?', 'danger', '<i data-lucide="eraser" class="w-4 h-4"></i> Limpar', () => {
+                ['crewCount', 'estimateDay', 'startTime', 'endTime', 'intervalDuration', 'manualTotalEstimate'].forEach(id => { const el = document.getElementById('c_' + id); if (el) { el.value = ''; el.dispatchEvent(new Event('change', { bubbles: true })); } });
+                const fc = document.getElementById('c_forecastBlocksContainer'); if (fc) fc.innerHTML = '';
+                c_saveInputs(); c_renderReport();
+            });
+        }
+        // Mostra na tela os parâmetros do turno guardados para o dia atual
+        function c_recarregarParametros() {
+            ['crewCount', 'estimateDay', 'startTime', 'endTime', 'intervalDuration', 'manualTotalEstimate'].forEach(id => { const el = document.getElementById('c_' + id); if (el) el.value = ''; });
+            const fc = document.getElementById('c_forecastBlocksContainer'); if (fc) fc.innerHTML = '';
+            c_loadInputs();
+        }
+        // Guarda os registros do dia atual e traz os do dia novo. Retorna true se trocou.
+        function c_trocarDiaColheita(dia) {
+            if (!dia || dia === c_dia) return false;
+            // Registros antigos (de antes da separação por dia) ficam no primeiro dia marcado
+            if (!c_dia) { c_dia = dia; c_salvarArquivo(); return false; }
+            if (c_dia && c_harvestData.length) c_arquivo[c_dia] = c_harvestData; else if (c_dia) delete c_arquivo[c_dia];
+            c_harvestData = Array.isArray(c_arquivo[dia]) ? c_arquivo[dia] : []; delete c_arquivo[dia];
+            // Parâmetros do turno: guarda os do dia que sai e traz os do dia que entra (dia novo começa em branco)
+            let atual = {}; try { atual = JSON.parse(localStorage.getItem(C_K_INPUTS) || '{}') || {}; } catch (e) { }
+            if (c_temParam(atual)) c_arquivoParam[c_dia] = atual; else delete c_arquivoParam[c_dia];
+            const novos = c_arquivoParam[dia] || {}; delete c_arquivoParam[dia];
+            try { localStorage.setItem(C_K_INPUTS, JSON.stringify(novos)); } catch (e) { }
+            c_dia = dia; c_salvarArquivo();
+            return true;
+        }
+        // Seletor de dia na aba Colheita: escolhe o mesmo dia do seletor do Campo
+        let c_seletorDia = null;
+        function c_montarSeletorDia() {
+            const alvo = document.getElementById('c_seletorDia');
+            if (!alvo || !window.SeletorPeriodo || c_seletorDia) return;
+            const dia = c_dia || f_workDate(); const d = new Date();
+            c_seletorDia = SeletorPeriodo.montar(alvo, {
+                periodo: { modo: 'dia', dia, mes: d.getMonth(), ano: d.getFullYear(), de: dia, ate: dia },
+                tudo: false,
+                aoMudar: (de, ate, periodo) => {
+                    if (periodo.modo !== 'dia') { periodo.modo = 'dia'; periodo.dia = de || f_todayISO(); }
+                    const novo = periodo.dia || f_todayISO();
+                    if (novo === f_todayISO()) f_setDateMode('auto'); else f_setManualDate(novo);
+                    c_atualizarSeletorDia();
+                }
+            });
+        }
+        function c_atualizarSeletorDia() {
+            if (!c_seletorDia) return;
+            const p = c_seletorDia.periodo(), dia = c_dia || f_workDate();
+            if (p.modo !== 'dia' || p.dia !== dia) { p.modo = 'dia'; p.dia = dia; }
+            c_seletorDia.redesenhar();
+        }
+
+        // Depois de mudar o seletor (ou virar o dia): mostra os registros do dia marcado
+        function c_seguirSeletor() {
+            if (typeof c_editingIndex !== 'undefined' && c_editingIndex >= 0) c_clearBlockForm();
+            if (!c_trocarDiaColheita(c_diaEscolhido())) return;
+            c_recarregarParametros(); spg_markChanged('colheita');
+            c_updateDynamicTitle(); p_updateDynamicTitle();
+            c_saveData(); c_renderList(); c_renderReport();
+            if (typeof p_scheduleSyncFromColheita === 'function') p_scheduleSyncFromColheita();
+        }
         // Liberação da pesagem: só vale para os dados exatamente como estavam na conferência
         let c_release = null; try { c_release = JSON.parse(localStorage.getItem('spg_release')) || null; } catch(e) { c_release = null; }
         let c_editingIndex = -1;
@@ -676,7 +761,7 @@
             if (key === 'campo') return f_data;
             if (key === 'pesagem') return p_getWeightsState();
             let inputs = {}; try { inputs = JSON.parse(localStorage.getItem('spg_inputs') || '{}'); } catch(e) {}
-            return { harvestData: c_harvestData, inputs, release: c_release };
+            return { harvestData: c_harvestData, inputs, release: c_release, dia: c_dia, arquivo: c_arquivo, arquivoParam: c_arquivoParam };
         }
 
         function spg_isEditing() { return c_editingIndex >= 0 || f_editingEntryIdx >= 0 || f_editingLoadIdx >= 0 || p_editingIndex >= 0; }
@@ -688,11 +773,20 @@
                 if (key === 'campo') {
                     f_data = data; if (!Array.isArray(f_data.loads)) f_data.loads = [];
                     f_editingLoadIdx = -1; f_editingEntryIdx = -1;
-                    localStorage.setItem(f_STORAGE_KEY, JSON.stringify(f_data)); f_render(); setTimeout(f_checkNewDay, 0);
+                    localStorage.setItem(f_STORAGE_KEY, JSON.stringify(f_data)); f_render(); setTimeout(() => { f_checkNewDay(); c_seguirSeletor(); }, 0);
                 } else if (key === 'colheita') {
-                    c_harvestData = Array.isArray(data.harvestData) ? data.harvestData : [];
+                    // Os dados chegam com o dia deles; aqui fica o dia marcado neste aparelho e o resto vai para o arquivo
+                    const juntos = Object.assign({}, data.arquivo && typeof data.arquivo === 'object' ? data.arquivo : {});
+                    const diaRemoto = data.dia || c_dia || c_diaEscolhido();
+                    if (Array.isArray(data.harvestData) && data.harvestData.length) juntos[diaRemoto] = data.harvestData; else delete juntos[diaRemoto];
+                    if (!c_dia) c_dia = c_diaEscolhido();
+                    c_harvestData = Array.isArray(juntos[c_dia]) ? juntos[c_dia] : []; delete juntos[c_dia];
+                    const juntosP = Object.assign({}, data.arquivoParam && typeof data.arquivoParam === 'object' ? data.arquivoParam : {});
+                    if (c_temParam(data.inputs)) juntosP[diaRemoto] = data.inputs; else delete juntosP[diaRemoto];
+                    const meusParam = juntosP[c_dia] || {}; delete juntosP[c_dia];
+                    c_arquivo = juntos; c_arquivoParam = juntosP; c_salvarArquivo();
                     localStorage.setItem('spg_harvestData', JSON.stringify(c_harvestData));
-                    localStorage.setItem('spg_inputs', JSON.stringify(data.inputs || {}));
+                    localStorage.setItem('spg_inputs', JSON.stringify(meusParam));
                     c_release = data.release || null; localStorage.setItem('spg_release', JSON.stringify(c_release));
                     if (c_editingIndex >= 0) c_clearBlockForm();
                     ['crewCount', 'estimateDay', 'startTime', 'endTime', 'intervalDuration', 'manualTotalEstimate'].forEach(id => { const el = document.getElementById('c_' + id); if (el) el.value = ''; });
@@ -1101,6 +1195,9 @@
             spg_suppressMark = true;
             // Prepara a aba Campo antes de abrir qualquer tela (ela funciona sem internet)
             f_init();
+            if (!c_dia) { c_dia = (f_data && f_data.date) || f_todayISO(); c_salvarArquivo(); }
+            c_trocarDiaColheita(c_diaEscolhido()); c_saveData();
+            c_montarSeletorDia();
             let lastTab = ''; try { lastTab = localStorage.getItem('spg_last_tab') || ''; } catch(e) {}
             const variosProjetos = SPG_API.projetosDoUsuario().length > 1;
             const btnMenu = document.getElementById('btnMenuProjetos');
@@ -1168,15 +1265,18 @@
         // -------------------------------------------------------------
         // LÓGICA APP 1: COLHEITA (SPG OASIS)
         // -------------------------------------------------------------
+        // Data usada nos títulos e nas imagens: o dia marcado no seletor (hoje = com a hora atual)
+        function c_ehHoje() { return !c_dia || c_dia === f_todayISO(); }
+        function c_dataDoDia() { return c_ehHoje() ? new Date() : new Date(c_dia + 'T12:00:00'); }
         function c_updateDynamicTitle() {
-            const now = new Date(); const minutes = String(now.getMinutes()).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0'); const month = String(now.getMonth() + 1).padStart(2, '0'); const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+            const now = c_dataDoDia(); const minutes = String(now.getMinutes()).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0'); const month = String(now.getMonth() + 1).padStart(2, '0'); const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
             const timeString = `${String(now.getHours() % 12 || 12).padStart(2, '0')}:${minutes}${ampm}`; 
             const daysOfWeek = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
             document.getElementById('c_reportTitle').innerHTML = `Resumo da Colheita de ${daysOfWeek[now.getDay()]}`;
-            document.getElementById('c_headerDateTime').innerText = `${day}/${month}/${now.getFullYear()} - ${timeString} - Semana ${getWeekNumber(now)}`;
+            document.getElementById('c_headerDateTime').innerText = c_ehHoje() ? `${day}/${month}/${now.getFullYear()} - ${timeString} - Semana ${getWeekNumber(now)}` : `${day}/${month}/${now.getFullYear()} - Semana ${getWeekNumber(now)}`;
         }
 
-        function c_saveData() { const json = JSON.stringify(c_harvestData); if (localStorage.getItem('spg_harvestData') !== json) { localStorage.setItem('spg_harvestData', json); spg_markChanged('colheita'); p_scheduleSyncFromColheita(); } }
+        function c_saveData() { c_atualizarDiasProducao(); const json = JSON.stringify(c_harvestData); if (localStorage.getItem('spg_harvestData') !== json) { localStorage.setItem('spg_harvestData', json); spg_markChanged('colheita'); p_scheduleSyncFromColheita(); } }
 
         function c_getForecastBlocks() {
             const container = document.getElementById('c_forecastBlocksContainer');
@@ -1282,7 +1382,7 @@
                     let matchHistory = historyData.filter(item => item.bloco == blocoAtual && item.ciclo == cicloAtual && (item.cultura || '').trim().toLowerCase() === culturaAtual.trim().toLowerCase() && (item.variedade || '').trim().toLowerCase() === variedadeAtual.trim().toLowerCase());
                     if (matchHistory.length > 0) { historyValue = matchHistory[0].totalUnidades; }
                 }
-                inputTotalUnits.dataset.baseValue = historyValue; c_updateAccumulated(); 
+                inputTotalUnits.dataset.baseValue = historyValue; c_updateAccumulated(); c_preencherDiasForm();
             } catch (error) {}
         }
 
@@ -1294,7 +1394,42 @@
             }
         }
 
+        // -------------------------------------------------------------
+        // DIAS DE PRODUÇÃO: quantos dias aquela variedade do bloco/ciclo já foi lançada
+        // (histórico do Supabase) + o dia marcado no seletor, se ainda não foi lançado.
+        // Ex.: 12 registros = 12 dias; no dia seguinte, com o lançamento novo, vira 13.
+        // Sem o histórico (sem internet / SQL não rodado): conta os dias guardados neste aparelho.
+        // -------------------------------------------------------------
+        function c_calcDias(talhao, ciclo, cultura, variedade) {
+            if (!talhao || !cultura) return '';
+            const lc = v => String(v || '').trim().toLowerCase();
+            const dia = c_dia || f_workDate();
+            let hist = []; try { hist = JSON.parse(localStorage.getItem('spg_harvest_history') || '[]') || []; } catch (e) { }
+            const h = hist.find(x => String(x.bloco) == String(talhao) && String(x.ciclo || '') == String(ciclo || '') && lc(x.cultura) === lc(cultura) && lc(x.variedade) === lc(variedade));
+            if (h && h.diasProducao != null) {
+                const n = Number(h.diasProducao) || 0;
+                return String(h.ultimaEntrega && h.ultimaEntrega >= dia ? Math.max(n, 1) : n + 1);
+            }
+            const k = `${talhao}|${lc(ciclo)}|${lc(cultura)}|${lc(variedade)}`;
+            const anteriores = Object.keys(c_arquivo || {}).filter(d => d < dia && (c_arquivo[d] || []).some(it => `${it.talhao}|${lc(it.cycle)}|${lc(it.variety)}|${lc(it.commercialVariety)}` === k)).length;
+            return String(anteriores + 1);
+        }
+        // Atualiza o "Dias Prod." de todos os registros do dia. Retorna true se algum mudou.
+        function c_atualizarDiasProducao() {
+            let mudou = false;
+            c_harvestData.forEach(it => {
+                const d = c_calcDias(it.talhao, it.cycle, it.variety, it.commercialVariety);
+                if (d && String(it.days || '') !== d) { it.days = d; mudou = true; }
+            });
+            return mudou;
+        }
+        function c_preencherDiasForm() {
+            const el = document.getElementById('c_productionDays'); if (!el) return;
+            el.value = c_calcDias(document.getElementById('c_talhao').value, document.getElementById('c_cycle').value, document.getElementById('c_variety').value, document.getElementById('c_commercialVariety').value);
+        }
+
         function c_refreshAllAccumulated() {
+            if (c_atualizarDiasProducao()) { c_saveData(); c_renderList(); c_renderReport(); }
             const rawHistory = localStorage.getItem('spg_harvest_history'); if (!rawHistory) return;
             try {
                 const historyData = JSON.parse(rawHistory); let hasChanges = false;
@@ -1499,7 +1634,9 @@
 
         function c_renderList() {
             const list = document.getElementById('c_itemsList'); list.innerHTML = '';
-            if (c_harvestData.length === 0) { list.innerHTML = '<li class="text-center text-slate-400 italic py-2">Nenhum bloco adicionado.</li>'; return; }
+            const diaEl = document.getElementById('c_registrosDia'); if (diaEl) diaEl.textContent = c_dia ? '· ' + c_dia.split('-').reverse().join('/') : '';
+            c_atualizarSeletorDia();
+            if (c_harvestData.length === 0) { list.innerHTML = '<li class="text-center text-slate-400 italic py-2">Nenhum bloco neste dia.</li>'; return; }
             c_harvestData.forEach((item, index) => {
                 const activeClass = index === c_editingIndex ? 'border-blue-400 bg-blue-50 ring-1' : 'border-slate-100 bg-slate-50'; const inactiveStyle = item.active === false ? 'opacity-60 bg-slate-100 border-slate-200 grayscale-[0.5]' : ''; const textStyle = item.active === false ? 'line-through text-slate-400' : ''; const activeTag = item.active === false ? '<span class="text-[10px] text-red-400 font-bold ml-2">(Oculto)</span>' : '';
                 list.innerHTML += `<li class="flex justify-between items-center p-2 rounded border ${activeClass} ${inactiveStyle} transition-all"><span class="${textStyle}"><b>#${item.talhao}</b>${item.cycle ? ` (C${item.cycle})` : ''} - ${item.variety} <span class="text-slate-500 text-xs">(${item.date.substring(0,5)})</span> ${index === c_editingIndex ? '<span class="text-[10px] text-blue-600 font-bold ml-2">(Editando)</span>' : ''} ${activeTag}</span><div class="flex items-center"><button onclick="c_toggleItemActive(${index})" class="${item.active === false ? 'text-slate-400 hover:bg-slate-200' : 'text-emerald-500 hover:bg-emerald-100'} p-1.5 rounded-md mr-1 transition-colors"><i data-lucide="${item.active === false ? 'eye-off' : 'eye'}" width="14"></i></button><button onclick="c_editItem(${index})" class="text-blue-500 hover:bg-blue-100 p-1.5 rounded-md mr-1"><i data-lucide="pencil" width="14"></i></button><button onclick="c_removeItem(${index})" class="text-red-500 hover:bg-red-100 p-1.5 rounded-md"><i data-lucide="trash-2" width="14"></i></button></div></li>`;
@@ -1584,6 +1721,89 @@
             lucide.createIcons();
         }
 
+        // -------------------------------------------------------------
+        // IMAGEM DE UM DIA QUALQUER (botões Colheita / Técnico / Grupo da aba Lançar → Colheita)
+        // Usa os registros da Colheita guardados naquele dia; se não houver, monta a partir dos
+        // lançamentos do dia. O peso (kg) vem dos lançamentos (ou da Pesagem de hoje).
+        // Gera a imagem e volta tudo como estava (não grava nada).
+        // -------------------------------------------------------------
+        let c_modoImagem = false;
+        const c_fmtNum = (n, casas = 0) => (Number(n) || 0) > 0 ? Number(n).toLocaleString('pt-BR', { maximumFractionDigits: casas }) : '';
+        const c_lcImg = v => String(v || '').trim().toLowerCase();
+        const c_semPrefixo = v => String(v || '').replace(/^\s*(talh[aã]o|bloco|setor)\s*/i, '').trim();
+        const c_chaveImg = (bloco, ciclo, cultura, variedade) => [c_lcImg(c_semPrefixo(bloco)), c_lcImg(ciclo), c_lcImg(cultura), c_lcImg(variedade)].join('|');
+        function c_juntarLancamentos(lancs) {
+            const porChave = new Map();
+            (lancs || []).forEach(r => {
+                const k = c_chaveImg(r.bloco, r.ciclo, r.cultura, r.variedade); const j = porChave.get(k) || { r, cx: 0, un: 0, kg: 0 };
+                j.cx += Number(r.caixas) || 0; j.un += Number(r.entregue_unidades) || 0; j.kg += Number(r.entregue_kg) || 0;
+                porChave.set(k, j);
+            });
+            return porChave;
+        }
+        async function c_registrosDosLancamentos(dia, lancs) {
+            const acum = {};
+            try {
+                const blocos = [...new Set(lancs.map(r => r.bloco))];
+                const { data } = await SPG_API.cliente.from('colheita_entregas').select('bloco, ciclo, cultura, variedade, entregue_unidades, data_entrega')
+                    .eq('local', 'oasis').lte('data_entrega', dia).in('bloco', blocos).limit(10000);
+                (data || []).forEach(r => { const k = c_chaveImg(r.bloco, r.ciclo, r.cultura, r.variedade); const a = acum[k] || (acum[k] = { un: 0, dias: new Set() }); a.un += Number(r.entregue_unidades) || 0; if (r.data_entrega) a.dias.add(r.data_entrega); });
+            } catch (e) { }
+            return [...c_juntarLancamentos(lancs).entries()].map(([k, j]) => {
+                const r = j.r; const bloco = c_semPrefixo(r.bloco);
+                const info = f_lookupPlantInfo(bloco, r.ciclo, r.cultura, r.variedade);
+                const a = acum[k]; const total = a ? Math.max(a.un, j.un) : (info.base + j.un);
+                return {
+                    talhao: bloco, cycle: String(r.ciclo || info.cycle || ''), variety: r.cultura || '', commercialVariety: r.variedade || '',
+                    boxes: c_fmtNum(j.cx, 1), dailyUnits: c_fmtNum(j.un), totalUnits: c_fmtNum(total), plants: info.plants, totalBlockPlants: info.totalBlockPlants,
+                    date: info.date, days: a ? String(a.dias.size) : '', status: 'Em Andamento', active: true,
+                    forecastDate: '', blockEstimatedBoxes: '', details: '', startDate: '', percentage: 0, blockPercentage: 0
+                };
+            });
+        }
+        async function c_imagemDoDia(dia, tipo, lancs) {
+            if (!dia) return;
+            let regs = (dia === c_dia ? c_harvestData : (c_arquivo[dia] || [])).filter(it => it.active !== false);
+            if (!regs.length && lancs && lancs.length) regs = await c_registrosDosLancamentos(dia, lancs);
+            if (!regs.length) { showAlert('Sem dados', ['Não há registros da Colheita nem lançamentos neste dia.'], 'error'); return; }
+            const kgLanc = c_juntarLancamentos(lancs);
+            const CHAVES = ['spg_inputs', 'spg_sede_shiftParams', 'spg_sede_forecasts', 'spg_p_colheitaInputsHash'];
+            const guardado = { dia: c_dia, harvest: c_harvestData, p: p_harvestData, forecasts: p_forecastBlocksData, ls: CHAVES.map(k => localStorage.getItem(k)), parceiro: (document.getElementById('p_partner') || {}).value };
+            c_modoImagem = true;
+            try {
+                // Parâmetros do turno daquele dia
+                if (dia !== c_dia) { localStorage.setItem('spg_inputs', JSON.stringify(c_arquivoParam[dia] || {})); c_recarregarParametros(); }
+                c_dia = dia; c_harvestData = regs;
+                c_updateDynamicTitle(); p_updateDynamicTitle();
+                if (tipo === 'colheita') {
+                    c_renderReport(); await new Promise(r => setTimeout(r, 150));
+                    await c_downloadImage();
+                } else {
+                    const sel = document.getElementById('p_partner');
+                    if (sel) { if (![...sel.options].some(o => o.value === 'SPG Oásis')) sel.add(new Option('SPG Oásis', 'SPG Oásis')); sel.value = 'SPG Oásis'; }
+                    p_harvestData = p_harvestData.filter(it => !(it.partner === 'SPG Oásis' && it.fromColheita));
+                    p_syncFromColheita();
+                    // Peso: o lançado no dia; sem lançamento, o da Pesagem de hoje
+                    p_harvestData.forEach(it => {
+                        if (it.partner !== 'SPG Oásis') return;
+                        const j = kgLanc.get(c_chaveImg(it.talhao, it.cycle, it.variety, it.commercialVariety));
+                        if (j && j.kg > 0) p_setItemWeight(it, c_fmtNum(j.kg, 3));
+                        else if (dia !== f_todayISO()) p_setItemWeight(it, '');
+                    });
+                    p_updateDynamicTitle(); p_toggleInputMode(); p_renderReport();
+                    if (!p_ativos().length) { showAlert('Sem dados', ['Não há blocos neste dia.'], 'error'); return; }
+                    await p_downloadImage(tipo);
+                }
+            } finally {
+                c_dia = guardado.dia; c_harvestData = guardado.harvest; p_harvestData = guardado.p; p_forecastBlocksData = guardado.forecasts;
+                CHAVES.forEach((k, i) => { if (guardado.ls[i] === null) localStorage.removeItem(k); else localStorage.setItem(k, guardado.ls[i]); });
+                c_modoImagem = false;
+                const sel = document.getElementById('p_partner'); if (sel && guardado.parceiro) sel.value = guardado.parceiro;
+                c_recarregarParametros(); c_updateDynamicTitle(); c_renderReport();
+                p_loadShiftPanel(); p_updateDynamicTitle(); p_toggleInputMode(); p_renderList(); p_renderReport();
+            }
+        }
+
         async function c_downloadImage() {
             const element = document.getElementById('c_report-card'); const btnSpan = document.querySelector('button[onclick="c_downloadImage()"] span');
             let originalText = btnSpan ? btnSpan.innerText : ""; if (btnSpan) btnSpan.innerText = "Gerando Imagem...";
@@ -1591,7 +1811,7 @@
                 const images = element.querySelectorAll('img'); await Promise.all(Array.from(images).map(img => { if (img.complete) return Promise.resolve(); return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; }); }));
                 const activeBlocksCount = c_harvestData.filter(item => item.active !== false).length; const isGrid = activeBlocksCount > 1; const targetWidth = '450px';
                 const imgData = await exportReportImage(element, { isGrid, targetWidth, contentId: 'c_reportContent', wrapperGridClass: "grid grid-cols-1 gap-3 p-3 bg-slate-50/50", wrapperChildClass: "p-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-full" }); const link = document.createElement('a'); link.href = imgData;
-                const now = new Date(); const day = String(now.getDate()).padStart(2, '0'); const month = String(now.getMonth() + 1).padStart(2, '0'); const year = now.getFullYear(); link.download = `Dados Colheita SPG_imagem (${day}-${month}-${year}).png`; link.click();
+                const now = c_dataDoDia(); const day = String(now.getDate()).padStart(2, '0'); const month = String(now.getMonth() + 1).padStart(2, '0'); const year = now.getFullYear(); link.download = `Dados Colheita SPG_imagem (${day}-${month}-${year}).png`; link.click();
             } catch (err) { console.error(err); } finally { if (btnSpan) btnSpan.innerText = originalText; }
         }
 
@@ -1808,13 +2028,13 @@
         // Troca o dia sem apagar nada: os carregamentos do dia atual ficam guardados e os do novo dia (se houver) voltam
         function f_switchDay(date) {
             if (!date || date === f_data.date) return;
-            c_harvestData.forEach(item => { delete item.fromCampo; delete item.campoCreated; }); c_saveData();
             const archive = f_data.archive || {};
             if (f_data.date && f_data.loads.some(l => l.entries.length)) archive[f_data.date] = f_data.loads; else delete archive[f_data.date];
             const loads = archive[date] || []; delete archive[date];
             const days = Object.keys(archive).sort(); while (days.length > 60) delete archive[days.shift()]; // guarda os últimos 60 dias
             f_data = { date, dateMode: f_data.dateMode || 'auto', loads, archive }; f_editingLoadIdx = -1; f_editingEntryIdx = -1; document.getElementById('f_finalized').checked = false;
             f_save(); f_render();
+            c_seguirSeletor();
         }
 
         // Modo automático: ao virar o dia, passa sozinho para a data de hoje (o dia anterior fica guardado; a aba Colheita continua igual)
@@ -2164,6 +2384,7 @@
         // APP 2: PESAGEM (SPG SEDE)
         // =========================================================================
         function p_saveToStorage() {
+            if (c_modoImagem) return;   // montando a imagem de outro dia: não grava nada
             try { const spgItems = p_harvestData.filter(item => item.partner === 'SPG Oásis'); localStorage.setItem(p_STORAGE_KEY, JSON.stringify(spgItems)); } catch (e) { }
             // Só o peso (kg) do dia é compartilhado com os outros aparelhos
             try {
@@ -2442,10 +2663,10 @@
         }
 
         function p_updateDynamicTitle() {
-            const now = new Date(); let greeting = getGreeting(); const days = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']; const weekDay = days[now.getDay()]; const minutes = String(now.getMinutes()).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0'); const month = String(now.getMonth() + 1).padStart(2, '0'); const year = now.getFullYear(); const weekNumber = getWeekNumber(now); const ampm = now.getHours() >= 12 ? 'PM' : 'AM'; const timeString = `${String(now.getHours() % 12 || 12).padStart(2, '0')}:${minutes}${ampm}`;
+            const now = c_dataDoDia(); let greeting = getGreeting(); const days = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']; const weekDay = days[now.getDay()]; const minutes = String(now.getMinutes()).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0'); const month = String(now.getMonth() + 1).padStart(2, '0'); const year = now.getFullYear(); const weekNumber = getWeekNumber(now); const ampm = now.getHours() >= 12 ? 'PM' : 'AM'; const timeString = `${String(now.getHours() % 12 || 12).padStart(2, '0')}:${minutes}${ampm}`;
             const partnerInput = document.getElementById('p_partner'); const currentPartner = (partnerInput && partnerInput.value) ? partnerInput.value : ''; const titleElement = document.getElementById('p_reportTitle');
             if (currentPartner === 'SPG Oásis') { titleElement.innerText = `Resumo da Produção · ${weekDay}`; } else { const displayPartner = currentPartner || 'Parceiro'; titleElement.innerText = `Pesagem · ${displayPartner} · ${weekDay}`; }
-            document.getElementById('p_headerDateTime').innerText = `${day}/${month}/${year}  ·  ${timeString}  ·  Semana ${weekNumber}`;
+            document.getElementById('p_headerDateTime').innerText = c_ehHoje() ? `${day}/${month}/${year}  ·  ${timeString}  ·  Semana ${weekNumber}` : `${day}/${month}/${year}  ·  Semana ${weekNumber}`;
         }
         
         function p_toggleInputMode() {
@@ -2927,7 +3148,7 @@
                 if (type === 'grupo') { originalDataTemp = [...p_harvestData]; const currentPartner = document.getElementById('p_partner').value; const allPartnerItems = originalDataTemp.filter(item => item.partner === currentPartner); const itemsToGroup = allPartnerItems.filter(item => item.active !== false); p_harvestData = p_getGroupedData(itemsToGroup, itemsToGroup); p_renderReport(); await new Promise(resolve => setTimeout(resolve, 200)); }
                 const element = document.getElementById('p_report-card'); const images = element.querySelectorAll('img'); await Promise.all(Array.from(images).map(img => { if (img.complete) return Promise.resolve(); return new Promise(resolve => { img.onload = resolve; img.onerror = resolve; }); }));
                 const displayData = p_getFilteredData().filter(item => item.active !== false); const isGrid = displayData.length > 1; const targetWidth = '960px';
-                const imgDataHD = await exportReportImage(element, { isGrid, targetWidth, contentId: 'p_reportContent', contentGridClass: "grid grid-cols-1 gap-4 p-4 bg-slate-50/50 flex-1 content-start", contentChildClass: "bg-white rounded-2xl shadow-sm border border-slate-200 group flex flex-col" }); const now = new Date(); const dateStr = now.toLocaleDateString('pt-BR'); const weekNum = getWeekNumber(now); let weekday = now.toLocaleDateString('pt-BR', { weekday: 'long' }); weekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+                const imgDataHD = await exportReportImage(element, { isGrid, targetWidth, contentId: 'p_reportContent', contentGridClass: "grid grid-cols-1 gap-4 p-4 bg-slate-50/50 flex-1 content-start", contentChildClass: "bg-white rounded-2xl shadow-sm border border-slate-200 group flex flex-col" }); const now = c_dataDoDia(); const dateStr = now.toLocaleDateString('pt-BR'); const weekNum = getWeekNumber(now); let weekday = now.toLocaleDateString('pt-BR', { weekday: 'long' }); weekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
                 const partnerInput = document.getElementById('p_partner'); let partnerName = "Geral"; if (partnerInput && partnerInput.value) { partnerName = partnerInput.value; } else if (p_harvestData.length > 0 && p_harvestData[0].partner) { partnerName = p_harvestData[0].partner; }
                 let filePrefix = "Resumo da Pesagem (kg)"; if (partnerName === "SPG Oásis") { filePrefix = type === 'grupo' ? "Resumo Producao Oásis (Agrupado)" : "Resumo Producao Oásis (Detalhado)"; }
                 const fileName = `${filePrefix} - ${weekday} ${dateStr.replace(/\//g, '-')} Semana ${weekNum} - ${partnerName}.png`;

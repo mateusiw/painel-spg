@@ -95,23 +95,67 @@
         .contador-online[data-zero] { background: rgba(255,255,255,.12); color: rgba(236,244,226,.7); }
         #lateral.recolhida .contador-online { position: absolute; top: 2px; right: 8px; min-width: 1rem; height: 1rem; padding: 0 .25rem; font-size: .6rem; margin: 0; }
 
-        /* Abas dos projetos abertos, como num navegador */
-        #barraAbas { position: sticky; top: 0; z-index: 30; background: #e4eadc; border-bottom: 1px solid #d3dbc7; }
-        #listaAbas { scrollbar-width: none; }
+        /* Abas dos projetos abertos, no estilo do Google Chrome (com grupos de abas) */
+        #barraAbas { position: sticky; top: 0; z-index: 30; background: #dfe6d6; border-bottom: 1px solid #d3dbc7; }
+        #listaAbas { scrollbar-width: none; gap: 0 !important; }
         #listaAbas::-webkit-scrollbar { display: none; }
         #navLateral { scrollbar-width: none; }
         #navLateral::-webkit-scrollbar { display: none; }
-        .aba-projeto { position: relative; display: flex; align-items: center; flex: none; max-width: 13rem; height: 2.35rem; border-radius: .75rem .75rem 0 0; color: #475569; transition: background-color .15s, color .15s; }
-        .aba-projeto:hover { background: rgba(255,255,255,.55); color: #0f172a; }
-        .aba-projeto.ativa { background: #fff; color: #0f172a; box-shadow: 0 -1px 0 #d3dbc7, 1px 0 0 #d3dbc7, -1px 0 0 #d3dbc7; margin-bottom: -1px; height: calc(2.35rem + 1px); }
-        .aba-projeto.ativa::before { content: ''; position: absolute; left: .7rem; right: .7rem; top: 0; height: 3px; border-radius: 0 0 3px 3px; background: var(--limao); }
-        .aba-link { display: flex; align-items: center; gap: .5rem; min-width: 0; height: 100%; padding: 0 .35rem 0 .7rem; font-size: .78rem; font-weight: 700; outline: none; }
+        .aba-projeto { position: relative; display: flex; align-items: center; flex: 0 1 auto; min-width: 2.9rem; max-width: 14rem; height: 2.35rem; margin: 0 1px; border-radius: .7rem .7rem 0 0; color: #475569; transition: background-color .15s, color .15s; }
+        .aba-projeto:not(.ativa):hover { background: rgba(255,255,255,.55); color: #0f172a; }
+        /* Divisória entre abas (some ao lado da aba ativa ou com o mouse em cima, como no Chrome) */
+        .aba-projeto:not(.ativa)::after { content: ''; position: absolute; right: -1px; top: .65rem; bottom: .65rem; width: 1px; background: #b3bea6; transition: opacity .15s; }
+        .aba-projeto:not(.ativa):hover::after, .aba-projeto:has(+ .ativa)::after, .aba-projeto:has(+ .aba-projeto:hover)::after, .aba-projeto:has(+ .grupo-chip)::after { opacity: 0; }
+        /* Aba ativa: branca, unida à página, com as curvinhas na base */
+        .aba-projeto.ativa { background: #fff; color: #0f172a; z-index: 2; margin-bottom: -1px; height: calc(2.35rem + 1px); }
+        .aba-projeto.ativa::before, .aba-projeto.ativa::after { content: ''; position: absolute; bottom: 0; width: .7rem; height: .7rem; pointer-events: none; }
+        .aba-projeto.ativa::before { left: -.7rem; background: radial-gradient(circle at 0 0, transparent .7rem, #fff calc(.7rem + .5px)); }
+        .aba-projeto.ativa::after { right: -.7rem; background: radial-gradient(circle at 100% 0, transparent .7rem, #fff calc(.7rem + .5px)); }
+        /* Aba de um grupo: linha da cor do grupo */
+        .aba-projeto[data-cor]:not(.ativa) { box-shadow: inset 0 -3px 0 var(--cor-grupo); }
+        .aba-projeto[data-cor].ativa { box-shadow: inset 0 3px 0 var(--cor-grupo); }
+        /* Botão de atualizar (como o do Chrome): vira X para parar enquanto carrega */
+        .btn-recarregar { flex: none; width: 2.25rem; height: 2.25rem; margin: .2rem 0 0 .4rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #475569; transition: background-color .15s, color .15s; }
+        .btn-recarregar:hover { background: rgba(255,255,255,.65); color: #0f172a; }
+        .btn-recarregar:active { background: rgba(255,255,255,.9); }
+        .btn-recarregar:focus-visible { outline: 2px solid #4a7c3a; outline-offset: 1px; }
+        .btn-recarregar.girar svg { animation: girarRecarregar .5s ease-out; }
+        @keyframes girarRecarregar { to { transform: rotate(360deg); } }
+        @media (max-width: 1023px) { .btn-recarregar { width: 2.5rem; height: 2.5rem; margin-top: .1rem; } }
+        .aba-link { display: flex; align-items: center; gap: .5rem; min-width: 0; flex: 1; height: 100%; padding: 0 .35rem 0 .75rem; font-size: .78rem; font-weight: 700; outline: none; -webkit-touch-callout: none; }
         .aba-link:focus-visible { outline: 2px solid #4a7c3a; outline-offset: -2px; border-radius: .6rem; }
         .aba-inicio .aba-link { padding-right: .8rem; }
         .aba-icone { width: 1.3rem; height: 1.3rem; border-radius: .4rem; display: flex; align-items: center; justify-content: center; color: #fff; flex: none; }
-        .aba-fechar { width: 1.5rem; height: 1.5rem; margin-right: .3rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #94a3b8; flex: none; }
+        .aba-fechar { width: 1.5rem; height: 1.5rem; margin-right: .35rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #94a3b8; flex: none; }
         .aba-fechar:hover { background: #e2e8f0; color: #0f172a; }
         .aba-fechar:focus-visible { outline: 2px solid #4a7c3a; }
+        /* Etiqueta do grupo (toque: recolhe/abre; botão direito ou toque longo: editar) */
+        .grupo-chip { flex: none; align-self: center; display: flex; align-items: center; gap: .3rem; height: 1.5rem; min-width: 1.5rem; max-width: 9rem; margin: 0 .3rem .15rem .5rem; padding: 0 .6rem; border-radius: .5rem; background: var(--cor); color: #fff; font-size: .72rem; font-weight: 800; -webkit-touch-callout: none; transition: filter .15s, transform .15s; }
+        .grupo-chip:hover { filter: brightness(1.08); }
+        .grupo-chip:active { transform: scale(.96); }
+        .grupo-chip .nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .grupo-chip.sem-nome { width: 1rem; min-width: 1rem; height: 1rem; padding: 0; border-radius: 999px; justify-content: center; }
+        .grupo-chip .qtd { background: rgba(255,255,255,.28); border-radius: 999px; padding: 0 .35rem; font-size: .65rem; }
+        .grupo-chip:focus-visible { outline: 2px solid #1b3a2a; outline-offset: 2px; }
+        /* Arrastar para reordenar */
+        .aba-projeto.arrastando { opacity: .4; }
+        .aba-projeto.solta-antes { box-shadow: inset 3px 0 0 #1b3a2a !important; }
+        .aba-projeto.solta-depois { box-shadow: inset -3px 0 0 #1b3a2a !important; }
+        .grupo-chip.solta, .aba-inicio.solta { outline: 2px dashed #1b3a2a; outline-offset: 2px; }
+        /* Menus das abas e editor do grupo */
+        .menu-abas { position: fixed; z-index: 200; min-width: 15rem; max-width: calc(100vw - 16px); background: #fff; border-radius: 1rem; box-shadow: 0 18px 40px -12px rgba(15,23,42,.35); outline: 1px solid rgba(15,23,42,.08); padding: .35rem; animation: menuAbasEntra .12s ease-out; }
+        @keyframes menuAbasEntra { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+        .menu-abas .item { width: 100%; display: flex; align-items: center; gap: .65rem; min-height: 2.6rem; padding: 0 .75rem; border-radius: .65rem; font-size: .8rem; font-weight: 700; color: #334155; text-align: left; }
+        .menu-abas .item:hover, .menu-abas .item:focus-visible { background: #f1f5f9; outline: none; }
+        .menu-abas .item.perigo { color: #dc2626; }
+        .menu-abas .item.perigo:hover { background: #fef2f2; }
+        .menu-abas .titulo { padding: .45rem .75rem .2rem; font-size: .62rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
+        .menu-abas hr { border: 0; border-top: 1px solid #e2e8f0; margin: .3rem .25rem; }
+        .cor-bolinha { width: .8rem; height: .8rem; border-radius: 999px; flex: none; }
+        .cores-grupo { display: flex; flex-wrap: wrap; gap: .45rem; padding: .2rem .75rem .5rem; }
+        .cores-grupo button { width: 2.1rem; height: 2.1rem; border-radius: 999px; background: var(--c); display: flex; align-items: center; justify-content: center; color: #fff; }
+        .cores-grupo button[aria-pressed="true"] { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--c); }
+        .cores-grupo button:focus-visible { outline: 2px solid #1b3a2a; outline-offset: 3px; }
         @media (max-width: 1023px) {
             #barraAbas { position: static; }
             .aba-projeto { max-width: 10rem; height: 2.15rem; }
@@ -252,8 +296,10 @@
                 </header>
 
                 <!-- Abas dos projetos abertos (estilo navegador) -->
-                <nav id="barraAbas" class="hidden shrink-0" aria-label="Projetos abertos">
-                    <div id="listaAbas" role="tablist" class="flex items-end gap-1 overflow-x-auto px-2 pt-1.5"></div>
+                <nav id="barraAbas" class="hidden shrink-0 flex items-center" aria-label="Projetos abertos">
+                    <!-- Atualizar só a aba aberta (como o botão do Chrome), sem F5 -->
+                    <button type="button" id="btnRecarregar" title="Atualizar esta página" aria-label="Atualizar esta página" class="btn-recarregar"><i data-lucide="rotate-cw" class="w-4 h-4"></i></button>
+                    <div id="listaAbas" role="tablist" class="flex-1 min-w-0 self-end flex items-end gap-1 overflow-x-auto pl-1 pr-2 pt-1.5"></div>
                 </nav>
 
                 <div id="areaProjeto" class="hidden relative flex-1 min-h-0 bg-slate-50">
@@ -827,40 +873,91 @@
         // Cada projeto aberto ganha uma aba com o seu próprio quadro; trocar de aba não recarrega o projeto.
         // O endereço guarda a aba ativa (#/irrigacao): voltar, recarregar e link direto funcionam.
         // As abas abertas ficam guardadas por usuário e voltam ao recarregar (só carregam quando tocadas).
-        const MAX_ABAS = 6;               // mais que isso pesa no celular: fecha a usada há mais tempo
+        // Grupos de abas como no Chrome: nome, cor, recolher/abrir, arrastar para reordenar e para entrar no grupo.
+        // Para não pesar no celular, só as abas usadas por último ficam com o projeto carregado;
+        // as outras "dormem" (continuam na barra e carregam de novo ao tocar).
+        const MAX_ABAS = 20;
+        const MAX_CARREGADAS = 6;
+        const CORES_GRUPO = {
+            cinza: ['Cinza', '#5f6368'], azul: ['Azul', '#1a73e8'], vermelho: ['Vermelho', '#d93025'], amarelo: ['Amarelo', '#e37400'],
+            verde: ['Verde', '#188038'], rosa: ['Rosa', '#d01884'], roxo: ['Roxo', '#9334e6'], ciano: ['Ciano', '#007b83'], laranja: ['Laranja', '#fa7b17']
+        };
         let projetoAberto = null;         // id da aba ativa (null = Início)
-        let abas = [];                    // [{ id, p, quadro, carregado, usadoEm }]
+        let abas = [];                    // [{ id, p, quadro, carregado, usadoEm, grupo }]
+        let gruposAbas = [];                  // [{ id, nome, cor, recolhido }]
 
         const chaveAbas = () => 'spg_abas_' + ((API.usuarioAtual() || {}).id || '');
+        const grupoDe = id => gruposAbas.find(g => g.id === id);
+        const corDoGrupo = g => (CORES_GRUPO[g && g.cor] || CORES_GRUPO.cinza)[1];
         function salvarAbas() {
-            try { localStorage.setItem(chaveAbas(), JSON.stringify(abas.map(a => a.id))); } catch (e) { /* só não lembra as abas */ }
+            try { localStorage.setItem(chaveAbas(), JSON.stringify({ v: 2, abas: abas.map(a => ({ id: a.id, grupo: a.grupo || null })), grupos: gruposAbas })); } catch (e) { /* só não lembra as abas */ }
+        }
+        // Grupo sem abas some; abas de um grupo ficam sempre lado a lado (na posição da primeira)
+        function arrumarGrupos() {
+            abas.forEach(a => { if (a.grupo && !grupoDe(a.grupo)) a.grupo = null; });
+            gruposAbas = gruposAbas.filter(g => abas.some(a => a.grupo === g.id));
+            const vistos = new Set(), saida = [];
+            abas.forEach(a => {
+                if (!a.grupo) { saida.push(a); return; }
+                if (vistos.has(a.grupo)) return;
+                vistos.add(a.grupo); saida.push(...abas.filter(x => x.grupo === a.grupo));
+            });
+            abas = saida;
         }
         function restaurarAbas() {
-            let ids = [];
-            try { ids = JSON.parse(localStorage.getItem(chaveAbas())) || []; } catch (e) { /* começa sem abas */ }
+            let dados = null;
+            try { dados = JSON.parse(localStorage.getItem(chaveAbas())); } catch (e) { /* começa sem abas */ }
+            const lista = Array.isArray(dados) ? dados.map(id => ({ id })) : ((dados && dados.abas) || []);
+            gruposAbas = (dados && Array.isArray(dados.grupos) ? dados.grupos : []).filter(g => g && g.id);
             const projetos = API.projetosDoUsuario();
-            ids.forEach(id => {
-                const p = projetos.find(x => x.id === id);
-                if (p && !abas.some(a => a.id === id)) abas.push({ id, p, quadro: null, carregado: false, usadoEm: 0 });
+            lista.forEach(x => {
+                const p = projetos.find(pr => pr.id === x.id);
+                if (p && !abas.some(a => a.id === x.id)) abas.push({ id: x.id, p, quadro: null, carregado: false, usadoEm: 0, grupo: x.grupo || null });
             });
             abas = abas.slice(0, MAX_ABAS);
+            arrumarGrupos();
+        }
+        // Libera as abas usadas há mais tempo (o projeto volta a carregar ao tocar nelas)
+        function dormirAbasVelhas() {
+            const carregadas = abas.filter(a => a.quadro && a.id !== projetoAberto).sort((a, b) => a.usadoEm - b.usadoEm);
+            while (carregadas.length > MAX_CARREGADAS - 1) {
+                const velha = carregadas.shift();
+                velha.quadro.remove(); velha.quadro = null; velha.carregado = false;
+            }
+        }
+
+        function htmlAba(a) {
+            const ativa = a.id === projetoAberto;
+            const g = a.grupo ? grupoDe(a.grupo) : null;
+            const icone = a.quadro && !a.carregado
+                ? '<i data-lucide="loader-circle" class="w-4 h-4 shrink-0 animate-spin text-[#4a7c3a]"></i>'
+                : `<span class="aba-icone bg-gradient-to-br ${a.p.gradiente}"><i data-lucide="${a.p.icone}" class="w-3 h-3"></i></span>`;
+            return `<div class="aba-projeto ${ativa ? 'ativa' : ''}" data-aba="${esc(a.id)}" draggable="true"${g ? ` data-cor style="--cor-grupo:${corDoGrupo(g)}"` : ''}>
+                <a href="#/${esc(a.id)}" role="tab" aria-selected="${ativa}" title="${esc(a.p.nome)}${g && g.nome ? ' · grupo ' + esc(g.nome) : ''}" class="aba-link" draggable="false">${icone}<span class="truncate">${esc(a.p.nome)}</span></a>
+                <button type="button" data-fechar-aba="${esc(a.id)}" title="Fechar ${esc(a.p.nome)}" aria-label="Fechar ${esc(a.p.nome)}" class="aba-fechar"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+            </div>`;
+        }
+        function htmlChip(g) {
+            const qtd = abas.filter(a => a.grupo === g.id).length;
+            const rotulo = `Grupo ${g.nome || 'sem nome'} (${qtd} ${qtd === 1 ? 'aba' : 'abas'}). Toque para ${g.recolhido ? 'abrir' : 'recolher'}; botão direito ou toque longo para editar`;
+            return `<button type="button" class="grupo-chip ${g.nome ? '' : 'sem-nome'}" data-grupo-chip="${esc(g.id)}" aria-expanded="${!g.recolhido}" title="${esc(rotulo)}" aria-label="${esc(rotulo)}" style="--cor:${corDoGrupo(g)}">${g.nome ? `<span class="nome">${esc(g.nome)}</span>` : ''}${g.recolhido && g.nome ? `<span class="qtd">${qtd}</span>` : ''}</button>`;
         }
 
         function renderAbas() {
             el('barraAbas').classList.toggle('hidden', !abas.length);
-            const inicio = `<div class="aba-projeto aba-inicio ${projetoAberto ? '' : 'ativa'}">
-                <a href="#/" role="tab" aria-selected="${!projetoAberto}" title="Início" class="aba-link"><i data-lucide="house" class="w-4 h-4 shrink-0"></i><span class="rotulo-aba">Início</span></a>
+            const inicio = `<div class="aba-projeto aba-inicio ${projetoAberto ? '' : 'ativa'}" data-aba-inicio>
+                <a href="#/" role="tab" aria-selected="${!projetoAberto}" title="Início" class="aba-link" draggable="false"><i data-lucide="house" class="w-4 h-4 shrink-0"></i><span class="rotulo-aba">Início</span></a>
             </div>`;
-            el('listaAbas').innerHTML = inicio + abas.map(a => {
-                const ativa = a.id === projetoAberto;
-                const icone = a.quadro && !a.carregado
-                    ? '<i data-lucide="loader-circle" class="w-4 h-4 shrink-0 animate-spin text-[#4a7c3a]"></i>'
-                    : `<span class="aba-icone bg-gradient-to-br ${a.p.gradiente}"><i data-lucide="${a.p.icone}" class="w-3 h-3"></i></span>`;
-                return `<div class="aba-projeto ${ativa ? 'ativa' : ''}" data-aba="${esc(a.id)}">
-                    <a href="#/${esc(a.id)}" role="tab" aria-selected="${ativa}" title="${esc(a.p.nome)}" class="aba-link">${icone}<span class="truncate">${esc(a.p.nome)}</span></a>
-                    <button type="button" data-fechar-aba="${esc(a.id)}" title="Fechar ${esc(a.p.nome)}" aria-label="Fechar ${esc(a.p.nome)}" class="aba-fechar"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
-                </div>`;
-            }).join('');
+            let html = inicio, grupoAtual = null;
+            abas.forEach(a => {
+                if (a.grupo && a.grupo !== grupoAtual) { const g = grupoDe(a.grupo); if (g) html += htmlChip(g); }
+                grupoAtual = a.grupo || null;
+                const g = a.grupo ? grupoDe(a.grupo) : null;
+                // Grupo recolhido: só a etiqueta (a aba aberta continua à vista)
+                if (g && g.recolhido && a.id !== projetoAberto) return;
+                html += htmlAba(a);
+            });
+            el('listaAbas').innerHTML = html;
             // Ponto no menu lateral: projetos que estão abertos em alguma aba
             document.querySelectorAll('#navLateral a[data-projeto]').forEach(a => {
                 const aberto = abas.some(x => x.id === a.dataset.projeto);
@@ -868,9 +965,124 @@
                 if (aberto && !ponto) { ponto = document.createElement('span'); ponto.className = 'aberto-ponto'; ponto.title = 'Aberto numa aba'; a.appendChild(ponto); }
                 if (!aberto && ponto) ponto.remove();
             });
+            atualizarBotaoRecarregar();
             icones();
             const ativa = el('listaAbas').querySelector('.ativa');
             if (ativa) ativa.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+
+        // ---------- Atualizar a aba aberta (sem F5) ----------
+        function atualizarBotaoRecarregar() {
+            const b = el('btnRecarregar'); if (!b) return;
+            const aba = abas.find(a => a.id === projetoAberto);
+            const carregando = !!(aba && aba.quadro && !aba.carregado);
+            const rotulo = carregando ? 'Parar de carregar' : (aba ? `Atualizar ${aba.p.nome}` : 'Atualizar o Início');
+            b.title = rotulo; b.setAttribute('aria-label', rotulo);
+            b.dataset.estado = carregando ? 'parar' : 'atualizar';
+            b.innerHTML = `<i data-lucide="${carregando ? 'x' : 'rotate-cw'}" class="w-4 h-4"></i>`;
+        }
+        function recarregarAbaAtual() {
+            const aba = abas.find(a => a.id === projetoAberto);
+            if (!aba) { location.reload(); return; }   // no Início: atualiza o Painel
+            const b = el('btnRecarregar');
+            if (aba.quadro && !aba.carregado) {
+                // Carregando: o X para o carregamento
+                try { aba.quadro.contentWindow.stop(); } catch (e) { /* segue */ }
+                aba.carregado = true; el('carregandoProjeto').classList.add('hidden'); renderAbas(); return;
+            }
+            if (!aba.quadro) { ativarAba(aba); return; }
+            aba.carregado = false;
+            try { aba.quadro.contentWindow.location.reload(); } catch (e) { aba.quadro.src = aba.p.caminho; }
+            renderAbas();
+            if (b) { b.classList.remove('girar'); void b.offsetWidth; b.classList.add('girar'); }
+        }
+        el('btnRecarregar').addEventListener('click', recarregarAbaAtual);
+
+        // ---------- Menus das abas (botão direito / toque longo) e editor do grupo ----------
+        let menuAbasAberto = null;
+        function fecharMenuAbas() { if (menuAbasAberto) { menuAbasAberto.remove(); menuAbasAberto = null; } }
+        function abrirMenuAbas(alvo, html, aoClicar) {
+            fecharMenuAbas();
+            const menu = document.createElement('div');
+            menu.className = 'menu-abas'; menu.setAttribute('role', 'menu');
+            menu.innerHTML = html;
+            document.body.appendChild(menu);
+            const r = alvo.getBoundingClientRect(), largura = menu.offsetWidth, altura = menu.offsetHeight;
+            menu.style.left = Math.max(8, Math.min(r.left, innerWidth - largura - 8)) + 'px';
+            menu.style.top = Math.max(8, Math.min(r.bottom + 6, innerHeight - altura - 8)) + 'px';
+            menu.addEventListener('click', e => { const b = e.target.closest('[data-m]'); if (b) aoClicar(b.dataset.m, b.dataset.v, b); });
+            menuAbasAberto = menu;
+            icones();
+            const primeiro = menu.querySelector('input, .item'); if (primeiro) primeiro.focus({ preventScroll: true });
+            return menu;
+        }
+        document.addEventListener('pointerdown', e => { if (menuAbasAberto && !menuAbasAberto.contains(e.target)) fecharMenuAbas(); }, true);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && menuAbasAberto) { fecharMenuAbas(); } });
+        window.addEventListener('resize', fecharMenuAbas);
+
+        const itemMenu = (m, icone, texto, extra = '', v = '') => `<button type="button" role="menuitem" class="item ${extra}" data-m="${m}"${v ? ` data-v="${esc(v)}"` : ''}>${icone}<span class="truncate">${texto}</span></button>`;
+        const iconeMenu = n => `<i data-lucide="${n}" class="w-4 h-4 shrink-0 text-slate-400"></i>`;
+
+        function menuDaAba(alvo, id) {
+            const aba = abas.find(a => a.id === id); if (!aba) return;
+            const outros = gruposAbas.filter(g => g.id !== aba.grupo);
+            const i = abas.indexOf(aba);
+            const html = itemMenu('novoGrupo', iconeMenu('folder-plus'), 'Adicionar a um novo grupo')
+                + (outros.length ? `<div class="titulo">Mover para o grupo</div>` + outros.map(g => itemMenu('paraGrupo', `<span class="cor-bolinha" style="background:${corDoGrupo(g)}"></span>`, esc(g.nome || 'Grupo sem nome'), '', g.id)).join('') : '')
+                + (aba.grupo ? itemMenu('tirarGrupo', iconeMenu('folder-minus'), 'Remover do grupo') : '')
+                + '<hr>'
+                + itemMenu('fechar', iconeMenu('x'), 'Fechar aba')
+                + (abas.length > 1 ? itemMenu('fecharOutras', iconeMenu('copy-x'), 'Fechar outras abas') : '')
+                + (i < abas.length - 1 ? itemMenu('fecharDireita', iconeMenu('arrow-right-to-line'), 'Fechar abas à direita') : '');
+            abrirMenuAbas(alvo, html, (m, v) => {
+                fecharMenuAbas();
+                if (m === 'novoGrupo') {
+                    const usadas = gruposAbas.map(g => g.cor);
+                    const cor = Object.keys(CORES_GRUPO).find(c => !usadas.includes(c)) || 'azul';
+                    const g = { id: 'g' + Date.now().toString(36), nome: '', cor, recolhido: false };
+                    gruposAbas.push(g); aba.grupo = g.id;
+                    arrumarGrupos(); salvarAbas(); renderAbas();
+                    const chip = el('listaAbas').querySelector(`[data-grupo-chip="${g.id}"]`);
+                    if (chip) editorDoGrupo(chip, g.id);   // como no Chrome: já abre para dar nome e cor
+                } else if (m === 'paraGrupo') {
+                    aba.grupo = v; const g = grupoDe(v); if (g) g.recolhido = false;
+                    abas.splice(abas.indexOf(aba), 1);
+                    const ultimo = abas.map(a => a.grupo).lastIndexOf(v);
+                    abas.splice(ultimo + 1, 0, aba);
+                    arrumarGrupos(); salvarAbas(); renderAbas();
+                } else if (m === 'tirarGrupo') {
+                    const g = aba.grupo; aba.grupo = null;
+                    // Sai para depois do grupo
+                    abas.splice(abas.indexOf(aba), 1);
+                    abas.splice(abas.map(a => a.grupo).lastIndexOf(g) + 1, 0, aba);
+                    arrumarGrupos(); salvarAbas(); renderAbas();
+                } else if (m === 'fechar') fecharAba(id);
+                else if (m === 'fecharOutras') abas.filter(a => a.id !== id).map(a => a.id).forEach(fecharAba);
+                else if (m === 'fecharDireita') abas.slice(abas.indexOf(aba) + 1).map(a => a.id).forEach(fecharAba);
+            });
+        }
+
+        function editorDoGrupo(alvo, gid) {
+            const g = grupoDe(gid); if (!g) return;
+            const cores = Object.entries(CORES_GRUPO).map(([c, [nome, hex]]) => `<button type="button" data-m="cor" data-v="${c}" aria-pressed="${g.cor === c}" aria-label="${nome}" title="${nome}" style="--c:${hex}">${g.cor === c ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}</button>`).join('');
+            const html = `<div class="px-2 pt-2 pb-1"><label for="nomeGrupoAbas" class="sr-only">Nome do grupo</label>
+                    <input id="nomeGrupoAbas" type="text" maxlength="30" autocomplete="off" placeholder="Dê um nome a este grupo" value="${esc(g.nome)}" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-500 focus:bg-white"></div>
+                <div class="cores-grupo" role="group" aria-label="Cor do grupo">${cores}</div>
+                <hr>
+                ${itemMenu('recolher', iconeMenu(g.recolhido ? 'chevrons-left-right' : 'chevrons-right-left'), g.recolhido ? 'Abrir o grupo' : 'Recolher o grupo')}
+                ${itemMenu('desagrupar', iconeMenu('ungroup'), 'Desagrupar')}
+                ${itemMenu('fecharGrupo', iconeMenu('x'), 'Fechar o grupo', 'perigo')}`;
+            const menu = abrirMenuAbas(alvo, html, (m, v) => {
+                if (m === 'cor') { g.cor = v; salvarAbas(); renderAbas(); fecharMenuAbas(); const chip = el('listaAbas').querySelector(`[data-grupo-chip="${gid}"]`); if (chip) editorDoGrupo(chip, gid); return; }
+                fecharMenuAbas();
+                if (m === 'recolher') { g.recolhido = !g.recolhido; salvarAbas(); renderAbas(); }
+                else if (m === 'desagrupar') { abas.forEach(a => { if (a.grupo === gid) a.grupo = null; }); arrumarGrupos(); salvarAbas(); renderAbas(); }
+                else if (m === 'fecharGrupo') abas.filter(a => a.grupo === gid).map(a => a.id).forEach(fecharAba);
+            });
+            const campo = menu.querySelector('#nomeGrupoAbas');
+            campo.addEventListener('input', () => { g.nome = campo.value.trim(); salvarAbas(); const chip = el('listaAbas').querySelector(`[data-grupo-chip="${gid}"]`); if (chip) { chip.classList.toggle('sem-nome', !g.nome); chip.innerHTML = g.nome ? `<span class="nome">${esc(g.nome)}</span>` : ''; } });
+            campo.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); fecharMenuAbas(); renderAbas(); } });
+            campo.select();
         }
 
         function criarQuadro(aba) {
@@ -892,6 +1104,7 @@
             if (i < 0) return;
             const [aba] = abas.splice(i, 1);
             if (aba.quadro) aba.quadro.remove();
+            arrumarGrupos();
             salvarAbas();
             if (projetoAberto === id) {
                 // Como no navegador: vai para a aba ao lado; sem abas, volta ao Início
@@ -903,7 +1116,7 @@
 
         function fecharTodasAbas() {
             abas.forEach(a => { if (a.quadro) a.quadro.remove(); });
-            abas = [];
+            abas = []; gruposAbas = [];
         }
 
         function aplicarLateral() {
@@ -932,8 +1145,10 @@
         function abrirProjeto(p) {
             let aba = abas.find(a => a.id === p.id);
             if (!aba) {
-                aba = { id: p.id, p, quadro: null, carregado: false, usadoEm: 0 };
-                abas.push(aba);
+                aba = { id: p.id, p, quadro: null, carregado: false, usadoEm: 0, grupo: null };
+                // Como no Chrome: a aba nova abre ao lado da aba atual (e entra no grupo dela)
+                const atual = abas.find(a => a.id === projetoAberto);
+                if (atual) { aba.grupo = atual.grupo || null; abas.splice(abas.indexOf(atual) + 1, 0, aba); } else abas.push(aba);
                 // Passou do limite: fecha a aba usada há mais tempo (nunca a que está abrindo)
                 while (abas.length > MAX_ABAS) {
                     const velha = abas.filter(a => a !== aba).sort((a, b) => a.usadoEm - b.usadoEm)[0];
@@ -951,10 +1166,11 @@
             if (jaVisivel) { renderAbas(); return; }
             registrarRecente(aba.id);
             nomearProjeto(aba.p);
+            arrumarGrupos();
             document.body.classList.add('modo-projeto');
             el('areaInicio').classList.add('hidden');
             el('areaProjeto').classList.remove('hidden');
-            if (!aba.quadro) criarQuadro(aba);
+            if (!aba.quadro) { criarQuadro(aba); dormirAbasVelhas(); }
             else if (aba.carregado && API.informarPagina) API.informarPagina(aba.p.nome, '');   // Usuários online: em qual projeto está
             abas.forEach(a => { if (a.quadro) a.quadro.classList.toggle('hidden', a !== aba); });
             el('carregandoTexto').innerText = `Abrindo ${aba.p.nome}...`;
@@ -1460,6 +1676,89 @@
         }
 
         el('buscaProjetos').addEventListener('input', filtrar);
+        // ---------- Grupos de abas: etiqueta, menu, toque longo e arrastar ----------
+        let suprimirCliqueAba = false, toqueLongo = null;
+        el('listaAbas').addEventListener('click', e => {
+            if (suprimirCliqueAba) { e.preventDefault(); e.stopPropagation(); suprimirCliqueAba = false; return; }
+            const chip = e.target.closest('[data-grupo-chip]');
+            if (chip) {
+                const g = grupoDe(chip.dataset.grupoChip); if (!g) return;
+                g.recolhido = !g.recolhido; salvarAbas(); renderAbas();
+                const novo = el('listaAbas').querySelector(`[data-grupo-chip="${g.id}"]`); if (novo) novo.focus({ preventScroll: true });
+            }
+        }, true);
+        function abrirMenuDoAlvo(t) {
+            const chip = t.closest('[data-grupo-chip]');
+            if (chip) { editorDoGrupo(chip, chip.dataset.grupoChip); return true; }
+            const aba = t.closest('[data-aba]');
+            if (aba) { menuDaAba(aba, aba.dataset.aba); return true; }
+            return false;
+        }
+        el('listaAbas').addEventListener('contextmenu', e => {
+            if (toqueLongo === 'aberto') { e.preventDefault(); return; }
+            if (abrirMenuDoAlvo(e.target)) e.preventDefault();
+        });
+        // Toque longo no celular (o iPhone não tem botão direito)
+        let timerToque = null, toqueInicio = null;
+        el('listaAbas').addEventListener('touchstart', e => {
+            const t = e.target; toqueLongo = null; toqueInicio = e.touches[0] ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+            clearTimeout(timerToque);
+            timerToque = setTimeout(() => { if (abrirMenuDoAlvo(t)) { toqueLongo = 'aberto'; suprimirCliqueAba = true; if (navigator.vibrate) navigator.vibrate(15); setTimeout(() => { toqueLongo = null; }, 800); } }, 520);
+        }, { passive: true });
+        el('listaAbas').addEventListener('touchmove', e => {
+            const t = e.touches[0]; if (!t || !toqueInicio) return;
+            if (Math.abs(t.clientX - toqueInicio.x) > 8 || Math.abs(t.clientY - toqueInicio.y) > 8) clearTimeout(timerToque);
+        }, { passive: true });
+        el('listaAbas').addEventListener('touchend', () => clearTimeout(timerToque));
+        el('listaAbas').addEventListener('touchcancel', () => clearTimeout(timerToque));
+
+        // Arrastar (computador): reordena; soltar em cima de uma aba de grupo (ou da etiqueta) entra no grupo
+        let arrastandoId = null;
+        const limparMarcasSolta = () => el('listaAbas').querySelectorAll('.solta-antes, .solta-depois, .solta').forEach(x => x.classList.remove('solta-antes', 'solta-depois', 'solta'));
+        el('listaAbas').addEventListener('dragstart', e => {
+            const aba = e.target.closest && e.target.closest('[data-aba]');
+            if (!aba) { e.preventDefault(); return; }
+            arrastandoId = aba.dataset.aba;
+            aba.classList.add('arrastando');
+            fecharMenuAbas();
+            try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', arrastandoId); } catch (err) { /* segue sem os dados */ }
+        });
+        el('listaAbas').addEventListener('dragend', () => { arrastandoId = null; limparMarcasSolta(); el('listaAbas').querySelectorAll('.arrastando').forEach(x => x.classList.remove('arrastando')); });
+        el('listaAbas').addEventListener('dragover', e => {
+            if (!arrastandoId) return;
+            const alvo = e.target.closest('[data-aba], [data-grupo-chip], [data-aba-inicio]');
+            if (!alvo || alvo.dataset.aba === arrastandoId) { limparMarcasSolta(); return; }
+            e.preventDefault();
+            limparMarcasSolta();
+            if (alvo.dataset.aba) { const r = alvo.getBoundingClientRect(); alvo.classList.add(e.clientX < r.left + r.width / 2 ? 'solta-antes' : 'solta-depois'); }
+            else alvo.classList.add('solta');
+        });
+        el('listaAbas').addEventListener('drop', e => {
+            if (!arrastandoId) return;
+            e.preventDefault();
+            const alvo = e.target.closest('[data-aba], [data-grupo-chip], [data-aba-inicio]');
+            const movida = abas.find(a => a.id === arrastandoId);
+            limparMarcasSolta();
+            if (!alvo || !movida) return;
+            abas.splice(abas.indexOf(movida), 1);
+            if (alvo.hasAttribute('data-aba-inicio')) { movida.grupo = null; abas.unshift(movida); }
+            else if (alvo.dataset.grupoChip) {
+                const gid = alvo.dataset.grupoChip; movida.grupo = gid;
+                const k = abas.findIndex(a => a.grupo === gid); abas.splice(k < 0 ? abas.length : k, 0, movida);
+                const g = grupoDe(gid); if (g) g.recolhido = false;
+            } else {
+                const destino = abas.find(a => a.id === alvo.dataset.aba);
+                if (!destino) { abas.push(movida); }
+                else {
+                    const r = alvo.getBoundingClientRect(), depois = e.clientX >= r.left + r.width / 2;
+                    abas.splice(abas.indexOf(destino) + (depois ? 1 : 0), 0, movida);
+                    movida.grupo = destino.grupo || null;   // entra no grupo da aba onde foi solta (ou sai do grupo)
+                }
+            }
+            arrastandoId = null;
+            arrumarGrupos(); salvarAbas(); renderAbas();
+        });
+
         // Botão do meio do mouse fecha a aba, como no navegador
         el('listaAbas').addEventListener('auxclick', e => {
             const aba = e.button === 1 && e.target.closest('[data-aba]');

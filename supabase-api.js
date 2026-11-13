@@ -391,17 +391,27 @@
         { id: 'aplicacoes-fitossanitarias', nome: 'Aplicações Fitossanitárias', descricao: 'Defensivos, laboratório, adubação e dashboard', icone: 'spray-can', grupo: 'Operação', gradiente: 'from-green-500 to-emerald-700',
           cor: 'bg-green-50 text-green-700', caminho: 'projetos/aplicacoes-fitossanitarias/index.html',
           areas: [{ modulo: 'aplicacoes_fitossanitarias', nome: 'Acesso às Aplicações', recursos: recursos('aplicacoes', [['registro', 'Registro', 'clipboard-pen'], ['dashboard', 'Dashboard', 'layout-dashboard']]) }] },
+        // Antigo app "programacao-fito-check" (Apps Script + planilha): programação diária das aplicações e checklist de quem aplica
+        { id: 'programacao-fito', nome: 'Programação Fitossanitária', descricao: 'Programação diária das aplicações e checklist de quem aplica, com fotos', icone: 'clipboard-check', grupo: 'Operação', gradiente: 'from-lime-500 to-green-700',
+          cor: 'bg-lime-50 text-lime-700', caminho: 'projetos/programacao-fito/index.html',
+          areas: [{ modulo: 'programacao_fito', nome: 'Programações e checklist', recursos: [] },
+              // Permissão extra (no lugar da senha do programador): criar, editar e excluir programações e modelos
+              { modulo: 'programacao_fito_programar', nome: 'Programar (criar, editar e excluir)', extra: true, requer: 'programacao_fito', recursos: [] }] },
+        // Antigo app "coleta-leituras" (Apps Script + duas planilhas): pluviômetro e relógio de energia
+        { id: 'leituras', nome: 'Leituras', descricao: 'Pluviômetro (chuva) e relógio de energia, com boletim para o WhatsApp', icone: 'gauge', grupo: 'Operação', gradiente: 'from-sky-500 to-cyan-700',
+          cor: 'bg-sky-50 text-sky-700', caminho: 'projetos/leituras/index.html',
+          areas: [{ modulo: 'leituras', nome: 'Registrar e ver as leituras', recursos: [] }] },
         // Antigo "Registro de Descarte - SPG": grava no Supabase; a produção do parceiro ainda vem do Apps Script
         { id: 'descarte-parceiros', nome: 'Descarte de Parceiros', descricao: 'Descarte da colheita recebida dos parceiros, com o percentual sobre a produção', icone: 'trash-2', grupo: 'Operação', gradiente: 'from-rose-500 to-red-700',
           cor: 'bg-rose-50 text-rose-700', caminho: 'projetos/descarte-parceiros/index.html',
           areas: [{ modulo: 'descarte_parceiros', nome: 'Acesso ao Descarte de Parceiros', recursos: [] },
               // Permissão extra, desligada por padrão: editar/excluir qualquer descarte e as fotos (sem ela, só o que a pessoa registrou)
               { modulo: 'descarte_parceiros_editar', nome: 'Editar e excluir descartes', extra: true, requer: 'descarte_parceiros', recursos: [] }] },
-        // Pesagem única (SPG Oásis e SPG Estufa): usa os acessos de Pesagem de cada Resumo da Colheita.
+        // Pesagem da SPG Oásis e parceiros (a SPG Estufa lança o peso na própria Colheita).
         // espelho: não aparece no Cadastro de Usuários (o acesso é dado nos dois Resumos da Colheita)
-        { id: 'pesagem', nome: 'Pesagem', descricao: 'Pesagem da SPG Oásis, SPG Estufa e parceiros, direto para a Produtividade Packing', icone: 'scale', grupo: 'Operação', gradiente: 'from-orange-500 to-amber-600',
+        { id: 'pesagem', nome: 'Pesagem', descricao: 'Pesagem da SPG Oásis e parceiros, direto para a Produtividade Packing', icone: 'scale', grupo: 'Operação', gradiente: 'from-orange-500 to-amber-600',
           cor: 'bg-orange-50 text-orange-700', caminho: 'projetos/pesagem/index.html', espelho: true,
-          areas: [{ modulo: 'pesagem_oasis', nome: 'Pesagem SPG Oásis', recursos: [] }, { modulo: 'pesagem_estufa', nome: 'Pesagem SPG Estufa', recursos: [] }] },
+          areas: [{ modulo: 'pesagem_oasis', nome: 'Pesagem SPG Oásis', recursos: [] }] },   // Estufa: o peso é lançado na Colheita do Resumo Estufa
         // Antigo app "produtividade-spg-packing" (tinha um Supabase próprio): entregas, processamento por colaborador e estoque
         { id: 'produtividade-packing', nome: 'Produtividade Packing', descricao: 'Entregas dos parceiros, processamento por colaborador, estoque e rastreio', icone: 'package-check', grupo: 'Operação', gradiente: 'from-emerald-500 to-teal-700',
           cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/produtividade-packing/index.html',

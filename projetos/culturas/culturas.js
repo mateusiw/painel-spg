@@ -30,14 +30,17 @@
     const PARCEIROS = '__parceiros';
     const PROPRIOS = ['SPG Oásis', 'SPG Estufa', 'Fazenda Oásis'];   // o próprio local, não é parceiro
     const CAMPO = 'w-full bg-slate-50 border-2 border-slate-200 rounded-xl py-2.5 px-3 text-sm font-medium text-slate-800 outline-none focus:border-emerald-500 focus:bg-white';
-    let parceiros = [], buscaParceiro = '';
+    let parceiros = [], todosParceiros = [], buscaParceiro = '';
     const semAcento = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
     const normalizar = s => String(s || '').replace(/\s+/g, ' ').trim();
 
     async function carregarParceiros() {
-        const { data, error } = await API.cliente.from('packing_cadastros').select('valor').eq('tipo', 'produtores').order('valor');
+        let { data, error } = await API.cliente.from('packing_cadastros').select('valor, na_pesagem').eq('tipo', 'produtores').order('valor');
+        if (error && /na_pesagem/.test(error.message || '')) ({ data, error } = await API.cliente.from('packing_cadastros').select('valor').eq('tipo', 'produtores').order('valor'));
         if (error) throw new Error(/packing_cadastros/.test(error.message || '') ? 'Rode o arquivo supabase/produtividade_packing.sql no Supabase primeiro.' : error.message);
-        parceiros = (data || []).map(x => x.valor).filter(n => !PROPRIOS.includes(n)).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        // Aqui ficam só os parceiros da Pesagem; os que são só do Packing são cuidados na Produtividade Packing
+        todosParceiros = (data || []).map(x => x.valor);
+        parceiros = (data || []).filter(x => x.na_pesagem !== false).map(x => x.valor).filter(n => !PROPRIOS.includes(n)).sort((a, b) => a.localeCompare(b, 'pt-BR'));
     }
 
     function desenharListaParceiros(painel) {
@@ -84,7 +87,7 @@
         setTimeout(() => { campo.focus(); campo.select(); }, 50);
     }
 
-    const jaExiste = (nome, ignorar) => parceiros.concat(PROPRIOS).find(n => n !== ignorar && semAcento(n) === semAcento(nome));
+    const jaExiste = (nome, ignorar) => todosParceiros.concat(PROPRIOS).find(n => n !== ignorar && semAcento(n) === semAcento(nome));
 
     async function novoParceiro(painel) {
         janelaNome({
