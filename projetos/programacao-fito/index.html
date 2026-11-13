@@ -62,6 +62,12 @@
         .st-ATRASADA  { background: #fee2e2; color: #991b1b; }
         .st-FEITO     { background: #dcfce7; color: #166534; }
         .st-NAO_FEITO { background: #fee2e2; color: #991b1b; }
+        .st-ABERTA    { background: #fef3c7; color: #92400e; }
+        .st-SEPARADA  { background: #dcfce7; color: #166534; }
+        .st-CANCELADA { background: #f1f5f9; color: #64748b; }
+        /* Caixinha de "separado" de cada produto do pedido */
+        .marca-sep { width: 28px; height: 28px; flex-shrink: 0; border-radius: 9px; box-shadow: inset 0 0 0 2px #cbd5e1; background: #fff; display: flex; align-items: center; justify-content: center; color: transparent; transition: all .15s; }
+        .marca-sep.on { background: #059669; box-shadow: none; color: #fff; }
         /* Escolha Feito / Não feito e Sim / Não do checklist */
         .opcao-exec { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; border-radius: 1rem; background: #fff; box-shadow: inset 0 0 0 2px #e2e8f0; font-weight: 800; font-size: 14px; color: #64748b; transition: all .15s; }
         .opcao-exec:hover { background: #f8fafc; }
@@ -155,6 +161,16 @@
             </div>
             <div id="listaModelos" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
         </section>
+
+        <!-- ================= SEPARAÇÃO DE PRODUTOS ================= -->
+        <section id="view-separacao" class="hidden space-y-4">
+            <div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 flex items-start gap-3">
+                <div class="w-9 h-9 rounded-xl bg-amber-50 ring-1 ring-amber-100 flex items-center justify-center shrink-0"><i data-lucide="package-check" class="w-5 h-5 text-amber-600"></i></div>
+                <p id="sepExplica" class="text-xs font-medium text-slate-500 leading-relaxed"></p>
+            </div>
+            <div id="filtrosSep" role="tablist" aria-label="Filtrar pedidos" class="flex w-fit bg-slate-100/80 rounded-2xl ring-1 ring-slate-200/70 p-1 gap-1"></div>
+            <div id="listaSeparacoes" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+        </section>
     </main>
 
     <!-- Área oculta onde as imagens são montadas -->
@@ -182,6 +198,25 @@
         <div class="flex gap-2 mt-4">
             <a id="fotoDrive" href="#" target="_blank" rel="noopener" class="btn-sec"><i data-lucide="external-link" class="w-4 h-4"></i> Abrir no Drive</a>
             <button type="button" class="btn-sec" onclick="fecharFoto()">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Pedido de separação de produtos (quem programa) -->
+    <div id="pedidoModal" class="hidden fixed inset-0 bg-slate-900/60 z-[65] flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="pedidoTitulo">
+        <div class="bg-white w-full sm:max-w-xl rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] flex flex-col entra">
+            <div class="p-4 border-b border-slate-100 flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-50 ring-1 ring-amber-100 flex items-center justify-center shrink-0"><i data-lucide="package" class="w-5 h-5 text-amber-600"></i></div>
+                <div class="flex-1 min-w-0">
+                    <h3 id="pedidoTitulo" class="font-extrabold text-sm text-slate-800">Pedir separação de produtos</h3>
+                    <p id="pedidoSub" class="text-[11px] font-semibold text-slate-400 truncate"></p>
+                </div>
+                <button type="button" onclick="fecharPedido()" aria-label="Fechar" class="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-slate-100"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="pedidoCorpo" class="p-4 overflow-auto flex-1 space-y-4"></div>
+            <div class="p-4 border-t border-slate-100 flex gap-2">
+                <button type="button" onclick="fecharPedido()" class="btn-sec">Cancelar</button>
+                <button type="button" onclick="enviarPedido()" class="btn-principal flex-1 !text-sm"><i data-lucide="send" class="w-4 h-4"></i> Enviar pedido</button>
+            </div>
         </div>
     </div>
 
@@ -226,16 +261,23 @@
         const podeProgramar = () => API.temModulo('programacao_fito_programar');
         // Permissão extra "Modelos" (Cadastro de Usuários): ver a aba Modelos, usar e gerenciar os modelos
         const podeModelos = () => API.temModulo('programacao_fito_modelos');
+        // Permissão extra "Separar produtos": recebe os pedidos de separação e marca o que foi separado
+        const podeSeparar = () => API.temModulo('programacao_fito_separar');
+        const veSeparacao = () => podeProgramar() || podeSeparar();
 
         // Exige foto do pH e do volume para marcar uma operação como FEITA
         const EXIGIR_FOTOS = true;
         const TIPOS = ['PULVERIZAÇÃO FOLIAR', 'APLICAÇÃO EM DRENCH', 'DEFENSIVO INSETICIDA', 'DEFENSIVO FUNGICIDA', 'HERBICIDA', 'FERTIRRIGAÇÃO', 'OUTRO'];
         const UNIDADES = ['L', 'mL', 'kg', 'g'];
         const DIAS = ['DOMINGO', 'SEGUNDA-FEIRA', 'TERÇA-FEIRA', 'QUARTA-FEIRA', 'QUINTA-FEIRA', 'SEXTA-FEIRA', 'SÁBADO'];
-        const STATUS_LABEL = { PENDENTE: 'Pendente', PARCIAL: 'Em andamento', CONCLUIDA: 'Concluída', ATRASADA: 'Atrasada', FEITO: 'Feito', NAO_FEITO: 'Não feito' };
+        const STATUS_LABEL = { PENDENTE: 'Pendente', PARCIAL: 'Em andamento', CONCLUIDA: 'Concluída', ATRASADA: 'Atrasada', FEITO: 'Feito', NAO_FEITO: 'Não feito',
+            ABERTA: 'Aguardando separação', SEPARADA: 'Separado', CANCELADA: 'Cancelado' };
 
         let programacoes = [];
         let modelos = [];
+        let separacoes = [];     // pedidos de separação de produtos
+        let filtroSep = 'abertas';
+        let pedido = null;       // pedido sendo montado na janela
         let filtro = 'pendentes';
         let aba = 'programacoes';
         let viewAtual = 'lista';
@@ -373,8 +415,11 @@
         // ------------------------------------------------------------
         //  Abas e navegação
         // ------------------------------------------------------------
-        const ABAS = [{ id: 'programacoes', nome: 'Programações', icone: 'clipboard-list', cor: '5, 150, 105' }, { id: 'modelos', nome: 'Modelos', icone: 'library', cor: '79, 70, 229' }];
-        const abasVisiveis = () => ABAS.filter(a => a.id !== 'modelos' || podeModelos());
+        const ABAS = [{ id: 'programacoes', nome: 'Programações', icone: 'clipboard-list', cor: '5, 150, 105' }, { id: 'separacao', nome: 'Separação', icone: 'package-check', cor: '217, 119, 6' }, { id: 'modelos', nome: 'Modelos', icone: 'library', cor: '79, 70, 229' }];
+        const abasVisiveis = () => ABAS.filter(a => (a.id !== 'modelos' || podeModelos()) && (a.id !== 'separacao' || veSeparacao())).map(a => {
+            const abertos = a.id === 'separacao' ? separacoes.filter(s => s.status === 'ABERTA').length : 0;
+            return abertos ? { ...a, nome: `${a.nome} (${abertos})` } : a;
+        });
         function desenharAbas() {
             el('abasFito').parentElement.classList.toggle('lg:block', abasVisiveis().length > 1);   // uma aba só: sem pílula
             el('abasFito').innerHTML = abasVisiveis().map(a => {
@@ -386,32 +431,35 @@
         let barra = null;
         function trocarAba(id) {
             if (id === 'modelos' && !podeModelos()) id = 'programacoes';
+            if (id === 'separacao' && !veSeparacao()) id = 'programacoes';
             aba = id;
-            irPara(id === 'modelos' ? 'modelos' : 'lista');
+            irPara(id === 'modelos' ? 'modelos' : id === 'separacao' ? 'separacao' : 'lista');
         }
         function irPara(view) {
             if (view === 'modelos' && !podeModelos()) view = 'lista';
+            if (view === 'separacao' && !veSeparacao()) view = 'lista';
             viewAtual = view;
-            ['lista', 'editor', 'exec', 'modelos'].forEach(v => el('view-' + v).classList.toggle('hidden', v !== view));
+            ['lista', 'editor', 'exec', 'modelos', 'separacao'].forEach(v => el('view-' + v).classList.toggle('hidden', v !== view));
             el('barraFiltros').classList.toggle('hidden', view !== 'lista');
             el('barraFixa').classList.toggle('max-lg:hidden', view !== 'lista');   // no celular, fora da lista, não há o que mostrar
-            aba = view === 'modelos' ? 'modelos' : 'programacoes';
+            aba = view === 'modelos' ? 'modelos' : view === 'separacao' ? 'separacao' : 'programacoes';
             desenharAbas(); if (barra) barra.atualizar();
             window.scrollTo(0, 0);
             if (view === 'lista') renderLista();
             if (view === 'modelos') renderModelos();
+            if (view === 'separacao') { renderSeparacoes(); carregarSeparacoes(); }
         }
         function atualizarPermissoes() {
             el('btnNova').classList.toggle('hidden', !podeProgramar());
-            if (viewAtual === 'modelos' && !podeModelos()) { irPara('lista'); return; }
+            if ((viewAtual === 'modelos' && !podeModelos()) || (viewAtual === 'separacao' && !veSeparacao())) { irPara('lista'); return; }
             desenharAbas(); if (barra) barra.atualizar();
-            carregarModelos();
+            carregarModelos(); carregarSeparacoes();
             if (viewAtual === 'lista') renderLista();
             if (viewAtual === 'modelos') renderModelos();
         }
         async function atualizarTudo() {
             if (viewAtual === 'exec' && atual) { await abrirExecucao(atual.id, true); return; }
-            await Promise.all([carregarLista(), carregarModelos()]);
+            await Promise.all([carregarLista(), carregarModelos(), carregarSeparacoes()]);
         }
 
         // ------------------------------------------------------------
@@ -499,9 +547,11 @@
                     </div>
                     ${anelProgresso(feitas, total, nao)}
                 </div>
+                ${seloSeparacao(p.id)}
                 ${p.equipeInicio ? `<p class="mt-3 text-[11px] font-medium text-slate-500 flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5 text-slate-400"></i>${esc(resumoJornada(p).replace(/^Equipe: /, ''))}</p>` : ''}
                 <div class="mt-3 pt-3 border-t border-slate-100 flex items-center gap-1">
                     <span class="flex-1 min-w-0 text-[11px] font-medium text-slate-400 truncate">por ${esc(nomeProprio(p.responsavel) || '—')}</span>
+                    ${podeProgramar() ? acao('pedirSeparacao', 'package', 'Pedir separação de produtos') : ''}
                     ${acao('enviarImagemProgramacao', 'image', 'Imagem da programação')}
                     ${podeProgramar() ? acao('editarProgramacao', 'pencil', 'Editar') : ''}
                     ${podeProgramar() && feitas + nao === 0 ? acao('excluirProgramacao', 'trash-2', 'Excluir', 'hover:!text-red-600 hover:!bg-red-50') : ''}
@@ -1215,6 +1265,221 @@
         function fecharImagem() { el('imagemModal').classList.add('hidden'); }
 
         // ------------------------------------------------------------
+        //  SEPARAÇÃO DE PRODUTOS (pedido de quem programa -> quem separa)
+        //  Tabela fito_separacoes (supabase/programacao_fito.sql). Ao abrir e ao concluir, a Edge
+        //  Function "notificacoes" (acao "fito_separacao") avisa no celular quem separa / quem pediu.
+        //  Não mexe no Estoque de Produtos.
+        // ------------------------------------------------------------
+        const CACHE_SEP = 'fito_cache_separacoes';
+        const sepDoBanco = r => ({
+            id: r.id, programacaoId: r.programacao_id, data: r.data_aplicacao || '', turno: r.turno || '', locais: r.locais || '',
+            itens: Array.isArray(r.itens) ? r.itens : [], observacao: r.observacao || '', status: r.status,
+            solicitante: r.solicitante || '', separador: r.separador || '', separadoEm: r.separado_em || '', obsSeparacao: r.obs_separacao || '', criadoEm: r.criado_em || ''
+        });
+        const dataHora = iso => { if (!iso) return ''; const d = new Date(iso); return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`; };
+        // "1,5" / "0.5" / "500" -> número (vazio ou texto -> NaN)
+        function numeroDe(v) {
+            let s = String(v ?? '').trim().replace(/\s/g, '');
+            if (!s) return NaN;
+            if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+            return /^-?\d*\.?\d+$/.test(s) ? Number(s) : NaN;
+        }
+        const fmtNumero = n => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+        const juntarNomes = l => l.length <= 1 ? l.join('') : `${l.slice(0, -1).join(', ')} e ${l[l.length - 1]}`;
+        const erroSep = e => erro(/fito_separacoes|schema cache|relation/i.test(e && e.message || '') ? new Error('Rode de novo o arquivo supabase/programacao_fito.sql no Supabase (tabela dos pedidos de separação).') : e);
+        function avisarSeparacao(id, tipo) {
+            sb.functions.invoke('notificacoes', { body: { acao: 'fito_separacao', id, tipo } }).catch(() => { /* o aviso é um extra: o pedido já está salvo */ });
+        }
+
+        async function carregarSeparacoes() {
+            if (!veSeparacao()) { separacoes = []; return; }
+            if (!navigator.onLine) return;
+            try {
+                const r = erroBanco(await sb.from('fito_separacoes').select('*').order('criado_em', { ascending: false }).limit(200));
+                separacoes = r.data.map(sepDoBanco);
+                gravarCache(CACHE_SEP, separacoes);
+            } catch (e) { return; }   // sem internet ou tabela ainda não criada: fica a última cópia
+            desenharAbas(); if (barra) barra.atualizar();
+            if (viewAtual === 'separacao') renderSeparacoes();
+            if (viewAtual === 'lista') renderLista();
+        }
+
+        // Selo no cartão da programação: situação do último pedido de separação dela
+        function seloSeparacao(progId) {
+            if (!veSeparacao()) return '';
+            const s = separacoes.find(x => x.programacaoId === progId && x.status !== 'CANCELADA');
+            if (!s) return '';
+            const feitos = s.itens.filter(i => i.separado).length;
+            return `<p class="mt-3 flex items-center gap-1.5 text-[11px] font-bold ${s.status === 'SEPARADA' ? 'text-emerald-700' : 'text-amber-700'}"><i data-lucide="${s.status === 'SEPARADA' ? 'package-check' : 'package'}" class="w-3.5 h-3.5 shrink-0"></i>${s.status === 'SEPARADA' ? `Produtos separados por ${esc(nomeProprio(s.separador))}` : `Separação pendente · ${feitos} de ${s.itens.length} produtos`}</p>`;
+        }
+
+        // ---------- Lista de pedidos ----------
+        const FILTROS_SEP = [['abertas', 'Aguardando'], ['separadas', 'Separados'], ['todas', 'Todos']];
+        function setFiltroSep(f) { filtroSep = f; renderSeparacoes(); }
+        function renderSeparacoes() {
+            el('sepExplica').innerHTML = podeSeparar()
+                ? 'Pedidos de separação de produtos para as aplicações. Marque cada produto conforme for separando e toque em <b>Concluir separação</b> no fim: quem pediu recebe o aviso.'
+                : 'Para pedir a separação dos produtos de uma aplicação, toque no ícone <b>de caixa</b> no cartão da programação. Quem tem a permissão "Separar produtos" recebe o aviso no celular.';
+            el('filtrosSep').innerHTML = FILTROS_SEP.map(([id, nome]) => `<button type="button" role="tab" aria-selected="${filtroSep === id}" onclick="setFiltroSep('${id}')" class="px-3.5 min-h-[40px] rounded-xl text-xs font-bold transition-all ${filtroSep === id ? 'bg-white shadow-sm ring-1 ring-slate-200/80 text-emerald-700' : 'text-slate-500'}">${nome}</button>`).join('');
+            const lista = separacoes.filter(s => filtroSep === 'abertas' ? s.status === 'ABERTA' : filtroSep === 'separadas' ? s.status === 'SEPARADA' : true);
+            const alvo = el('listaSeparacoes');
+            if (!lista.length) {
+                alvo.innerHTML = `<div class="lg:col-span-2 xl:col-span-3 bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-8 text-center text-slate-500">
+                    <i data-lucide="package-open" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
+                    <p class="font-bold text-sm">${filtroSep === 'abertas' ? 'Nenhum pedido aguardando separação.' : filtroSep === 'separadas' ? 'Nenhum pedido separado ainda.' : 'Nenhum pedido de separação.'}</p></div>`;
+                icones(); return;
+            }
+            alvo.innerHTML = lista.map(cartaoSeparacao).join('');
+            icones();
+        }
+        function cartaoSeparacao(s) {
+            const aberta = s.status === 'ABERTA';
+            const marcar = aberta && podeSeparar();
+            const feitos = s.itens.filter(i => i.separado).length;
+            const quando = [s.data ? `${fmtData(s.data)} · ${nomeProprio(diaDaSemana(s.data))}` : '', nomeProprio(s.turno)].filter(Boolean).join(' · ');
+            return `<div class="bg-white rounded-3xl shadow-sm ring-1 ${aberta ? 'ring-amber-200' : 'ring-slate-200/80'} p-4 entra flex flex-col ${s.status === 'CANCELADA' ? 'opacity-70' : ''}">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-2xl ${aberta ? 'bg-amber-50 ring-amber-100 text-amber-600' : s.status === 'SEPARADA' ? 'bg-emerald-50 ring-emerald-100 text-emerald-600' : 'bg-slate-50 ring-slate-200 text-slate-400'} ring-1 flex items-center justify-center shrink-0"><i data-lucide="${s.status === 'SEPARADA' ? 'package-check' : s.status === 'CANCELADA' ? 'package-x' : 'package'}" class="w-5 h-5"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-extrabold text-slate-800">Aplicação ${esc(quando || 'sem data')}</p>
+                        ${s.locais ? `<p class="mt-0.5 flex items-start gap-1.5 text-xs font-bold text-slate-600"><i data-lucide="map-pin" class="w-3.5 h-3.5 mt-px shrink-0 text-rose-500"></i><span>${esc(s.locais)}</span></p>` : ''}
+                        <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span class="chip st-${s.status}">${STATUS_LABEL[s.status] || s.status}</span>
+                            ${aberta ? `<span class="text-xs font-bold text-slate-500">${feitos} de ${s.itens.length} separados</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 rounded-2xl ring-1 ring-slate-100 overflow-hidden divide-y divide-slate-100">
+                    ${s.itens.map((it, k) => {
+                        const linha = `<span class="flex-1 min-w-0 text-[13px] font-semibold ${it.separado ? 'text-slate-400 line-through' : 'text-slate-700'} truncate">${esc(it.nome)}</span><span class="text-[13px] font-extrabold ${it.separado ? 'text-slate-400' : 'text-slate-900'} whitespace-nowrap">${esc(it.quantidade)} ${esc(it.unidade)}</span>`;
+                        return marcar
+                            ? `<button type="button" onclick="marcarItemSeparado('${esc(s.id)}', ${k})" aria-pressed="${!!it.separado}" class="w-full flex items-center gap-3 px-3 min-h-[48px] text-left ${k % 2 ? 'bg-slate-50/70' : ''} active:bg-emerald-50"><span class="marca-sep ${it.separado ? 'on' : ''}"><i data-lucide="check" class="w-4 h-4"></i></span>${linha}</button>`
+                            : `<div class="flex items-center gap-3 px-3 py-2 ${k % 2 ? 'bg-slate-50/70' : ''}">${s.status === 'SEPARADA' || it.separado ? `<i data-lucide="${it.separado ? 'check' : 'minus'}" class="w-4 h-4 shrink-0 ${it.separado ? 'text-emerald-600' : 'text-slate-300'}"></i>` : ''}${linha}</div>`;
+                    }).join('')}
+                </div>
+                ${s.observacao ? `<p class="mt-2 text-xs text-slate-600 leading-relaxed"><b class="text-slate-500">Obs.:</b> ${esc(s.observacao)}</p>` : ''}
+                ${s.obsSeparacao ? `<p class="mt-1 text-xs text-slate-600 leading-relaxed"><b class="text-slate-500">Separação:</b> ${esc(s.obsSeparacao)}</p>` : ''}
+                <p class="mt-auto pt-3 text-[11px] font-medium text-slate-400">Pedido por ${esc(nomeProprio(s.solicitante) || '—')} em ${esc(dataHora(s.criadoEm))}${s.status === 'SEPARADA' ? ` · separado por ${esc(nomeProprio(s.separador))} em ${esc(dataHora(s.separadoEm))}` : ''}</p>
+                ${aberta && (podeSeparar() || podeProgramar()) ? `<div class="mt-3 flex gap-2">
+                    ${podeProgramar() ? `<button type="button" onclick="cancelarPedido('${esc(s.id)}')" class="btn-sec btn-perigo">Cancelar pedido</button>` : ''}
+                    ${podeSeparar() ? `<button type="button" onclick="concluirSeparacao('${esc(s.id)}')" class="btn-principal flex-1"><i data-lucide="package-check" class="w-4 h-4"></i> Concluir separação</button>` : ''}
+                </div>` : ''}
+            </div>`;
+        }
+        async function marcarItemSeparado(id, k) {
+            const s = separacoes.find(x => x.id === id); if (!s || s.status !== 'ABERTA' || !podeSeparar()) return;
+            const antes = s.itens.map(i => ({ ...i }));
+            s.itens = s.itens.map((i, n) => n === k ? { ...i, separado: !i.separado } : i);
+            renderSeparacoes();
+            try { erroBanco(await sb.from('fito_separacoes').update({ itens: s.itens, atualizado_em: new Date().toISOString() }).eq('id', id).eq('status', 'ABERTA')); gravarCache(CACHE_SEP, separacoes); }
+            catch (e) { s.itens = antes; renderSeparacoes(); erroSep(e); }
+        }
+        async function concluirSeparacao(id) {
+            const s = separacoes.find(x => x.id === id); if (!s || s.status !== 'ABERTA' || !podeSeparar()) return;
+            const faltam = s.itens.filter(i => !i.separado).length;
+            if (faltam && !(await Dialogo.confirmar(`${faltam} ${faltam === 1 ? 'produto ainda não foi marcado' : 'produtos ainda não foram marcados'} como separado. Concluir assim mesmo?`, { titulo: 'Concluir separação', botao: 'Concluir' }))) return;
+            const obs = await pedirTexto('Concluir separação', 'Alguma observação para quem pediu? (opcional, ex.: faltou produto, entregue na casa de química)', '');
+            if (obs === null) return;
+            carregando(true, 'Concluindo...');
+            try {
+                erroBanco(await sb.from('fito_separacoes').update({ status: 'SEPARADA', separador: API.nomeUsuario(), separado_em: new Date().toISOString(), obs_separacao: obs, itens: s.itens, atualizado_em: new Date().toISOString() }).eq('id', id).eq('status', 'ABERTA'));
+                avisarSeparacao(id, 'separada');
+                await carregarSeparacoes();
+                carregando(false);
+                Dialogo.avisar('Separação concluída. Quem pediu foi avisado no celular.', { titulo: 'Pronto', tipo: 'sucesso' });
+            } catch (e) { erroSep(e); }
+        }
+        async function cancelarPedido(id) {
+            const s = separacoes.find(x => x.id === id); if (!s || s.status !== 'ABERTA' || !podeProgramar()) return;
+            if (!(await Dialogo.confirmar('Cancelar este pedido de separação? Ele fica no histórico como cancelado.', { titulo: 'Cancelar pedido', botao: 'Cancelar pedido', perigo: true }))) return;
+            carregando(true, 'Cancelando...');
+            try { erroBanco(await sb.from('fito_separacoes').update({ status: 'CANCELADA', atualizado_em: new Date().toISOString() }).eq('id', id)); await carregarSeparacoes(); carregando(false); }
+            catch (e) { erroSep(e); }
+        }
+
+        // ---------- Novo pedido (a partir de uma programação) ----------
+        async function pedirSeparacao(progId) {
+            if (!podeProgramar()) return;
+            const jaAberto = separacoes.find(x => x.programacaoId === progId && x.status === 'ABERTA');
+            if (jaAberto && !(await Dialogo.confirmar('Esta programação já tem um pedido de separação aguardando. Deseja abrir outro pedido?', { titulo: 'Pedido já aberto', botao: 'Abrir outro' }))) return;
+            carregando(true, 'Montando o pedido...');
+            let p;
+            try { p = await obterProgramacao(progId); } catch (e) { erro(e); return; }
+            carregando(false);
+            // Soma das doses de cada produto (mesmo nome e unidade) em todos os blocos: fica de sugestão
+            const porProduto = new Map();
+            p.operacoes.forEach(o => o.produtos.forEach(x => {
+                const nome = String(x.nome || '').trim(); if (!nome) return;
+                const chave = nome.toUpperCase() + '|' + (x.unidade || '');
+                const item = porProduto.get(chave) || { nome, unidade: x.unidade || 'L', soma: 0, valido: true };
+                const n = numeroDe(x.dose);
+                if (isNaN(n)) item.valido = false; else item.soma += n;
+                porProduto.set(chave, item);
+            }));
+            const blocos = [...new Set(p.operacoes.map(o => String(o.bloco || '').trim()).filter(Boolean))];
+            pedido = {
+                programacaoId: p.id, data: p.data, turno: p.turno,
+                locais: blocos.length ? `${blocos.length === 1 ? 'Bloco' : 'Blocos'} ${juntarNomes(blocos)}` : '',
+                itens: [...porProduto.values()].map(i => ({ nome: i.nome, unidade: i.unidade, quantidade: '', sugerido: i.valido && i.soma ? fmtNumero(i.soma) : '' })),
+                observacao: ''
+            };
+            if (!pedido.itens.length) pedido.itens.push({ nome: '', unidade: 'L', quantidade: '', sugerido: '' });
+            el('pedidoSub').textContent = `Aplicação de ${fmtData(p.data)} · ${nomeProprio(p.turno)}`;
+            renderPedido();
+            el('pedidoModal').classList.remove('hidden');
+        }
+        function renderPedido() {
+            const temSugestao = pedido.itens.some(i => i.sugerido);
+            el('pedidoCorpo').innerHTML = `
+                <div><label class="rotulo" for="pedLocais"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-rose-500"></i> Locais da aplicação</label>
+                    <input id="pedLocais" class="campo" value="${esc(pedido.locais)}" placeholder="Ex.: Blocos 11 e 12" oninput="pedido.locais = this.value"></div>
+                <div>
+                    <div class="flex items-end justify-between gap-2 mb-2">
+                        <span class="rotulo !mb-0"><i data-lucide="package" class="w-3.5 h-3.5 text-amber-500"></i> Produtos e quantidade a separar</span>
+                        ${temSugestao ? `<button type="button" onclick="usarSomaDoses()" class="min-h-[36px] text-xs font-bold text-emerald-700 flex items-center gap-1"><i data-lucide="sigma" class="w-3.5 h-3.5"></i> Usar a soma das doses</button>` : ''}
+                    </div>
+                    <div class="space-y-2">${pedido.itens.map((i, k) => `<div class="flex gap-2">
+                        <input class="campo flex-1 min-w-0" value="${esc(i.nome)}" placeholder="Produto" aria-label="Produto" oninput="pedido.itens[${k}].nome = this.value">
+                        <input class="campo !w-24" inputmode="decimal" value="${esc(i.quantidade)}" placeholder="${esc(i.sugerido || 'Qtd.')}" aria-label="Quantidade${i.sugerido ? ' (soma das doses: ' + esc(i.sugerido) + ')' : ''}" title="${i.sugerido ? 'Soma das doses: ' + esc(i.sugerido) : ''}" oninput="pedido.itens[${k}].quantidade = this.value">
+                        <select class="campo !w-20" aria-label="Unidade" onchange="pedido.itens[${k}].unidade = this.value">${UNIDADES.map(u => `<option ${i.unidade === u ? 'selected' : ''}>${u}</option>`).join('')}</select>
+                        <button type="button" onclick="removerItemPedido(${k})" class="btn-sec !px-2.5" title="Remover produto" aria-label="Remover produto"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>`).join('')}</div>
+                    ${temSugestao ? '<p class="mt-1.5 text-[11px] font-medium text-slate-400">O número cinza no campo é a soma das doses dos blocos. Digite a quantidade que deve ser separada.</p>' : ''}
+                    <button type="button" onclick="adicionarItemPedido()" class="mt-2 min-h-[36px] text-xs font-bold text-emerald-700 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> Adicionar produto</button>
+                </div>
+                <div><label class="rotulo" for="pedObs"><i data-lucide="message-square" class="w-3.5 h-3.5 text-emerald-500"></i> Observação (opcional)</label>
+                    <textarea id="pedObs" class="campo" rows="2" placeholder="Ex.: deixar na casa de química até as 16h" oninput="pedido.observacao = this.value">${esc(pedido.observacao)}</textarea></div>`;
+            icones();
+        }
+        function usarSomaDoses() { pedido.itens.forEach(i => { if (i.sugerido && !String(i.quantidade).trim()) i.quantidade = i.sugerido; }); renderPedido(); }
+        function adicionarItemPedido() { pedido.itens.push({ nome: '', unidade: 'L', quantidade: '', sugerido: '' }); renderPedido(); }
+        function removerItemPedido(k) { pedido.itens.splice(k, 1); if (!pedido.itens.length) adicionarItemPedido(); else renderPedido(); }
+        function fecharPedido() { el('pedidoModal').classList.add('hidden'); }
+        async function enviarPedido() {
+            if (!pedido || !podeProgramar()) return;
+            const itens = pedido.itens.filter(i => String(i.nome).trim() || String(i.quantidade).trim());
+            if (!itens.length) return avisar('Adicione pelo menos um produto.');
+            const semNome = itens.find(i => !String(i.nome).trim());
+            if (semNome) return avisar('Há uma quantidade sem o nome do produto.');
+            const semQtd = itens.find(i => !(numeroDe(i.quantidade) > 0));
+            if (semQtd) return avisar(`Digite a quantidade a separar de "${String(semQtd.nome).trim()}".`);
+            const id = API.novoId();
+            carregando(true, 'Enviando pedido...');
+            try {
+                erroBanco(await sb.from('fito_separacoes').insert({
+                    id, programacao_id: pedido.programacaoId, data_aplicacao: pedido.data || null, turno: pedido.turno || '',
+                    locais: String(pedido.locais || '').trim(), observacao: String(pedido.observacao || '').trim(), solicitante: API.nomeUsuario(),
+                    itens: itens.map(i => ({ nome: String(i.nome).trim(), unidade: i.unidade || '', quantidade: String(i.quantidade).trim(), separado: false }))
+                }));
+                avisarSeparacao(id, 'aberta');
+                fecharPedido(); pedido = null;
+                await carregarSeparacoes();
+                carregando(false);
+                Dialogo.avisar('Pedido enviado. Quem separa os produtos recebe o aviso no celular e acompanha na aba Separação.', { titulo: 'Pedido enviado', tipo: 'sucesso' });
+            } catch (e) { erroSep(e); }
+        }
+
+        // ------------------------------------------------------------
         //  Início
         // ------------------------------------------------------------
         (function iniciarBarraStatus() {
@@ -1229,13 +1494,17 @@
             abas: () => abasVisiveis().map(a => ({ ...a, ativa: a.id === aba })),
             abrir: id => trocarAba(id)
         });
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharFoto(); fecharImagem(); } });
-        irPara('lista');
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharFoto(); fecharImagem(); fecharPedido(); } });
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') carregarSeparacoes(); });
+        separacoes = veSeparacao() ? (lerCache(CACHE_SEP) || []) : [];
+        // Quem só separa produtos (não programa) já abre na aba Separação
+        irPara(podeSeparar() && !podeProgramar() ? 'separacao' : 'lista');
         programacoes = lerCache(CACHE_LISTA) || [];
         modelos = podeModelos() ? (lerCache('fito_cache_modelos') || []) : [];
         renderLista();
         carregarLista(programacoes.length > 0);
         carregarModelos();
+        carregarSeparacoes();
     </script>
 </body>
 </html>

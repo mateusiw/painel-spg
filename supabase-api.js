@@ -401,7 +401,9 @@
               // Permissão extra (no lugar da senha do programador): criar, editar e excluir programações e modelos
               { modulo: 'programacao_fito_programar', nome: 'Programar (criar, editar e excluir)', extra: true, requer: 'programacao_fito', recursos: [] },
               // Aba Modelos: ver, usar, salvar, renomear, informar o alvo e excluir modelos
-              { modulo: 'programacao_fito_modelos', nome: 'Modelos (ver, usar e gerenciar)', extra: true, requer: 'programacao_fito', recursos: [] }] },
+              { modulo: 'programacao_fito_modelos', nome: 'Modelos (ver, usar e gerenciar)', extra: true, requer: 'programacao_fito', recursos: [] },
+              // Aba Separação: recebe (com aviso no celular) e atende os pedidos de separação de produtos
+              { modulo: 'programacao_fito_separar', nome: 'Separar produtos (pedidos de separação)', extra: true, requer: 'programacao_fito', recursos: [] }] },
         // Antigo app "coleta-leituras" (Apps Script + duas planilhas): pluviômetro e relógio de energia
         { id: 'leituras', nome: 'Leituras', descricao: 'Pluviômetro (chuva) e relógio de energia, com boletim para o WhatsApp', icone: 'gauge', grupo: 'Operação', gradiente: 'from-sky-500 to-cyan-700',
           cor: 'bg-sky-50 text-sky-700', caminho: 'projetos/leituras/index.html',
