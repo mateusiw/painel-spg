@@ -158,10 +158,17 @@
                     <select id="hLocal" class="campo !w-auto min-w-[180px]" onchange="renderHistorico()" aria-label="Local"></select>
                 </div>
                 <div id="hPeriodo"></div>
+                <!-- Exibição: cartões ou tabela (como em Descarte → Recentes) -->
+                <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-slate-100">
+                    <div id="hModo" role="tablist" aria-label="Exibição" class="flex bg-slate-100 rounded-xl p-1 gap-1">
+                        <button type="button" data-modo="cartoes" onclick="setModoHist('cartoes')" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Cartões</button>
+                        <button type="button" data-modo="tabela" onclick="setModoHist('tabela')" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold"><i data-lucide="table-2" class="w-3.5 h-3.5"></i> Tabela</button>
+                    </div>
+                </div>
             </div>
             <div id="hResumo" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
             <div id="hGrafico"></div>
-            <div id="hLista"></div>
+            <div id="hLista" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 items-start"></div>
         </section>
     </main>
 
@@ -180,6 +187,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Dica do gráfico do histórico -->
+    <div id="hDica" class="fixed z-[90] hidden pointer-events-none bg-slate-900 text-white text-xs rounded-xl shadow-xl px-3 py-2 leading-relaxed max-w-[240px]"></div>
 
     <!-- Foto ampliada -->
     <div id="fotoModal" class="hidden fixed inset-0 bg-black/85 z-[70] flex flex-col items-center justify-center p-4" onclick="if (event.target === this) fecharFoto()">
@@ -233,6 +243,8 @@
         let fotos = { chuva: [], energia: [] };
         let boletim = null;   // { texto, arquivo, nome }
         let periodoHist = null;
+        let rotulosGraf = localStorage.getItem('leit_graf_rotulos') === '1';   // valores em cima das barras do gráfico
+        let modoHist = localStorage.getItem('leit_hist_modo') === 'tabela' ? 'tabela' : 'cartoes';   // histórico: cartões ou tabela
 
         // ------------------------------------------------------------
         //  Utilidades
@@ -265,6 +277,8 @@
         const hojeISO = () => iso(new Date());
         const somarDias = (s, n) => { const [y, m, d] = s.split('-').map(Number); return iso(new Date(y, m - 1, d + n)); };
         const dataBR = s => s ? s.split('-').reverse().join('/') : '';
+        // Dia e hora de um registro (registrado_em = relógio do aparelho na hora do envio): 12/11, 15:04
+        const horaBR = ts => { const d = ts ? new Date(ts) : null; return d && !isNaN(d) ? d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; };
         const nomeMes = s => { const [y, m] = s.split('-').map(Number); const t = new Date(y, m - 1, 1).toLocaleString('pt-BR', { month: 'long' }); return t.charAt(0).toUpperCase() + t.slice(1); };
         function carregando(on, texto) { el('carregandoTexto').textContent = texto || 'Carregando...'; el('carregandoModal').classList.toggle('hidden', !on); }
         const avisar = (texto, titulo = 'Atenção', t = 'aviso') => { carregando(false); return Dialogo.avisar(texto, { titulo, tipo: t }); };
@@ -362,7 +376,7 @@
             enviandoFotos = false;
             if (aba === 'historico') renderHistorico();
         }
-        const thumbDrive = f => f && f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w200` : (f && f.url) || '';
+        const thumbDrive = (f, larg = 200) => f && f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w${larg}` : (f && f.url) || '';
         function verFoto(i, id) {
             const r = linhaLocal(tipoHist, id); const f = r && (r.fotos || [])[i]; if (!f) return;
             el('fotoGrande').src = f.id ? `https://drive.google.com/thumbnail?id=${f.id}&sz=w1600` : f.url;
@@ -511,6 +525,7 @@
                     ? linha('Data', dataBR(r.data)) + linha('Volume', `${fmt(r.volume_mm, 1)} mm`, 'text-sky-700')
                     : linha('Dia do consumo', dataBR(r.data)) + linha('Leitura', fmt(r.leitura, 2)) + linha('Consumo', r.consumo != null ? `${fmt(r.consumo, 2)} kWh` : '—', 'text-amber-700')}
                 ${r.responsavel ? linha('Responsável', esc(r.responsavel)) : ''}
+                ${r.registrado_em && r.origem !== 'planilha' ? linha('Enviado em', horaBR(r.registrado_em)) : ''}
             </div>`;
         }
 
@@ -666,6 +681,17 @@
         // ------------------------------------------------------------
         //  HISTÓRICO
         // ------------------------------------------------------------
+        function setRotulosGraf(lig) {
+            rotulosGraf = lig;
+            try { localStorage.setItem('leit_graf_rotulos', lig ? '1' : '0'); } catch (e) { }
+            renderHistorico();
+        }
+        function setModoHist(m) {
+            if (m === modoHist) return;
+            modoHist = m;
+            try { localStorage.setItem('leit_hist_modo', m); } catch (e) { }
+            renderHistorico();
+        }
         function setTipoHist(t) {
             tipoHist = t;
             el('hChuva').setAttribute('aria-pressed', t === 'chuva'); el('hEnergia').setAttribute('aria-pressed', t === 'energia');
@@ -691,36 +717,113 @@
             const dias = Object.keys(porDia).sort();
             const maior = dias.reduce((m, d) => porDia[d] > (m ? porDia[m] : -1) ? d : m, null);
             const porLocal = {}; doPeriodo.forEach(r => { porLocal[r[campoLocal]] = (porLocal[r[campoLocal]] || 0) + valor(r); });
-            const cartao = (rotulo, v, sub, cor) => `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4"><p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">${rotulo}</p><p class="text-2xl font-black ${cor || 'text-slate-900'} leading-tight mt-1">${v}</p>${sub ? `<p class="text-[11px] font-medium text-slate-400 mt-0.5">${sub}</p>` : ''}</div>`;
+            // Resumo em blocos com ícone (mesmo visual do Descarte → Recentes)
+            const tile = (icone, rot, val, cor, fundo, sub) => `<div class="bg-white rounded-2xl ring-1 ring-slate-200/80 shadow-sm p-3.5 flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl ${fundo} ${cor} flex items-center justify-center shrink-0"><i data-lucide="${icone}" class="w-5 h-5"></i></span>
+                <span class="min-w-0"><span class="block text-[10px] font-black text-slate-400 uppercase tracking-wider">${rot}</span><span class="block text-lg font-black text-slate-800 tabular-nums leading-tight truncate">${val}</span>${sub ? `<span class="block text-[10px] font-semibold text-slate-400 truncate">${sub}</span>` : ''}</span></div>`;
+            const porLocalTxt = casasLocal => Object.keys(porLocal).length > 1 ? Object.entries(porLocal).map(([l, v]) => `${esc(l)}: ${fmt(v, casasLocal)}`).join(' · ') : '';
+            const comFoto = doPeriodo.filter(r => (r.fotos || []).length).length;
             el('hResumo').innerHTML = ehChuva
-                ? cartao('Chuva no período', `${fmt(total, 1)} mm`, `${doPeriodo.length} leituras`, 'text-sky-700')
-                  + cartao('Dias com chuva', fmt(dias.filter(d => porDia[d] > 0).length), `de ${dias.length} dias com leitura`)
-                  + cartao('Maior chuva', maior ? `${fmt(porDia[maior], 1)} mm` : '—', maior ? dataBR(maior) : '')
-                  + cartao('Por local', Object.keys(porLocal).length ? '' : '—', Object.entries(porLocal).map(([l, v]) => `${esc(l)}: <b class="text-slate-600">${fmt(v, 1)} mm</b>`).join('<br>'))
-                : cartao('Consumo no período', `${fmt(total)} kWh`, `${doPeriodo.filter(r => r.consumo != null).length} leituras com consumo`, 'text-amber-700')
-                  + cartao('Média por dia', dias.length ? `${fmt(total / dias.length)} kWh` : '—', `${dias.length} dias`)
-                  + cartao('Maior consumo', maior ? `${fmt(porDia[maior])} kWh` : '—', maior ? dataBR(maior) : '')
-                  + cartao('Por unidade', Object.keys(porLocal).length ? '' : '—', Object.entries(porLocal).map(([l, v]) => `${esc(l)}: <b class="text-slate-600">${fmt(v)} kWh</b>`).join('<br>'));
-            // Gráfico de barras por dia (cabe na largura do cartão)
-            const maxDia = Math.max(1, ...dias.map(d => porDia[d]));
+                ? tile('clipboard-list', 'Registros', fmt(doPeriodo.length), 'text-slate-600', 'bg-slate-100', `${fmt(dias.filter(d => porDia[d] > 0).length)} dias com chuva`)
+                  + tile('cloud-rain', 'Chuva no período', `${fmt(total, 1)} mm`, 'text-sky-600', 'bg-sky-50', porLocalTxt(1))
+                  + tile('trophy', 'Maior chuva', maior ? `${fmt(porDia[maior], 1)} mm` : '—', 'text-amber-600', 'bg-amber-50', maior ? dataBR(maior) : '')
+                  + tile('images', 'Com foto', fmt(comFoto), 'text-emerald-600', 'bg-emerald-50')
+                : tile('clipboard-list', 'Registros', fmt(doPeriodo.length), 'text-slate-600', 'bg-slate-100', `${fmt(doPeriodo.filter(r => r.consumo != null).length)} com consumo`)
+                  + tile('zap', 'Consumo no período', `${fmt(total)} kWh`, 'text-amber-600', 'bg-amber-50', porLocalTxt(0))
+                  + tile('gauge', 'Média por dia', dias.length ? `${fmt(total / dias.length)} kWh` : '—', 'text-rose-600', 'bg-rose-50', maior ? `maior: ${fmt(porDia[maior])} kWh (${dataBR(maior).slice(0, 5)})` : '')
+                  + tile('images', 'Com foto', fmt(comFoto), 'text-emerald-600', 'bg-emerald-50');
+            el('hModo').querySelectorAll('[data-modo]').forEach(b => {
+                b.className = 'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ' + (b.dataset.modo === modoHist ? 'bg-white shadow-sm text-emerald-700' : 'text-slate-500');
+                b.setAttribute('aria-selected', b.dataset.modo === modoHist);
+            });
+            // Gráfico de barras por dia (SVG, mesmo visual do Painel do Descarte). Com "Todas as unidades",
+            // cada barra é dividida por cor, um pedaço por unidade.
+            // Paleta conferida para daltonismo (ordem fixa). A cor acompanha a unidade (posição na lista de
+            // unidades), então a mesma unidade tem sempre a mesma cor, em qualquer período.
+            const CORES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'];
+            const locaisGraf = locais.filter(l => doPeriodo.some(r => r[campoLocal] === l && valor(r) > 0));
+            const empilhar = !filtroLocal && locaisGraf.length > 1;
+            const porDiaLocal = {}; doPeriodo.forEach(r => { const d = diaRef(r); (porDiaLocal[d] = porDiaLocal[d] || {})[r[campoLocal]] = (porDiaLocal[d][r[campoLocal]] || 0) + valor(r); });
+            const corUnica = ehChuva ? '#2a78d6' : '#eb6834', corDestaque = ehChuva ? '#184f95' : '#b8461c';
+            const series = empilhar ? locaisGraf.map(l => ({ nome: l, cor: CORES[locais.indexOf(l) % CORES.length] })) : [{ nome: filtroLocal || '', cor: corUnica }];
+            grafDados = dias.length ? { dias, porDia, porDiaLocal, series, empilhar, unid, casas, corDestaque } : null;
+            const legenda = empilhar ? `<div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-slate-100">${series.map(sr => `<span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-600"><span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${sr.cor}"></span>${esc(sr.nome)} <span class="text-slate-400 tabular-nums">${fmt(porLocal[sr.nome] || 0, casas)} ${unid}</span></span>`).join('')}</div>` : '';
             el('hGrafico').innerHTML = dias.length ? `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4">
-                <p class="text-sm font-extrabold text-slate-800 mb-3">${ehChuva ? 'Chuva por dia' : 'Consumo por dia'} <span class="font-semibold text-slate-400 text-xs">(${unid})</span></p>
-                <div class="flex items-end gap-[3px] h-40">${dias.map(d => `<div class="flex-1 min-w-0 h-full flex flex-col justify-end group relative" title="${dataBR(d)}: ${fmt(porDia[d], casas)} ${unid}">
-                    <div class="w-full rounded-t-full ${ehChuva ? 'bg-sky-400 group-hover:bg-sky-600' : 'bg-amber-400 group-hover:bg-amber-600'} transition-colors" style="height:${Math.max(porDia[d] > 0 ? 3 : 0, porDia[d] / maxDia * 100)}%"></div></div>`).join('')}</div>
-                <div class="flex justify-between mt-1.5 text-[10px] font-bold text-slate-400"><span>${dataBR(dias[0]).slice(0, 5)}</span><span>${dataBR(dias[dias.length - 1]).slice(0, 5)}</span></div>
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <p class="text-sm font-extrabold text-slate-800">${ehChuva ? 'Chuva por dia' : 'Consumo por dia'} <span class="font-semibold text-slate-400 text-xs">(${unid})</span></p>
+                    <label class="flex items-center gap-2 px-1 py-2 text-xs font-bold text-slate-600 cursor-pointer select-none" title="Mostrar o valor em cima de cada barra">
+                        <span class="relative inline-flex w-9 h-5 shrink-0">
+                            <input type="checkbox" ${rotulosGraf ? 'checked' : ''} onchange="setRotulosGraf(this.checked)" class="peer absolute inset-0 opacity-0 cursor-pointer z-10" aria-label="Mostrar rótulos">
+                            <span class="absolute inset-0 rounded-full bg-slate-300 peer-checked:bg-emerald-600 transition-colors"></span>
+                            <span class="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4"></span>
+                        </span>
+                        Rótulos
+                    </label>
+                </div>
+                <div id="hGraf" class="w-full min-w-0 overflow-hidden"></div>
+                ${legenda}
             </div>` : '';
+            desenharGrafLeituras();
             // Lista
             const ultimaPorUnidade = {}; energia.forEach(r => { if (!ultimaPorUnidade[r.unidade]) ultimaPorUnidade[r.unidade] = r.id; });
             const podeExcluir = r => podeMexer(r) && (ehChuva || ultimaPorUnidade[r.unidade] === r.id);
-            el('hLista').innerHTML = `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden">
+            const vazio = `<div class="col-span-full bg-white rounded-3xl ring-1 ring-slate-200 p-10 text-center"><i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-300"></i><p class="mt-2 text-sm font-semibold text-slate-400">Nenhuma leitura no período.</p></div>`;
+            // Hora em que foi enviado (relógio do aparelho que registrou)
+            const enviado = r => r.origem === 'planilha' ? 'Importado da planilha' : r._pendente ? 'No aparelho, enviando...' : `Enviado ${horaBR(r.registrado_em)}`;
+            const fotosLocais = r => r._fotosNoAparelho || fotosNaFila(r.id);
+            if (modoHist === 'cartoes') {
+                el('hLista').innerHTML = doPeriodo.map(r => {
+                    const fs = r.fotos || [], classe = classeChuva(Number(r.volume_mm));
+                    const capa = fs.length
+                        ? `<button type="button" onclick="verFoto(0, '${esc(r.id)}')" class="absolute inset-0 w-full h-full" aria-label="Ver foto"><img src="${esc(thumbDrive(fs[0], 800))}" alt="" loading="lazy" referrerpolicy="no-referrer" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"></button>`
+                        : `<div class="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/45"><i data-lucide="${fotosLocais(r) ? 'cloud-upload' : 'image-off'}" class="w-9 h-9"></i><span class="text-[10px] font-black uppercase tracking-widest">${fotosLocais(r) ? 'Foto no aparelho' : 'Sem foto'}</span></div>`;
+                    const caixa = (rot, v, fundo, corRot, corVal) => `<div class="rounded-2xl ${fundo} px-2.5 py-2 min-w-0"><p class="text-[9px] font-black ${corRot} uppercase tracking-wider">${rot}</p><p class="text-[15px] font-black ${corVal} tabular-nums leading-tight truncate">${v}</p></div>`;
+                    const caixas = ehChuva
+                        ? caixa('Volume', `${fmt(r.volume_mm, 1)} mm`, 'bg-sky-50', 'text-sky-400', 'text-sky-700')
+                          + caixa('Classificação', esc((r.classificacao || classe.texto).replace(/^Chuva /, '')), 'bg-slate-50', 'text-slate-400', 'text-slate-700')
+                          + caixa(`Mês (${nomeMes(r.data).slice(0, 3)})`, `${fmt(acumuladoChuva(r.local, r.data.slice(0, 7)), 1)} mm`, 'bg-emerald-50', 'text-emerald-500', 'text-emerald-700')
+                        : caixa('Consumo', r.consumo != null ? `${fmt(r.consumo)} kWh` : '—', 'bg-amber-50', 'text-amber-500', 'text-amber-700')
+                          + caixa('Leitura', fmt(r.leitura, 2), 'bg-slate-50', 'text-slate-400', 'text-slate-700')
+                          + caixa('Anterior', r.leitura_anterior != null ? fmt(r.leitura_anterior, 2) : '—', 'bg-slate-50', 'text-slate-400', 'text-slate-500');
+                    return `<article class="group bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                        <div class="relative aspect-[16/10] bg-gradient-to-br ${ehChuva ? 'from-sky-500 to-sky-800' : 'from-amber-500 to-orange-700'} overflow-hidden">
+                            ${capa}
+                            <div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pb-3.5 pt-12 text-white">
+                                <h3 class="text-[17px] font-extrabold leading-tight drop-shadow">${esc(r[campoLocal])}</h3>
+                                <p class="text-[11px] font-semibold text-white/80 mt-0.5">${ehChuva ? 'Leitura' : 'Consumo do dia'} ${dataBR(r.data)}${r.origem !== 'planilha' && r.registrado_em ? ' · ' + horaBR(r.registrado_em) : ''}</p>
+                            </div>
+                            <span class="pointer-events-none absolute top-3 left-3 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/95 ${ehChuva ? 'text-sky-800' : 'text-amber-800'} shadow-sm">${ehChuva ? esc(r.classificacao || classe.texto) : 'Energia'}</span>
+                            ${fs.length > 1 ? `<span class="pointer-events-none absolute top-3 right-3 flex items-center gap-1 bg-black/55 backdrop-blur text-white text-[11px] font-bold px-2 py-1 rounded-full"><i data-lucide="images" class="w-3.5 h-3.5"></i>${fs.length}</span>` : ''}
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="grid grid-cols-3 gap-2">${caixas}</div>
+                            ${r.observacao ? `<div class="flex items-start gap-2 text-sm text-slate-700"><i data-lucide="message-square" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5"></i><span class="font-semibold leading-snug">${esc(r.observacao)}</span></div>` : ''}
+                            <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+                                <div class="min-w-0 text-[11px] font-semibold text-slate-400 leading-tight">
+                                    <p class="truncate">por ${esc(r.responsavel || '—')}</p>
+                                    <p class="truncate ${r._pendente ? 'text-amber-600' : ''}">${enviado(r)}</p>
+                                </div>
+                                <div class="shrink-0 flex items-center gap-1.5">
+                                    ${fs.length > 1 ? `<button type="button" onclick="verFoto(1, '${esc(r.id)}')" class="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200 text-xs font-bold active:scale-95 transition"><i data-lucide="images" class="w-3.5 h-3.5"></i>2ª foto</button>` : ''}
+                                    ${podeExcluir(r) ? `<button type="button" onclick="excluir('${esc(r.id)}')" class="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-xl bg-white ring-1 ring-slate-200 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-bold active:scale-95 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Excluir</button>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </article>`;
+                }).join('') || vazio;
+                icones();
+                return;
+            }
+            el('hLista').innerHTML = !doPeriodo.length ? vazio : `<div class="col-span-full bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden">
                 <div class="overflow-auto max-h-[70vh]">
                     <table class="w-full text-sm">
                         <thead class="sticky top-0 bg-slate-50 z-10"><tr class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 text-left">
-                            <th class="px-4 py-2.5 sticky left-0 bg-slate-50">${ehChuva ? 'Data' : 'Dia do consumo'}</th><th class="px-3 py-2.5">${ehChuva ? 'Local' : 'Unidade'}</th>
+                            <th class="px-4 py-2.5 sticky left-0 bg-slate-50">${ehChuva ? 'Data' : 'Dia do consumo'}</th><th class="px-3 py-2.5">Enviado</th><th class="px-3 py-2.5">${ehChuva ? 'Local' : 'Unidade'}</th>
                             ${ehChuva ? '<th class="px-3 py-2.5 text-right">Volume</th><th class="px-3 py-2.5">Classificação</th>' : '<th class="px-3 py-2.5 text-right">Leitura</th><th class="px-3 py-2.5 text-right">Consumo</th>'}
                             <th class="px-3 py-2.5">Fotos</th><th class="px-3 py-2.5">Responsável</th><th class="px-3 py-2.5">Obs.</th><th class="px-2 py-2.5"></th></tr></thead>
                         <tbody>${doPeriodo.length ? doPeriodo.map(r => `<tr class="border-t border-slate-100">
                             <td class="px-4 py-2.5 font-bold text-slate-800 whitespace-nowrap sticky left-0 bg-white">${dataBR(r.data)}${r._pendente ? ' <span class="text-[10px] font-bold text-amber-600" title="Esperando internet para enviar">· no aparelho</span>' : ''}</td>
+                            <td class="px-3 py-2.5 text-slate-500 whitespace-nowrap tabular-nums">${r.origem === 'planilha' ? '<span class="text-slate-300" title="Importado da planilha">—</span>' : r._pendente ? '<span class="text-amber-600 text-xs font-bold">enviando...</span>' : horaBR(r.registrado_em)}</td>
                             <td class="px-3 py-2.5 text-slate-600 whitespace-nowrap">${esc(r[campoLocal])}</td>
                             ${ehChuva ? `<td class="px-3 py-2.5 text-right font-extrabold text-sky-700 whitespace-nowrap">${fmt(r.volume_mm, 1)} mm</td><td class="px-3 py-2.5"><span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${classeChuva(Number(r.volume_mm)).cls}">${esc(r.classificacao || classeChuva(Number(r.volume_mm)).texto)}</span></td>`
                                 : `<td class="px-3 py-2.5 text-right text-slate-600 whitespace-nowrap">${fmt(r.leitura)}</td><td class="px-3 py-2.5 text-right font-extrabold text-amber-700 whitespace-nowrap">${r.consumo != null ? fmt(r.consumo) + ' kWh' : '—'}</td>`}
@@ -728,12 +831,92 @@
                             <td class="px-3 py-2.5 text-slate-600 whitespace-nowrap">${esc(r.responsavel)}</td>
                             <td class="px-3 py-2.5 text-slate-500 text-xs min-w-[160px]">${esc(r.observacao)}</td>
                             <td class="px-2 py-1.5 text-right">${podeExcluir(r) ? `<button type="button" onclick="excluir('${esc(r.id)}')" class="w-10 h-10 inline-flex items-center justify-center rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50" title="Excluir" aria-label="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}</td>
-                        </tr>`).join('') : `<tr><td colspan="8" class="px-4 py-10 text-center text-sm font-bold text-slate-400">Nenhuma leitura no período.</td></tr>`}</tbody>
+                        </tr>`).join('') : ''}</tbody>
                     </table>
                 </div>
             </div>`;
             icones();
         }
+        // ---------- Gráfico do histórico (SVG) ----------
+        let grafDados = null, grafObs = null;
+        function desenharGrafLeituras() {
+            const alvo = el('hGraf'), g = grafDados;
+            if (!alvo || !g) return;
+            const W = Math.max(280, Math.floor(alvo.getBoundingClientRect().width || 600)), H = 230;
+            const padE = 42, padD = 6, padT = 22, padB = 26;
+            const n = g.dias.length, banda = (W - padE - padD) / n;
+            const larg = Math.min(28, Math.max(2, banda * (banda < 12 ? 0.7 : 0.6)));
+            const maxV = Math.max(1, ...g.dias.map(d => g.porDia[d]));
+            const passo = [0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 20000, 25000, 50000].find(p => maxV / p <= 4) || 100000;
+            const topo = Math.ceil(maxV / passo) * passo;
+            const y = v => padT + (H - padT - padB) * (1 - v / topo);
+            const iMax = g.dias.reduce((m, d, i) => g.porDia[d] > g.porDia[g.dias[m]] ? i : m, 0), iUlt = n - 1;
+            const cadaData = Math.max(1, Math.ceil(38 / banda));
+            const emPe = banda < 26;   // pouco espaço: o número fica em pé
+            // barra com a ponta de cima arredondada e a base reta no eixo
+            const barra = (cx, y0, y1, cor, redondo) => {
+                const h = y0 - y1; if (h <= 0) return '';
+                const r = redondo ? Math.min(4, larg / 2, h) : 0, x0 = cx - larg / 2, x1 = cx + larg / 2;
+                return `<path d="M${x0},${y0} V${y1 + r} Q${x0},${y1} ${x0 + r},${y1} H${x1 - r} Q${x1},${y1} ${x1},${y1 + r} V${y0} Z" fill="${cor}"/>`;
+            };
+            let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico por dia" style="display:block;font-family:inherit">`;
+            for (let v = 0; v <= topo + 1e-9; v += passo) {
+                svg += `<line x1="${padE}" x2="${W - padD}" y1="${y(v)}" y2="${y(v)}" stroke="${v === 0 ? '#cbd5e1' : '#f1f5f9'}" stroke-width="1"/>`
+                    + `<text x="${padE - 6}" y="${y(v) + 3.5}" text-anchor="end" font-size="11" fill="#94a3b8" font-weight="600">${fmt(v, passo < 1 ? 1 : 0)}</text>`;
+            }
+            g.dias.forEach((d, i) => {
+                const cx = padE + banda * i + banda / 2, total = g.porDia[d];
+                let dica = `<b>${dataBR(d)}</b><br>Total: <b>${fmt(total, g.casas)} ${g.unid}</b>`;
+                if (total > 0) {
+                    if (g.empilhar) {
+                        // pedaços de baixo para cima, com um fio branco entre eles; só o de cima é arredondado
+                        const partes = g.series.filter(sr => (g.porDiaLocal[d] || {})[sr.nome] > 0);
+                        let acum = 0;
+                        partes.forEach((sr, k) => {
+                            const v = g.porDiaLocal[d][sr.nome], y0 = y(acum), y1 = y(acum + v);
+                            svg += barra(cx, y0 - (k ? 2 : 0), y1, sr.cor, k === partes.length - 1);   // 2px de fundo entre os pedaços
+                            acum += v;
+                            dica += `<br><span style="color:${sr.cor}">●</span> ${esc(sr.nome)}: ${fmt(v, g.casas)}`;
+                        });
+                    } else svg += barra(cx, y(0), Math.min(y(0) - 2, y(total)), i === iUlt ? g.corDestaque : g.series[0].cor, true);
+                    // Rótulo: ligado = em todas as barras; desligado = só no maior dia e no último
+                    if (rotulosGraf || i === iMax || i === iUlt) {
+                        const t = fmt(total, g.casas), yt = y(total) - 5;
+                        svg += emPe && rotulosGraf
+                            ? `<text x="${cx + 3.5}" y="${yt}" transform="rotate(-90 ${cx + 3.5} ${yt})" text-anchor="start" font-size="10" font-weight="800" fill="#334155">${t}</text>`
+                            : `<text x="${cx}" y="${yt}" text-anchor="middle" font-size="${rotulosGraf ? 10 : 11}" font-weight="800" fill="#1e293b">${t}</text>`;
+                    }
+                }
+                if (i % cadaData === 0 || i === iUlt) svg += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11" fill="#64748b" font-weight="700">${dataBR(d).slice(0, 5)}</text>`;
+                // área de toque maior que a barra
+                svg += `<rect x="${padE + banda * i}" y="${padT - 14}" width="${banda}" height="${H - padT - padB + 14}" fill="transparent" data-barra="${i}" data-tip="${esc(dica)}"/>`;
+            });
+            alvo.innerHTML = svg + '</svg>';
+            alvo.dataset.largura = W;
+            if (!grafObs && window.ResizeObserver) {
+                grafObs = new ResizeObserver(() => { const a = el('hGraf'); if (a && Math.abs(a.getBoundingClientRect().width - Number(a.dataset.largura || 0)) > 2) desenharGrafLeituras(); });
+            }
+            if (grafObs) { grafObs.disconnect(); grafObs.observe(alvo); }
+        }
+        // Dica (tooltip) ao passar o mouse ou tocar na barra
+        function mostrarDicaGraf(alvo, x, yP) {
+            const dica = el('hDica');
+            dica.innerHTML = alvo.getAttribute('data-tip');
+            dica.classList.remove('hidden');
+            const w = dica.offsetWidth, h = dica.offsetHeight;
+            dica.style.left = Math.max(8, Math.min(innerWidth - w - 8, x + 14)) + 'px';
+            dica.style.top = Math.max(8, yP - h - 12 < 8 ? yP + 16 : yP - h - 12) + 'px';
+            el('hGraf')?.querySelectorAll('[data-barra]').forEach(r => r.setAttribute('fill', r === alvo ? 'rgba(148,163,184,.14)' : 'transparent'));
+        }
+        function esconderDicaGraf() {
+            el('hDica').classList.add('hidden');
+            el('hGraf')?.querySelectorAll('[data-barra]').forEach(r => r.setAttribute('fill', 'transparent'));
+        }
+        el('hGrafico').addEventListener('pointermove', e => { const a = e.target.closest('[data-tip]'); if (a) mostrarDicaGraf(a, e.clientX, e.clientY); else esconderDicaGraf(); });
+        el('hGrafico').addEventListener('pointerleave', esconderDicaGraf);
+        el('hGrafico').addEventListener('click', e => { const a = e.target.closest('[data-tip]'); if (a) mostrarDicaGraf(a, e.clientX, e.clientY); });
+        addEventListener('scroll', esconderDicaGraf, { passive: true });
+
         async function excluir(id) {
             const ehChuva = tipoHist === 'chuva', lista = ehChuva ? chuva : energia, r = lista.find(x => x.id === id);
             if (!r) return;
