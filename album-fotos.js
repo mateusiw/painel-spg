@@ -86,7 +86,6 @@
         // Computador: roda do mouse (no ponto do cursor), clique duplo, arrastar, teclas + e -.
         // Sem zoom, deslizar para os lados troca de foto.
         const visor = $('[data-a="visor"]');
-        const toques = new Map();
         let gesto = null, ultimoToque = { t: 0, x: 0, y: 0 };
         visor.addEventListener('pointerdown', e => {
             if (e.target.closest('button')) return;
@@ -169,6 +168,7 @@
 
     // Estado do zoom: escala e deslocamento (em px, a partir do centro do visor)
     const ZOOM_MAX = 6;
+    const toques = new Map();   // dedos (ou mouse) apertados no visor
     let zoom = 1, tx = 0, ty = 0;
     const limitarZoom = z => Math.max(1, Math.min(ZOOM_MAX, z));
     function relativo(x, y) {
