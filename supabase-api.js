@@ -473,7 +473,9 @@
           cor: 'bg-indigo-50 text-indigo-700', caminho: 'projetos/organograma/index.html',
           areas: [{ modulo: 'organograma', nome: 'Acesso ao Organograma', recursos: [] },
               // Permissão extra, desligada por padrão: adicionar, editar e remover pessoas (substitui a senha antiga)
-              { modulo: 'organograma_edicao', nome: 'Editar o organograma', extra: true, requer: 'organograma', recursos: [] }] },
+              { modulo: 'organograma_edicao', nome: 'Editar o organograma', extra: true, requer: 'organograma', recursos: [] },
+              // Permissão extra: aba Qualificações (formação, cursos, certificados com PDF e o que a pessoa faz hoje)
+              { modulo: 'organograma_qualificacoes', nome: 'Cadastrar qualificações (cursos, certificados e PDFs)', extra: true, requer: 'organograma', recursos: [] }] },
         { id: 'online', nome: 'Usuários online', descricao: 'Quem está usando agora, em qual página e há quanto tempo', icone: 'radio', grupo: 'Administração', gradiente: 'from-emerald-500 to-teal-700',
           cor: 'bg-emerald-50 text-emerald-700', caminho: 'projetos/online/index.html', soAdmin: true, areas: [] },
         { id: 'culturas', nome: 'Culturas e variedades', descricao: 'Nomes usados nos lançamentos de cada local e unificação de duplicados', icone: 'sprout', grupo: 'Administração', gradiente: 'from-emerald-500 to-green-700',

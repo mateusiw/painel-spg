@@ -187,6 +187,7 @@
     #mobile-bottom-nav > button svg { width: 21px; height: 21px; }
     #mobile-bottom-nav > button[data-cor="mapa"]   { --cor: 22, 163, 74; }
     #mobile-bottom-nav > button[data-cor="lista"]  { --cor: 2, 132, 199; }
+    #mobile-bottom-nav > button[data-cor="qualif"] { --cor: 217, 119, 6; }
     #mobile-bottom-nav > button[data-cor="busca"]  { --cor: 13, 148, 136; }
     #mobile-bottom-nav > button[data-cor="dash"]   { --cor: 79, 70, 229; }
     #mobile-bottom-nav > button[data-cor="mais"]   { --cor: 51, 65, 85; }
@@ -202,9 +203,16 @@
     /* Espaço para a barra flutuante no conteúdo */
     @media (max-width: 1023px) {
       #main-content { padding-bottom: calc(110px + env(safe-area-inset-bottom)) !important; }
-      #vista-lista { padding-bottom: calc(110px + env(safe-area-inset-bottom)) !important; }
+      #vista-lista, #vista-qualif { padding-bottom: calc(110px + env(safe-area-inset-bottom)) !important; }
       #toast { bottom: calc(96px + env(safe-area-inset-bottom)) !important; right: 50% !important; transform: translateX(50%); }
     }
+
+    /* Qualificações: rótulos e campos no padrão do Sistema SPG */
+    .rotulo { display: flex; align-items: center; gap: .375rem; margin-bottom: .5rem; font-size: .7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+    .campo { width: 100%; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: .75rem; padding: .65rem .9rem; font-size: .875rem; font-weight: 500; color: #1e293b; transition: all .15s; min-height: 2.75rem; }
+    .campo:focus { outline: none; border-color: #4ade80 !important; background-color: #fff !important; box-shadow: 0 0 0 3px rgba(74,222,128,0.15); }
+    input[type=date].campo { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; }
+    @media (max-width: 1023px) { .campo { font-size: 16px; } }   /* sem zoom do iPhone ao tocar no campo */
   </style>
 </head>
 <body id="body-container" class="font-sans text-slate-800 flex flex-col h-screen overflow-hidden bg-[url('fundo.jpg')] bg-cover bg-center bg-fixed transition-colors duration-500">
@@ -264,7 +272,7 @@
           </div>
         </div>
 
-        <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2">
+        <div class="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
           <button id="btn-editar-perfil" onclick="editarPerfilModal()" class="hidden px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-2 shadow-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
             Editar
@@ -272,6 +280,10 @@
           <button id="btn-remover-perfil" onclick="removerPerfilModal()" class="hidden px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-bold rounded-xl transition-colors flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             Remover
+          </button>
+          <button type="button" onclick="qfAbrirDoPerfil()" class="px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-sm font-bold rounded-xl transition-colors flex items-center gap-2 ring-1 ring-amber-100" title="Formação, cursos e certificados">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0121 17.5c-3.04.5-6.03 1.97-9 4.5-2.97-2.53-5.96-4-9-4.5a12.083 12.083 0 012.84-6.922L12 14z"></path></svg>
+            Qualificações
           </button>
           <div class="flex-1"></div>
           <button id="btn-voltar-perfil" onclick="fecharPerfilModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-colors flex items-center gap-2">
@@ -510,6 +522,10 @@
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M10 6v12M3 6h18a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V7a1 1 0 011-1z"></path></svg>
         Colaboradores <span id="conta-colab" class="text-[10px] font-black bg-slate-100 text-slate-500 rounded-full px-1.5 py-0.5"></span>
       </button>
+      <button type="button" role="tab" data-vista="qualif" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0121 17.5c-3.04.5-6.03 1.97-9 4.5-2.97-2.53-5.96-4-9-4.5a12.083 12.083 0 012.84-6.922L12 14z"></path></svg>
+        Qualificações
+      </button>
     </div>
   </div>
 
@@ -737,6 +753,33 @@
       </div>
     </section>
 
+    <!-- QUALIFICAÇÕES: formação, cursos, certificados, o que cada pessoa está cursando e faz hoje (com PDFs no Drive) -->
+    <section id="vista-qualif" class="hidden flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden px-4 sm:px-6 pt-2 pb-4 lg:pb-6">
+      <div class="max-w-[1400px] w-full mx-auto flex flex-col lg:flex-row gap-3 flex-1 min-h-0">
+        <!-- Pessoas -->
+        <aside id="qf-lado" class="lg:w-[380px] flex-1 lg:flex-none flex flex-col min-h-0 bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 overflow-hidden">
+          <div data-mais-filtros="org-qualif" class="flex-none p-3 border-b border-slate-100 grid grid-cols-2 gap-2">
+            <div class="col-span-2 relative">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <input type="search" id="qf-busca" autocomplete="off" placeholder="Pessoa, curso, NR, instituição..." class="campo !pl-9">
+            </div>
+            <select id="qf-empresa" class="campo !pl-3 !text-[13px]" title="Empresa"><option value="">Todas as empresas</option></select>
+            <select id="qf-mostrar" class="campo !pl-3 !text-[13px]" title="Mostrar">
+              <option value="">Todas as pessoas</option>
+              <option value="cursando">Cursando agora</option>
+              <option value="vencendo">Vencido / vencendo</option>
+              <option value="com">Com qualificações</option>
+              <option value="sem">Sem qualificações</option>
+            </select>
+          </div>
+          <div id="qf-pessoas" class="flex-1 min-h-0 overflow-auto overscroll-contain p-2"></div>
+          <div id="qf-conta" class="flex-none px-4 py-2.5 bg-slate-50 border-t border-slate-100 text-[11px] font-bold text-slate-500"></div>
+        </aside>
+        <!-- Ficha da pessoa (ou visão geral) -->
+        <div id="qf-detalhe" class="hidden lg:block flex-1 min-w-0 min-h-0 overflow-auto overscroll-contain"></div>
+      </div>
+    </section>
+
   </div>
 
   <!-- Modal: Imprimir Organograma (Mapa) -->
@@ -774,6 +817,87 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
           Gerar Mapa
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Adicionar / editar qualificação -->
+  <div id="qf-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[105] hidden items-end sm:items-center justify-center sm:p-4">
+    <div class="mobile-sheet-inner bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[94vh] sm:max-h-[92vh] overflow-hidden flex flex-col">
+      <div class="flex-none flex items-start gap-3 px-5 pt-5 pb-4 border-b border-slate-100">
+        <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-amber-100 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0121 17.5c-3.04.5-6.03 1.97-9 4.5-2.97-2.53-5.96-4-9-4.5a12.083 12.083 0 012.84-6.922L12 14z"></path></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 id="qf-modal-titulo" class="text-lg font-extrabold text-slate-800">Nova qualificação</h3>
+          <p id="qf-modal-pessoa" class="text-xs font-semibold text-slate-400 truncate"></p>
+        </div>
+        <button type="button" onclick="qfFecharModal()" class="w-11 h-11 -mt-1 -mr-1 shrink-0 rounded-xl bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-600 flex items-center justify-center" aria-label="Fechar">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="rotulo" for="qf-tipo">Tipo</label>
+            <select id="qf-tipo" class="campo"></select></div>
+          <div><label class="rotulo" for="qf-situacao">Situação</label>
+            <select id="qf-situacao" class="campo">
+              <option value="concluido">Concluído</option>
+              <option value="cursando">Cursando agora</option>
+              <option value="interrompido">Trancado / interrompido</option>
+            </select></div>
+        </div>
+        <div><label class="rotulo" for="qf-titulo">Nome do curso / certificado *</label>
+          <input id="qf-titulo" type="text" maxlength="160" class="campo" placeholder="Ex.: NR-10 Segurança em Eletricidade, Técnico em Agropecuária..."></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label class="rotulo" for="qf-instituicao">Instituição / escola</label>
+            <input id="qf-instituicao" type="text" maxlength="120" class="campo" placeholder="Ex.: SENAR, SENAI, IFCE..."></div>
+          <div><label class="rotulo" for="qf-nivel">Nível</label>
+            <input id="qf-nivel" type="text" maxlength="60" list="qf-niveis" class="campo" placeholder="Ex.: Técnico, Graduação, Básico...">
+            <datalist id="qf-niveis">
+              <option value="Fundamental"></option><option value="Médio"></option><option value="Técnico"></option>
+              <option value="Tecnólogo"></option><option value="Graduação"></option><option value="Pós-graduação"></option>
+              <option value="MBA"></option><option value="Mestrado"></option><option value="Doutorado"></option>
+              <option value="Livre / aperfeiçoamento"></option><option value="Básico"></option><option value="Intermediário"></option>
+              <option value="Avançado"></option><option value="Fluente"></option>
+            </datalist></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="rotulo" for="qf-carga">Carga horária (h)</label>
+            <input id="qf-carga" type="number" min="0" step="0.5" inputmode="decimal" class="campo" placeholder="Ex.: 40"></div>
+          <div><label class="rotulo" for="qf-registro">Nº do certificado</label>
+            <input id="qf-registro" type="text" maxlength="80" class="campo" placeholder="Registro / código"></div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div><label class="rotulo" for="qf-inicio">Início</label>
+            <input id="qf-inicio" type="date" class="campo"></div>
+          <div><label class="rotulo" for="qf-conclusao" id="qf-conclusao-rotulo">Conclusão</label>
+            <input id="qf-conclusao" type="date" class="campo"></div>
+          <div class="col-span-2 sm:col-span-1"><label class="rotulo" for="qf-validade">Validade (se vence)</label>
+            <input id="qf-validade" type="date" class="campo"></div>
+        </div>
+        <div><label class="rotulo" for="qf-obs">Observações</label>
+          <textarea id="qf-obs" rows="2" maxlength="1000" class="campo resize-y" placeholder="Conteúdo, nota, reciclagem prevista..."></textarea></div>
+        <div class="rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-3">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="rotulo !mb-0">
+              <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+              Anexos (PDF ou foto)
+            </span>
+            <span id="qf-anexos-conta" class="text-[11px] font-bold text-slate-400"></span>
+          </div>
+          <div id="qf-anexos" class="space-y-2"></div>
+          <input type="file" id="qf-arquivo" accept="application/pdf,image/*" multiple class="hidden" onchange="qfAnexar(this)">
+          <button type="button" onclick="document.getElementById('qf-arquivo').click()" class="mt-2 w-full min-h-[44px] inline-flex items-center justify-center gap-2 bg-white ring-1 ring-slate-200 rounded-xl text-slate-600 font-bold text-xs active:scale-95 hover:bg-slate-100">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            Anexar PDF ou foto
+          </button>
+          <p class="text-[10px] text-slate-400 mt-2 leading-relaxed">Os arquivos vão para o Google Drive (pasta "Qualificações de Colaboradores", uma subpasta por pessoa). PDF até 10 MB.</p>
+        </div>
+      </div>
+      <div class="flex-none flex justify-end gap-2 px-5 py-4 border-t border-slate-100 bg-white" style="padding-bottom: max(1rem, env(safe-area-inset-bottom))">
+        <button type="button" onclick="qfFecharModal()" class="min-h-[44px] px-5 bg-white ring-1 ring-slate-200 rounded-xl text-slate-600 font-bold text-xs active:scale-95">Cancelar</button>
+        <button type="button" id="qf-salvar" onclick="qfSalvar()" class="min-h-[44px] px-6 bg-gradient-to-b from-emerald-500 to-emerald-600 text-white rounded-xl shadow-md shadow-emerald-600/25 ring-1 ring-emerald-700/20 font-bold text-xs active:scale-95">Salvar</button>
       </div>
     </div>
   </div>
@@ -1460,9 +1584,10 @@
     let vistaAtual = 'mapa';
     const listaEstado = { ordem: 'nome', asc: true };
     function trocarVista(v) {
-      vistaAtual = v === 'lista' ? 'lista' : 'mapa';
+      vistaAtual = v === 'lista' || v === 'qualif' ? v : 'mapa';
       document.getElementById('main-content').classList.toggle('hidden', vistaAtual !== 'mapa');
       document.getElementById('vista-lista').classList.toggle('hidden', vistaAtual !== 'lista');
+      document.getElementById('vista-qualif').classList.toggle('hidden', vistaAtual !== 'qualif');
       document.getElementById('zoom-controles').classList.toggle('hidden', vistaAtual !== 'mapa');
       document.querySelectorAll('#abas-org [data-vista]').forEach(b => {
         const ativa = b.dataset.vista === vistaAtual;
@@ -1471,9 +1596,10 @@
         b.classList.toggle('ring-1', ativa); b.classList.toggle('ring-slate-200/80', ativa); b.classList.toggle('text-slate-500', !ativa);
       });
       document.querySelectorAll('#mobile-bottom-nav [data-vista-mob]').forEach(b => b.classList.toggle('aba-ativa', b.dataset.vistaMob === vistaAtual));
-      const hash = vistaAtual === 'lista' ? '#colaboradores' : '';
+      const hash = vistaAtual === 'lista' ? '#colaboradores' : vistaAtual === 'qualif' ? '#qualificacoes' : '';
       if (location.hash !== hash) history.replaceState(null, '', location.pathname + location.search + hash);
       if (vistaAtual === 'lista') desenharListaColaboradores();
+      if (vistaAtual === 'qualif') qfAbrirAba();
     }
 
     function preencherFiltrosLista() {
@@ -1533,6 +1659,7 @@
           <td class="px-3 py-2.5 text-xs whitespace-nowrap">${nasc ? `<span class="font-semibold text-slate-700 tabular-nums">${nasc}</span><span class="block text-[10px] text-slate-400">${escH(idade)}</span>` : '<span class="text-slate-300">—</span>'}</td>
           <td class="px-3 py-2.5 whitespace-nowrap">
             <div class="flex items-center justify-end gap-1">
+              <button type="button" onclick="qfAbrirPessoa(${n.id})" title="Qualificações" class="p-2 rounded-lg text-slate-500 hover:text-amber-700 hover:bg-amber-50"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0121 17.5c-3.04.5-6.03 1.97-9 4.5-2.97-2.53-5.96-4-9-4.5a12.083 12.083 0 012.84-6.922L12 14z"></path></svg></button>
               <button type="button" onclick="localizarNoMapa(${n.id})" title="Ver no mapa" class="p-2 rounded-lg text-slate-500 hover:text-emerald-700 hover:bg-emerald-50"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
               ${PODE_EDITAR ? `<button type="button" onclick="editNode(${n.id})" title="Editar" class="p-2 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
               <button type="button" onclick="removeNode(${n.id})" title="Remover" class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>` : ''}
@@ -2924,6 +3051,7 @@
       }
       updateFormOptions();
       desenharListaColaboradores();
+      if (typeof qfDesenhar === "function" && vistaAtual === "qualif") qfDesenhar();
     }
 
     let editingNodeId = null;
@@ -3128,7 +3256,7 @@
         if (listaEstado.ordem === th.dataset.ordem) listaEstado.asc = !listaEstado.asc; else { listaEstado.ordem = th.dataset.ordem; listaEstado.asc = true; }
         desenharListaColaboradores();
       });
-      trocarVista(location.hash === '#colaboradores' ? 'lista' : 'mapa');
+      trocarVista(location.hash === '#colaboradores' ? 'lista' : location.hash === '#qualificacoes' ? 'qualif' : 'mapa');
 
       const searchParentInput = document.getElementById('searchParent');
       if (searchParentInput) {
@@ -3253,6 +3381,576 @@
     });
   </script>
 
+  <script>
+    // =====================================================================
+    // QUALIFICAÇÕES: formação, cursos, certificados, treinamentos (NRs), idiomas,
+    // o que a pessoa está cursando agora e o que faz hoje. Tabela organograma_qualificacoes
+    // (supabase/organograma_qualificacoes.sql); os PDFs vão para o Google Drive pela função
+    // "fotos-drive" (projeto "qualificacoes"), uma subpasta por pessoa — como as fotos das Leituras.
+    // "O que faz atualmente" é o mesmo campo "Funções detalhadas" do perfil (metadados.funcoes).
+    // =====================================================================
+    const QF_ICONES = {
+      formacao: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0121 17.5c-3.04.5-6.03 1.97-9 4.5-2.97-2.53-5.96-4-9-4.5a12.083 12.083 0 012.84-6.922L12 14z"></path>',
+      curso: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>',
+      certificado: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>',
+      treinamento: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>',
+      idioma: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>',
+      outro: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>',
+      cursando: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>',
+      editar: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>',
+      lixo: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>',
+      mais: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>',
+      voltar: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>',
+      pdf: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>',
+      foto: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>',
+      maleta: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>',
+      alerta: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>',
+      relogio: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>',
+      pessoas: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>'
+    };
+    const qfSvg = (nome, cls = 'w-4 h-4') => `<svg class="${cls}" fill="none" stroke="currentColor" viewBox="0 0 24 24">${QF_ICONES[nome] || ''}</svg>`;
+
+    // Tipos de qualificação (a ordem é a das seções na ficha)
+    const QF_TIPOS = {
+      formacao:    { nome: 'Formação acadêmica',          secao: 'Formação acadêmica',          cor: 'bg-indigo-50 text-indigo-600 ring-indigo-100' },
+      curso:       { nome: 'Curso',                       secao: 'Cursos',                      cor: 'bg-sky-50 text-sky-600 ring-sky-100' },
+      certificado: { nome: 'Certificado / certificação',  secao: 'Certificados e certificações', cor: 'bg-emerald-50 text-emerald-600 ring-emerald-100' },
+      treinamento: { nome: 'Treinamento / NR',            secao: 'Treinamentos e NRs',          cor: 'bg-orange-50 text-orange-600 ring-orange-100' },
+      idioma:      { nome: 'Idioma',                      secao: 'Idiomas',                     cor: 'bg-violet-50 text-violet-600 ring-violet-100' },
+      outro:       { nome: 'Outro',                       secao: 'Outras qualificações',        cor: 'bg-slate-100 text-slate-600 ring-slate-200' }
+    };
+    const QF_SITUACAO = { concluido: 'Concluído', cursando: 'Cursando', interrompido: 'Trancado / interrompido' };
+    const QF_ESCOLARIDADE = ['Fundamental incompleto', 'Fundamental completo', 'Médio incompleto', 'Médio completo', 'Técnico', 'Superior incompleto', 'Superior completo', 'Pós-graduação', 'Mestrado', 'Doutorado'];
+    const QF_MAX_ANEXOS = 6;
+    // Quem adiciona, edita e anexa: permissão "Cadastrar qualificações" (Cadastro de Usuários → Organograma)
+    const PODE_QUALIF = !!API && API.temModulo('organograma_qualificacoes');
+
+    let qfDados = [];          // linhas de organograma_qualificacoes
+    let qfCarregado = false, qfCarregando = false, qfErro = '';
+    let qfSel = null;          // id da pessoa aberta (null = visão geral)
+    let qfEditandoAtuacao = false;
+    let qfForm = null;         // { id, pessoaId, anexos, novos, removidos }
+    let qfEnviando = 0;
+
+    const qfHoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+    const qfDias = iso => Math.round((new Date(iso + 'T12:00:00') - new Date(qfHoje() + 'T12:00:00')) / 86400000);
+    const qfData = iso => formatarDataBR(iso) || '';
+    const qfMes = iso => { if (!iso) return ''; const [a, m] = iso.split('-'); return `${['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(m) - 1]}/${a}`; };
+    const qfHoras = h => (Number(h) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' h';
+    const qfPessoa = id => orgData.find(n => n.id === Number(id));
+    const qfDaPessoa = id => qfDados.filter(q => q.pessoa_id === Number(id));
+    const qfLinkAnexo = a => a.link || `https://drive.google.com/file/d/${encodeURIComponent(a.id)}/view`;
+
+    // Validade: vencido | vencendo (até 60 dias) | ok
+    function qfValidade(q) {
+      if (!q.validade) return null;
+      const d = qfDias(q.validade);
+      if (d < 0) return { nivel: 'vencido', txt: `Vencido em ${qfData(q.validade)}`, cls: 'bg-red-50 text-red-700 ring-red-200' };
+      if (d <= 60) return { nivel: 'vencendo', txt: d === 0 ? 'Vence hoje' : `Vence em ${d} dia${d > 1 ? 's' : ''} (${qfData(q.validade)})`, cls: 'bg-amber-50 text-amber-700 ring-amber-200' };
+      return { nivel: 'ok', txt: `Válido até ${qfData(q.validade)}`, cls: 'bg-emerald-50 text-emerald-700 ring-emerald-200' };
+    }
+
+    function doQf(r) {
+      return {
+        id: r.id, pessoa_id: Number(r.pessoa_id), tipo: QF_TIPOS[r.tipo] ? r.tipo : 'outro', situacao: QF_SITUACAO[r.situacao] ? r.situacao : 'concluido',
+        titulo: r.titulo || '', instituicao: r.instituicao || '', nivel: r.nivel || '', carga_horaria: r.carga_horaria == null ? null : Number(r.carga_horaria),
+        inicio: r.inicio || '', conclusao: r.conclusao || '', validade: r.validade || '', registro: r.registro || '', observacoes: r.observacoes || '',
+        anexos: Array.isArray(r.anexos) ? r.anexos : [], updated_at: r.updated_at
+      };
+    }
+
+    async function qfCarregar() {
+      if (qfCarregando) return;
+      qfCarregando = true; qfErro = '';
+      qfDesenhar();
+      try {
+        const { data, error } = await sb.from('organograma_qualificacoes').select('*').order('conclusao', { ascending: false, nullsFirst: true });
+        if (error) throw new Error(/does not exist|schema cache|relation/i.test(error.message)
+          ? 'A tabela das qualificações ainda não existe no banco. Rode o arquivo supabase/organograma_qualificacoes.sql no SQL Editor do Supabase.'
+          : error.message);
+        qfDados = data.map(doQf);
+        qfCarregado = true;
+      } catch (e) {
+        qfErro = navigator.onLine ? (e.message || String(e)) : 'Sem conexão com a internet. Tente de novo quando tiver sinal.';
+      }
+      qfCarregando = false;
+      qfDesenhar();
+    }
+
+    function qfAbrirAba() {
+      if (!qfCarregado && !qfCarregando) qfCarregar(); else qfDesenhar();
+    }
+    window.qfAbrirPessoa = function(id) {
+      qfSel = Number(id); qfEditandoAtuacao = false;
+      if (vistaAtual !== 'qualif') trocarVista('qualif'); else qfDesenhar();
+      const det = document.getElementById('qf-detalhe'); if (det) det.scrollTop = 0;
+    };
+    window.qfAbrirDoPerfil = function() {
+      const id = currentProfileNodeId;
+      openedFromDashboard = false;
+      fecharPerfilModal();
+      qfAbrirPessoa(id);
+    };
+    window.qfVoltarLista = function() { qfSel = null; qfEditandoAtuacao = false; qfDesenhar(); };
+
+    function qfDesenhar() {
+      if (vistaAtual !== 'qualif') return;
+      // Celular: ou a lista de pessoas, ou a ficha aberta. Computador: as duas lado a lado.
+      const lado = document.getElementById('qf-lado'), det = document.getElementById('qf-detalhe');
+      lado.classList.toggle('hidden', qfSel != null); lado.classList.toggle('lg:flex', true); lado.classList.toggle('flex', qfSel == null);
+      det.classList.toggle('hidden', qfSel == null); det.classList.toggle('lg:block', true);
+      qfDesenharLista();
+      qfDesenharDetalhe();
+    }
+
+    // ---------- Lista de pessoas ----------
+    function qfDesenharLista() {
+      const alvo = document.getElementById('qf-pessoas'); if (!alvo) return;
+      // Empresas no filtro
+      const selEmp = document.getElementById('qf-empresa'), atual = selEmp.value;
+      const emps = [...new Set(orgData.flatMap(n => String(n.empresa || '').split(/[,;]/).map(e => e.trim())).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      selEmp.innerHTML = '<option value="">Todas as empresas</option>' + emps.map(e => `<option value="${escH(e)}"${e === atual ? ' selected' : ''}>${escH(e)}</option>`).join('');
+
+      const porPessoa = new Map();
+      qfDados.forEach(q => { if (!porPessoa.has(q.pessoa_id)) porPessoa.set(q.pessoa_id, []); porPessoa.get(q.pessoa_id).push(q); });
+      const termo = semAcento(document.getElementById('qf-busca').value).trim();
+      const emp = selEmp.value, mostrar = document.getElementById('qf-mostrar').value;
+      const pessoas = orgData.filter(n => {
+        const qs = porPessoa.get(n.id) || [];
+        if (emp && !String(n.empresa || '').split(/[,;]/).map(e => e.trim()).includes(emp)) return false;
+        if (mostrar === 'cursando' && !qs.some(q => q.situacao === 'cursando')) return false;
+        if (mostrar === 'vencendo' && !qs.some(q => { const v = qfValidade(q); return v && v.nivel !== 'ok'; })) return false;
+        if (mostrar === 'com' && !qs.length) return false;
+        if (mostrar === 'sem' && qs.length) return false;
+        if (termo) {
+          const txt = semAcento([n.name, n.title, n.sub, n.empresa, metaDe(n).funcoes, metaDe(n).escolaridade, ...qs.map(q => `${q.titulo} ${q.instituicao} ${q.nivel} ${QF_TIPOS[q.tipo].nome}`)].join(' '));
+          if (!termo.split(/\s+/).every(p => txt.includes(p))) return false;
+        }
+        return true;
+      }).sort((a, b) => semAcento(a.name).localeCompare(semAcento(b.name)));
+
+      document.getElementById('qf-conta').textContent = qfCarregando ? 'Carregando qualificações...' : `${pessoas.length} de ${orgData.length} pessoas · ${qfDados.length} qualificações cadastradas`;
+      if (!pessoas.length) {
+        alvo.innerHTML = `<div class="p-8 text-center text-sm font-semibold text-slate-400">${orgData.length ? 'Ninguém encontrado com esses filtros.' : 'Carregando colaboradores...'}</div>`;
+        return;
+      }
+      alvo.innerHTML = pessoas.map(n => {
+        const qs = porPessoa.get(n.id) || [], tema = themes[n.theme] || themes.blue;
+        const cursando = qs.filter(q => q.situacao === 'cursando').length;
+        const vencidos = qs.filter(q => { const v = qfValidade(q); return v && v.nivel === 'vencido'; }).length;
+        const vencendo = qs.filter(q => { const v = qfValidade(q); return v && v.nivel === 'vencendo'; }).length;
+        const ativo = qfSel === n.id;
+        return `<button type="button" onclick="qfAbrirPessoa(${n.id})" class="w-full flex items-center gap-3 p-2 rounded-2xl text-left transition-colors ${ativo ? 'bg-emerald-50 ring-1 ring-emerald-200' : 'hover:bg-slate-50'}">
+          ${avatarPessoa(n, 'w-10 h-[53px]', tema, true)}
+          <span class="flex-1 min-w-0">
+            <span class="block text-sm font-bold ${ativo ? 'text-emerald-800' : 'text-slate-800'} truncate">${escH(n.name)}</span>
+            <span class="block text-[11px] font-semibold text-slate-400 truncate">${escH([n.title, n.sub].filter(Boolean).join(' · ') || '—')}</span>
+            <span class="flex flex-wrap gap-1 mt-1">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full ${qs.length ? 'bg-slate-100 text-slate-600' : 'bg-slate-50 text-slate-300'}">${qs.length} qualificaç${qs.length === 1 ? 'ão' : 'ões'}</span>
+              ${cursando ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-700">Cursando ${cursando}</span>` : ''}
+              ${vencidos ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700">${vencidos} vencido${vencidos > 1 ? 's' : ''}</span>` : ''}
+              ${vencendo ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700">${vencendo} vencendo</span>` : ''}
+            </span>
+          </span>
+          <svg class="w-4 h-4 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>`;
+      }).join('');
+    }
+
+    // ---------- Ficha da pessoa / visão geral ----------
+    const qfCartao = (conteudo, extra = '') => `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 sm:p-5 ${extra}">${conteudo}</div>`;
+    const qfBtnPrincipal = (rotulo, onclick, icone = 'mais') => `<button type="button" onclick="${onclick}" class="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 bg-gradient-to-b from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl shadow-md shadow-emerald-600/25 ring-1 ring-emerald-700/20 font-bold text-xs active:scale-95 whitespace-nowrap">${qfSvg(icone)} ${rotulo}</button>`;
+    const qfBtnSec = (rotulo, onclick, icone) => `<button type="button" onclick="${onclick}" class="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 bg-white ring-1 ring-slate-200 rounded-xl text-slate-600 font-bold text-xs active:scale-95 hover:bg-slate-50 whitespace-nowrap">${icone ? qfSvg(icone) : ''} ${rotulo}</button>`;
+
+    function qfDesenharDetalhe() {
+      const det = document.getElementById('qf-detalhe'); if (!det) return;
+      if (qfErro) {
+        det.innerHTML = qfCartao(`<div class="text-center py-8">
+          <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center">${qfSvg('alerta', 'w-7 h-7')}</div>
+          <p class="text-sm font-bold text-slate-700">Não consegui carregar as qualificações</p>
+          <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto leading-relaxed">${escH(qfErro)}</p>
+          <div class="mt-4">${qfBtnSec('Tentar de novo', 'qfCarregar()')}</div></div>`);
+        // No celular, o erro aparece mesmo sem pessoa aberta
+        det.classList.remove('hidden');
+        return;
+      }
+      if (qfCarregando && !qfCarregado) { det.innerHTML = qfCartao('<p class="text-center text-sm font-semibold text-slate-400 py-10">Carregando qualificações...</p>'); return; }
+      const n = qfSel != null ? qfPessoa(qfSel) : null;
+      if (!n) { qfSel = null; det.innerHTML = qfVisaoGeral(); return; }
+      det.innerHTML = qfFicha(n);
+    }
+
+    function qfVisaoGeral() {
+      const total = orgData.length;
+      const comQ = new Set(qfDados.map(q => q.pessoa_id)).size;
+      const cursando = qfDados.filter(q => q.situacao === 'cursando');
+      const alertas = qfDados.map(q => ({ q, v: qfValidade(q) })).filter(x => x.v && x.v.nivel !== 'ok').sort((a, b) => a.q.validade.localeCompare(b.q.validade));
+      const horas = qfDados.filter(q => q.situacao === 'concluido').reduce((s, q) => s + (Number(q.carga_horaria) || 0), 0);
+      const numero = (valor, rotulo, cor, icone) => `<div class="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200/80 p-4 flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl ring-1 ${cor} flex items-center justify-center shrink-0">${qfSvg(icone, 'w-5 h-5')}</div>
+          <div class="min-w-0"><div class="text-xl font-black text-slate-800 tabular-nums leading-tight">${valor}</div><div class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">${rotulo}</div></div></div>`;
+      const linhaPessoa = (q, direita) => { const p = qfPessoa(q.pessoa_id); if (!p) return ''; return `<button type="button" onclick="qfAbrirPessoa(${p.id})" class="w-full flex items-center gap-3 py-2.5 text-left hover:bg-slate-50 rounded-xl px-2 -mx-2">
+          ${avatarPessoa(p, 'w-8 h-8', themes[p.theme] || themes.blue)}
+          <span class="flex-1 min-w-0"><span class="block text-sm font-bold text-slate-800 truncate">${escH(p.name)}</span><span class="block text-[11px] font-semibold text-slate-500 truncate">${escH(q.titulo)}${q.instituicao ? ' · ' + escH(q.instituicao) : ''}</span></span>
+          ${direita}</button>`; };
+      const porTipo = Object.keys(QF_TIPOS).map(t => ({ t, n: qfDados.filter(q => q.tipo === t).length })).filter(x => x.n);
+      return `<div class="space-y-3">
+        ${qfCartao(`<div class="flex flex-wrap items-center gap-3 justify-between">
+          <div><h2 class="text-lg font-extrabold text-slate-800">Qualificações da equipe</h2>
+          <p class="text-xs font-semibold text-slate-400 mt-0.5">Escolha uma pessoa ao lado para ver e cadastrar formação, cursos, certificados e o que ela faz hoje.</p></div></div>`)}
+        <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          ${numero(`${comQ}<span class="text-sm text-slate-400 font-bold"> / ${total}</span>`, 'Pessoas com cadastro', 'bg-emerald-50 text-emerald-600 ring-emerald-100', 'pessoas')}
+          ${numero(qfDados.length, 'Qualificações', 'bg-indigo-50 text-indigo-600 ring-indigo-100', 'certificado')}
+          ${numero(cursando.length, 'Cursando agora', 'bg-sky-50 text-sky-600 ring-sky-100', 'cursando')}
+          ${numero(qfHoras(horas), 'Horas concluídas', 'bg-amber-50 text-amber-600 ring-amber-100', 'relogio')}
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+          ${qfCartao(`<h3 class="rotulo !text-red-500">${qfSvg('alerta', 'w-3.5 h-3.5')} Certificados vencidos ou vencendo (60 dias)</h3>
+            ${alertas.length ? `<div class="divide-y divide-slate-100">${alertas.map(x => linhaPessoa(x.q, `<span class="text-[10px] font-bold px-2 py-1 rounded-full ring-1 whitespace-nowrap ${x.v.cls}">${x.v.nivel === 'vencido' ? 'Vencido ' + qfData(x.q.validade) : qfData(x.q.validade)}</span>`)).join('')}</div>`
+              : '<p class="text-sm font-semibold text-slate-400 py-3">Nenhum certificado vencido ou perto de vencer.</p>'}`)}
+          ${qfCartao(`<h3 class="rotulo !text-sky-600">${qfSvg('cursando', 'w-3.5 h-3.5')} Cursando agora</h3>
+            ${cursando.length ? `<div class="divide-y divide-slate-100">${cursando.map(q => linhaPessoa(q, q.conclusao ? `<span class="text-[10px] font-bold px-2 py-1 rounded-full bg-sky-50 text-sky-700 whitespace-nowrap">Previsão ${qfMes(q.conclusao)}</span>` : '')).join('')}</div>`
+              : '<p class="text-sm font-semibold text-slate-400 py-3">Ninguém cursando no momento.</p>'}`)}
+        </div>
+        ${porTipo.length ? qfCartao(`<h3 class="rotulo">Por tipo</h3><div class="flex flex-wrap gap-2">${porTipo.map(x => `<span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ring-1 ${QF_TIPOS[x.t].cor}">${qfSvg(x.t, 'w-3.5 h-3.5')} ${QF_TIPOS[x.t].secao}: ${x.n}</span>`).join('')}</div>`) : ''}
+      </div>`;
+    }
+
+    function qfItemHtml(q) {
+      const tipo = QF_TIPOS[q.tipo], v = qfValidade(q);
+      const periodo = q.situacao === 'cursando'
+        ? (q.inicio ? `Desde ${qfMes(q.inicio)}` : 'Em andamento') + (q.conclusao ? ` · previsão ${qfMes(q.conclusao)}` : '')
+        : [q.inicio ? qfMes(q.inicio) : '', q.conclusao ? (q.inicio ? 'até ' : 'Concluído em ') + qfData(q.conclusao) : ''].filter(Boolean).join(' ');
+      const chip = (txt, cls = 'bg-slate-100 text-slate-600') => `<span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${cls}">${txt}</span>`;
+      return `<div class="flex gap-3 p-3 rounded-2xl ring-1 ${q.situacao === 'cursando' ? 'ring-sky-200 bg-sky-50/40' : 'ring-slate-200/80 bg-white'}">
+        <div class="w-10 h-10 rounded-xl ring-1 ${tipo.cor} flex items-center justify-center shrink-0">${qfSvg(q.tipo, 'w-5 h-5')}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-start gap-2">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-slate-800 leading-snug break-words">${escH(q.titulo)}</p>
+              <p class="text-xs font-semibold text-slate-500 mt-0.5 break-words">${escH([q.instituicao, q.nivel].filter(Boolean).join(' · ') || tipo.nome)}</p>
+            </div>
+            ${PODE_QUALIF ? `<div class="flex shrink-0 -mr-1 -mt-1">
+              <button type="button" onclick="qfEditar('${q.id}')" title="Editar" class="w-10 h-10 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 flex items-center justify-center">${qfSvg('editar')}</button>
+              <button type="button" onclick="qfExcluir('${q.id}')" title="Excluir" class="w-10 h-10 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center">${qfSvg('lixo')}</button>
+            </div>` : ''}
+          </div>
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            ${q.situacao === 'cursando' ? chip('Cursando', 'bg-sky-100 text-sky-700') : q.situacao === 'interrompido' ? chip('Trancado / interrompido', 'bg-slate-200 text-slate-600') : ''}
+            ${periodo ? chip(escH(periodo)) : ''}
+            ${q.carga_horaria ? chip(qfHoras(q.carga_horaria)) : ''}
+            ${v ? `<span class="text-[10px] font-bold px-2 py-1 rounded-full ring-1 ${v.cls}">${v.txt}</span>` : ''}
+            ${q.registro ? chip('Nº ' + escH(q.registro)) : ''}
+          </div>
+          ${q.observacoes ? `<p class="text-xs text-slate-600 mt-2 whitespace-pre-wrap leading-relaxed break-words">${escH(q.observacoes)}</p>` : ''}
+          ${q.anexos.length ? `<div class="flex flex-wrap gap-1.5 mt-2.5">${q.anexos.map(a => `<a href="${escH(qfLinkAnexo(a))}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 max-w-full min-h-[36px] px-2.5 rounded-xl bg-white ring-1 ring-slate-200 hover:ring-emerald-300 hover:bg-emerald-50 text-xs font-bold text-slate-700">
+              <span class="${a.tipo === 'pdf' ? 'text-red-500' : 'text-emerald-600'} shrink-0">${qfSvg(a.tipo === 'pdf' ? 'pdf' : 'foto')}</span><span class="truncate">${escH(a.nome || (a.tipo === 'pdf' ? 'PDF' : 'Foto'))}</span></a>`).join('')}</div>` : ''}
+        </div>
+      </div>`;
+    }
+
+    function qfFicha(n) {
+      const qs = qfDaPessoa(n.id), meta = metaDe(n), tema = themes[n.theme] || themes.blue;
+      const ordenar = lista => lista.sort((a, b) => (a.situacao === 'cursando' ? 0 : 1) - (b.situacao === 'cursando' ? 0 : 1) || String(b.conclusao || b.inicio || '').localeCompare(String(a.conclusao || a.inicio || '')));
+      const cursando = ordenar(qs.filter(q => q.situacao === 'cursando'));
+      const horas = qs.filter(q => q.situacao === 'concluido').reduce((s, q) => s + (Number(q.carga_horaria) || 0), 0);
+      const alertas = qs.filter(q => { const v = qfValidade(q); return v && v.nivel !== 'ok'; }).length;
+      // Destaque: o último concluído (pela data de conclusão; sem data, pelo cadastro mais recente)
+      const ultimo = qs.filter(q => q.situacao === 'concluido')
+        .sort((a, b) => String(b.conclusao || '').localeCompare(String(a.conclusao || '')) || String(b.updated_at || '').localeCompare(String(a.updated_at || '')))[0] || null;
+      const contador =(valor, rotulo, cls = 'text-slate-800') => `<div class="flex-1 min-w-[90px] bg-slate-50 rounded-2xl ring-1 ring-slate-100 px-3 py-2.5 text-center"><div class="text-lg font-black tabular-nums ${cls}">${valor}</div><div class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">${rotulo}</div></div>`;
+
+      const cabecalho = qfCartao(`
+        <button type="button" onclick="qfVoltarLista()" class="lg:hidden -mt-1 mb-3 inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold active:scale-95">${qfSvg('voltar')} Todas as pessoas</button>
+        <div class="flex items-start gap-4">
+          ${avatarPessoa(n, 'w-16 h-[85px]', tema, true)}
+          <div class="flex-1 min-w-0">
+            <h2 class="text-lg sm:text-xl font-extrabold text-slate-800 leading-tight break-words">${escH(n.name)}</h2>
+            <p class="text-xs font-bold text-emerald-600 uppercase tracking-wider mt-1">${escH(n.title || '—')}${n.sub ? ` <span class="text-slate-400 normal-case tracking-normal font-semibold">· ${escH(n.sub)}</span>` : ''}</p>
+            <div class="flex flex-wrap gap-1.5 mt-2">
+              ${n.empresa ? `<span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">${escH(n.empresa)}</span>` : ''}
+              <span class="text-[11px] font-bold px-2.5 py-1 rounded-full ${n.nascimento ? 'bg-rose-50 text-rose-700' : 'bg-slate-50 text-slate-400'}">${n.nascimento ? `${escH(calcularIdade(n.nascimento))} · nasc. ${escH(qfData(n.nascimento))}` : 'Idade não informada'}</span>
+              ${n.contratacao ? `<span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">Na empresa há ${escH(calcularTempoEmpresa(n.contratacao))}</span>` : ''}
+            </div>
+          </div>
+          <div class="hidden sm:flex gap-2 shrink-0">${qfBtnSec('Perfil', `abrirPerfilModal(${n.id}, false)`)}${PODE_QUALIF ? qfBtnPrincipal('Adicionar', `qfNovo(${n.id})`) : ''}</div>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-4">
+          ${contador(qs.length, 'Qualificações')}
+          ${contador(cursando.length, 'Cursando', 'text-sky-700')}
+          ${contador(qfHoras(horas), 'Horas concluídas')}
+          ${contador(alertas, 'Vencendo', alertas ? 'text-red-600' : 'text-slate-800')}
+        </div>
+        ${ultimo ? `<div class="mt-3 flex items-center gap-3 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 ring-1 ring-emerald-200">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-600/25 flex items-center justify-center shrink-0">${qfSvg(ultimo.tipo, 'w-5 h-5')}</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[10px] font-black uppercase tracking-wider text-emerald-600">Último curso realizado</p>
+              <p class="text-sm sm:text-base font-extrabold text-slate-800 leading-snug break-words">${escH(ultimo.titulo)}</p>
+              <p class="text-[11px] font-semibold text-slate-500 mt-0.5">${escH([QF_TIPOS[ultimo.tipo].nome, ultimo.instituicao, ultimo.conclusao ? 'concluído em ' + qfData(ultimo.conclusao) : '', ultimo.carga_horaria ? qfHoras(ultimo.carga_horaria) : ''].filter(Boolean).join(' · '))}</p>
+            </div>
+            ${ultimo.anexos.length ? `<a href="${escH(qfLinkAnexo(ultimo.anexos[0]))}" target="_blank" rel="noopener" title="Abrir o certificado" class="shrink-0 inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-white ring-1 ring-emerald-200 text-emerald-700 text-xs font-bold hover:bg-emerald-50">${qfSvg(ultimo.anexos[0].tipo === 'pdf' ? 'pdf' : 'foto')}<span class="hidden sm:inline">Certificado</span></a>` : ''}
+          </div>`
+        : `<div class="mt-3 flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-xs font-semibold text-slate-400">${qfSvg('formacao', 'w-5 h-5 shrink-0')} Nenhum curso concluído cadastrado ainda.</div>`}
+        <div class="sm:hidden mt-3 grid ${PODE_QUALIF ? 'grid-cols-2' : 'grid-cols-1'} gap-2">${qfBtnSec('Perfil', `abrirPerfilModal(${n.id}, false)`)}${PODE_QUALIF ? qfBtnPrincipal('Adicionar', `qfNovo(${n.id})`) : ''}</div>`);
+
+      // O que faz atualmente + escolaridade (ficam no cadastro da pessoa)
+      const atuacao = qfEditandoAtuacao && PODE_QUALIF
+        ? qfCartao(`<h3 class="rotulo">${qfSvg('maleta', 'w-3.5 h-3.5')} Atuação atual</h3>
+            <label class="rotulo !normal-case !tracking-normal !text-[11px] !text-slate-500" for="qf-funcoes">O que faz atualmente</label>
+            <textarea id="qf-funcoes" rows="4" maxlength="2000" class="campo resize-y" placeholder="Atividades do dia a dia, responsabilidades, equipamentos que opera...">${escH(meta.funcoes || '')}</textarea>
+            <label class="rotulo !normal-case !tracking-normal !text-[11px] !text-slate-500 mt-3" for="qf-escolaridade">Escolaridade</label>
+            <select id="qf-escolaridade" class="campo"><option value="">Não informada</option>${QF_ESCOLARIDADE.map(e => `<option${meta.escolaridade === e ? ' selected' : ''}>${e}</option>`).join('')}</select>
+            <div class="flex justify-end gap-2 mt-4">${qfBtnSec('Cancelar', 'qfEditarAtuacao(false)')}<button type="button" onclick="qfSalvarAtuacao(${n.id})" class="min-h-[44px] px-5 bg-gradient-to-b from-emerald-500 to-emerald-600 text-white rounded-xl shadow-md shadow-emerald-600/25 ring-1 ring-emerald-700/20 font-bold text-xs active:scale-95">Salvar</button></div>`)
+        : qfCartao(`<div class="flex items-center justify-between gap-2 mb-2"><h3 class="rotulo !mb-0">${qfSvg('maleta', 'w-3.5 h-3.5')} Atuação atual</h3>
+              ${PODE_QUALIF ? `<button type="button" onclick="qfEditarAtuacao(true)" class="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-xl text-xs font-bold text-blue-600 hover:bg-blue-50">${qfSvg('editar', 'w-3.5 h-3.5')} Editar</button>` : ''}</div>
+            <p class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed break-words">${meta.funcoes ? escH(meta.funcoes) : '<span class="text-slate-400 italic">Ainda não descrito o que esta pessoa faz atualmente.</span>'}</p>
+            <div class="flex flex-wrap gap-2 mt-3">
+              <span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700">Escolaridade: ${escH(meta.escolaridade || 'não informada')}</span>
+              ${cursando.map(q => `<span class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-sky-50 text-sky-700">Cursando: ${escH(q.titulo)}</span>`).join('')}
+            </div>`);
+
+      // Seções: cursando primeiro, depois por tipo
+      const secoes = [];
+      if (cursando.length) secoes.push({ titulo: 'Cursando agora', icone: 'cursando', cor: '!text-sky-600', itens: cursando });
+      Object.keys(QF_TIPOS).forEach(t => {
+        const itens = ordenar(qs.filter(q => q.tipo === t && q.situacao !== 'cursando'));
+        if (itens.length) secoes.push({ titulo: QF_TIPOS[t].secao, icone: t, cor: '', itens });
+      });
+      const corpo = secoes.length
+        ? secoes.map(s => qfCartao(`<h3 class="rotulo ${s.cor}">${qfSvg(s.icone, 'w-3.5 h-3.5')} ${s.titulo} <span class="text-slate-300">· ${s.itens.length}</span></h3>
+            <div class="grid grid-cols-1 2xl:grid-cols-2 gap-2">${s.itens.map(qfItemHtml).join('')}</div>`)).join('')
+        : qfCartao(`<div class="text-center py-8">
+            <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-amber-50 text-amber-600 ring-1 ring-amber-100 flex items-center justify-center">${qfSvg('formacao', 'w-7 h-7')}</div>
+            <p class="text-sm font-bold text-slate-700">Nenhuma qualificação cadastrada</p>
+            <p class="text-xs text-slate-500 mt-1">Formação, cursos, certificados, NRs, idiomas e o que está cursando agora.</p>
+            ${PODE_QUALIF ? `<div class="mt-4">${qfBtnPrincipal('Adicionar a primeira', `qfNovo(${n.id})`)}</div>` : ''}</div>`);
+      return `<div class="space-y-3">${cabecalho}${atuacao}${corpo}</div>`;
+    }
+
+    window.qfEditarAtuacao = function(sim) { qfEditandoAtuacao = !!sim; qfDesenharDetalhe(); };
+    window.qfSalvarAtuacao = async function(id) {
+      const node = qfPessoa(id); if (!node || !PODE_QUALIF) return;
+      const meta = metaDe(node);
+      meta.funcoes = document.getElementById('qf-funcoes').value.trim();
+      const esc = document.getElementById('qf-escolaridade').value;
+      if (esc) meta.escolaridade = esc; else delete meta.escolaridade;
+      showLoading(true, 'Salvando...');
+      try {
+        // Só o "o que faz" e a escolaridade (função no banco: não precisa da permissão de editar o organograma)
+        const r = await sb.rpc('organograma_atuacao_salvar', { p_id: Number(id), p_funcoes: meta.funcoes, p_escolaridade: meta.escolaridade || '' });
+        if (r.error) throw new Error(/organograma_atuacao_salvar|schema cache/i.test(r.error.message)
+          ? 'Rode de novo o arquivo supabase/organograma_qualificacoes.sql no Supabase (ele ganhou a função da Atuação atual).'
+          : r.error.message);
+        node.metadados = JSON.stringify(r.data || meta);
+        qfEditandoAtuacao = false;
+        showToast('Atuação atual salva!');
+        qfDesenhar();
+      } catch (e) {
+        await Dialogo.avisar(e.message || String(e), { titulo: 'Não foi salvo', tipo: 'erro' });
+      }
+      showLoading(false);
+    };
+
+    // ---------- Janela: nova / editar qualificação ----------
+    const qfCampo = id => document.getElementById(id);
+    function qfAbrirModal(pessoaId, q) {
+      const p = qfPessoa(pessoaId); if (!p) return;
+      qfForm = { id: q ? q.id : null, pessoaId: p.id, anexos: q ? q.anexos.map(a => Object.assign({}, a)) : [], novos: [], removidos: [] };
+      qfCampo('qf-modal-titulo').textContent = q ? 'Editar qualificação' : 'Nova qualificação';
+      qfCampo('qf-modal-pessoa').textContent = p.name;
+      qfCampo('qf-tipo').innerHTML = Object.keys(QF_TIPOS).map(t => `<option value="${t}">${QF_TIPOS[t].nome}</option>`).join('');
+      qfCampo('qf-tipo').value = q ? q.tipo : 'curso';
+      qfCampo('qf-situacao').value = q ? q.situacao : 'concluido';
+      qfCampo('qf-titulo').value = q ? q.titulo : '';
+      qfCampo('qf-instituicao').value = q ? q.instituicao : '';
+      qfCampo('qf-nivel').value = q ? q.nivel : '';
+      qfCampo('qf-carga').value = q && q.carga_horaria != null ? q.carga_horaria : '';
+      qfCampo('qf-registro').value = q ? q.registro : '';
+      qfCampo('qf-inicio').value = q ? q.inicio : '';
+      qfCampo('qf-conclusao').value = q ? q.conclusao : '';
+      qfCampo('qf-validade').value = q ? q.validade : '';
+      qfCampo('qf-obs').value = q ? q.observacoes : '';
+      qfAjustarSituacao();
+      qfDesenharAnexos();
+      const m = qfCampo('qf-modal'); m.classList.remove('hidden'); m.classList.add('flex');
+      if (!q && window.innerWidth >= 1024) setTimeout(() => qfCampo('qf-titulo').focus(), 50);
+    }
+    function qfAjustarSituacao() {
+      qfCampo('qf-conclusao-rotulo').textContent = qfCampo('qf-situacao').value === 'cursando' ? 'Previsão de término' : 'Conclusão';
+    }
+    window.qfNovo = function(pessoaId) {
+      if (!PODE_QUALIF) return;
+      if (!qfCarregado) { Dialogo.avisar(qfErro || 'Aguarde as qualificações carregarem.', { titulo: 'Qualificações', tipo: 'aviso' }); return; }
+      qfAbrirModal(pessoaId, null);
+    };
+    window.qfEditar = function(id) {
+      const q = qfDados.find(x => x.id === id); if (!q || !PODE_QUALIF) return;
+      qfAbrirModal(q.pessoa_id, q);
+    };
+    window.qfFecharModal = async function(salvou) {
+      if (qfEnviando) { await Dialogo.avisar('Espere o envio do arquivo terminar.', { titulo: 'Enviando', tipo: 'info' }); return; }
+      // Arquivos enviados agora e não salvos voltam para a lixeira do Drive
+      if (!salvou && qfForm) qfForm.novos.forEach(a => qfLixeira(a));
+      qfForm = null;
+      const m = qfCampo('qf-modal'); m.classList.add('hidden'); m.classList.remove('flex');
+    };
+
+    function qfDesenharAnexos() {
+      const alvo = qfCampo('qf-anexos'); if (!alvo || !qfForm) return;
+      qfCampo('qf-anexos-conta').textContent = `${qfForm.anexos.length} de ${QF_MAX_ANEXOS}`;
+      alvo.innerHTML = qfForm.anexos.map((a, i) => `<div class="flex items-center gap-2 bg-white rounded-xl ring-1 ring-slate-200 pl-3 pr-1 py-1">
+          <span class="${a.tipo === 'pdf' ? 'text-red-500' : 'text-emerald-600'} shrink-0">${qfSvg(a.tipo === 'pdf' ? 'pdf' : 'foto')}</span>
+          <a href="${escH(qfLinkAnexo(a))}" target="_blank" rel="noopener" class="flex-1 min-w-0 text-xs font-bold text-slate-700 truncate hover:text-emerald-700 py-2">${escH(a.nome || 'Arquivo')}</a>
+          <button type="button" onclick="qfTirarAnexo(${i})" title="Tirar anexo" class="w-10 h-10 shrink-0 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center">${qfSvg('lixo')}</button>
+        </div>`).join('') + (qfEnviando ? `<div class="flex items-center gap-2 text-xs font-bold text-slate-500 px-1 py-2"><svg class="animate-spin w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Enviando para o Drive...</div>` : '')
+        || '<p class="text-xs font-semibold text-slate-400 px-1">Nenhum arquivo anexado.</p>';
+      qfCampo('qf-salvar').disabled = !!qfEnviando;
+      qfCampo('qf-salvar').classList.toggle('opacity-60', !!qfEnviando);
+    }
+
+    // Lê o arquivo: PDF vai como está; foto é reduzida (até 2000 px, JPEG)
+    function qfLerArquivo(arquivo) {
+      return new Promise((resolve, reject) => {
+        if (arquivo.type === 'application/pdf' || /\.pdf$/i.test(arquivo.name)) {
+          if (arquivo.size > 10 * 1024 * 1024) return reject(new Error(`"${arquivo.name}" passa de 10 MB. Diminua o PDF (ex.: "Reduzir tamanho" ao salvar) e tente de novo.`));
+          const r = new FileReader();
+          r.onload = () => resolve({ dataUrl: String(r.result).replace(/^data:[^;]*;/, 'data:application/pdf;'), tipo: 'pdf', ext: 'pdf' });
+          r.onerror = () => reject(new Error(`Não consegui ler "${arquivo.name}".`));
+          r.readAsDataURL(arquivo);
+          return;
+        }
+        if (!arquivo.type.startsWith('image/')) return reject(new Error(`"${arquivo.name}" não é PDF nem foto.`));
+        const img = new Image(), url = URL.createObjectURL(arquivo);
+        img.onload = () => {
+          const escala = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.naturalWidth * escala); c.height = Math.round(img.naturalHeight * escala);
+          const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          resolve({ dataUrl: c.toDataURL('image/jpeg', 0.85), tipo: 'foto', ext: 'jpg' });
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(`Não consegui abrir a imagem "${arquivo.name}".`)); };
+        img.src = url;
+      });
+    }
+
+    async function qfChamarDrive(corpo) {
+      const { data, error } = await sb.functions.invoke('fotos-drive', { body: Object.assign({ projeto: 'qualificacoes' }, corpo) });
+      if (error) {
+        let msg = error.message || 'Falha ao falar com o Drive.';
+        try { const j = await error.context.json(); if (j && j.erro) msg = j.erro; } catch (e) { /* mantém a mensagem */ }
+        if (/not found|404|FunctionsFetchError|Failed to send/i.test(msg)) msg = 'A função "fotos-drive" não respondeu. Publique de novo a função no Supabase (ela ganhou os anexos das Qualificações).';
+        throw new Error(msg);
+      }
+      if (!data || !data.ok) throw new Error((data && data.erro) || 'O arquivo não foi salvo no Drive.');
+      return data;
+    }
+    const qfLixeira = a => { if (a && a.id) qfChamarDrive({ acao: 'excluir', id: a.id }).catch(() => {}); };
+
+    window.qfAnexar = async function(input) {
+      const arquivos = [...(input.files || [])];
+      input.value = '';
+      if (!arquivos.length || !qfForm) return;
+      if (!navigator.onLine) { await Dialogo.avisar('Os anexos vão direto para o Google Drive: conecte-se à internet para enviar.', { titulo: 'Sem internet', tipo: 'aviso' }); return; }
+      if (qfForm.anexos.length + arquivos.length > QF_MAX_ANEXOS) { await Dialogo.avisar(`Cada qualificação aceita até ${QF_MAX_ANEXOS} arquivos.`, { titulo: 'Limite de anexos', tipo: 'aviso' }); return; }
+      const p = qfPessoa(qfForm.pessoaId);
+      const titulo = qfCampo('qf-titulo').value.trim() || QF_TIPOS[qfCampo('qf-tipo').value].nome;
+      const form = qfForm;
+      for (const arquivo of arquivos) {
+        qfEnviando++; qfDesenharAnexos();
+        try {
+          const lido = await qfLerArquivo(arquivo);
+          const d = new Date(), dois = x => String(x).padStart(2, '0');
+          const carimbo = `${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())} ${dois(d.getHours())}${dois(d.getMinutes())}${dois(d.getSeconds())}`;
+          const r = await qfChamarDrive({ nome: `${p ? p.name : 'Colaborador'} - ${titulo} - ${carimbo}.${lido.ext}`, pasta: p ? p.name : 'Sem nome', dataUrl: lido.dataUrl });
+          const anexo = { id: r.id, url: r.url, link: r.link || '', nome: arquivo.name.slice(0, 120), tipo: lido.tipo };
+          if (qfForm === form) { form.anexos.push(anexo); form.novos.push(anexo); }
+          else qfLixeira(anexo);   // a janela foi fechada no meio do envio
+        } catch (e) {
+          qfEnviando--; qfDesenharAnexos();
+          await Dialogo.avisar(e.message || String(e), { titulo: 'Arquivo não enviado', tipo: 'erro' });
+          continue;
+        }
+        qfEnviando--; qfDesenharAnexos();
+      }
+    };
+    window.qfTirarAnexo = function(i) {
+      if (!qfForm) return;
+      const [a] = qfForm.anexos.splice(i, 1);
+      if (!a) return;
+      const novo = qfForm.novos.indexOf(a);
+      if (novo >= 0) { qfForm.novos.splice(novo, 1); qfLixeira(a); }
+      else qfForm.removidos.push(a);   // só vai para a lixeira depois de salvar
+      qfDesenharAnexos();
+    };
+
+    window.qfSalvar = async function() {
+      if (!qfForm || !PODE_QUALIF || qfEnviando) return;
+      const titulo = qfCampo('qf-titulo').value.trim();
+      if (!titulo) { await Dialogo.avisar('Digite o nome do curso ou do certificado.', { titulo: 'Falta o nome', tipo: 'aviso' }); qfCampo('qf-titulo').focus(); return; }
+      const inicio = qfCampo('qf-inicio').value || null, conclusao = qfCampo('qf-conclusao').value || null;
+      if (inicio && conclusao && conclusao < inicio) { await Dialogo.avisar('A data de conclusão está antes do início.', { titulo: 'Confira as datas', tipo: 'aviso' }); return; }
+      const carga = qfCampo('qf-carga').value === '' ? null : Number(String(qfCampo('qf-carga').value).replace(',', '.'));
+      if (carga != null && (!isFinite(carga) || carga < 0)) { await Dialogo.avisar('A carga horária precisa ser um número de horas.', { titulo: 'Carga horária', tipo: 'aviso' }); return; }
+      const dados = {
+        pessoa_id: qfForm.pessoaId, tipo: qfCampo('qf-tipo').value, situacao: qfCampo('qf-situacao').value, titulo,
+        instituicao: qfCampo('qf-instituicao').value.trim(), nivel: qfCampo('qf-nivel').value.trim(), carga_horaria: carga,
+        inicio, conclusao, validade: qfCampo('qf-validade').value || null, registro: qfCampo('qf-registro').value.trim(),
+        observacoes: qfCampo('qf-obs').value.trim(), anexos: qfForm.anexos, updated_at: new Date().toISOString()
+      };
+      const btn = qfCampo('qf-salvar');
+      const ocupado = sim => { btn.disabled = sim; btn.textContent = sim ? 'Salvando...' : 'Salvar'; btn.classList.toggle('opacity-60', sim); };
+      ocupado(true);
+      try {
+        const r = qfForm.id
+          ? await sb.from('organograma_qualificacoes').update(dados).eq('id', qfForm.id).select()
+          : await sb.from('organograma_qualificacoes').insert(dados).select();
+        if (r.error) throw new Error(r.error.message);
+        if (!r.data || !r.data.length) throw new Error('Você não tem a permissão "Cadastrar qualificações". Peça ao administrador em Cadastro de Usuários.');
+        const linha = doQf(r.data[0]);
+        const i = qfDados.findIndex(x => x.id === linha.id);
+        if (i >= 0) qfDados[i] = linha; else qfDados.push(linha);
+        qfForm.removidos.forEach(a => qfLixeira(a));
+        const novo = !qfForm.id;
+        ocupado(false);
+        qfFecharModal(true);
+        showToast(novo ? 'Qualificação adicionada!' : 'Qualificação atualizada!');
+        qfDesenhar();
+      } catch (e) {
+        ocupado(false);
+        await Dialogo.avisar(navigator.onLine ? (e.message || String(e)) : 'Sem internet: conecte-se e toque em Salvar de novo.', { titulo: 'Não foi salvo', tipo: 'erro' });
+      }
+    };
+
+    window.qfExcluir = async function(id) {
+      const q = qfDados.find(x => x.id === id); if (!q || !PODE_QUALIF) return;
+      const anexos = q.anexos.length ? ` Os ${q.anexos.length} anexo(s) vão para a lixeira do Drive (dá para recuperar por 30 dias).` : '';
+      if (!(await Dialogo.confirmar(`Excluir "${q.titulo}"?${anexos}`, { titulo: 'Excluir qualificação?', botao: 'Excluir', perigo: true }))) return;
+      showLoading(true, 'Excluindo...');
+      try {
+        const r = await sb.from('organograma_qualificacoes').delete().eq('id', id).select('id');
+        if (r.error) throw new Error(r.error.message);
+        if (!r.data || !r.data.length) throw new Error('Você não tem permissão para excluir.');
+        qfDados = qfDados.filter(x => x.id !== id);
+        q.anexos.forEach(a => qfLixeira(a));
+        showToast('Qualificação excluída.');
+        qfDesenhar();
+      } catch (e) {
+        await Dialogo.avisar(e.message || String(e), { titulo: 'Não foi excluído', tipo: 'erro' });
+      }
+      showLoading(false);
+    };
+
+    // Filtros da lista e atalhos da janela
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('qf-busca').addEventListener('input', qfDesenharLista);
+      ['qf-empresa', 'qf-mostrar'].forEach(id => document.getElementById(id).addEventListener('change', qfDesenharLista));
+      document.getElementById('qf-situacao').addEventListener('change', qfAjustarSituacao);
+      document.getElementById('qf-modal').addEventListener('click', e => { if (e.target.id === 'qf-modal') qfFecharModal(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape' && qfForm) qfFecharModal(); });
+    });
+  </script>
+
   <!-- Barra de abas no celular (mesma da Irrigação) -->
   <nav id="mobile-bottom-nav" class="lg:hidden" aria-label="Seções">
     <button type="button" data-cor="mapa" data-vista-mob="mapa" onclick="trocarVista('mapa')">
@@ -3262,6 +3960,10 @@
     <button type="button" data-cor="lista" data-vista-mob="lista" onclick="trocarVista('lista')">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
       <span>Equipe</span>
+    </button>
+    <button type="button" data-cor="qualif" data-vista-mob="qualif" onclick="trocarVista('qualif')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0121 17.5c-3.04.5-6.03 1.97-9 4.5-2.97-2.53-5.96-4-9-4.5a12.083 12.083 0 012.84-6.922L12 14z"></path></svg>
+      <span>Cursos</span>
     </button>
     <button type="button" data-cor="busca" id="btn-mob-busca" onclick="toggleMobileSearch()">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
